@@ -1,5 +1,4 @@
 use pgls_query::protobuf::SelectStmt;
-use pgls_query_ext::utils::select_into;
 
 use super::into_clause::apply_into_clause;
 use crate::catalog::Catalog;
@@ -14,7 +13,7 @@ pub(super) fn apply_select_stmt(
     search_path: &[String],
     output: Option<&[TypedColumn]>,
 ) {
-    let Some(into) = select_into(n) else {
+    let Some(into) = n.into_clause_of_query() else {
         return;
     };
     let columns = c.query_columns(output);

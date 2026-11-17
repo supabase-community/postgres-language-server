@@ -6,7 +6,6 @@ use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{Node, ObjectType, RangeVar, Token};
 use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::select_into;
 use pgls_text_size::TextRange;
 
 /// The `relpersistence` of temporary tables, which always live in `pg_temp`.
@@ -82,7 +81,8 @@ impl LinterRule for RequireTableSchema {
                 .filter_map(|into| into.rel.as_ref())
                 .map(table)
                 .collect(),
-            NodeEnum::SelectStmt(stmt) => select_into(stmt)
+            NodeEnum::SelectStmt(stmt) => stmt
+                .into_clause_of_query()
                 .into_iter()
                 .filter_map(|into| into.rel.as_ref())
                 .map(table)

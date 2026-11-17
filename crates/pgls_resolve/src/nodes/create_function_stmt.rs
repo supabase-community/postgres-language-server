@@ -9,7 +9,7 @@ use pgls_query::{
 };
 use pgls_query_ext::{
     function_body::is_sql_function,
-    utils::{QualifiedName, find_option_value, qualified_name, select_into},
+    utils::{QualifiedName, find_option_value, qualified_name},
 };
 
 use super::{Resolver, resolve_node_enum};
@@ -100,7 +100,7 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
 
     let returns_rows = match last {
         // `SELECT ... INTO` is rejected for other reasons.
-        NodeEnum::SelectStmt(select) if select_into(select).is_some() => return,
+        NodeEnum::SelectStmt(select) if select.into_clause_of_query().is_some() => return,
         // The type of a `RETURN` expression is not checked.
         NodeEnum::ReturnStmt(_) => return,
         NodeEnum::SelectStmt(_) => true,

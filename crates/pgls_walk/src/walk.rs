@@ -550,9 +550,8 @@ fn may_change_catalog(sql: &str) -> bool {
 /// session.
 pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
     use pgls_query::NodeEnum;
-    use pgls_query_ext::utils::select_into;
     match root {
-        NodeEnum::SelectStmt(select) => select_into(select).is_none(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_none(),
         NodeEnum::InsertStmt(_)
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)

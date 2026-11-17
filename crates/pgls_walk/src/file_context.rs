@@ -4,7 +4,6 @@ use std::cell::OnceCell;
 
 use pgls_catalog::{Catalog, Session};
 use pgls_query::NodeEnum;
-use pgls_query_ext::utils::select_into;
 use pgls_resolve::{Resolution, ResolveParams, resolve};
 use pgls_text_size::TextSize;
 
@@ -212,7 +211,7 @@ impl<'a> AnalysedFileContext<'a> {
 fn creates_relation_from_query(stmt: &NodeEnum) -> bool {
     match stmt {
         NodeEnum::ViewStmt(_) | NodeEnum::CreateTableAsStmt(_) => true,
-        NodeEnum::SelectStmt(select) => select_into(select).is_some(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_some(),
         _ => false,
     }
 }

@@ -1,7 +1,7 @@
 //! The names Postgres gives to unnamed select list entries.
 
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{is_star, leftmost_select, string_value};
+use pgls_query_ext::utils::{is_star, string_value};
 
 const UNNAMED: &str = "?column?";
 
@@ -247,7 +247,7 @@ fn step<'a>(value: &'a NodeEnum, subquery_column: SubqueryColumn<'_>) -> Step<'a
 /// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
 /// [`addRangeTableEntryForValues`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2183
 fn first_column<'a>(select: &'a protobuf::SelectStmt, wrapper: Wrapper<'a>) -> Step<'a> {
-    let Some(select) = leftmost_select(select) else {
+    let Some(select) = select.leftmost() else {
         return Step::Named(None);
     };
     if !select.values_lists.is_empty() {

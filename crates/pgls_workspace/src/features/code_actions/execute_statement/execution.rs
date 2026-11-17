@@ -3,7 +3,6 @@ use std::time::Duration;
 use futures::{FutureExt, TryStreamExt, channel::oneshot, future};
 use pgls_line_index::offset_of_char_position;
 use pgls_query::NodeEnum;
-use pgls_query_ext::utils::select_into;
 use sqlx::{
     Column, Either, Executor, PgConnection, Row, Statement, ValueRef,
     postgres::{PgColumn, PgDatabaseError, PgErrorPosition, PgRow},
@@ -36,7 +35,7 @@ pub(crate) fn is_query(ast: &NodeEnum) -> bool {
     let NodeEnum::SelectStmt(select) = ast else {
         return false;
     };
-    select_into(select).is_none()
+    select.into_clause_of_query().is_none()
         && select.with_clause.as_ref().is_none_or(|with| {
             with.ctes.iter().all(|cte| match &cte.node {
                 Some(NodeEnum::CommonTableExpr(cte)) => matches!(
@@ -73,7 +72,7 @@ pub(crate) fn refusal(ast: &NodeEnum) -> Option<String> {
 /// Whether executing `ast` may change the schema, i.e. it does more than reading or writing rows.
 pub(crate) fn may_change_schema(ast: &NodeEnum) -> bool {
     match ast {
-        NodeEnum::SelectStmt(select) => select_into(select).is_some(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_some(),
         NodeEnum::InsertStmt(_)
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)

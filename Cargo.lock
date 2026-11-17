@@ -2739,6 +2739,7 @@ dependencies = [
  "prost",
  "prost-build",
  "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]
@@ -2748,7 +2749,6 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_query",
  "pgls_text_size",
- "tracing",
 ]
 
 [[package]]

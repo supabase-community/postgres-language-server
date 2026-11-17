@@ -39,7 +39,6 @@ mod volatility;
 pub use volatility::contains_volatile_functions;
 
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::select_into;
 use pgls_text_size::TextRange;
 
 use pgls_catalog::CatalogView;
@@ -496,7 +495,7 @@ pub(crate) fn apply_resolved(
 fn creates_relation(stmt: &NodeEnum) -> bool {
     match stmt {
         NodeEnum::ViewStmt(_) | NodeEnum::CreateTableAsStmt(_) => true,
-        NodeEnum::SelectStmt(select) => select_into(select).is_some(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_some(),
         _ => false,
     }
 }
@@ -504,7 +503,7 @@ fn creates_relation(stmt: &NodeEnum) -> bool {
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.
 fn supports_database_check(stmt: &NodeEnum) -> bool {
     match stmt {
-        NodeEnum::SelectStmt(select) => select_into(select).is_none(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_none(),
         NodeEnum::InsertStmt(_)
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)
