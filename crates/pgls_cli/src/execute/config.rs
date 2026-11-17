@@ -5,6 +5,8 @@ pub struct ExecutionConfig {
     pub mode: ExecutionMode,
     pub max_diagnostics: u32,
     pub allow_writes: bool,
+    /// Skip files with syntax errors instead of reporting them (`--skip-errors`).
+    pub skip_errors: bool,
 }
 
 impl ExecutionConfig {
@@ -14,7 +16,13 @@ impl ExecutionConfig {
             mode,
             max_diagnostics,
             allow_writes,
+            skip_errors: false,
         }
+    }
+
+    pub fn with_skip_errors(mut self, skip_errors: bool) -> Self {
+        self.skip_errors = skip_errors;
+        self
     }
 
     pub fn max_diagnostics(&self) -> u32 {

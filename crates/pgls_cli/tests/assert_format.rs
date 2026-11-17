@@ -183,6 +183,42 @@ fn format_without_write_reports_extra_blank_lines_snapshot() {
     assert_snapshot!(run_format(&[BLANK_LINES_PATH]));
 }
 
+/// With `--skip-errors`, a file with a syntax error is left as it is, and doesn't fail the run.
+#[test]
+fn format_write_skip_errors_leaves_files_with_syntax_errors() {
+    let content = "SELECT a,b FROM t;\nselect from where;\n";
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("broken.sql");
+    std::fs::write(&path, content).unwrap();
+
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--write",
+            "--skip-errors",
+            path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let report = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(output.status.success(), "{report}");
+    assert_eq!(
+        std::fs::read(&path).unwrap(),
+        content.as_bytes(),
+        "{report}"
+    );
+    assert!(report.contains("Skipped file with syntax errors"), "{report}");
+}
+
 fn run_format(args: &[&str]) -> String {
     run_format_with(args, None)
 }

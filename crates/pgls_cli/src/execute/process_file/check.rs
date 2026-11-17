@@ -1,8 +1,8 @@
 use pgls_analyse::RuleCategoriesBuilder;
-use pgls_diagnostics::{Error, category};
+use pgls_diagnostics::{DiagnosticExt, Error, category};
 
 use crate::execute::config::ExecutionMode;
-use crate::execute::diagnostics::ResultExt;
+use crate::execute::diagnostics::{ResultExt, SkippedDiagnostic, has_syntax_errors};
 use crate::execute::process_file::workspace_file::WorkspaceFile;
 use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
 use pgls_fs::PgLSPath;
@@ -35,6 +35,26 @@ pub(crate) fn check_with_guard<'ctx>(
             else {
                 return Ok(FileStatus::Unchanged);
             };
+
+            // Don't write fixes to a file that `--skip-errors` skips.
+            if ctx.config.skip_errors && fix.is_some() {
+                let diagnostics = workspace_file
+                    .guard()
+                    .pull_file_diagnostics(
+                        RuleCategoriesBuilder::default().all().build(),
+                        u32::MAX,
+                        only.clone(),
+                        skip.clone(),
+                    )
+                    .with_file_path_and_code(
+                        workspace_file.path.display().to_string(),
+                        category!("check"),
+                    )?
+                    .diagnostics;
+                if has_syntax_errors(&diagnostics) {
+                    return Ok(skip_file(ctx, workspace_file));
+                }
+            }
 
             if let Some(fix_file_mode) = *fix {
                 let fixed = ctx
@@ -89,6 +109,10 @@ pub(crate) fn check_with_guard<'ctx>(
                     category!("check"),
                 )?;
 
+            if ctx.config.skip_errors && has_syntax_errors(&pull_diagnostics_result.diagnostics) {
+                return Ok(skip_file(ctx, workspace_file));
+            }
+
             let no_diagnostics = pull_diagnostics_result.diagnostics.is_empty()
                 && pull_diagnostics_result.skipped_diagnostics == 0;
 
@@ -112,4 +136,11 @@ pub(crate) fn check_with_guard<'ctx>(
             }
         },
     )
+}
+
+/// Skips a file with syntax errors for `--skip-errors`: it reports that it skipped the file instead
+/// of its diagnostics. The file counts as processed, so a run that skips every file succeeds.
+fn skip_file(ctx: &SharedTraversalOptions<'_, '_>, workspace_file: &WorkspaceFile) -> FileStatus {
+    ctx.push_message(SkippedDiagnostic.with_file_path(workspace_file.path.display().to_string()));
+    FileStatus::Unchanged
 }

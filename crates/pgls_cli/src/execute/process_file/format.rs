@@ -1,6 +1,8 @@
 use crate::diagnostics::FormatDiffDiagnostic;
+use crate::execute::diagnostics::{SkippedDiagnostic, has_syntax_errors};
 use crate::execute::process_file::workspace_file::WorkspaceFile;
 use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
+use pgls_diagnostics::DiagnosticExt;
 use pgls_workspace::features::format::PullFileFormattingParams;
 use std::io::Write;
 use std::path::Path;
@@ -25,6 +27,13 @@ fn format_with_guard<'ctx>(
     });
 
     let format_result = format_result.map_err(Message::from)?;
+
+    // `--skip-errors` leaves a file with syntax errors as it is. It counts as processed, so a run
+    // that skips every file succeeds.
+    if ctx.config.skip_errors && has_syntax_errors(&format_result.diagnostics) {
+        ctx.push_message(SkippedDiagnostic.with_file_path(path.display().to_string()));
+        return Ok(FileStatus::Unchanged);
+    }
 
     let mut diagnostics: Vec<pgls_diagnostics::Error> = format_result
         .diagnostics
