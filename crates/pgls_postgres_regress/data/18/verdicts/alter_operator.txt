@@ -1,65 +1,65 @@
-1:1 accepted
-4:1 accepted
-7:1 accepted
-18:1 accepted
-28:1 accepted
-29:1 accepted
-31:1 accepted
-34:1 accepted
-40:1 accepted
-41:1 accepted
-43:1 accepted
-46:1 accepted
-52:1 accepted
-54:1 accepted
-57:1 accepted
-63:1 accepted
-65:1 accepted
-68:1 accepted
-77:1 rejected 42883
-78:1 rejected 42883
-81:1 rejected 42601
-86:1 accepted
-87:1 accepted
-89:1 rejected 42501
-91:1 accepted
-98:1 accepted
-101:1 accepted
-105:1 accepted
-112:1 accepted
-119:1 accepted
-126:1 accepted
-127:1 accepted
-130:1 accepted
-131:1 accepted
-132:1 accepted
-137:1 accepted
-142:1 accepted
-150:1 rejected 42P13
-153:1 accepted
-158:1 accepted
-166:1 accepted
-167:1 accepted
-168:1 accepted
-169:1 accepted
-172:1 accepted
-180:1 accepted
-185:1 accepted
-191:1 rejected 42P13
-192:1 rejected 42P13
-193:1 rejected 42P13
-194:1 rejected 42P13
-197:1 rejected 42P13
-200:1 rejected 42P13
-203:1 accepted
-213:1 accepted
-215:1 accepted
-216:1 accepted
-217:1 accepted
-218:1 accepted
-219:1 accepted
-220:1 accepted
-222:1 accepted
-223:1 accepted
-224:1 accepted
-225:1 accepted
+0..121 accepted
+123..247 accepted
+249..468 accepted
+470..659 accepted
+728..788 accepted
+789..845 accepted
+847..979 accepted
+981..1170 accepted
+1172..1235 accepted
+1236..1299 accepted
+1301..1433 accepted
+1435..1624 accepted
+1626..1699 accepted
+1701..1833 accepted
+1835..2024 accepted
+2026..2115 accepted
+2117..2249 accepted
+2251..2440 accepted
+2473..2546 rejected 42883
+2547..2616 rejected 42883
+2663..2750 rejected 42601
+2817..2851 accepted
+2852..2900 accepted
+2902..2962 rejected 42501
+2964..2992 accepted
+3113..3241 accepted
+3243..3371 accepted
+3385..3496 accepted
+3512..3624 accepted
+3637..3750 accepted
+3816..3872 accepted
+3873..3929 accepted
+3965..4013 accepted
+4014..4062 accepted
+4063..4199 accepted
+4228..4287 accepted
+4486..4786 accepted
+4818..4873 rejected 42P13
+4899..4956 accepted
+5155..5455 accepted
+5489..5546 accepted
+5547..5606 accepted
+5607..5655 accepted
+5656..5704 accepted
+5768..6060 accepted
+6137..6247 accepted
+6248..6359 accepted
+6361..6418 rejected 42P13
+6419..6474 rejected 42P13
+6475..6531 rejected 42P13
+6532..6588 rejected 42P13
+6664..6720 rejected 42P13
+6790..6844 rejected 42P13
+6871..7163 accepted
+7184..7216 accepted
+7218..7255 accepted
+7256..7290 accepted
+7291..7326 accepted
+7327..7363 accepted
+7364..7397 accepted
+7398..7432 accepted
+7434..7496 accepted
+7497..7546 accepted
+7547..7603 accepted
+7604..7660 accepted

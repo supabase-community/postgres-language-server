@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use pgls_catalog::{Catalog, CatalogBase, Snapshot};
+use pgls_catalog::{Catalog, Snapshot};
 use pgls_resolve::{FunctionContext, FunctionParam};
 use pgls_semantic_tokens::{SemanticTokenKind, SemanticTokensParams, semantic_tokens};
 use sqlx::{Executor, PgPool};
@@ -40,7 +38,7 @@ async fn fixture_on(test_db: &PgPool, version_num: Option<i64>) -> Fixture {
     }
     Fixture {
         search_path: snapshot.expand_search_path(&["public".to_string()]),
-        catalog: Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot))))),
+        catalog: Catalog::from_snapshot(snapshot),
     }
 }
 

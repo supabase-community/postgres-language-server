@@ -499,17 +499,286 @@ impl FromStr for TransportHeader {
 #[cfg(test)]
 mod tests {
     use std::fmt;
+    use std::panic::RefUnwindSafe;
+    use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
-    use pgls_workspace::TransportError;
-    use pgls_workspace::workspace::{TransportRequest, WorkspaceTransport};
+    use pgls_analyse::RuleCategories;
+    use pgls_configuration::database::PartialDatabaseConfiguration;
+    use pgls_configuration::{PartialConfiguration, PartialFormatConfiguration};
+    use pgls_fs::{MemoryFileSystem, PgLSPath};
+    use pgls_lsp::ServerFactory;
+    use pgls_text_size::{TextRange, TextSize};
+    use pgls_workspace::features::code_actions::{
+        CodeActionsParams, ExecuteStatementParams, FixFileMode, FixFileParams,
+    };
+    use pgls_workspace::features::completions::GetCompletionsParams;
+    use pgls_workspace::features::diagnostics::{
+        CheckDatabaseConnectionParams, DatabaseChecks, PullDatabaseDiagnosticsParams,
+        PullFileDiagnosticsParams,
+    };
+    use pgls_workspace::features::format::PullFileFormattingParams;
+    use pgls_workspace::features::inlay_hints::PullInlayHintsParams;
+    use pgls_workspace::features::on_hover::OnHoverParams;
+    use pgls_workspace::features::semantic_tokens::PullSemanticTokensParams;
+    use pgls_workspace::workspace::{
+        ChangeFileParams, CloseFileParams, FindProjectParams, GetFileContentParams,
+        InvalidateSchemaCacheParams, IsPathIgnoredParams, OpenFileParams,
+        RegisterProjectFolderParams, SchemaCacheScope, StatementId, TransportRequest,
+        UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateSettingsParams,
+        WorkspaceClient, WorkspaceTransport,
+    };
+    use pgls_workspace::{DynRef, TransportError, Workspace};
     use serde::Serialize;
+    use serde::de::DeserializeOwned;
     use serde::ser::{Error as SerError, Serializer};
     use serde_json::Value;
     use tokio::io::{duplex, split};
     use tokio::runtime::Runtime;
 
     use super::SocketTransport;
+
+    /// A transport that records the method of every request it sends.
+    struct RecordingTransport {
+        inner: SocketTransport,
+        methods: Arc<Mutex<Vec<&'static str>>>,
+    }
+
+    impl RefUnwindSafe for RecordingTransport {}
+
+    impl WorkspaceTransport for RecordingTransport {
+        fn request<P, R>(&self, request: TransportRequest<P>) -> Result<R, TransportError>
+        where
+            P: Serialize,
+            R: DeserializeOwned,
+        {
+            self.methods.lock().unwrap().push(request.method);
+            self.inner.request(request)
+        }
+    }
+
+    macro_rules! workspace_method_names {
+        ($($(#[$attr:meta])* fn $name:ident($params:ty) -> $result:ty;)*) => {
+            [$(concat!("pgls/", stringify!($name))),*]
+        };
+    }
+
+    /// Calls every method of the workspace through the client that `--use-server` uses, over the
+    /// transport of the daemon, against the server of the daemon.
+    #[test]
+    fn workspace_client_reaches_every_method_of_the_server() {
+        let runtime = Runtime::new().expect("failed to create tokio runtime");
+        let factory = ServerFactory::new(false);
+        let connection =
+            factory.create_with_fs(None, DynRef::Owned(Box::<MemoryFileSystem>::default()));
+        let (client_stream, server_stream) = duplex(64 * 1024);
+        let (server_read, server_write) = split(server_stream);
+        runtime.spawn(connection.accept(server_read, server_write));
+        let (client_read, client_write) = split(client_stream);
+        let methods = Arc::<Mutex<Vec<_>>>::default();
+        let transport = RecordingTransport {
+            inner: SocketTransport::open_with_timeout(
+                runtime,
+                client_read,
+                client_write,
+                Duration::from_secs(60),
+            ),
+            methods: methods.clone(),
+        };
+        let client = WorkspaceClient::new(transport).expect("initialize failed");
+
+        let project_key = client
+            .register_project_folder(RegisterProjectFolderParams {
+                path: None,
+                real_path: None,
+            })
+            .unwrap();
+        client
+            .update_settings(UpdateSettingsParams {
+                project_key,
+                configuration: PartialConfiguration {
+                    db: Some(PartialDatabaseConfiguration {
+                        disable_connection: Some(true),
+                        ..Default::default()
+                    }),
+                    format: Some(PartialFormatConfiguration {
+                        enabled: Some(true),
+                        ..Default::default()
+                    }),
+                    ..PartialConfiguration::init()
+                },
+                vcs_base_path: None,
+                gitignore_matches: vec![],
+                workspace_directory: None,
+                replace: true,
+            })
+            .unwrap();
+        client
+            .update_nested_settings(UpdateNestedSettingsParams {
+                project_key,
+                nested: vec![],
+            })
+            .unwrap();
+
+        let path = PgLSPath::new("test.sql");
+        assert_eq!(
+            client
+                .find_project(FindProjectParams { path: path.clone() })
+                .unwrap(),
+            Some(project_key)
+        );
+        assert!(
+            !client
+                .is_path_ignored(IsPathIgnoredParams {
+                    project_key,
+                    pgls_path: path.clone(),
+                })
+                .unwrap()
+        );
+
+        client
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: "select 1;".into(),
+                version: 1,
+            })
+            .unwrap();
+        let content = "select  1;\nselect 2;";
+        client
+            .change_file(ChangeFileParams {
+                project_key,
+                path: path.clone(),
+                version: 2,
+                content: content.into(),
+            })
+            .unwrap();
+        assert_eq!(
+            client
+                .get_file_content(GetFileContentParams {
+                    project_key,
+                    path: path.clone(),
+                })
+                .unwrap(),
+            content
+        );
+
+        client
+            .pull_file_diagnostics(PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks: DatabaseChecks::Reuse,
+            })
+            .unwrap();
+        let formatting = client
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .unwrap();
+        assert!(!formatting.statements.is_empty());
+        client
+            .pull_db_diagnostics(PullDatabaseDiagnosticsParams {
+                project_key,
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+            })
+            .unwrap();
+        client
+            .check_database_connection(CheckDatabaseConnectionParams { project_key })
+            .unwrap();
+        client
+            .pull_code_actions(CodeActionsParams {
+                project_key,
+                path: path.clone(),
+                cursor_position: TextSize::new(0),
+                only: vec![],
+                skip: vec![],
+            })
+            .unwrap();
+        client
+            .fix_file(FixFileParams {
+                project_key,
+                path: path.clone(),
+                fix_file_mode: FixFileMode::SafeFixes,
+                only: vec![],
+                skip: vec![],
+            })
+            .unwrap();
+        client
+            .get_completions(GetCompletionsParams {
+                project_key,
+                path: path.clone(),
+                position: TextSize::new(0),
+            })
+            .unwrap();
+        client
+            .on_hover(OnHoverParams {
+                project_key,
+                path: path.clone(),
+                position: TextSize::new(0),
+            })
+            .unwrap();
+        client
+            .pull_inlay_hints(PullInlayHintsParams {
+                project_key,
+                path: path.clone(),
+                range: TextRange::up_to(TextSize::of(content)),
+            })
+            .unwrap();
+        client
+            .pull_semantic_tokens(PullSemanticTokensParams {
+                project_key,
+                path: path.clone(),
+                range: None,
+            })
+            .unwrap();
+
+        let execute = ExecuteStatementParams {
+            project_key,
+            statement_id: StatementId::new("select 2;"),
+            path: path.clone(),
+        };
+        client
+            .cancel_statement_execution(ExecuteStatementParams {
+                statement_id: execute.statement_id.clone(),
+                path: execute.path.clone(),
+                ..execute
+            })
+            .unwrap();
+        client.execute_statement(execute).unwrap();
+        client
+            .invalidate_schema_cache(InvalidateSchemaCacheParams {
+                scope: SchemaCacheScope::Connections,
+            })
+            .unwrap();
+
+        client
+            .close_file(CloseFileParams {
+                project_key,
+                path: path.clone(),
+            })
+            .unwrap();
+        client
+            .unregister_project_folder(UnregisterProjectFolderParams { path })
+            .unwrap();
+
+        let mut called = methods.lock().unwrap().clone();
+        called.sort_unstable();
+        called.dedup();
+        let mut expected = pgls_workspace::for_each_workspace_method!(workspace_method_names);
+        expected.sort_unstable();
+        // `initialize` comes from `WorkspaceClient::new`.
+        called.retain(|method| *method != "initialize");
+        assert_eq!(called, expected, "call every method of the workspace");
+    }
 
     struct FailingParams;
 

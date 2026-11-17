@@ -17,9 +17,11 @@ use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfigurati
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_configuration::{PartialLinterConfiguration, PartialTypecheckConfiguration};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
+use pgls_lsp::Blocking;
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
 use pgls_workspace::DynRef;
+use pgls_workspace::workspace::server::WorkspaceServer;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -380,6 +382,22 @@ impl Server {
             .await
     }
 
+    /// Only `database_checks_run_on_open_and_save` saves, and it needs plpgsql_check, which the
+    /// Windows test database doesn't have.
+    #[cfg(not(target_os = "windows"))]
+    async fn save_document(&mut self) -> Result<()> {
+        self.notify(
+            "textDocument/didSave",
+            lsp::DidSaveTextDocumentParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                text: None,
+            },
+        )
+        .await
+    }
+
     #[allow(unused)]
     async fn close_document(&mut self) -> Result<()> {
         self.notify(
@@ -654,6 +672,67 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     .is_ok();
 
     assert!(notification, "expected diagnostics for unknown column");
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The workspace runs its async work on the test's runtime, whose clock is paused, and the work
+/// that blocks runs inline on the runtime's thread. So the debounce of the diagnostics takes
+/// exactly its time on the paused clock, however long the analysis takes.
+#[tokio::test(start_paused = true)]
+async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
+    let workspace = WorkspaceServer::with_runtime(tokio::runtime::Handle::current());
+    let factory = ServerFactory::default()
+        .with_workspace(Arc::new(workspace))
+        .with_blocking(Blocking::Inline);
+    let mut fs = MemoryFileSystem::default();
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+    server.open_document("select 1;\n").await?;
+    wait_for_diagnostics(&mut receiver, 0).await?;
+
+    // The second change comes within the debounce of the first, which it replaces.
+    let start = tokio::time::Instant::now();
+    server.replace_document(1, "select 2;\n").await?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    server.replace_document(2, "select 3;\n").await?;
+    let published = loop {
+        match receiver.next().await {
+            Some(ServerNotification::PublishDiagnostics(params)) => break params,
+            Some(_) => {}
+            None => bail!("the server closed the connection"),
+        }
+    };
+    assert_eq!(published.version, Some(2));
+    assert_eq!(start.elapsed(), Duration::from_millis(500));
 
     server.shutdown().await?;
     reader.abort();
@@ -1251,6 +1330,112 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
         bail!("expected semantic tokens, got {in_range:?}");
     };
     assert_eq!(in_range.data, tokens.data);
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The checks against the database run when a document is opened or saved. A change reuses what
+/// they found for the statements it didn't touch, without querying the database.
+#[cfg(not(target_os = "windows"))]
+#[pgls_test_utils::db_test]
+async fn database_checks_run_on_open_and_save(test_db: PgPool) -> Result<()> {
+    const FUNCTION: &str = "create function public.f1() returns int language plpgsql as $$
+begin
+    return missing_var;
+end;
+$$;
+";
+    let is_plpgsql_check = |diagnostic: &lsp::Diagnostic| {
+        matches!(
+            &diagnostic.code,
+            Some(lsp::NumberOrString::String(code)) if code == "plpgsql_check"
+        )
+    };
+
+    test_db
+        .execute("create extension if not exists plpgsql_check;")
+        .await
+        .expect("Failed to setup test database");
+
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    server.open_document(FUNCTION).await?;
+    assert!(
+        wait_for_diagnostics(&mut receiver, 0)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_plpgsql_check),
+        "opening the document checks it against the database"
+    );
+
+    // From now on, checking against the database finds nothing.
+    test_db
+        .execute("drop extension plpgsql_check;")
+        .await
+        .expect("Failed to drop plpgsql_check");
+
+    drain_notifications(&mut receiver);
+    server
+        .replace_document(1, format!("select 1;\n{FUNCTION}"))
+        .await?;
+    let changed = wait_for_diagnostics(&mut receiver, 1).await?;
+    let reused: Vec<_> = changed
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| is_plpgsql_check(diagnostic))
+        .collect();
+    assert_eq!(reused.len(), 1, "a change reuses the result: {changed:?}");
+    // The statement moved down by a line.
+    assert_eq!(reused[0].range.start.line, 3, "{reused:?}");
+
+    drain_notifications(&mut receiver);
+    server.save_document().await?;
+    assert!(
+        !wait_for_diagnostics(&mut receiver, 1)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_plpgsql_check),
+        "saving the document checks it against the database again"
+    );
 
     server.shutdown().await?;
     reader.abort();
@@ -2537,9 +2722,13 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
         .await
         .expect("Failed to add column to table");
 
-    // Invalidate the schema cache (all = false for current connection only)
+    // Invalidate the schemas loaded from database connections
     server
-        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
+        .request::<_, ()>(
+            "pgls/invalidate_schema_cache",
+            "_invalidate_cache",
+            serde_json::json!({ "scope": "connections" }),
+        )
         .await?;
 
     // Get completions after invalidating cache - 'name' should NOW be present

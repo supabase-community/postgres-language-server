@@ -3,6 +3,7 @@
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 mod adapters;
+mod blocking;
 mod capabilities;
 mod diagnostics;
 mod documents;
@@ -11,4 +12,5 @@ mod server;
 mod session;
 mod utils;
 
+pub use crate::blocking::Blocking;
 pub use crate::server::{LSPServer, ServerConnection, ServerFactory};

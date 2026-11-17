@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use crate::{
     adapters::{PositionEncoding, get_cursor_position, to_lsp},
+    blocking::Blocking,
     session::Session,
 };
 use anyhow::{Result, anyhow};
-use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyse::Applicability;
 use pgls_line_index::{LineIndex, changed_range};
 use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
@@ -16,9 +17,11 @@ use tower_lsp_server::ls_types::{
 use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
-    FixFileParams,
+    FixFileParams, SUPPRESSION_ACTION_CATEGORY,
 };
-use pgls_workspace::workspace::GetFileContentParams;
+use pgls_workspace::workspace::{
+    GetFileContentParams, InvalidateSchemaCacheParams, SchemaCacheScope,
+};
 use std::sync::Arc;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
@@ -335,10 +338,16 @@ pub async fn execute_command(
             // The statement runs on a blocking thread, so that the server keeps handling requests,
             // `$/cancelRequest` included. That drops this future, and the guard then cancels the
             // statement in the database.
-            let guard = CancelStatementOnDrop(Some((session.workspace.clone(), params.clone())));
+            let guard = CancelStatementOnDrop(Some((
+                session.workspace.clone(),
+                params.clone(),
+                session.blocking,
+            )));
             let workspace = session.workspace.clone();
-            let result =
-                tokio::task::spawn_blocking(move || workspace.execute_statement(params)).await??;
+            let result = session
+                .blocking
+                .spawn(move || workspace.execute_statement(params))
+                .await??;
             guard.disarm();
 
             /*
@@ -374,7 +383,11 @@ pub async fn execute_command(
             Ok(Some(value))
         }
         "pgls.invalidateSchemaCache" => {
-            session.workspace.invalidate_schema_cache(true)?;
+            session
+                .workspace
+                .invalidate_schema_cache(InvalidateSchemaCacheParams {
+                    scope: SchemaCacheScope::All,
+                })?;
             // Everything that depends on the schema is out of date.
             session.update_all_diagnostics().await;
 
@@ -390,7 +403,7 @@ pub async fn execute_command(
 }
 
 /// Cancels the execution of a statement when dropped, unless disarmed.
-struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams)>);
+struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams, Blocking)>);
 
 impl CancelStatementOnDrop {
     fn disarm(mut self) {
@@ -400,8 +413,8 @@ impl CancelStatementOnDrop {
 
 impl Drop for CancelStatementOnDrop {
     fn drop(&mut self) {
-        if let Some((workspace, params)) = self.0.take() {
-            tokio::task::spawn_blocking(move || {
+        if let Some((workspace, params, blocking)) = self.0.take() {
+            blocking.spawn(move || {
                 if let Err(err) = workspace.cancel_statement_execution(params) {
                     tracing::warn!("Could not cancel the statement execution: {err}");
                 }

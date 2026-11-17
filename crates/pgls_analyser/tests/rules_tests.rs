@@ -7,6 +7,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use dir_test::{Fixture, dir_test};
 use pgls_analyse::{AnalysisFilter, Applicability, RuleFilter};
 use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterDiagnostic, LinterOptions,
@@ -89,12 +90,14 @@ fn builtin_snapshot(mut snapshot: pgls_catalog::Snapshot) -> pgls_catalog::Snaps
     snapshot
 }
 
-pgls_test_macros::gen_tests! {
-  "tests/specs/**/*.sql",
-  crate::rule_test
-}
-
-fn rule_test(full_path: &'static str, _: &str, _: &str) {
+#[dir_test(
+    dir: "$CARGO_MANIFEST_DIR/tests/specs",
+    glob: "**/*.sql",
+    loader: read_to_string,
+)]
+#[dir_test_attr(#[allow(non_snake_case)])]
+fn rule_test(fixture: Fixture<std::io::Result<String>>) {
+    let full_path = fixture.path();
     let input_file = Path::new(full_path);
 
     let (group, rule, fname) = parse_test_path(input_file);
@@ -105,8 +108,11 @@ fn rule_test(full_path: &'static str, _: &str, _: &str) {
         ..Default::default()
     };
 
-    let query =
-        read_to_string(full_path).unwrap_or_else(|_| panic!("Failed to read file: {full_path} "));
+    let query = fixture
+        .content()
+        .as_ref()
+        .unwrap_or_else(|_| panic!("Failed to read file: {full_path} "))
+        .clone();
 
     let options = LinterOptions::default();
     let analyser = Analyser::new(AnalyserConfig {
@@ -214,16 +220,18 @@ fn analyse(
         }
     }
 
-    analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: catalog,
-        search_path: vec!["public".into()],
-        typecheck: is_typecheck,
-        sections: migration_sections(query),
-        source: Some(query.to_owned()),
-        ..Default::default()
-    })
+    analyser
+        .analyse(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: catalog,
+            search_path: vec!["public".into()],
+            typecheck: is_typecheck,
+            sections: migration_sections(query),
+            source: Some(query.to_owned()),
+            ..Default::default()
+        })
+        .diagnostics
 }
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must

@@ -4,7 +4,7 @@ use parking_lot::Mutex;
 use pgls_lexer::convert_to_positional_params;
 use pgls_query_ext::{
     diagnostics::*,
-    function_body::{EmbeddedStatement, function_body_location, sql_function_body},
+    function_body::{EmbeddedStatement, Language, function_body_location, sql_function_body},
 };
 use regex::Regex;
 use rustc_hash::FxHashMap;
@@ -155,9 +155,7 @@ impl PgQueryStore {
             _ => return None,
         };
 
-        let language = pgls_query_ext::utils::find_option_value(create_fn, "language")?;
-
-        if language != "plpgsql" {
+        if Language::of(create_fn) != Some(Language::PlPgSql) {
             return None;
         }
 
