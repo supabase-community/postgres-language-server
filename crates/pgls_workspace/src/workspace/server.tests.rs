@@ -6978,3 +6978,261 @@ async fn test_cancelled_formatting_stops() {
     assert!(result.statements.is_empty());
     assert_eq!(format().formatted, "select 1;\n".repeat(200));
 }
+
+/// A workspace without a database connection, with `configuration` on top of the defaults.
+fn get_offline_test_workspace(configuration: &str) -> (WorkspaceServer, ProjectKey) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(r#"{ "db": { "disableConnection": true } }"#)
+            .unwrap(),
+    );
+    conf.merge_with(serde_json::from_str::<PartialConfiguration>(configuration).unwrap());
+    get_test_workspace(Some(conf)).expect("Unable to create test workspace")
+}
+
+/// The categories of the syntax errors and the `banDropColumn` diagnostics of a file with
+/// `content`, which is opened if it isn't yet.
+fn diagnostic_categories(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    path: &str,
+    content: &str,
+) -> Vec<&'static str> {
+    let path = PgLSPath::new(path);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .unwrap();
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec!["safety/banDropColumn".parse().unwrap()],
+            skip: vec![],
+        })
+        .unwrap()
+        .diagnostics
+        .iter()
+        .filter_map(|diagnostic| diagnostic.category().map(|category| category.name()))
+        .collect()
+}
+
+#[test]
+fn linter_ignore_and_include_select_the_linted_files() {
+    let drop_column = "alter table users drop column name;";
+    let (workspace, project_key) =
+        get_offline_test_workspace(r#"{ "linter": { "ignore": ["legacy.sql"] } }"#);
+    assert_eq!(
+        diagnostic_categories(&workspace, project_key, "legacy.sql", drop_column),
+        Vec::<&str>::new()
+    );
+    assert_eq!(
+        diagnostic_categories(&workspace, project_key, "new.sql", drop_column),
+        vec!["lint/banDropColumn"]
+    );
+    // Syntax errors are still reported in a file that isn't linted.
+    assert!(
+        !diagnostic_categories(&workspace, project_key, "old/legacy.sql", "seect 1;").is_empty()
+    );
+
+    let (workspace, project_key) =
+        get_offline_test_workspace(r#"{ "linter": { "include": ["linted.sql"] } }"#);
+    assert_eq!(
+        diagnostic_categories(&workspace, project_key, "other.sql", drop_column),
+        Vec::<&str>::new()
+    );
+    assert_eq!(
+        diagnostic_categories(&workspace, project_key, "linted.sql", drop_column),
+        vec!["lint/banDropColumn"]
+    );
+}
+
+#[test]
+fn format_ignore_and_include_select_the_formatted_files() {
+    let format = |configuration: &str, path: &str| {
+        let (workspace, project_key) = get_offline_test_workspace(configuration);
+        let path = PgLSPath::new(path);
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: "SELECT   1;".into(),
+                version: 1,
+            })
+            .unwrap();
+        workspace
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key,
+                path,
+                range: None,
+            })
+            .unwrap()
+            .statements
+            .len()
+    };
+    let ignore = r#"{ "format": { "enabled": true, "ignore": ["ignored.sql"] } }"#;
+    assert_eq!(format(ignore, "ignored.sql"), 0);
+    assert_eq!(format(ignore, "formatted.sql"), 1);
+    let include = r#"{ "format": { "enabled": true, "include": ["formatted.sql"] } }"#;
+    assert_eq!(format(include, "other.sql"), 0);
+    assert_eq!(format(include, "formatted.sql"), 1);
+}
+
+#[test]
+fn files_larger_than_max_size_are_not_checked() {
+    let (workspace, project_key) = get_offline_test_workspace(r#"{ "files": { "maxSize": 40 } }"#);
+    let path = PgLSPath::new("test.sql");
+    let large = "alter table users drop column name;\nselect 1;";
+    let small = "alter table users drop column name;";
+    let pull = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec!["safety/banDropColumn".parse().unwrap()],
+                skip: vec![],
+            })
+            .unwrap()
+            .diagnostics
+    };
+    let change = |content: &str, version: i32| {
+        workspace
+            .change_file(crate::workspace::ChangeFileParams {
+                project_key,
+                path: path.clone(),
+                version,
+                content: content.into(),
+            })
+            .unwrap();
+    };
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: large.into(),
+            version: 1,
+        })
+        .unwrap();
+    let diagnostics = pull();
+    assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+    assert_eq!(
+        diagnostics[0].category().map(|category| category.name()),
+        Some("internalError/fs")
+    );
+    assert_eq!(diagnostics[0].severity(), Severity::Warning);
+    // The file keeps its content, but has no statements.
+    assert_eq!(
+        workspace
+            .get_file_content(crate::workspace::GetFileContentParams {
+                project_key,
+                path: path.clone(),
+            })
+            .unwrap(),
+        large
+    );
+    assert!(
+        workspace
+            .get_completions(crate::features::completions::GetCompletionsParams {
+                project_key,
+                path: path.clone(),
+                position: TextSize::from(7),
+            })
+            .unwrap()
+            .items
+            .is_empty()
+    );
+
+    change(small, 2);
+    let categories: Vec<_> = pull()
+        .iter()
+        .filter_map(|diagnostic| diagnostic.category().map(|category| category.name()))
+        .collect();
+    assert_eq!(categories, vec!["lint/banDropColumn"]);
+
+    change(large, 3);
+    let categories: Vec<_> = pull()
+        .iter()
+        .filter_map(|diagnostic| diagnostic.category().map(|category| category.name()))
+        .collect();
+    assert_eq!(categories, vec!["internalError/fs"]);
+
+    // A larger limit applies to the open file.
+    workspace
+        .update_settings(UpdateSettingsParams {
+            project_key,
+            configuration: serde_json::from_str(r#"{ "files": { "maxSize": 1000 } }"#).unwrap(),
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: false,
+        })
+        .unwrap();
+    let categories: Vec<_> = pull()
+        .iter()
+        .filter_map(|diagnostic| diagnostic.category().map(|category| category.name()))
+        .collect();
+    assert_eq!(categories, vec!["lint/banDropColumn"]);
+}
+
+#[test]
+fn max_diagnostics_keeps_the_most_severe_diagnostics() {
+    let (workspace, project_key) = get_offline_test_workspace("{}");
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "alter table a drop column x;\nalter table b drop column y;\nseect 1;\nalter table c drop column z;".into(),
+            version: 1,
+        })
+        .unwrap();
+    let pull = |max_diagnostics| {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics,
+                only: vec!["safety/banDropColumn".parse().unwrap()],
+                skip: vec![],
+            })
+            .unwrap()
+    };
+
+    let all = pull(100);
+    assert_eq!(all.diagnostics.len(), 4);
+    assert_eq!(all.skipped_diagnostics, 0);
+
+    let first = |severity| {
+        all.diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.severity() == severity)
+            .map(|diagnostic| (severity, diagnostic.location().span))
+            .unwrap()
+    };
+    let limited = pull(2);
+    assert_eq!(limited.skipped_diagnostics, 2);
+    let kept: Vec<_> = limited
+        .diagnostics
+        .iter()
+        .map(|diagnostic| (diagnostic.severity(), diagnostic.location().span))
+        .collect();
+    assert_eq!(
+        kept,
+        vec![first(Severity::Error), first(Severity::Warning)],
+        "{all:?}"
+    );
+
+    let none = pull(0);
+    assert!(none.diagnostics.is_empty());
+    assert_eq!(none.skipped_diagnostics, 4);
+}

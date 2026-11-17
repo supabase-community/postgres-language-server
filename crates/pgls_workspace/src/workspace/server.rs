@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    num::NonZeroU64,
     panic::RefUnwindSafe,
     path::{Path, PathBuf},
     sync::{
@@ -65,7 +66,10 @@ use crate::{
         on_hover::{OnHoverParams, OnHoverResult},
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
-    settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
+    settings::{
+        DEFAULT_FILE_SIZE_LIMIT, Settings, WorkspaceSettings, WorkspaceSettingsHandle,
+        WorkspaceSettingsHandleMut,
+    },
     workspace::WithCSTMapper,
 };
 
@@ -343,23 +347,28 @@ impl WorkspaceServer {
         settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
     }
 
-    /// The migration tool of the settings that apply to the file, and the version of the settings
-    /// it is from.
-    fn migration_tool(&self, project_key: ProjectKey, path: &Path) -> (u64, MigrationTool) {
+    /// The migration tool and `files.maxSize` of the settings that apply to the file, and the
+    /// version of the settings they are from.
+    fn file_settings(
+        &self,
+        project_key: ProjectKey,
+        path: &Path,
+    ) -> (u64, MigrationTool, NonZeroU64) {
         // Read before the settings, so that settings that change in between make the version
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
-        let tool = self
-            .workspaces()
-            .settings_for(project_key, path)
+        let workspaces = self.workspaces();
+        let settings = workspaces.settings_for(project_key, path);
+        let tool = settings
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
             .unwrap_or_default();
-        (settings_version, tool)
+        let max_size = settings.map_or(DEFAULT_FILE_SIZE_LIMIT, |settings| settings.files.max_size);
+        (settings_version, tool, max_size)
     }
 
-    /// Gives the open document at `path` the migration tool of the current settings of
-    /// `project_key`, if the settings changed since it got its tool or the file belongs to
+    /// Gives the open document at `path` the migration tool and size limit of the current settings
+    /// of `project_key`, if the settings changed since it got its tool or the file belongs to
     /// another project now, e.g. after the workspace folders changed. Requests call it before
     /// they take the document or lock the settings, since it locks the documents for writing.
     ///
@@ -374,12 +383,12 @@ impl WorkspaceServer {
             return;
         }
         // Neither the documents nor the settings are locked while taking the other lock.
-        let (settings_version, migration_tool) = self.migration_tool(project_key, path);
+        let (settings_version, migration_tool, max_size) = self.file_settings(project_key, path);
         let mut documents = self.documents.write();
         // A request that still works with the previous tool keeps its copy, and stops since it
         // is outdated.
         let stale = documents.get_mut(path).map(|doc| {
-            Arc::make_mut(doc).set_migration_tool(project_key, settings_version, migration_tool)
+            Arc::make_mut(doc).set_settings(project_key, settings_version, migration_tool, max_size)
         });
         drop(documents);
         if let Some(stale) = stale {
@@ -789,14 +798,15 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        let (settings_version, migration_tool) =
-            self.migration_tool(params.project_key, &params.path);
+        let (settings_version, migration_tool, max_size) =
+            self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
         documents.entry(params.path.clone()).or_insert_with(|| {
             Arc::new(Document::open(
                 params.project_key,
                 settings_version,
                 migration_tool,
+                max_size,
                 params.content,
                 params.version,
             ))
@@ -825,8 +835,8 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         // Read before locking the documents, see `refresh_migration_tool`.
-        let (settings_version, migration_tool) =
-            self.migration_tool(params.project_key, &params.path);
+        let (settings_version, migration_tool, max_size) =
+            self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
 
         let (stale_tool, stale) = match documents.entry(params.path.clone()) {
@@ -836,7 +846,12 @@ impl Workspace for WorkspaceServer {
                 let doc = Arc::make_mut(entry.get_mut());
                 let stale_tool = (!doc.has_migration_tool_of(params.project_key, settings_version))
                     .then(|| {
-                        doc.set_migration_tool(params.project_key, settings_version, migration_tool)
+                        doc.set_settings(
+                            params.project_key,
+                            settings_version,
+                            migration_tool,
+                            max_size,
+                        )
                     });
                 (
                     stale_tool,
@@ -848,6 +863,7 @@ impl Workspace for WorkspaceServer {
                     params.project_key,
                     settings_version,
                     migration_tool,
+                    max_size,
                     params.content,
                     params.version,
                 )));
@@ -1298,10 +1314,10 @@ impl Workspace for WorkspaceServer {
 
         self.charge_document_caches(&params.path, doc);
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
-        Ok(PullDiagnosticsResult {
+        Ok(PullDiagnosticsResult::limited(
             diagnostics,
-            skipped_diagnostics: 0,
-        })
+            params.max_diagnostics,
+        ))
     }
 
     #[cfg(feature = "db")]
@@ -1358,19 +1374,13 @@ impl Workspace for WorkspaceServer {
         };
         let splinter_diagnostics = splinter_diagnostics?;
 
-        let total = splinter_diagnostics.len();
-        let max = params.max_diagnostics as usize;
-        let diagnostics: Vec<SDiagnostic> = splinter_diagnostics
-            .into_iter()
-            .take(max)
-            .map(SDiagnostic::new)
-            .collect();
-        let skipped = total.saturating_sub(max) as u32;
-
-        Ok(PullDiagnosticsResult {
-            diagnostics,
-            skipped_diagnostics: skipped,
-        })
+        Ok(PullDiagnosticsResult::limited(
+            splinter_diagnostics
+                .into_iter()
+                .map(SDiagnostic::new)
+                .collect(),
+            params.max_diagnostics,
+        ))
     }
 
     #[ignored_path(project=params.project_key, path=&params.path)]
@@ -1388,7 +1398,7 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        if !settings.formatter.enabled {
+        if !settings.formatter.is_formatted(params.path.as_path()) {
             return Ok(PullFormattingResult::default());
         }
 

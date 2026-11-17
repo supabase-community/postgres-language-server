@@ -9,7 +9,6 @@ use pgls_fs::PgLSPath;
 use pgls_workspace::WorkspaceError;
 use pgls_workspace::features::code_actions::FixFileParams;
 use std::path::Path;
-use std::sync::atomic::Ordering;
 
 /// Lints a single file and returns a [FileResult]
 pub(crate) fn check_file<'ctx>(
@@ -74,13 +73,13 @@ pub(crate) fn check_with_guard<'ctx>(
                 }
             }
 
-            let max_diagnostics = ctx.remaining_diagnostics.load(Ordering::Relaxed);
-
+            // Every diagnostic counts towards the errors, warnings and fixes of the summary and the
+            // exit code. The printer stops printing them at `--max-diagnostics`.
             let pull_diagnostics_result = workspace_file
                 .guard()
                 .pull_file_diagnostics(
                     RuleCategoriesBuilder::default().all().build(),
-                    max_diagnostics,
+                    u32::MAX,
                     only.clone(),
                     skip.clone(),
                 )

@@ -21,7 +21,7 @@ pub(crate) fn process(
     let diagnostics = match &config.mode {
         ExecutionMode::Check {
             fix, only, skip, ..
-        } => check(session, config, payload, *fix, only.clone(), skip.clone()),
+        } => check(session, payload, *fix, only.clone(), skip.clone()),
         ExecutionMode::Format { .. } => format(session, payload),
     }?;
     Ok(Report::new(diagnostics, start.elapsed(), 0, None))
@@ -31,7 +31,6 @@ pub(crate) fn process(
 /// `--fix`. Returns the diagnostics, which it prints to stderr.
 fn check(
     session: &mut CliSession,
-    config: &ExecutionConfig,
     payload: StdinPayload,
     fix: Option<FixFileMode>,
     only: Vec<RuleSelector>,
@@ -70,9 +69,10 @@ fn check(
                 content = fixed.code;
             }
         }
+        // Every diagnostic is printed.
         let result = guard.pull_file_diagnostics(
             RuleCategoriesBuilder::default().all().build(),
-            config.max_diagnostics(),
+            u32::MAX,
             only,
             skip,
         )?;

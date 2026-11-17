@@ -17,7 +17,8 @@ pub const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct FilesConfiguration {
     /// The maximum allowed size for source code files in bytes. Files above
-    /// this limit will be ignored for performance reasons. Defaults to 1 MiB
+    /// this limit are not checked for performance reasons, and get a warning
+    /// that says so. Defaults to 1 MiB
     #[partial(bpaf(long("files-max-size"), argument("NUMBER")))]
     pub max_size: NonZeroU64,
 

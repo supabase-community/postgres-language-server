@@ -128,7 +128,7 @@ Lints your database schema.
 - **`    --vcs-default-branch`**=_`BRANCH`_ &mdash; 
   The main branch of the project
 - **`    --files-max-size`**=_`NUMBER`_ &mdash; 
-  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+  The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 1 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
 - **`    --after`**=_`VERSION`_ &mdash; 
@@ -255,7 +255,7 @@ Runs everything to the requested files.
 - **`    --vcs-default-branch`**=_`BRANCH`_ &mdash; 
   The main branch of the project
 - **`    --files-max-size`**=_`NUMBER`_ &mdash; 
-  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+  The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 1 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
 - **`    --after`**=_`VERSION`_ &mdash; 
@@ -408,7 +408,7 @@ Formats the requested files.
 - **`    --vcs-default-branch`**=_`BRANCH`_ &mdash; 
   The main branch of the project
 - **`    --files-max-size`**=_`NUMBER`_ &mdash; 
-  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+  The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 1 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
 - **`    --after`**=_`VERSION`_ &mdash; 

@@ -115,7 +115,7 @@ export interface PartialFilesConfiguration {
    */
   include?: StringSet;
   /**
-   * The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+   * The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 1 MiB
    */
   maxSize?: number;
 }
