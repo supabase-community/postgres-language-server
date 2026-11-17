@@ -21,8 +21,9 @@ fn emit_set_arg(e: &mut EventEmitter, node: &Node) {
     }
 
     // For all other cases (numbers, actual string literals with special chars, etc.),
-    // use the normal emission
-    emit_node(e, node);
+    // use the normal emission. The value is a constant, so an interval is `interval '1' hour`.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1848
+    super::emit_constant(e, node);
 }
 
 /// Emit a dot-separated variable name, quoting parts that need it

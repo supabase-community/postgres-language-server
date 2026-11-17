@@ -18,6 +18,31 @@ pub(super) fn emit_type_name(e: &mut EventEmitter, n: &TypeName) {
     emit_with_comments_at(e, n.location, |e| emit_type_name_tokens(e, n));
 }
 
+/// `type 'literal'`, a constant of a type. An interval's fields follow the literal: `interval '1'
+/// hour`, but `interval(3) '1'`.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17417
+pub(super) fn emit_typed_literal(e: &mut EventEmitter, n: &TypeName, literal: &str) {
+    let name_parts = collect_name_parts(n);
+    let fields_follow = is_interval_type(&name_parts)
+        && n.typmods
+            .first()
+            .and_then(extract_interval_typmod_int)
+            .is_some_and(|range| range != INTERVAL_FULL_RANGE);
+
+    if fields_follow {
+        emit_with_comments_at(e, n.location, |e| {
+            emit_normalized_type_name(e, &name_parts);
+            e.space();
+            emit_single_quoted_str(e, literal);
+            emit_interval_type_modifiers(e, n);
+        });
+    } else {
+        emit_type_name(e, n);
+        e.space();
+        emit_single_quoted_str(e, literal);
+    }
+}
+
 fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
     e.group_start();
 
