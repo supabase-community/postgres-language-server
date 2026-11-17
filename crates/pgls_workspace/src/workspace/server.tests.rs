@@ -5821,6 +5821,11 @@ fn migrations_after_is_a_number_or_a_string() {
         assert!(ignored(after, "/repo/migrations/02_b.sql"));
         assert!(!ignored(after, "/repo/migrations/0003_c.sql"));
     }
+    // A version of zeros only is 0.
+    for after in ["0", r#""0000""#, "5"] {
+        assert!(ignored(after, "/repo/migrations/0000_init.sql"));
+    }
+    assert!(!ignored("0", "/repo/migrations/0001_a.sql"));
     assert!(!ignored(r#""v1""#, "/repo/migrations/0001_a.sql"));
 }
 
