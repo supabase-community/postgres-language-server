@@ -244,7 +244,7 @@ impl<'a> Splitter<'a> {
             };
 
             self.errors.push(SplitError {
-                msg: format!("Expected {kind:#?}"),
+                msg: format!("Expected {}", kind.description()),
                 token,
             });
         };
