@@ -270,12 +270,13 @@ impl Cursor<'_> {
         }
     }
 
-    // see: https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L227
+    // see: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L211-L213
+    // non_newline		[^\n\r]
     // comment			("--"{non_newline}*)
     pub(crate) fn line_comment(&mut self) -> TokenKind {
         self.bump();
 
-        self.eat_while(|c| c != '\n');
+        self.eat_while(|c| !is_line_ending(c));
         TokenKind::LineComment
     }
 
@@ -752,6 +753,27 @@ mod tests {
 -- foooooooooooo bar buzz
 "#);
         assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn line_comment_ends_at_a_lone_carriage_return() {
+        assert_debug_snapshot!(lex("select 1 -- c\rfrom t;\r\n-- d\r\n"), @r#"
+        [
+            "select" @ Ident,
+            " " @ Space,
+            "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+            " " @ Space,
+            "-- c" @ LineComment,
+            "\r" @ LineEnding { count: 1 },
+            "from" @ Ident,
+            " " @ Space,
+            "t" @ Ident,
+            ";" @ Semi,
+            "\r\n" @ LineEnding { count: 1 },
+            "-- d" @ LineComment,
+            "\r\n" @ LineEnding { count: 1 },
+        ]
+        "#);
     }
 
     #[test]
