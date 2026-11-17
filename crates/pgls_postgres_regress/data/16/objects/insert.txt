@@ -1,0 +1,13 @@
+function	f	public	mlparted5abrtrig_func	1
+relation	p	public	mlparted	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	p	public	mlparted1	b	pg_catalog.int4	a	pg_catalog.int4	c	pg_catalog.text
+relation	p	public	mlparted_def	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted11	b	pg_catalog.int4	a	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted12	b	pg_catalog.int4	a	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted2	b	pg_catalog.int4	a	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted3	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted4	b	pg_catalog.int4	a	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted_def1	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted_def2	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	mlparted_defd	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+schema	public

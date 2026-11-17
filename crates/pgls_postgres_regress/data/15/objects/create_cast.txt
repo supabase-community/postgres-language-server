@@ -1,0 +1,6 @@
+function	f	public	casttestfunc	1
+function	f	public	casttesttype_in	1
+function	f	public	casttesttype_out	1
+function	f	public	int4_casttesttype	1
+schema	public
+type	b	public	casttesttype

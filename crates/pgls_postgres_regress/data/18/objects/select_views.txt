@@ -1,0 +1,11 @@
+function	f	public	f_leak	1
+relation	r	public	credit_card	cid	pg_catalog.int4	cnum	pg_catalog.text	climit	pg_catalog.int4
+relation	r	public	credit_usage	cid	pg_catalog.int4	ymd	pg_catalog.date	usage	pg_catalog.int4
+relation	r	public	customer	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text
+relation	v	public	my_credit_card_normal	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text	cnum	pg_catalog.text	climit	pg_catalog.int4
+relation	v	public	my_credit_card_secure	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text	cnum	pg_catalog.text	climit	pg_catalog.int4
+relation	v	public	my_credit_card_usage_normal	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text	cnum	pg_catalog.text	climit	pg_catalog.int4	ymd	pg_catalog.date	usage	pg_catalog.int4
+relation	v	public	my_credit_card_usage_secure	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text	cnum	pg_catalog.text	climit	pg_catalog.int4	ymd	pg_catalog.date	usage	pg_catalog.int4
+relation	v	public	my_property_normal	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text
+relation	v	public	my_property_secure	cid	pg_catalog.int4	name	pg_catalog.text	tel	pg_catalog.text	passwd	pg_catalog.text
+schema	public

@@ -1,0 +1,18 @@
+function	f	public	arraymultirange	3
+function	f	public	arrayrange	2
+function	f	public	cashmultirange	3
+function	f	public	cashrange	2
+function	f	public	inoutparam_succeed	1
+function	f	public	outparam2_succeed	1
+function	f	public	outparam_succeed	1
+function	f	public	outparam_succeed2	1
+function	f	public	range_add_bounds	1
+function	f	public	rangetypes_sql	1
+function	f	public	table_succeed	1
+relation	r	public	numrange_test	nr	pg_catalog.numrange
+relation	r	public	test_range_excl	room	pg_catalog.int4range	speaker	pg_catalog.int4range	during	pg_catalog.tsrange
+relation	r	public	test_range_gist	ir	pg_catalog.int4range
+relation	r	public	test_range_spgist	ir	pg_catalog.int4range
+schema	public
+type	r	public	arrayrange
+type	r	public	cashrange

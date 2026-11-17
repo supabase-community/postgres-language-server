@@ -1,0 +1,2 @@
+relation	r	public	bit_defaults	b1	pg_catalog.bit	b2	pg_catalog.bit	b3	pg_catalog.varbit	b4	pg_catalog.varbit
+schema	public

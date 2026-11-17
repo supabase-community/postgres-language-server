@@ -1,0 +1,2 @@
+relation	r	public	money_data	m	pg_catalog.money
+schema	public

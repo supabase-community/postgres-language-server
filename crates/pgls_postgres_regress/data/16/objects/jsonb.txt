@@ -1,0 +1,3 @@
+relation	r	public	testjsonb	j	pg_catalog.jsonb
+schema	public
+type	c	public	jbpop

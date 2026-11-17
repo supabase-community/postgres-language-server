@@ -1,0 +1,17 @@
+function	f	public	doubledecrement	1
+relation	r	public	domain_test	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	domcontest	col1	public.con
+relation	r	public	domnotnull
+relation	r	public	domtab	col1	pg_catalog.int4
+relation	r	public	thethings	stuff	public.things
+relation	v	public	domview	col1	public.dom
+schema	public
+type	d	public	con
+type	d	public	dom
+type	d	public	mynums
+type	d	public	mynums2
+type	d	public	orderedpair
+type	d	public	pos_int
+type	d	public	str_domain
+type	d	public	str_domain2
+type	d	public	things

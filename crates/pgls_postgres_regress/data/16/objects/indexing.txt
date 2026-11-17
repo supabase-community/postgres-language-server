@@ -1,0 +1,25 @@
+relation	p	public	covidxpart	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	idxpart	a	pg_catalog.int4
+relation	p	public	idxpart2	a	pg_catalog.int4
+relation	p	public	idxpart3	a	pg_catalog.int4
+relation	p	public	idxpart_another	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	regress_indexing	pk	a	pg_catalog.int4
+relation	p	regress_indexing	pk5	a	pg_catalog.int4
+relation	r	public	covidxpart1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	covidxpart2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	covidxpart3	b	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	covidxpart4	b	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	idxpart1	a	pg_catalog.int4
+relation	r	public	idxpart21	a	pg_catalog.int4
+relation	r	public	idxpart22	a	pg_catalog.int4
+relation	r	public	idxpart31	a	pg_catalog.int4
+relation	r	public	idxpart32	a	pg_catalog.int4
+relation	r	public	idxpart_another_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	regress_indexing	pk1	a	pg_catalog.int4
+relation	r	regress_indexing	pk2	a	pg_catalog.int4
+relation	r	regress_indexing	pk3	a	pg_catalog.int4
+relation	r	regress_indexing	pk4	a	pg_catalog.int4
+relation	r	regress_indexing	pk51	a	pg_catalog.int4
+relation	r	regress_indexing	pk52	a	pg_catalog.int4
+schema	public
+schema	regress_indexing

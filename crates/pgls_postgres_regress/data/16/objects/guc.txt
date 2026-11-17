@@ -1,0 +1,4 @@
+function	f	public	func_with_bad_set	1
+function	f	public	myfunc	1
+function	f	public	report_guc	1
+schema	public

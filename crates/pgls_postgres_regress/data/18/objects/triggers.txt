@@ -1,0 +1,22 @@
+function	f	public	city_delete	1
+function	f	public	city_insert	1
+function	f	public	city_update	1
+function	f	public	dummy_update_func	1
+function	f	public	f1_times_10	1
+function	f	public	no_op_trig_fn	1
+function	f	public	parted_trigfunc2	1
+function	f	public	serializable_update_trig	1
+function	f	public	trig_nothing	1
+function	f	public	trigger_func	1
+function	f	public	trigger_notice	1
+function	f	public	trigger_parted_trigfunc	1
+function	f	public	trigtest	1
+function	f	public	view_trigger	1
+relation	p	public	trigger_parted	a	pg_catalog.int4
+relation	p	public	trigger_parted_p1	a	pg_catalog.int4
+relation	p	public	trigger_parted_p2	a	pg_catalog.int4
+relation	r	public	log_table	tstamp	pg_catalog.timestamp
+relation	r	public	main_table	a	pg_catalog.int4
+relation	r	public	trigger_parted_p1_1	a	pg_catalog.int4
+relation	r	public	trigger_parted_p2_2	a	pg_catalog.int4
+schema	public

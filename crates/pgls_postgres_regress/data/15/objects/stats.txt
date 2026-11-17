@@ -1,0 +1,2 @@
+relation	r	public	stats_test_tab1	a	pg_catalog.int4
+schema	public

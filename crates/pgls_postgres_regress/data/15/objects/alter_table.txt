@@ -1,0 +1,58 @@
+function	f	public	boo	1
+function	f	public	non_strict	1
+function	f	public	test_strict	1
+function	f	public	xtrig	1
+relation	p	public	alter_idx_rename_test_parted_2	a	pg_catalog.int4
+relation	p	public	attach_parted	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	bar1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	part_7	a	pg_catalog.int4	b	pg_catalog.bpchar
+relation	p	public	target_parted	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	attach_parted_part1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	bar2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	comment_test	id	pg_catalog.text	positive_col	pg_catalog.int8	indexed_col	pg_catalog.text
+relation	r	public	comment_test_child	id	pg_catalog.text
+relation	r	public	defpart_attach_test_2	a	pg_catalog.int4
+relation	r	public	depth0	c	pg_catalog.text
+relation	r	public	depth1	c	pg_catalog.text
+relation	r	public	depth2	c	pg_catalog.text
+relation	r	public	dropcolumn	b	pg_catalog.int4
+relation	r	public	dropcolumnanother	b	pg_catalog.int4	e	pg_catalog.int4	d	pg_catalog.int4
+relation	r	public	dropcolumnchild	b	pg_catalog.int4	e	pg_catalog.int4
+relation	r	public	dropcolumnexists
+relation	r	public	inh_test	a	pg_catalog.int4	b	pg_catalog.bpchar
+relation	r	public	not_owned_by_me	a	pg_catalog.int4	b	pg_catalog.bpchar
+relation	r	public	nv_child_2009	d	pg_catalog.date
+relation	r	public	nv_child_2010	d	pg_catalog.date
+relation	r	public	nv_child_2011	d	pg_catalog.date
+relation	r	public	nv_parent	d	pg_catalog.date
+relation	r	public	part_7_a_null	a	pg_catalog.int4	b	pg_catalog.bpchar
+relation	r	public	part_rp	a	pg_catalog.int4
+relation	r	public	part_rp100	a	pg_catalog.int4
+relation	r	public	partr_def2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	perm_part_child	a	pg_catalog.int4
+relation	r	public	renamecolumn	d	pg_catalog.int4	w	pg_catalog.int4
+relation	r	public	renamecolumnanother	d	pg_catalog.int4	a	pg_catalog.int4	c	pg_catalog.int4	w	pg_catalog.int4
+relation	r	public	renamecolumnchild	d	pg_catalog.int4	a	pg_catalog.int4	w	pg_catalog.int4
+relation	r	public	skip_wal_skip_rewrite_index	c	pg_catalog.varchar
+relation	r	public	test_inh_check	a	pg_catalog.numeric	b	pg_catalog.numeric
+relation	r	public	test_inh_check_child	a	pg_catalog.numeric	b	pg_catalog.numeric
+relation	r	public	test_storage	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	test_tbl3	c	public.test_type3
+relation	r	public	test_type_diff	f1	pg_catalog.int4	f2	pg_catalog.int8
+relation	r	public	test_type_diff2	int_two	pg_catalog.int2	int_four	pg_catalog.int8	int_eight	pg_catalog.int8
+relation	r	public	test_type_diff2_c1	int_four	pg_catalog.int8	int_eight	pg_catalog.int8	int_two	pg_catalog.int2
+relation	r	public	test_type_diff2_c2	int_eight	pg_catalog.int8	int_two	pg_catalog.int2	int_four	pg_catalog.int8
+relation	r	public	test_type_diff2_c3	int_two	pg_catalog.int2	int_four	pg_catalog.int8	int_eight	pg_catalog.int8
+relation	r	public	test_type_diff_c	f1	pg_catalog.int4	extra	pg_catalog.int2	f2	pg_catalog.int8
+relation	r	public	tt0	x	pg_catalog.int4	y	pg_catalog.numeric
+relation	r	public	tt1	x	pg_catalog.int4	y	pg_catalog.int8
+relation	r	public	tt2	x	pg_catalog.int4	y	pg_catalog.numeric
+relation	r	public	tt3	y	pg_catalog.numeric	x	pg_catalog.int4
+relation	r	public	tt4	x	pg_catalog.int4
+relation	r	public	tt5	x	pg_catalog.int4	y	pg_catalog.numeric	z	pg_catalog.int4
+relation	r	public	tt6	x	pg_catalog.int4	y	pg_catalog.numeric
+relation	r	public	tt7	x	pg_catalog.int4	y	pg_catalog.numeric
+schema	public
+type	c	public	test_type3
+type	c	public	tt_t0
+type	c	public	tt_t1

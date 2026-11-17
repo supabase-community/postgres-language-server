@@ -1,0 +1,2 @@
+relation	r	public	lseg_tbl	s	pg_catalog.lseg
+schema	public

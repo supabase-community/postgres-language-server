@@ -1,0 +1,7 @@
+relation	r	public	a_star	class	pg_catalog.bpchar	aa	pg_catalog.int4	a	pg_catalog.text
+relation	r	public	b_star	class	pg_catalog.bpchar	aa	pg_catalog.int4	bb	pg_catalog.text	a	pg_catalog.text
+relation	r	public	c_star	class	pg_catalog.bpchar	aa	pg_catalog.int4	cc	pg_catalog.name	a	pg_catalog.text
+relation	r	public	d_star	class	pg_catalog.bpchar	aa	pg_catalog.int4	bb	pg_catalog.text	cc	pg_catalog.name	dd	pg_catalog.float8	a	pg_catalog.text
+relation	r	public	e_star	class	pg_catalog.bpchar	aa	pg_catalog.int4	cc	pg_catalog.name	ee	pg_catalog.int2	e	pg_catalog.int4	a	pg_catalog.text
+relation	r	public	f_star	class	pg_catalog.bpchar	aa	pg_catalog.int4	cc	pg_catalog.name	ee	pg_catalog.int2	ff	pg_catalog.polygon	f	pg_catalog.int4	e	pg_catalog.int4	a	pg_catalog.text
+schema	public

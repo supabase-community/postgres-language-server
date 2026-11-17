@@ -1,0 +1,3 @@
+relation	r	public	test_is_json	js	pg_catalog.text
+schema	public
+type	d	public	sqljson_char2
