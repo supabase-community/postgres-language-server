@@ -24,9 +24,7 @@ pgls_treesitter.workspace         = true
 pgls_treesitter_grammar.workspace = true
 regex                             = "1.11.1"
 sqlx.workspace                    = true
-tokio.workspace                   = true
 tree-sitter.workspace             = true
-uuid                              = { version = "1.18.1", features = ["v4"] }
 
 [dev-dependencies]
 criterion.workspace       = true
@@ -40,5 +38,17 @@ name    = "error_rewriting"
 [lib]
 doctest = false
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "warn"
+
+[lints.clippy]
+allow_attributes_without_reason = "allow" # not clean yet
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "warn"
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "warn"

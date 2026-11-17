@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;

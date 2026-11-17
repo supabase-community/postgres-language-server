@@ -16,7 +16,6 @@ regex              = { workspace = true }
 anyhow                     = { workspace = true }
 bpaf                     = { workspace = true, features = ["docgen"] }
 schemars       = { workspace = true }
-serde       = { workspace = true }
 serde_json       = { workspace = true }
 pulldown-cmark          = "0.12.2"
 
@@ -36,5 +35,21 @@ pgls_statement_splitter = { workspace = true }
 pgls_console = { workspace = true }
 convert_case = { workspace = true }
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "warn"
+
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro = "deny"
+expect_used = "allow" # a developer tool, which may fail on unexpected input
+indexing_slicing = "allow" # a developer tool, which may fail on unexpected input
+self_named_module_files = "warn"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "allow" # a developer tool, which may fail on unexpected input
+
+[package.metadata.cargo-shear]
+# Only enables bpaf's `docgen` feature for `pgls_cli`'s parser, which renders the CLI reference.
+ignored = ["bpaf"]

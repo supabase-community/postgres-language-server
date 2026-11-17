@@ -30,5 +30,17 @@ doctest = false
 [features]
 schema = ["dep:schemars"]
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "warn"
+
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "allow" # not clean yet
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "allow" # not clean yet

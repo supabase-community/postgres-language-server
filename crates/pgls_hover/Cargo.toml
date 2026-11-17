@@ -14,28 +14,34 @@ version              = "0.0.0"
 [dependencies]
 humansize                         = { version = "2.1.3" }
 pgls_catalog                      = { workspace = true }
-pgls_query.workspace              = true
 pgls_resolve                      = { workspace = true }
 pgls_text_size.workspace          = true
 pgls_treesitter.workspace         = true
 pgls_treesitter_grammar.workspace = true
-schemars                          = { workspace = true, optional = true }
-serde                             = { workspace = true, features = ["derive"] }
-serde_json                        = { workspace = true }
 tracing                           = { workspace = true }
 tree-sitter.workspace             = true
 
 [dev-dependencies]
 insta                     = { version = "1.42.1" }
 pgls_catalog              = { workspace = true, features = ["db"] }
+pgls_query.workspace      = true
 pgls_test_utils.workspace = true
 sqlx.workspace            = true
 
 [lib]
 doctest = false
 
-[features]
-schema = ["dep:schemars"]
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
 
-[lints]
-workspace = true
+[lints.clippy]
+allow_attributes_without_reason = "allow" # not clean yet
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "warn"
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "warn"

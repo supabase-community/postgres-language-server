@@ -11,14 +11,12 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
-pgls_analyse.workspace                = true
-pgls_catalog                          = { workspace = true }
-pgls_diagnostics.workspace            = true
-pgls_diagnostics_categories.workspace = true
-rustc-hash.workspace                  = true
-serde.workspace                       = true
-serde_json.workspace                  = true
-sqlx.workspace                        = true
+pgls_analyse.workspace     = true
+pgls_catalog               = { workspace = true }
+pgls_diagnostics.workspace = true
+rustc-hash.workspace       = true
+serde.workspace            = true
+sqlx.workspace             = true
 
 [dev-dependencies]
 insta.workspace           = true
@@ -32,5 +30,17 @@ ureq = "2.9"
 [lib]
 doctest = false
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
+
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+expect_used                     = "allow" # not clean yet
+indexing_slicing                = "warn"
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "allow" # not clean yet

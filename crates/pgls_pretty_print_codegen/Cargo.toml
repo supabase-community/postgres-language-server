@@ -24,5 +24,17 @@ ureq = "2.9"
 [lib]
 proc-macro = true
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
+
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+expect_used                     = "allow" # a proc macro runs on our own code at build time
+indexing_slicing                = "allow" # a proc macro runs on our own code at build time
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "allow" # a proc macro runs on our own code at build time

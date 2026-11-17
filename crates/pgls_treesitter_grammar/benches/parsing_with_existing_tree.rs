@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use tree_sitter::{InputEdit, Point, StreamingIterator};
 

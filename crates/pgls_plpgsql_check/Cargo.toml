@@ -23,12 +23,21 @@ regex            = { workspace = true }
 serde            = { workspace = true }
 serde_json       = { workspace = true }
 sqlx             = { workspace = true }
-tree-sitter      = { workspace = true }
 
 [dev-dependencies]
 pgls_test_utils = { workspace = true }
 
-[lib]
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
 
-[lints]
-workspace = true
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "warn"
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "warn"

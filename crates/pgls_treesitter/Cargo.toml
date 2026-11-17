@@ -14,7 +14,6 @@ version              = "0.0.0"
 doctest = false
 
 [dependencies]
-clap                              = { version = "4.5.23", features = ["derive"] }
 pgls_catalog                      = { workspace = true }
 pgls_text_size.workspace          = true
 pgls_treesitter_grammar.workspace = true
@@ -23,5 +22,17 @@ tree-sitter.workspace             = true
 [dev-dependencies]
 pgls_test_utils.workspace = true
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
+
+[lints.clippy]
+allow_attributes_without_reason = "allow" # not clean yet
+dbg_macro                       = "deny"
+expect_used                     = "allow" # not clean yet
+indexing_slicing                = "allow" # not clean yet
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "allow" # not clean yet

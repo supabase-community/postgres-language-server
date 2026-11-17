@@ -1,6 +1,13 @@
 //! Measures how much memory the schema snapshot of a database takes, which the workspace keeps per
 //! database connection. Needs the test database (`DATABASE_URL`). Run with
 //! `cargo test -p pgls_workspace --release --test snapshot_memory -- --ignored --nocapture`.
+
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 

@@ -27,5 +27,17 @@ name              = "serde"
 path              = "tests/serde.rs"
 required-features = ["serde"]
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "warn"
+
+[lints.clippy]
+allow_attributes_without_reason = "allow" # not clean yet
+dbg_macro                       = "deny"
+expect_used                     = "allow" # not clean yet
+indexing_slicing                = "warn"
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "allow" # not clean yet

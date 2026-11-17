@@ -2,6 +2,13 @@
 //! parses back to the same AST, that formatting the output again changes nothing, and that it has
 //! no stray whitespace.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 mod common;
 
 use std::panic::{AssertUnwindSafe, catch_unwind};

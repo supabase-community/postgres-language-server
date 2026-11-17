@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::Diagnostic;
 use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier, check_sql};

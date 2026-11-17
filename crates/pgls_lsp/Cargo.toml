@@ -36,12 +36,23 @@ tracing                  = { workspace = true, features = ["attributes"] }
 pgls_test_utils = { workspace = true }
 sqlx            = { workspace = true }
 tempfile        = "3.15.0"
-test-log        = { workspace = true }
 tokio           = { workspace = true, features = ["macros"] }
 tower           = { version = "0.5.3", features = ["timeout", "util"] }
 
 [lib]
 doctest = false
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
+
+[lints.clippy]
+allow_attributes_without_reason = "allow" # not clean yet
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "warn"
+self_named_module_files         = "allow" # not clean yet
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "warn"

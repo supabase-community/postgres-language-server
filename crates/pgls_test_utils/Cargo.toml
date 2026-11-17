@@ -16,10 +16,8 @@ name = "tree_print"
 path = "src/bin/tree_print.rs"
 
 [dependencies]
-anyhow = "1.0.81"
 clap   = { version = "4.5.23", features = ["derive"] }
 dotenv = "0.15.0"
-uuid   = { version = "1.11.0", features = ["v4"] }
 
 pgls_test_macros.workspace        = true
 pgls_treesitter_grammar.workspace = true
@@ -27,5 +25,17 @@ sqlx.workspace                    = true
 tokio.workspace                   = true
 tree-sitter.workspace             = true
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "warn"
+
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+expect_used                     = "allow" # test infrastructure, which fails on unexpected data
+indexing_slicing                = "allow" # test infrastructure, which fails on unexpected data
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "allow" # test infrastructure, which fails on unexpected data

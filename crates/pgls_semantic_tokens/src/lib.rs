@@ -7,10 +7,6 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
-// Semantic tokens read the client's SQL and the database's catalog, so a panic on unexpected
-// input takes down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};

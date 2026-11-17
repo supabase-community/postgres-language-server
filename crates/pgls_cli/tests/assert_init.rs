@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use assert_cmd::cargo_bin_cmd;
 use insta::assert_snapshot;
 use serde_json::Value;

@@ -1,6 +1,13 @@
 //! A formatter only changes whitespace, line breaks, keyword case and redundant quoting. These
 //! cases come from formatting a pg_dump-style schema, where it used to rewrite what was written.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use pgls_pretty_print::{FormatConfig, format_statement};
 
 fn format(sql: &str) -> String {

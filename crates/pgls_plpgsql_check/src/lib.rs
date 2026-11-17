@@ -1,7 +1,3 @@
-// plpgsql_check reports on functions from the client, so a panic on unexpected output takes down
-// the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;

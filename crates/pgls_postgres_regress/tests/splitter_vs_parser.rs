@@ -14,6 +14,13 @@
 //! The mismatches are snapshotted per version, so a new one fails the test and a fixed one shows
 //! up as a diff.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use pgls_postgres_regress::{File, Version};
 use pgls_query::protobuf::Token;
 use pgls_text_size::{TextRange, TextSize};

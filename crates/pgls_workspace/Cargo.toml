@@ -37,9 +37,7 @@ pgls_query_ext                    = { workspace = true }
 pgls_semantic_tokens              = { workspace = true }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
-pgls_text_edit.workspace          = true
 pgls_text_size.workspace          = true
-pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
 pgls_walk                         = { workspace = true }
 pgls_workspace_macros             = { workspace = true }
@@ -97,5 +95,21 @@ tokio           = { workspace = true }
 [lib]
 doctest = false
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
+
+[lints.clippy]
+allow_attributes_without_reason = "allow" # not clean yet
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "warn"
+self_named_module_files         = "allow" # not clean yet
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "warn"
+
+[package.metadata.cargo-shear]
+# The `db` feature builds pglinter for the database checks, which don't run it yet (#1197).
+ignored = ["pgls_pglinter"]

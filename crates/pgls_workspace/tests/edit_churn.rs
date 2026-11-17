@@ -6,6 +6,13 @@
 //! tree-sitter's, so the test runs on its own in this file. `CHURN_STATEMENTS` and `CHURN_EDITS`
 //! change the size of the workload.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 mod common;
 
 use common::{count_native_allocations, current, mib};

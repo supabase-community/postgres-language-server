@@ -5,6 +5,12 @@
 //! Note: These tests require the pglinter extension to be installed, which is only
 //! available on Linux (via Docker) and macOS. Windows CI does not have pglinter.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
 #![cfg(not(target_os = "windows"))]
 
 use pgls_analyse::AnalysisFilter;

@@ -13,20 +13,28 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_catalog               = { workspace = true }
 pgls_console.workspace     = true
 pgls_diagnostics.workspace = true
-pgls_query.workspace       = true
-rustc-hash                 = { workspace = true }
 
-enumflags2.workspace     = true
-pgls_text_size.workspace = true
-schemars                 = { workspace = true, optional = true }
-serde                    = { workspace = true, features = ["derive"], optional = true }
+enumflags2.workspace = true
+schemars             = { workspace = true, optional = true }
+serde                = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 schema = ["dep:schemars"]
 serde  = ["dep:serde"]
 
-[lints]
-workspace = true
+# The workspace lints of the root `Cargo.toml`, with the ones this crate isn't clean for
+# allowed. Switch back to `lints.workspace = true` once it is.
+[lints.rust]
+unreachable_pub = "allow" # not clean yet
+
+[lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+expect_used                     = "warn"
+indexing_slicing                = "warn"
+self_named_module_files         = "warn"
+todo                            = "deny"
+unimplemented                   = "deny"
+unwrap_used                     = "warn"

@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 use pgls_analyse::AnalysisFilter;
 use pgls_configuration::StringSet;
 use pgls_configuration::rules::RuleConfiguration;

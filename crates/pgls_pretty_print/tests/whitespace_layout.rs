@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data"
+)]
+
 mod common;
 
 use pgls_pretty_print::{CommaStyle, FormatConfig, Layout, format_statement};
