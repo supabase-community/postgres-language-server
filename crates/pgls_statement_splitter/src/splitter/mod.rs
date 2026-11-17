@@ -3,19 +3,19 @@ mod data;
 mod ddl;
 mod dml;
 
-pub use common::source;
+pub(crate) use common::source;
 
 use pgls_lexer::{KeywordCategory, Lexed, SyntaxKind};
 use pgls_text_size::TextRange;
 
 use crate::splitter::common::{ReachedEOFException, SplitterResult};
 
-pub struct SplitResult {
+pub(crate) struct SplitResult {
     pub ranges: Vec<TextRange>,
     pub errors: Vec<SplitError>,
 }
 
-pub static TRIVIA_TOKENS: &[SyntaxKind] = &[
+pub(crate) static TRIVIA_TOKENS: &[SyntaxKind] = &[
     SyntaxKind::SPACE,
     SyntaxKind::TAB,
     SyntaxKind::VERTICAL_TAB,
@@ -44,7 +44,7 @@ pub struct SplitError {
 }
 
 #[derive(Debug)]
-pub struct Splitter<'a> {
+pub(crate) struct Splitter<'a> {
     lexed: &'a Lexed<'a>,
     current_pos: usize,
     stmt_ranges: Vec<(usize, usize)>,
@@ -57,14 +57,14 @@ pub struct Splitter<'a> {
 impl<'a> Splitter<'a> {
     /// Splits on `;` and on structural statement starts only. A blank line is
     /// not a statement boundary.
-    pub fn new(lexed: &'a Lexed<'a>) -> Self {
+    pub(crate) fn new(lexed: &'a Lexed<'a>) -> Self {
         Self::with_options(lexed, false)
     }
 
     /// Additionally treats a blank line as a statement boundary. Used as a
     /// recovery pass on fragments PostgreSQL cannot parse, where there is no
     /// better signal to resynchronize on.
-    pub fn with_blank_line_boundaries(lexed: &'a Lexed<'a>) -> Self {
+    pub(crate) fn with_blank_line_boundaries(lexed: &'a Lexed<'a>) -> Self {
         Self::with_options(lexed, true)
     }
 
@@ -79,7 +79,7 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    pub fn finish(self) -> SplitResult {
+    pub(crate) fn finish(self) -> SplitResult {
         let ranges = self
             .stmt_ranges
             .iter()
@@ -96,7 +96,7 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    pub fn start_stmt(&mut self) {
+    pub(crate) fn start_stmt(&mut self) {
         assert!(
             self.current_stmt_start.is_none(),
             "cannot start statement within statement",
@@ -104,13 +104,15 @@ impl<'a> Splitter<'a> {
         self.current_stmt_start = Some(self.current_pos);
     }
 
-    pub fn close_stmt(&mut self) {
+    pub(crate) fn close_stmt(&mut self) {
         assert!(
             self.current_stmt_start.is_some(),
             "Must start statement before closing it."
         );
 
-        let start_token_pos = self.current_stmt_start.unwrap();
+        let Some(start_token_pos) = self.current_stmt_start else {
+            return;
+        };
 
         assert!(
             self.current_pos > start_token_pos,
@@ -119,10 +121,11 @@ impl<'a> Splitter<'a> {
             start_token_pos
         );
 
+        // The start token isn't trivia, so this finds it at the latest.
         let end_token_pos = (0..self.current_pos)
             .rev()
             .find(|&idx| !self.is_trivia(idx))
-            .unwrap();
+            .unwrap_or(start_token_pos);
 
         self.stmt_ranges.push((start_token_pos, end_token_pos));
 
@@ -154,9 +157,11 @@ impl<'a> Splitter<'a> {
             return Err(ReachedEOFException);
         }
 
-        let pos = (self.current_pos + 1..self.lexed.len())
-            .find(|&idx| !self.is_trivia(idx))
-            .unwrap();
+        // The EOF token isn't trivia, so this finds it at the latest.
+        let Some(pos) = (self.current_pos + 1..self.lexed.len()).find(|&idx| !self.is_trivia(idx))
+        else {
+            return Err(ReachedEOFException);
+        };
 
         self.current_pos = pos;
         Ok(self.lexed.kind(pos))

@@ -66,8 +66,8 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
                 }
             }
             e.space();
-            if !n.args.is_empty() {
-                emit_node(e, &n.args[0]);
+            if let Some(first) = n.args.first() {
+                emit_node(e, first);
             }
             close_call_arguments(e);
         }
@@ -80,10 +80,10 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // Names with special characters need quoting
             emit_identifier_maybe_quoted(e, &n.name);
 
-            if !n.args.is_empty() {
+            if let Some(first) = n.args.first() {
                 e.token(TokenKind::COMMA);
                 e.line(LineType::SoftOrSpace);
-                emit_node(e, &n.args[0]);
+                emit_node(e, first);
             }
 
             close_call_arguments(e);
@@ -92,32 +92,32 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // XMLROOT
             e.token(TokenKind::XMLROOT_KW);
             open_call_arguments(e);
-            if !n.args.is_empty() {
-                emit_node(e, &n.args[0]);
+            if let Some(first) = n.args.first() {
+                emit_node(e, first);
             }
             e.token(TokenKind::COMMA);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::VERSION_KW);
             e.space();
-            if n.args.len() > 1 {
+            if let Some(version) = n.args.get(1) {
                 // Check if version is NULL (NO VALUE)
-                if let Some(pgls_query::NodeEnum::AConst(ac)) = n.args[1].node.as_ref() {
+                if let Some(pgls_query::NodeEnum::AConst(ac)) = version.node.as_ref() {
                     if ac.isnull {
                         e.token(TokenKind::NO_KW);
                         e.space();
                         e.token(TokenKind::VALUE_KW);
                     } else {
-                        emit_node(e, &n.args[1]);
+                        emit_node(e, version);
                     }
                 } else {
-                    emit_node(e, &n.args[1]);
+                    emit_node(e, version);
                 }
             }
             // Handle standalone option if there's a 3rd arg
             // XML_STANDALONE_YES = 0, XML_STANDALONE_NO = 1,
             // XML_STANDALONE_NO_VALUE = 2, XML_STANDALONE_OMITTED = 3
-            if n.args.len() > 2
-                && let Some(pgls_query::NodeEnum::AConst(ac)) = n.args[2].node.as_ref()
+            if let Some(standalone) = n.args.get(2)
+                && let Some(pgls_query::NodeEnum::AConst(ac)) = standalone.node.as_ref()
                 && let Some(pgls_query::protobuf::a_const::Val::Ival(ref ival)) = ac.val
             {
                 match ival.ival {
@@ -174,8 +174,8 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
         }
         8 => {
             // IS DOCUMENT - expr IS DOCUMENT
-            if !n.args.is_empty() {
-                emit_node(e, &n.args[0]);
+            if let Some(first) = n.args.first() {
+                emit_node(e, first);
             }
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::IS_KW);
@@ -186,8 +186,8 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             // Unknown/Undefined XML operation - emit XMLCOMMENT as fallback
             e.token(TokenKind::IDENT("xmlcomment".to_string()));
             open_call_arguments(e);
-            if !n.args.is_empty() {
-                emit_node(e, &n.args[0]);
+            if let Some(first) = n.args.first() {
+                emit_node(e, first);
             }
             close_call_arguments(e);
         }
