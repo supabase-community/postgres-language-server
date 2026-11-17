@@ -56,6 +56,8 @@ fn collect_name_parts(n: &TypeName) -> Vec<String> {
         .collect()
 }
 
+/// `name%TYPE` starts with a `type_function_name` too, like the other type names.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L8596
 fn emit_pct_type(e: &mut EventEmitter, name_parts: &[String]) {
     if name_parts.is_empty() {
         // Fallback for unexpected AST shape; emit bare %TYPE
@@ -64,7 +66,16 @@ fn emit_pct_type(e: &mut EventEmitter, name_parts: &[String]) {
         return;
     }
 
-    emit_dot_separated_name(e, name_parts);
+    for (index, part) in name_parts.iter().enumerate() {
+        if index > 0 {
+            e.token(TokenKind::DOT);
+        }
+        if index == 0 && needs_quoting_as_function_or_type_name(part) {
+            emit_identifier(e, part);
+        } else {
+            emit_identifier_maybe_quoted(e, part);
+        }
+    }
     e.token(TokenKind::IDENT("%".to_string()));
     e.token(TokenKind::TYPE_KW);
 }
@@ -118,29 +129,20 @@ fn emit_keyword_sequence(e: &mut EventEmitter, words: &[&'static str]) {
     }
 }
 
-fn emit_dot_separated_name(e: &mut EventEmitter, name_parts: &[String]) {
-    for (index, part) in name_parts.iter().enumerate() {
-        if index > 0 {
-            e.token(TokenKind::DOT);
-        }
-        emit_identifier_maybe_quoted(e, part);
-    }
-}
-
+/// The first part of a type name is a `type_function_name`, so a column name keyword needs quotes
+/// there even when the name is qualified: unquoted, `"numeric"` would be the keyword, which means
+/// `pg_catalog.numeric`, and `json.b` doesn't parse. The other parts are labels.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L14550
 fn emit_dot_separated_type_name(e: &mut EventEmitter, name_parts: &[String]) {
-    if let [name] = name_parts
-        && needs_quoting_as_function_or_type_name(name)
-    {
-        // Unquoted, `"numeric"` would be the keyword, which means `pg_catalog.numeric`.
-        emit_identifier(e, name);
-        return;
-    }
-
     for (index, part) in name_parts.iter().enumerate() {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
-        emit_type_identifier_maybe_quoted(e, part);
+        if index == 0 && needs_quoting_as_function_or_type_name(part) {
+            emit_identifier(e, part);
+        } else {
+            emit_type_identifier_maybe_quoted(e, part);
+        }
     }
 }
 
