@@ -4,8 +4,8 @@
 
 mod diagnostics;
 
-pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
+pub use diagnostics::{PlPgSqlCheckAdvices, PlPgSqlCheckDiagnostic};
 use pgls_query::protobuf::CreateFunctionStmt;
 use pgls_query_ext::{
     function_body::Language,

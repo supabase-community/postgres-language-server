@@ -199,9 +199,10 @@ impl SnapshotManager {
         // Load the snapshot from the database. A failure leaves the slot empty, to retry after a
         // connection failure right away and after a failing query once its backoff ends.
         let pool_clone = pool.clone();
+        let database = self.runtime.database();
         let loaded = match self
             .runtime
-            .run(async move { Snapshot::load(&pool_clone).await })?
+            .run(async move { database.snapshot(&pool_clone).await })?
         {
             Ok(snapshot) => Arc::new(snapshot),
             Err(err) => {

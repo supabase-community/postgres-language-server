@@ -13,19 +13,21 @@ use std::{
 
 use tokio::runtime::{Handle, Runtime};
 
+use super::database::{DatabaseQueries, Postgres};
 use crate::{WORKER_STACK_SIZE_BYTES, WorkspaceError};
 
 /// How often [`WorkspaceRuntime::run_until`] checks whether to stop.
 const STOP_CHECK_PERIOD: Duration = Duration::from_millis(20);
 
-/// Where the workspace runs its async work, the database queries, and the clock of its backoffs
-/// and idle timeouts.
+/// Where the workspace runs its async work, what answers its database queries, and the clock of
+/// its backoffs and idle timeouts.
 ///
 /// The workspace's methods are sync and called from threads that may not belong to a runtime, so
 /// the futures run on this runtime while the calling thread waits for them. See
 /// https://greptime.com/blogs/2023-03-09-bridging-async-and-sync-rust for details.
 pub(crate) struct WorkspaceRuntime {
     executor: Executor,
+    database: Arc<dyn DatabaseQueries>,
     clock: Clock,
 }
 
@@ -43,24 +45,29 @@ impl Default for WorkspaceRuntime {
 }
 
 impl WorkspaceRuntime {
-    /// A runtime of the workspace's own, created when the first future runs, and the system clock.
+    /// A runtime of the workspace's own, created when the first future runs, the queries sent to
+    /// Postgres, and the system clock.
     pub(crate) fn new() -> Self {
         Self {
             executor: Executor::Own(OwnRuntime::default()),
+            database: Arc::new(Postgres),
             clock: Clock::system(),
         }
     }
 
-    /// The runtime of `handle` and its clock. Paused, the clock only moves when the runtime
-    /// advances it.
+    /// The runtime of `handle` and its clock, and the queries answered by `database`. Paused, the
+    /// clock only moves when the runtime advances it.
     ///
-    /// The workspace waits for its futures on the thread that calls it, so it must not be called
-    /// from a thread that drives a current-thread runtime of `handle`, but e.g. from its
-    /// `spawn_blocking` threads, as the language server does.
-    pub(crate) fn with_handle(handle: Handle) -> Self {
+    /// The futures run on the thread that calls the workspace, in the context of the runtime. So
+    /// they may wait for the runtime's timers and IO only if that thread doesn't drive a
+    /// current-thread runtime of `handle`: called from its `spawn_blocking` threads, as the
+    /// language server does by default, they can. A fake `database` that answers at once works
+    /// either way, also with the blocking work inline on the runtime's thread.
+    pub(crate) fn with_handle(handle: Handle, database: Arc<dyn DatabaseQueries>) -> Self {
         Self {
             clock: Clock::of(&handle),
             executor: Executor::Injected(handle),
+            database,
         }
     }
 
@@ -69,11 +76,9 @@ impl WorkspaceRuntime {
         &self.clock
     }
 
-    fn handle(&self) -> Result<&Handle, WorkspaceError> {
-        match &self.executor {
-            Executor::Own(own) => own.get().map(Runtime::handle),
-            Executor::Injected(handle) => Ok(handle),
-        }
+    /// What answers the database queries.
+    pub(crate) fn database(&self) -> Arc<dyn DatabaseQueries> {
+        Arc::clone(&self.database)
     }
 
     /// Runs `future` on the runtime and waits for it on this thread.
@@ -82,8 +87,18 @@ impl WorkspaceRuntime {
         F: Future<Output = R> + Send + 'static,
         R: Send + 'static,
     {
-        let handle = self.handle()?;
-        futures::executor::block_on(async { handle.spawn(future).await.map_err(|e| e.into()) })
+        match &self.executor {
+            Executor::Own(own) => {
+                let handle = own.get()?.handle();
+                futures::executor::block_on(async {
+                    handle.spawn(future).await.map_err(|e| e.into())
+                })
+            }
+            Executor::Injected(handle) => {
+                let _context = handle.enter();
+                Ok(futures::executor::block_on(future))
+            }
+        }
     }
 
     /// Like [`Self::run`], for a future that winds down once `stop` is set, like one that stops
@@ -103,7 +118,16 @@ impl WorkspaceRuntime {
         if should_stop() {
             stop.store(true, Ordering::Relaxed);
         }
-        let handle = self.handle()?;
+        let handle = match &self.executor {
+            Executor::Own(own) => own.get()?.handle(),
+            Executor::Injected(_) => {
+                let result = self.run(future);
+                if should_stop() {
+                    stop.store(true, Ordering::Relaxed);
+                }
+                return result;
+            }
+        };
         let (done, finished) = mpsc::channel::<()>();
         let task = handle.spawn(async move {
             let result = future.await;
@@ -246,6 +270,7 @@ mod tests {
 
     use super::{OwnRuntime, WorkspaceRuntime};
     use crate::WorkspaceError;
+    use crate::workspace::server::database::Postgres;
 
     /// Recurses until the frames below `base` take at least `target` bytes of stack, and returns
     /// how many they take.
@@ -352,7 +377,8 @@ mod tests {
             .start_paused(true)
             .build()
             .unwrap();
-        let runtime = WorkspaceRuntime::with_handle(test_runtime.handle().clone());
+        let runtime =
+            WorkspaceRuntime::with_handle(test_runtime.handle().clone(), Arc::new(Postgres));
         assert_eq!(runtime.clock().elapsed(), Duration::ZERO);
 
         test_runtime.block_on(async {
