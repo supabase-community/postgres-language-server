@@ -214,16 +214,26 @@ fn analyse(
         }
     }
 
-    analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: catalog,
-        search_path: vec!["public".into()],
-        typecheck: is_typecheck,
-        sections: migration_sections(query),
-        source: Some(query.to_owned()),
-        ..Default::default()
-    })
+    // Like the workspace, the fixes that don't keep the SQL valid are not used.
+    analyser
+        .run(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: catalog,
+            search_path: vec!["public".into()],
+            typecheck: is_typecheck,
+            sections: migration_sections(query),
+            ..Default::default()
+        })
+        .into_iter()
+        .map(|diagnostic| {
+            let fix = diagnostic
+                .get_fix()
+                .filter(|fix| fix.keeps_sql_valid(query, &split.ranges))
+                .cloned();
+            diagnostic.maybe_fix(fix)
+        })
+        .collect()
 }
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must

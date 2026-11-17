@@ -287,7 +287,7 @@ impl Document {
 
     /// The text that is split and parsed: the content, with the placeholders of the migration
     /// tool if it replaces parts of it. It has the length of the content.
-    fn text(&self) -> &str {
+    pub(crate) fn text(&self) -> &str {
         text(&self.content, self.migration_script.preprocessed.as_ref())
     }
 

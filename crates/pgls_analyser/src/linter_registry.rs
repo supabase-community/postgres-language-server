@@ -59,6 +59,8 @@ pub struct RegistryLinterRule {
     pub applies_to: AppliesTo,
     /// The group of the rule.
     pub group: &'static str,
+    /// The name of the rule.
+    pub name: &'static str,
     /// Whether the rule reads the names looked up through the search path.
     pub reads_lookups: bool,
 }
@@ -121,6 +123,7 @@ impl RegistryLinterRule {
             run: run::<R>,
             applies_to: R::METADATA.applies_to,
             group: <R::Group as RuleGroup>::NAME,
+            name: R::METADATA.name,
             reads_lookups: R::READS_LOOKUPS,
         }
     }

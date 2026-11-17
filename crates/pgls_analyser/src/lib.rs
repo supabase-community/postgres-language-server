@@ -1,6 +1,7 @@
 use std::{
     ops::Range,
     sync::{Arc, LazyLock},
+    time::{Duration, Instant},
 };
 
 use pgls_analyse::{AnalysisFilter, AppliesTo, MetadataRegistry};
@@ -51,6 +52,9 @@ pub struct Analyser<'a> {
 
     /// Holds all rules
     registry: LinterRuleRegistry,
+
+    /// Whether to time the rules, see [`Analyser::with_rule_timings`].
+    rule_timings: bool,
 }
 
 /// The group of the typecheck rules. They only run when typechecking is enabled and a database
@@ -92,10 +96,6 @@ pub struct AnalyserParams {
     pub sections: Vec<Unit>,
     /// Whether the rules of the typecheck group run.
     pub typecheck: bool,
-    /// The text of the file. Fixes that also edit after their statement, like the `COMMIT` that
-    /// `banUncommittedTransaction` adds after the last statement, are checked on it. Without
-    /// it, such fixes are kept unchecked.
-    pub source: Option<String>,
 }
 
 /// What the analyser learned about a single statement.
@@ -121,6 +121,18 @@ pub struct AnalysisResult {
     /// Set when [`Analyser::analyse_until`] stopped before the end, so the result covers only
     /// the statements before that.
     pub stopped: bool,
+    /// How often each rule that ran was called and how long it took, in the order the rules
+    /// ran. Empty unless the analyser was built [`Analyser::with_rule_timings`].
+    pub rule_timings: Vec<RuleTiming>,
+}
+
+/// How often a rule was called in one analysis, and how long the calls took in all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RuleTiming {
+    pub group: &'static str,
+    pub rule: &'static str,
+    pub calls: u32,
+    pub duration: Duration,
 }
 
 pub struct AnalyserConfig<'a> {
@@ -137,7 +149,15 @@ impl<'a> Analyser<'a> {
         Self {
             registry,
             options: conf.options,
+            rule_timings: false,
         }
+    }
+
+    /// Times each call of a rule, see [`AnalysisResult::rule_timings`]. It reads the clock twice
+    /// per rule and statement, and [`Instant::now`] panics on `wasm32-unknown-unknown`.
+    pub fn with_rule_timings(mut self) -> Self {
+        self.rule_timings = true;
+        self
     }
 
     pub fn run(&self, params: AnalyserParams) -> Vec<LinterDiagnostic> {
@@ -161,16 +181,6 @@ impl<'a> Analyser<'a> {
         let mut result = AnalysisResult::default();
 
         let mut typecheck = params.typecheck && params.catalog_base.is_some();
-        let file = params.source.as_deref().map(|source| FileText {
-            source,
-            stmts: params
-                .stmts
-                .iter()
-                .filter(|stmt| stmt.function.is_none())
-                .map(|stmt| stmt.range)
-                .chain(params.unparsable.iter().map(|stmt| stmt.range))
-                .collect(),
-        });
 
         let rules: Vec<_> = self
             .registry
@@ -184,6 +194,17 @@ impl<'a> Analyser<'a> {
             })
             .collect();
         let collect_lookups = rules.iter().any(|rule| rule.reads_lookups);
+        if self.rule_timings {
+            result.rule_timings = rules
+                .iter()
+                .map(|rule| RuleTiming {
+                    group: rule.group,
+                    rule: rule.name,
+                    calls: 0,
+                    duration: Duration::ZERO,
+                })
+                .collect();
+        }
 
         let mut statement_ranges: Vec<TextRange> = params
             .stmts
@@ -239,11 +260,18 @@ impl<'a> Analyser<'a> {
                 analysed_file_context: file_context,
                 statement: &statement,
             };
-            for rule in &rules {
+            for (index, rule) in rules.iter().enumerate() {
                 if rule.group == TYPECHECK_GROUP && !typecheck_statement {
                     continue;
                 }
+                let started = self.rule_timings.then(Instant::now);
                 let diagnostics = (rule.run)(&rule_params);
+                if let Some(started) = started
+                    && let Some(timing) = result.rule_timings.get_mut(index)
+                {
+                    timing.calls = timing.calls.saturating_add(1);
+                    timing.duration += started.elapsed();
+                }
                 has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
                 has_duplicate_assignments |= diagnostics.iter().any(|diagnostic| {
                     diagnostic.category
@@ -256,19 +284,17 @@ impl<'a> Analyser<'a> {
                         debug_assert_in_statement(&diagnostic, stmt);
                         diagnostic.move_into_file(stmt);
                         // Fixes are computed on the statement text, which only matches the source
-                        // if it is the source as written. A fix must keep the statement valid.
-                        let fix_is_valid = stmt.sql.as_ref().is_some_and(|sql| {
+                        // if it is the source as written. Whether a fix keeps the SQL valid is
+                        // checked where it is used, see `RuleFix::keeps_sql_valid`.
+                        let text_is_source = stmt.sql.as_ref().is_some_and(|sql| {
                             stmt.offsets.is_verbatim()
                                 && TextSize::of(sql.as_str()) == stmt.range.len()
-                                && diagnostic.fix.as_ref().is_none_or(|fix| {
-                                    keeps_sql_valid(fix, sql, stmt.range.start(), file.as_ref())
-                                })
                         });
-                        if !fix_is_valid {
+                        if !text_is_source {
                             diagnostic.fix = None;
                         }
                         if let Some(fix) = &mut diagnostic.fix {
-                            fix.shift(stmt.range.start());
+                            fix.move_into_file(stmt.range);
                             diagnostic.tags |= DiagnosticTags::FIXABLE;
                         }
                         diagnostic
@@ -292,54 +318,6 @@ impl<'a> Analyser<'a> {
 
         result
     }
-}
-
-/// The text of the file, and the ranges of its top-level statements.
-struct FileText<'a> {
-    source: &'a str,
-    stmts: Vec<TextRange>,
-}
-
-/// Whether the SQL still parses with the fix applied. The edits are relative to the statement
-/// `sql`, which starts at `start` in the file. A fix within the statement, or at its end, is
-/// checked on the statement. A fix that also edits after the statement, e.g. to add a `COMMIT`
-/// after the last statement, is checked on the text of the file from the start of the statement
-/// to the end of the last statement it edits. If that text doesn't parse without the fix, or the
-/// text of the file isn't known, the fix can't be checked and is kept.
-///
-/// Like the statements themselves, the SQL is parsed with its placeholders (psql variables such
-/// as `:name`, `$name`) converted to parameters, see [pgls_lexer::convert_to_positional_params].
-fn keeps_sql_valid(fix: &RuleFix, sql: &str, start: TextSize, file: Option<&FileText>) -> bool {
-    let len = TextSize::of(sql);
-    let Some(edits_end) = fix.edits.iter().map(|edit| edit.range.end()).max() else {
-        return true;
-    };
-    if edits_end <= len {
-        return parses(&fix.apply(sql));
-    }
-    let Some(file) = file else {
-        return true;
-    };
-    let edits_end = start + edits_end;
-    let end = file
-        .stmts
-        .iter()
-        .filter(|stmt| stmt.start() >= start && stmt.start() < edits_end)
-        .map(|stmt| stmt.end())
-        .fold(edits_end, TextSize::max);
-    let Some(text) = file.source.get(usize::from(start)..usize::from(end)) else {
-        return true;
-    };
-    if !parses(text) {
-        return true;
-    }
-    parses(&fix.apply(text))
-}
-
-/// Whether the SQL parses with its placeholders converted to parameters. The conversion keeps the
-/// length of the text, so the fix edits apply to the source text unchanged.
-fn parses(sql: &str) -> bool {
-    pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok()
 }
 
 /// The span, the detail spans and the fix edits of a rule's diagnostic are relative to the
@@ -412,7 +390,6 @@ pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
         .run(AnalyserParams {
             stmts,
             search_path: vec!["public".into()],
-            source: Some(sql.to_owned()),
             ..Default::default()
         })
         .iter()
@@ -440,16 +417,18 @@ mod tests {
     use pgls_text_size::TextRange;
     use termcolor::NoColor;
 
-    use crate::{
-        AnalysableStatement, Analyser, FileText, LinterDiagnostic, RuleFix, keeps_sql_valid,
-    };
+    use crate::{AnalysableStatement, Analyser, LinterDiagnostic, RuleFix};
     use pgls_diagnostics::category;
 
     #[test]
     fn fixes_must_keep_the_statement_valid() {
         let sql = "create index users_email_idx on users (email)";
         let at = |offset: u32| pgls_text_size::TextSize::from(offset);
-        let valid = |fix: RuleFix| keeps_sql_valid(&fix, sql, at(0), None);
+        let statement = TextRange::new(at(0), pgls_text_size::TextSize::of(sql));
+        let valid = |mut fix: RuleFix| {
+            fix.move_into_file(statement);
+            fix.keeps_sql_valid(sql, &[statement])
+        };
         assert!(valid(RuleFix::new("").insert(at(12), " concurrently")));
         assert!(!valid(RuleFix::new("").insert(at(12), " concurrently (")));
         // At the end of the statement, the edit is checked with it.
@@ -457,7 +436,7 @@ mod tests {
             RuleFix::new("").insert(at(45), " where email is not null")
         ));
         assert!(!valid(RuleFix::new("").insert(at(45), " where")));
-        // After the statement, the fix can't be checked without the file.
+        // Past the end of the file, the fix can't be checked.
         assert!(valid(RuleFix::new("").insert(at(47), "\ncommit;")));
     }
 
@@ -465,18 +444,16 @@ mod tests {
     fn fixes_after_the_statement_are_checked_on_the_file() {
         let source = "begin;\ncreate table t (id int);\ncreate table u (id int)";
         let at = |offset: u32| pgls_text_size::TextSize::from(offset);
-        let file = FileText {
-            source,
-            stmts: vec![
-                TextRange::new(at(0), at(5)),
-                TextRange::new(at(7), at(30)),
-                TextRange::new(at(32), at(55)),
-            ],
-        };
+        let statements = [
+            TextRange::new(at(0), at(5)),
+            TextRange::new(at(7), at(30)),
+            TextRange::new(at(32), at(55)),
+        ];
         // A fix of `begin`.
         let valid = |offset: u32, text: &str| {
-            let fix = RuleFix::new("").insert(at(offset), text);
-            keeps_sql_valid(&fix, &source[..5], at(0), Some(&file))
+            let mut fix = RuleFix::new("").insert(at(offset), text);
+            fix.move_into_file(statements[0]);
+            fix.keeps_sql_valid(source, &statements)
         };
         // After `create table t (id int);`.
         assert!(valid(31, "\ncommit;"));
@@ -487,12 +464,10 @@ mod tests {
         // Inside `create table t`.
         assert!(!valid(14, "\ncommit;"));
         // Text that doesn't parse can't be checked.
-        let file = FileText {
-            source: "begin;\ncreate tabel t (id int)",
-            stmts: vec![TextRange::new(at(0), at(5)), TextRange::new(at(7), at(30))],
-        };
-        let fix = RuleFix::new("").insert(at(30), "\ncommit;");
-        assert!(keeps_sql_valid(&fix, "begin", at(0), Some(&file)));
+        let statements = [TextRange::new(at(0), at(5)), TextRange::new(at(7), at(30))];
+        let mut fix = RuleFix::new("").insert(at(30), "\ncommit;");
+        fix.move_into_file(statements[0]);
+        assert!(fix.keeps_sql_valid("begin;\ncreate tabel t (id int)", &statements));
     }
 
     #[test]
@@ -536,7 +511,11 @@ mod tests {
             "create index users_tenant_idx on users (email) where tenant = $tenant",
             "create index users_tenant_idx on :\"table\" (email)",
         ] {
-            let valid = |fix: RuleFix| keeps_sql_valid(&fix, sql, at(0), None);
+            let statement = TextRange::new(at(0), pgls_text_size::TextSize::of(sql));
+            let valid = |mut fix: RuleFix| {
+                fix.move_into_file(statement);
+                fix.keeps_sql_valid(sql, &[statement])
+            };
             assert!(
                 valid(RuleFix::new("").insert(at(12), " concurrently")),
                 "{sql}"
@@ -556,14 +535,11 @@ mod tests {
         let at = |offset: usize| pgls_text_size::TextSize::from(u32::try_from(offset).unwrap());
         let first = TextRange::new(at(0), at(source.find(';').unwrap()));
         let second = TextRange::new(at(source.find("update").unwrap()), at(source.len() - 1));
-        let file = FileText {
-            source,
-            stmts: vec![first, second],
-        };
         // A fix of the first statement.
         let valid = |offset: usize, text: &str| {
-            let fix = RuleFix::new("").insert(at(offset), text);
-            keeps_sql_valid(&fix, &source[first], at(0), Some(&file))
+            let mut fix = RuleFix::new("").insert(at(offset), text);
+            fix.move_into_file(first);
+            fix.keeps_sql_valid(source, &[first, second])
         };
         // After the last statement.
         assert!(valid(source.len(), "\ncommit;"));

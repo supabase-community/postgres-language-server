@@ -45,7 +45,9 @@ pub struct LinterDiagnostic {
 /// A change to the source that fixes the issue reported by a diagnostic.
 ///
 /// The ranges of the edits are relative to the statement while the rule runs, and relative to
-/// the file in the diagnostics returned by the analyser.
+/// the file in the diagnostics returned by the analyser. The analyser doesn't check that the fix
+/// keeps the SQL valid, which costs a parse; check it with [`Self::keeps_sql_valid`] before the
+/// fix is offered or applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleFix {
     /// What the fix does, e.g. "Add CONCURRENTLY".
@@ -55,6 +57,9 @@ pub struct RuleFix {
     pub applicability: Applicability,
     /// Non-overlapping edits, ordered by their position.
     pub edits: Vec<FixEdit>,
+    /// The range of the statement in the file that the fix was computed on, set when the
+    /// analyser moves the fix into the file.
+    statement: TextRange,
 }
 
 /// Replaces the text in `range` with `replacement`.
@@ -70,6 +75,7 @@ impl RuleFix {
             message: message.into(),
             applicability: Applicability::Always,
             edits: Vec::new(),
+            statement: TextRange::default(),
         }
     }
 
@@ -100,9 +106,14 @@ impl RuleFix {
 
     /// Applies the fix to `text`. The edits must be relative to `text`.
     pub fn apply(&self, text: &str) -> String {
+        self.apply_at(text, TextSize::from(0))
+    }
+
+    /// Applies the fix to `text`, which starts at `start` in the text the edits are relative to.
+    fn apply_at(&self, text: &str, start: TextSize) -> String {
         debug_assert!(
-            self.edits_fit(text),
-            "the edits of fix {:?} are not sorted, overlap, or are not on char boundaries of a text of length {}: {:?}",
+            self.edits_fit(text, start),
+            "the edits of fix {:?} are not sorted, overlap, or are not on char boundaries of a text of length {} at {start:?}: {:?}",
             self.message,
             text.len(),
             self.edits
@@ -110,13 +121,58 @@ impl RuleFix {
         let mut result = String::with_capacity(text.len());
         let mut last = 0;
         for edit in &self.edits {
-            let start = usize::from(edit.range.start());
-            result.push_str(&text[last..start]);
+            let range = edit.range - start;
+            result.push_str(&text[last..usize::from(range.start())]);
             result.push_str(&edit.replacement);
-            last = usize::from(edit.range.end());
+            last = usize::from(range.end());
         }
         result.push_str(&text[last..]);
         result
+    }
+
+    /// Whether the SQL still parses with the fix applied. `text` is the text of the file that
+    /// the analyser analysed, and `statements` are the ranges of its top-level statements, in
+    /// file order. A fix within its statement, or at its end, is checked on the statement. A fix
+    /// that also edits after the statement, e.g. to add a `COMMIT` after the last statement, is
+    /// checked on the text from the start of the statement to the end of the last statement it
+    /// edits. If that text doesn't parse without the fix, the fix can't be checked and is kept.
+    ///
+    /// Like the statements themselves, the SQL is parsed with its placeholders (psql variables
+    /// such as `:name`, `$name`) converted to parameters, see
+    /// [pgls_lexer::convert_to_positional_params].
+    ///
+    /// It parses once or twice, so check the fixes that are used, not all of them.
+    pub fn keeps_sql_valid(&self, text: &str, statements: &[TextRange]) -> bool {
+        let Some(edits_end) = self.edits.iter().map(|edit| edit.range.end()).max() else {
+            return true;
+        };
+        let start = self.statement.start();
+        if edits_end <= self.statement.end() {
+            return text
+                .get(Range::<usize>::from(self.statement))
+                .is_some_and(|sql| Self::parses(&self.apply_at(sql, start)));
+        }
+        let first = statements.partition_point(|statement| statement.start() < start);
+        let end = statements
+            .get(first..)
+            .unwrap_or_default()
+            .iter()
+            .take_while(|statement| statement.start() < edits_end)
+            .map(|statement| statement.end())
+            .fold(edits_end, TextSize::max);
+        let Some(text) = text.get(usize::from(start)..usize::from(end)) else {
+            return true;
+        };
+        if !Self::parses(text) {
+            return true;
+        }
+        Self::parses(&self.apply_at(text, start))
+    }
+
+    /// Whether the SQL parses with its placeholders converted to parameters. The conversion
+    /// keeps the length of the text, so the fix edits apply to the source text unchanged.
+    fn parses(sql: &str) -> bool {
+        pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok()
     }
 
     /// The range covered by all edits.
@@ -126,21 +182,26 @@ impl RuleFix {
         Some(first.range.cover(last.range))
     }
 
-    /// Whether the edits are sorted, don't overlap, and lie on char boundaries of `text`.
-    fn edits_fit(&self, text: &str) -> bool {
-        let mut previous_end = TextSize::from(0);
+    /// Whether the edits are sorted, don't overlap, and lie on char boundaries of `text`, which
+    /// starts at `start`.
+    fn edits_fit(&self, text: &str, start: TextSize) -> bool {
+        let mut previous_end = start;
         self.edits.iter().all(|edit| {
             let fits = edit.range.start() >= previous_end
-                && text.get(Range::<usize>::from(edit.range)).is_some();
+                && text
+                    .get(Range::<usize>::from(edit.range - start))
+                    .is_some();
             previous_end = edit.range.end();
             fits
         })
     }
 
-    pub(crate) fn shift(&mut self, offset: TextSize) {
+    /// Moves the edits of a fix computed on the statement at `statement` into the file.
+    pub(crate) fn move_into_file(&mut self, statement: TextRange) {
         for edit in &mut self.edits {
-            edit.range += offset;
+            edit.range += statement.start();
         }
+        self.statement = statement;
     }
 }
 
