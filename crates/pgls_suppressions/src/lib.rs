@@ -278,9 +278,9 @@ mod tests {
     }
 
     #[test]
-    fn a_lone_carriage_return_does_not_end_a_line() {
-        // Lines end at `\n` only, like in the editor positions and `str::lines`.
-        let doc = "select '\r';\n-- pgls-ignore lint\nselect 1;";
+    fn a_lone_carriage_return_ends_a_line() {
+        // Lines end at `\n`, `\r\n` and a lone `\r`, like the editor's positions.
+        let doc = "select '\r';\r\n-- pgls-ignore lint\rselect 1;";
         let start = u32::try_from(doc.find("select 1").unwrap()).unwrap();
         let diagnostic = TestDiagnostic {
             span: TextRange::new(start.into(), u32::try_from(doc.len()).unwrap().into()),
@@ -290,7 +290,7 @@ mod tests {
 
         assert!(suppressions.diagnostics.is_empty());
         assert!(suppressions.is_suppressed(&diagnostic));
-        let suppression = &suppressions.line_suppressions[&1];
+        let suppression = &suppressions.line_suppressions[&2];
         assert_eq!(&doc[suppression.suppression_range], "-- pgls-ignore lint");
     }
 

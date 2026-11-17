@@ -426,11 +426,19 @@ mod tests {
     }
 
     #[test]
-    fn a_lone_carriage_return_does_not_end_a_line() {
+    fn a_lone_carriage_return_ends_a_line() {
         let input = "a\rb\rc\nd";
         let LineIndexBuf(starts) = LineIndexBuf::from_source_text(input);
 
-        assert_eq!(vec![TextSize::from(0u32), TextSize::from(6u32)], starts);
+        assert_eq!(
+            vec![
+                TextSize::from(0u32),
+                TextSize::from(2u32),
+                TextSize::from(4u32),
+                TextSize::from(6u32)
+            ],
+            starts
+        );
     }
 
     #[test]

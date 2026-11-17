@@ -4603,6 +4603,21 @@ fn test_suppression_keeps_crlf_line_endings() {
     assert_eq!(left, 0);
 }
 
+#[test]
+fn test_suppression_keeps_lone_cr_line_endings() {
+    // A lone `\r` ends a line, as in the LSP, also for the suppression comment.
+    let content = "select 1;\rdrop table users;\r";
+    let (edit, left) = suppress(content, 12, "banDropTable");
+    assert_eq!(
+        edit,
+        TextEdit {
+            range: TextRange::empty(10.into()),
+            new_text: "-- pgls-ignore banDropTable\r".into(),
+        }
+    );
+    assert_eq!(left, 0);
+}
+
 /// A project of a workspace, set up like the language server does it.
 struct TestProject {
     workspace: Rc<WorkspaceServer>,

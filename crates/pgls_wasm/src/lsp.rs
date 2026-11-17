@@ -1285,13 +1285,15 @@ mod tests {
 
     #[test]
     fn test_position_conversion_lone_cr() {
-        // Like in the native language server, only `\n` ends a line.
+        // A lone `\r` ends a line, as in the LSP and the native language server.
         let index = LineIndex::new("select '\r';\nselect 2;");
 
-        assert_eq!(offset_to_position(&index, 9), Position::new(0, 9));
-        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 11);
-        assert_eq!(offset_to_position(&index, 12), Position::new(1, 0));
-        assert_eq!(position_to_offset(&index, Position::new(1, 0)), 12);
+        assert_eq!(offset_to_position(&index, 8), Position::new(0, 8));
+        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 8);
+        assert_eq!(offset_to_position(&index, 9), Position::new(1, 0));
+        assert_eq!(position_to_offset(&index, Position::new(1, 100)), 11);
+        assert_eq!(offset_to_position(&index, 12), Position::new(2, 0));
+        assert_eq!(position_to_offset(&index, Position::new(2, 0)), 12);
     }
 
     #[test]

@@ -1,11 +1,8 @@
-use std::{
-    iter::{Enumerate, Peekable},
-    str::Lines,
-};
+use std::iter::{Enumerate, Peekable};
 
 use pgls_diagnostics::MessageAndDescription;
-use pgls_line_index::{LineCol, LineIndex};
-use pgls_text_size::{TextRange, TextSize};
+use pgls_line_index::{LineIndex, Lines};
+use pgls_text_size::TextRange;
 
 use crate::{
     Suppressions,
@@ -26,7 +23,7 @@ pub(crate) struct SuppressionsParser<'a> {
 
 impl<'a> SuppressionsParser<'a> {
     pub fn new(doc: &'a str) -> Self {
-        let lines = doc.lines().enumerate().peekable();
+        let lines = pgls_line_index::lines(doc).enumerate().peekable();
 
         Self {
             file_suppressions: vec![],
@@ -70,7 +67,7 @@ impl<'a> SuppressionsParser<'a> {
     /// As soon as anything is encountered that's not a `pgt-ignore-all` or `pgls-ignore-all`
     /// suppression or an empty line, this will stop.
     fn parse_file_suppressions(&mut self) {
-        while let Some((_, preview)) = self.lines.peek() {
+        while let Some((_, (_, preview))) = self.lines.peek() {
             if preview.trim().is_empty() {
                 self.lines.next();
                 continue;
@@ -83,9 +80,9 @@ impl<'a> SuppressionsParser<'a> {
                 return;
             }
 
-            let (idx, line) = self.lines.next().unwrap();
-
-            let offset = line_start(&self.line_index, idx);
+            let Some((_, (offset, line))) = self.lines.next() else {
+                return;
+            };
 
             match Suppression::from_line(line, &offset) {
                 Ok(suppr) => {
@@ -98,13 +95,11 @@ impl<'a> SuppressionsParser<'a> {
     }
 
     fn parse_suppressions(&mut self) {
-        for (idx, line) in self.lines.by_ref() {
+        for (idx, (offset, line)) in self.lines.by_ref() {
             let trimmed = line.trim();
             if !trimmed.starts_with("-- pgt-ignore") && !trimmed.starts_with("-- pgls-ignore") {
                 continue;
             }
-
-            let offset = line_start(&self.line_index, idx);
 
             let suppr = match Suppression::from_line(line, &offset) {
                 Ok(suppr) => suppr,
@@ -183,15 +178,6 @@ impl<'a> SuppressionsParser<'a> {
             });
         }
     }
-}
-
-/// The offset of line `idx` of `str::lines`. Like the line index, `str::lines` ends lines at `\n`
-/// only, so the line exists.
-fn line_start(line_index: &LineIndex, idx: usize) -> TextSize {
-    u32::try_from(idx)
-        .ok()
-        .and_then(|line| line_index.offset(LineCol { line, col: 0 }))
-        .unwrap()
 }
 
 #[cfg(test)]

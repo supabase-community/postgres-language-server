@@ -33,6 +33,7 @@ json-strip-comments = "3.1.0"
 oxc_resolver        = "1.12.0"
 pg_query            = "6.1.0"
 proc-macro2         = "1.0.66"
+proptest            = { version = "1.12.0", default-features = false, features = ["std"] }
 quote               = "1.0.33"
 rayon               = "1.10.0"
 regex               = "1.11.1"

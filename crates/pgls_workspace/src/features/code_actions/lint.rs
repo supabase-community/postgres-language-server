@@ -197,13 +197,20 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         .iter()
         .find(|statement| statement.contains_inclusive(offset))
         .map_or(offset, |statement| statement.start());
-    let line_ending = match content.find('\n') {
-        Some(newline) if content[..newline].ends_with('\r') => "\r\n",
+    // The first line break of the file. A lone `\r` is one too, as in the LSP.
+    let line_ending = match content
+        .find(['\n', '\r'])
+        .map(|newline| &content[newline..])
+    {
+        Some(rest) if rest.starts_with("\r\n") => "\r\n",
+        Some(rest) if rest.starts_with('\r') => "\r",
         _ => "\n",
     };
 
     let before_start = &content[..usize::from(start)];
-    let line_start = before_start.rfind('\n').map_or(0, |newline| newline + 1);
+    let line_start = before_start
+        .rfind(['\n', '\r'])
+        .map_or(0, |newline| newline + 1);
     let before = &before_start[line_start..];
     let indentation: String = before
         .chars()

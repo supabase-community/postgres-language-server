@@ -48,9 +48,10 @@ pub(crate) fn expand_star_action(
 /// a line inside a multi-line string, any `*` on it counts.
 pub(crate) fn is_at_star(content: &str, position: TextSize) -> bool {
     let offset = usize::from(position).min(content.len());
-    let line_start = content[..offset].rfind('\n').map_or(0, |i| i + 1);
+    // A lone `\r` ends a line too, as in the LSP.
+    let line_start = content[..offset].rfind(['\n', '\r']).map_or(0, |i| i + 1);
     let line_end = content[offset..]
-        .find('\n')
+        .find(['\n', '\r'])
         .map_or(content.len(), |i| offset + i);
     is_at_star_in(&content[line_start..line_end], offset - line_start)
 }
@@ -187,6 +188,8 @@ mod tests {
         assert!(at("select public.us|ers.* from users"));
         assert!(at("insert into t values (1) returning |*"));
         assert!(at("  |*\n"));
+        // A lone `\r` ends the line before, as in the LSP.
+        assert!(at("select 1;\r  |*\r"));
         assert!(!at("select * |from users"));
         assert!(!at("select count(|*) from users"));
         assert!(!at("select a |* b from t"));
