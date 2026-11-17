@@ -1,6 +1,6 @@
-5:1 accepted
-6:1 accepted
-7:1 accepted
-9:1 accepted
-13:1 accepted
-27:1 accepted
+19..46 accepted
+71..126 accepted
+127..195 accepted
+221..258 accepted
+342..377 accepted
+593..1001 accepted

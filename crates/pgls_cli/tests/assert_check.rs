@@ -17,6 +17,41 @@ fn check_default_reporter_snapshot() {
     assert_snapshot!(run_check(&["tests/fixtures/test.sql"]));
 }
 
+/// `check . | head` closes stdout before the CLI is done printing. The CLI drops the rest of the
+/// output instead of panicking, and exits as it would have otherwise.
+#[cfg(unix)]
+#[test]
+fn check_into_a_closed_pipe_does_not_panic() {
+    let args = [
+        "check",
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--disable-db",
+        "tests/fixtures/test.sql",
+    ];
+    let expected = cargo_bin_cmd!("postgres-language-server")
+        .args(args)
+        .output()
+        .expect("failed to run CLI");
+
+    let mut child =
+        std::process::Command::new(assert_cmd::cargo::cargo_bin!("postgres-language-server"))
+            .args(args)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("failed to run CLI");
+    // Close the read end before the CLI writes anything, like `head` after its last line.
+    drop(child.stdout.take());
+    let output = child.wait_with_output().expect("failed to run CLI");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert!(!stderr.contains("unexpected error"), "{stderr}");
+    assert_eq!(output.status.code(), expected.status.code(), "{stderr}");
+}
+
 #[test]
 #[cfg_attr(
     target_os = "windows",
@@ -365,6 +400,41 @@ fn check_stdin_fails_on_warnings_with_error_on_warnings() {
     assert!(output.contains("preferJsonb"), "{output}");
 }
 
+/// The server and the CLI read `PGLS_LOG_LEVEL`, and both take every level the server documents.
+#[test]
+fn check_accepts_every_log_level_of_the_environment() {
+    for level in ["none", "off", "trace", "debug", "info", "warn", "error"] {
+        let output = cargo_bin_cmd!("postgres-language-server")
+            .env("PGLS_LOG_LEVEL", level)
+            .args([
+                "check",
+                "--config-path",
+                CONFIG_PATH,
+                "--disable-db",
+                "--stdin-file-path",
+                "virtual.sql",
+            ])
+            .write_stdin("select 1;\n")
+            .output()
+            .expect("failed to run CLI");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "{level}: {stderr}");
+    }
+
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .env("PGLS_LOG_LEVEL", "verbose")
+        .args(["check", "--disable-db", "--stdin-file-path", "virtual.sql"])
+        .write_stdin("select 1;\n")
+        .output()
+        .expect("failed to run CLI");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success(), "{stderr}");
+    assert!(
+        stderr.contains("use none, trace, debug, info, warn or error"),
+        "{stderr}"
+    );
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 fn check_fails_on_invalid_connection_string() {
@@ -598,6 +668,73 @@ fn check_lone_carriage_return_does_not_end_a_line_snapshot() {
     })
     .join("\n");
     assert_snapshot!(output.replace('\r', "\\r"));
+}
+
+/// `--skip-errors` skips the files with syntax errors: it reports that it skipped them instead of
+/// their diagnostics, and doesn't fail because of them. The other files are checked as usual.
+#[test]
+fn check_skip_errors_skips_files_with_syntax_errors() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "broken.sql",
+            "alter table users drop column name;\nselect from where;\n",
+        ),
+        ("valid.sql", "alter table users drop column name;\n"),
+    ]);
+
+    let (success, output) = check_in(root.path(), &["--skip-errors", "--fix", "."], &[]);
+    assert!(success, "{output}");
+    assert!(
+        output.contains("Skipped file with syntax errors"),
+        "{output}"
+    );
+    assert!(!output.contains("Invalid statement"), "{output}");
+    // The file it skips isn't fixed either.
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("broken.sql")).unwrap(),
+        "alter table users drop column name;\nselect from where;\n"
+    );
+    assert!(output.contains("valid.sql"), "{output}");
+    assert!(output.contains("lint/banDropColumn"), "{output}");
+
+    // Only a file with syntax errors: nothing fails.
+    let (success, output) = check_in(root.path(), &["--skip-errors", "broken.sql"], &[]);
+    assert!(success, "{output}");
+
+    // The code from stdin is printed as it is.
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .current_dir(root.path())
+        .args([
+            "check",
+            "--log-level",
+            "none",
+            "--skip-errors",
+            "--fix",
+            "--stdin-file-path",
+            "virtual.sql",
+        ])
+        .write_stdin("select from where;\n")
+        .output()
+        .expect("failed to run CLI");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "{stderr}");
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "select from where;\n"
+    );
+    assert!(
+        stderr.contains("Skipped file with syntax errors"),
+        "{stderr}"
+    );
+
+    // Without `--skip-errors`, the syntax error fails the run.
+    let (success, output) = check_in(root.path(), &["broken.sql"], &[]);
+    assert!(!success, "{output}");
+    assert!(output.contains("Invalid statement"), "{output}");
 }
 
 /// Writes `files` below a new temporary directory.
