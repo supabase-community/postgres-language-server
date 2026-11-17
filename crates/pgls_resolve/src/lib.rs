@@ -431,15 +431,9 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
-    let mut findings: Vec<Finding> = Vec::new();
-    for finding in resolver.findings {
-        if !findings.contains(&finding) {
-            findings.push(finding);
-        }
-    }
-
     Resolution {
-        findings,
+        // `Resolver::report_with_span` keeps each finding once.
+        findings: resolver.findings,
         database_only: supports_database_check(params.stmt) && resolver.database_only,
         references: resolver.references.unwrap_or_default(),
         lookups: resolver.lookups.unwrap_or_default(),
