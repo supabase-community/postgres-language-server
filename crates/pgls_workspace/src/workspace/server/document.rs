@@ -339,6 +339,7 @@ impl Document {
         &self.diagnostics
     }
 
+    #[cfg(feature = "db")]
     pub fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
     where
         M: StatementMapper<'a>,
@@ -548,7 +549,9 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
     }
 }
 
+#[cfg(feature = "db")]
 pub struct ExecuteStatementMapper;
+#[cfg(feature = "db")]
 impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     type Output = (
         StatementId,
@@ -590,7 +593,9 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
     }
 }
 
+#[cfg(feature = "db")]
 pub struct TypecheckDiagnosticsMapper;
+#[cfg(feature = "db")]
 impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
@@ -735,16 +740,19 @@ impl StatementFilter<'_> for CursorPositionFilter {
     }
 }
 
+#[cfg(feature = "db")]
 pub struct IdFilter {
     id: StatementId,
 }
 
+#[cfg(feature = "db")]
 impl IdFilter {
     pub fn new(id: StatementId) -> Self {
         Self { id }
     }
 }
 
+#[cfg(feature = "db")]
 impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, stmt: &DocumentStatement) -> bool {
         stmt.id == self.id
@@ -1107,6 +1115,7 @@ $$;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_execute_statement_mapper() {
         let input = "SELECT 1; INVALID SYNTAX HERE;";
         let d = Document::new(input.to_string(), 1);
@@ -1124,6 +1133,7 @@ $$;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_async_diagnostics_mapper() {
         let input = "
 CREATE FUNCTION test_fn() RETURNS integer AS $$
@@ -1144,6 +1154,7 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_async_diagnostics_mapper_with_sql_function_body() {
         let input =
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
@@ -1280,6 +1291,7 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_id_filter() {
         let input = "SELECT 1; SELECT 2;";
         let d = Document::new(input.to_string(), 1);
@@ -1309,6 +1321,7 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_find_method() {
         let input = "SELECT 1; SELECT 2;";
         let d = Document::new(input.to_string(), 1);

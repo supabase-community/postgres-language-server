@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-use pgls_analyse::{ActionCategory, Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyse::Applicability;
 use pgls_analyser::{LinterDiagnostic, RuleFix};
 use pgls_configuration::RuleSelector;
 use pgls_diagnostics::Diagnostic;
@@ -11,7 +11,9 @@ use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
 use tracing::warn;
 
-use super::{CodeAction, CodeActionKind, EditAction, TextEdit};
+use super::{
+    ActionCategory, CodeAction, CodeActionKind, EditAction, SUPPRESSION_ACTION_CATEGORY, TextEdit,
+};
 use crate::workspace::Document;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

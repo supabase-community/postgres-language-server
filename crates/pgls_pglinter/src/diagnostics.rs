@@ -2,10 +2,20 @@
 
 use crate::cache::RuleMessage;
 use pgls_diagnostics::{
-    Advices, Category, DatabaseObjectOwned, Diagnostic, LogCategory, MessageAndDescription,
-    Severity, Visit,
+    Advices, Category, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit,
 };
 use std::io;
+
+/// The database object a pglinter violation is about, resolved from the snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DatabaseObject {
+    /// Optional schema name
+    pub schema: Option<String>,
+    /// Object name (required)
+    pub name: String,
+    /// Optional object type (e.g., "table", "function", "view")
+    pub object_type: Option<String>,
+}
 
 /// A specialized diagnostic for pglinter (database-level linting via pglinter extension).
 #[derive(Debug, Diagnostic, PartialEq)]
@@ -13,8 +23,7 @@ pub struct PglinterDiagnostic {
     #[category]
     pub category: &'static Category,
 
-    #[location(database_object)]
-    pub db_object: Option<DatabaseObjectOwned>,
+    pub db_object: Option<DatabaseObject>,
 
     #[message]
     #[description]
@@ -139,7 +148,7 @@ impl PglinterDiagnostic {
     /// Create diagnostic from a pglinter violation with optional object info and rule message
     pub fn from_violation(
         rule_code: &str,
-        db_object: Option<DatabaseObjectOwned>,
+        db_object: Option<DatabaseObject>,
         rule_message: Option<&RuleMessage>,
     ) -> Option<PglinterDiagnostic> {
         let category = crate::registry::get_rule_category(rule_code)?;
@@ -199,7 +208,7 @@ impl PglinterDiagnostic {
 }
 
 /// Generate a user-friendly violation message for a specific object
-fn violation_message(rule_code: &str, db_object: Option<&DatabaseObjectOwned>) -> String {
+fn violation_message(rule_code: &str, db_object: Option<&DatabaseObject>) -> String {
     let obj_name = db_object
         .map(|obj| {
             if let Some(ref schema) = obj.schema {
