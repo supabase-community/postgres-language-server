@@ -211,8 +211,7 @@ pub struct Resolution {
     /// Empty unless [`ResolveParams::collect_references`] is set.
     pub references: Vec<Reference>,
     /// The names that Postgres looks up through the search path, whether or not their objects
-    /// exist, in the order the resolver visits them. Empty unless
-    /// [`ResolveParams::collect_lookups`] is set.
+    /// exist, ordered by location. Empty unless [`ResolveParams::collect_lookups`] is set.
     pub lookups: Vec<SearchPathLookup>,
     /// The output of the statement's top-level query: of a SELECT, also with `INTO`, of the
     /// query of `CREATE VIEW` or `CREATE TABLE AS`, or of the RETURNING list of INSERT, UPDATE,
@@ -432,6 +431,9 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
+    let mut lookups = resolver.lookups.unwrap_or_default();
+    lookups.sort_by_key(|lookup| lookup.location);
+
     let mut findings: Vec<Finding> = Vec::new();
     for finding in resolver.findings {
         if !findings.contains(&finding) {
@@ -443,7 +445,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         findings,
         database_only: supports_database_check(params.stmt) && resolver.database_only,
         references: resolver.references.unwrap_or_default(),
-        lookups: resolver.lookups.unwrap_or_default(),
+        lookups,
         output,
     }
 }

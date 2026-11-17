@@ -199,12 +199,13 @@ mod tests {
             .map(|stmt| AnalysableStatement::new(stmt.clone(), TextRange::default()))
             .collect();
         analyser
-            .run(AnalyserParams {
+            .analyse(AnalyserParams {
                 stmts,
                 catalog_base: Some(database()),
                 search_path: vec!["public".into()],
                 ..Default::default()
             })
+            .diagnostics
             .len()
     }
 
