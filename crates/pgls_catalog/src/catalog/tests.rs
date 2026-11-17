@@ -188,6 +188,26 @@ fn relation_at_creation_is_where_create_table_puts_it() {
 }
 
 #[test]
+fn select_into_of_a_set_operation_creates_the_table() {
+    let search_path = path(&["public"]);
+    let mut catalog = Catalog::new(Some(base()));
+    // Postgres takes the `INTO` from the left-most select of the set operation.
+    let stmt = pgls_query::parse("select 1 as a into t union select 2")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let output = [crate::TypedColumn {
+        name: "a".into(),
+        ty: None,
+    }];
+    catalog.apply(&stmt, &search_path, Some(&output));
+    assert_eq!(
+        column_names(&catalog, None, "t", &search_path).unwrap(),
+        ["a"]
+    );
+}
+
+#[test]
 fn temporary_tables_live_in_pg_temp() {
     let search_path = path(&["public"]);
     let catalog = catalog_after("create temp table scratch (id int);", &search_path);

@@ -2748,6 +2748,7 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_query",
  "pgls_text_size",
+ "tracing",
 ]
 
 [[package]]
