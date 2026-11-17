@@ -15,8 +15,6 @@ version              = "0.0.0"
 proc-macro = true
 
 [dependencies]
-globwalk         = { version = "0.9.1" }
-proc-macro-error = { version = "1.0.4" }
 proc-macro2      = { version = '1.0.93' }
 quote            = { workspace = true }
 syn              = { workspace = true }
