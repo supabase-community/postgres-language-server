@@ -39,7 +39,7 @@ impl DocumentAnalysis {
     /// What the analyser learned about the statement at `range`, if it analysed it.
     #[cfg(feature = "db")]
     pub(crate) fn statement(&self, range: TextRange) -> Option<&pgls_analyser::StatementAnalysis> {
-        statement_at(&self.result.statements, range)
+        self.result.statement(range)
     }
 
     pub(crate) fn syntax_diagnostics(&self) -> &[SyntaxDiagnostic] {
@@ -271,61 +271,5 @@ impl WorkspaceServer {
             .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic))
             .cloned()
             .collect()
-    }
-}
-
-/// The statement at `range` by binary search. The statements are in the order of the document,
-/// each top-level statement followed by the statements of its SQL function body, so their starts
-/// increase.
-#[cfg(feature = "db")]
-fn statement_at(
-    statements: &[pgls_analyser::StatementAnalysis],
-    range: TextRange,
-) -> Option<&pgls_analyser::StatementAnalysis> {
-    let index = statements.partition_point(|statement| statement.range.start() < range.start());
-    statements
-        .get(index)
-        .filter(|statement| statement.range == range)
-}
-
-#[cfg(all(test, feature = "db"))]
-mod tests {
-    use pgls_analyser::StatementAnalysis;
-    use pgls_text_size::TextRange;
-
-    use super::statement_at;
-
-    fn statement(start: u32, end: u32) -> StatementAnalysis {
-        StatementAnalysis {
-            range: TextRange::new(start.into(), end.into()),
-            database_only: false,
-            has_typecheck_findings: false,
-            has_duplicate_assignments: false,
-            search_path: Vec::new(),
-        }
-    }
-
-    /// Top-level statements and the statements of a SQL function body between them are found by
-    /// their range.
-    #[test]
-    fn finds_a_statement_by_its_range() {
-        // `select 1;`, a SQL function with two statements in its body, `select 2;`.
-        let statements = [
-            statement(0, 9),
-            statement(10, 80),
-            statement(50, 58),
-            statement(60, 68),
-            statement(81, 90),
-        ];
-
-        for expected in &statements {
-            let found = statement_at(&statements, expected.range).map(|s| s.range);
-            assert_eq!(found, Some(expected.range));
-        }
-        // Not analysed, e.g. in a down section that isn't linted.
-        assert!(statement_at(&statements, TextRange::new(91.into(), 99.into())).is_none());
-        // The same start, but not the same statement.
-        assert!(statement_at(&statements, TextRange::new(10.into(), 20.into())).is_none());
-        assert!(statement_at(&[], TextRange::new(0.into(), 9.into())).is_none());
     }
 }
