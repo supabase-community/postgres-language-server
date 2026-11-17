@@ -82,7 +82,7 @@ fn apply_column_changes(
         )
     });
     if changes_inherited && c.is_inheritance_child(relation) {
-        c.change_columns(relation, |columns, _| *columns = None);
+        c.change_columns(relation, |_, columns, _| *columns = None);
         return;
     }
     // `ADD/SET/DROP IDENTITY` recurse to the partitions of a partitioned table on Postgres 17+
@@ -105,8 +105,7 @@ fn apply_column_changes(
     } else {
         IdentityChange::Keep
     };
-    let catalog = c.clone();
-    c.change_columns(relation, |columns, is_descendant| {
+    c.change_columns(relation, |catalog, columns, is_descendant| {
         if let Some(columns) = columns.as_mut() {
             let identity = if is_descendant {
                 descendant_identity
@@ -114,7 +113,7 @@ fn apply_column_changes(
                 IdentityChange::Apply
             };
             for command in commands {
-                apply_column_change(&catalog, columns, command, search_path, identity);
+                apply_column_change(catalog, columns, command, search_path, identity);
             }
         }
     });
@@ -189,13 +188,14 @@ fn apply_inheritance_changes(
         if attach && !relation_is_parent {
             c.children_with_own_columns.insert(child.clone());
         }
-        let children = c.children.get_or_default(parent.clone());
-        if attach {
-            if !children.contains(&child) {
-                children.push(child.clone());
-            }
-        } else {
-            children.retain(|existing| *existing != child);
+        if !attach {
+            c.children.remove(&parent, &child);
+        } else if !c
+            .children
+            .get(&parent)
+            .is_some_and(|children| children.contains(&child))
+        {
+            c.children.push(parent.clone(), child.clone());
         }
         if relation_is_parent {
             if attach {
@@ -266,7 +266,7 @@ fn detach_partition_identity(c: &mut Catalog, partition: &Key) {
     if dropped.as_ref().is_some_and(Vec::is_empty) {
         return;
     }
-    c.change_columns(&info, |columns, _| {
+    c.change_columns(&info, |_, columns, _| {
         for column in columns.iter_mut().flatten() {
             if dropped
                 .as_ref()

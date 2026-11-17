@@ -29,7 +29,7 @@ use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
-use journal::{Journal, JournaledMap, JournaledSet};
+use journal::{Journal, JournaledChildren, JournaledMap, JournaledSet};
 pub use overlay::rename;
 
 /// `(schema, name)` of a catalog object.
@@ -69,7 +69,7 @@ pub struct Catalog {
     /// All overloads with a given name.
     functions: JournaledMap<Key, Entry<Vec<FunctionInfo>>>,
     /// Inheritance children and partitions created or attached by the file, by parent.
-    children: JournaledMap<Key, Vec<Key>>,
+    children: JournaledChildren,
     /// Inheritance children of [`Catalog::children`] whose inherited columns may also be their own,
     /// or inherited from another parent. They keep a column their parent drops.
     children_with_own_columns: JournaledSet<Key>,
@@ -131,7 +131,7 @@ impl Catalog {
             relations: JournaledMap::default(),
             types: JournaledMap::default(),
             functions: JournaledMap::default(),
-            children: JournaledMap::default(),
+            children: JournaledChildren::default(),
             children_with_own_columns: JournaledSet::default(),
             indexes: JournaledMap::default(),
             indexes_incomplete: false,
