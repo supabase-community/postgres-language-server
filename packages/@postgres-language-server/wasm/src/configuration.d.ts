@@ -258,7 +258,7 @@ export interface PartialMigrationsConfiguration {
 }
 export interface PartialPglinterConfiguration {
   /**
-   * if `false`, it disables the feature and the linter won't be executed. `true` by default
+   * if `false`, it disables the feature and the linter won't be executed. `false` by default
    */
   enabled?: boolean;
   /**
