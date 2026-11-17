@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/select_fetch_with_ties_1.sql
+---
+select a from t order by a offset (1 + 1) rows fetch first (null + 1) rows with ties;
