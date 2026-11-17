@@ -61,6 +61,8 @@ fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
         emit_time_with_tz_type(e, n, &name_parts);
     } else if let Some(base) = verbatim_char_type(n, &name_parts) {
         emit_verbatim_char_type(e, &name_parts, base);
+    } else if is_bit_without_length(n, &name_parts) {
+        emit_dot_separated_type_name(e, &name_parts);
     } else {
         emit_normalized_type_name(e, &name_parts);
     }
@@ -130,6 +132,14 @@ fn verbatim_char_type(n: &TypeName, name_parts: &[String]) -> Option<&'static st
         "bpchar" if n.typmods.is_empty() => Some("bpchar"),
         _ => None,
     }
+}
+
+/// The keyword `bit` means `bit(1)`, and only the typed literal `bit '101'` has no length. Its type
+/// keeps the schema, `pg_catalog.bit`, which is the same type without a length.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L14675
+fn is_bit_without_length(n: &TypeName, name_parts: &[String]) -> bool {
+    matches!(name_parts, [schema, name] if is_pg_catalog(schema) && name == "bit")
+        && n.typmods.is_empty()
 }
 
 fn emit_verbatim_char_type(e: &mut EventEmitter, name_parts: &[String], base: &str) {
