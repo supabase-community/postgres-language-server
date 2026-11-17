@@ -28,7 +28,7 @@ export interface ProjectKey {
   idx: number;
   version: number;
 }
-export type RuleCategory = "Lint" | "Action" | "Transformation";
+export type RuleCategory = "Lint";
 export type FileKind = FileKind2[];
 /**
  * The priority of the file
