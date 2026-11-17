@@ -140,7 +140,10 @@ mod tests {
                 expected_sql_len: 13,
             },
             TestCase {
-                query: format!("  {}  select * from", QueryWithCursorPosition::cursor_marker()),
+                query: format!(
+                    "  {}  select * from",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
                 expected_pos: 0,
                 expected_sql_len: 13,
             },
