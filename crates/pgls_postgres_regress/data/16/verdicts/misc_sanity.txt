@@ -1,5 +1,5 @@
-18:1 accepted
-29:1 accepted
-47:1 accepted
-60:1 accepted
-69:1 accepted
+566..727 accepted
+831..979 accepted
+1526..1739 accepted
+1860..2047 accepted
+2138..2370 accepted

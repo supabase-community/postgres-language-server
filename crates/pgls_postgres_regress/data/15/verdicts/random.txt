@@ -1,8 +1,8 @@
-7:1 rejected 42P01
-10:1 rejected 42P01
-20:1 rejected 42P01
-25:1 rejected 42P01
-30:1 rejected 42P01
-35:1 rejected 42P01
-40:1 rejected 42P01
-43:1 rejected 42P01
+102..128 rejected 42P01
+178..393 rejected 42P01
+431..522 rejected 42P01
+571..657 rejected 42P01
+706..792 rejected 42P01
+841..927 rejected 42P01
+972..1060 rejected 42P01
+1062..1141 rejected 42P01

@@ -2,7 +2,7 @@ mod attrs;
 
 use crate::partial_derive::attrs::PartialType;
 use attrs::{Attrs, FieldAttrs};
-use proc_macro_error::*;
+use proc_macro_error3::*;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::{Data, Field, GenericArgument, PathArguments, Type};
@@ -26,7 +26,8 @@ impl DeriveInput {
         let ident = input.ident.clone();
         let partial_ident = Ident::new(&format!("Partial{}", input.ident), Span::call_site());
 
-        let attrs = Attrs::try_from(&input.attrs).expect("Could not parse attributes");
+        let attrs = Attrs::try_from(&input.attrs)
+            .unwrap_or_else(|error| abort!(error.span(), "invalid attribute: {}", error));
 
         let fields = match input.data {
             Data::Struct(data) => data
@@ -65,8 +66,9 @@ impl DeriveInput {
                             ident: ident.clone(),
                             ty: ty.clone(),
                             should_wrap,
-                            attrs: FieldAttrs::try_from(attrs)
-                                .expect("Could not parse field attributes"),
+                            attrs: FieldAttrs::try_from(attrs).unwrap_or_else(|error| {
+                                abort!(error.span(), "invalid field attribute: {}", error)
+                            }),
                         }
                     },
                 )

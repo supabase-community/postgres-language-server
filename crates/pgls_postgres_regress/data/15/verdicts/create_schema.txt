@@ -1,27 +1,27 @@
-7:1 accepted
-12:1 rejected 42P15
-14:1 rejected 42P15
-16:1 rejected 42P15
-18:1 rejected 42P15
-20:1 rejected 42P15
-24:1 accepted
-25:1 rejected 42P15
-27:1 rejected 42P15
-29:1 rejected 42P15
-31:1 rejected 42P15
-33:1 rejected 42P15
-37:1 rejected 42P15
-39:1 rejected 42P15
-41:1 rejected 42P15
-43:1 rejected 42P15
-45:1 rejected 42P15
-48:1 accepted
-52:1 accepted
-55:1 accepted
-57:1 accepted
-58:1 accepted
-61:1 accepted
-63:1 accepted
-66:1 accepted
-67:1 accepted
-70:1 accepted
+59..108 accepted
+303..400 rejected 42P15
+401..504 rejected 42P15
+505..611 rejected 42P15
+612..714 rejected 42P15
+715..881 rejected 42P15
+939..975 accepted
+976..1059 rejected 42P15
+1060..1149 rejected 42P15
+1150..1242 rejected 42P15
+1243..1331 rejected 42P15
+1332..1484 rejected 42P15
+1540..1640 rejected 42P15
+1641..1747 rejected 42P15
+1748..1857 rejected 42P15
+1858..1963 rejected 42P15
+1964..2133 rejected 42P15
+2134..2145 accepted
+2237..2347 accepted
+2349..2396 accepted
+2464..2500 accepted
+2501..2597 accepted
+2599..2646 accepted
+2702..2805 accepted
+2807..2844 accepted
+2845..2856 accepted
+2870..2907 accepted

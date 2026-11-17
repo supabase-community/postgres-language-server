@@ -1,19 +1,19 @@
-10:1 accepted
-12:1 accepted
-14:1 accepted
-17:1 accepted
-19:1 accepted
-21:1 accepted
-24:1 accepted
-27:1 rejected 22001
-28:1 accepted
-31:1 accepted
-33:1 accepted
-37:1 accepted
-41:1 accepted
-45:1 accepted
-49:1 accepted
-53:1 accepted
-57:1 accepted
-66:1 rejected 42P01
-68:1 rejected 42P01
+118..163 accepted
+165..207 accepted
+209..251 accepted
+312..354 accepted
+356..396 accepted
+398..440 accepted
+462..503 accepted
+547..590 rejected 22001
+591..638 accepted
+641..667 accepted
+669..723 accepted
+725..778 accepted
+780..833 accepted
+835..889 accepted
+891..944 accepted
+946..1000 accepted
+1002..1025 accepted
+1183..1229 rejected 42P01
+1231..1257 rejected 42P01

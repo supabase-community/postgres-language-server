@@ -131,28 +131,19 @@ impl<'a> StatementTokens<'a> {
         Some(elements)
     }
 
-    /// The words of the type name that starts at the token `start`, e.g. `pg_catalog.varchar`
-    /// or `character varying`: the index of the last token before the type modifiers, array
-    /// bounds, or whatever follows the type.
+    /// The words of the type name that starts at the token `start`, e.g. `pg_catalog.varchar`,
+    /// `character varying` or `national character`: the index of the last token before the
+    /// type modifiers, the time zone of `timestamp`, or whatever follows the type. The words are
+    /// the ones the spans of diagnostics end at, see [`pgls_resolve::Tokens::type_words_end`].
     pub fn type_name_end(&self, start: usize) -> usize {
-        let mut last = start;
-        let mut index = start + 1;
-        while let Some(kind) = self.kind(index) {
-            let is_word =
-                kind == Token::Ident || self.tokens[index].keyword_kind() != KeywordKind::NoKeyword;
-            let continues = match kind {
-                Token::Ascii46 => true,
-                // Only the keywords that can be part of a multi-word type name.
-                Token::Varying | Token::Precision => true,
-                _ => is_word && self.kind(last) == Some(Token::Ascii46),
-            };
-            if !continues {
-                break;
-            }
-            last = index;
-            index += 1;
-        }
-        last
+        let start_offset = usize::from(self.range(start).start());
+        pgls_resolve::Tokens::from_scan(self.sql, self.tokens)
+            .type_words_end(start_offset)
+            .and_then(|end| {
+                (start..self.tokens.len())
+                    .find(|&index| usize::from(self.range(index).end()) == end)
+            })
+            .unwrap_or(start)
     }
 
     /// The type modifiers right after the token `index`, e.g. `(255)`: the indexes of the

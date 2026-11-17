@@ -1,44 +1,44 @@
-10:1 accepted
-11:1 accepted
-12:1 accepted
-13:1 accepted
-14:1 accepted
-15:1 accepted
-16:1 accepted
-17:1 accepted
-18:1 accepted
-19:1 accepted
-20:1 accepted
-24:1 accepted
-27:1 accepted
-31:1 rejected 42803
-34:1 accepted
-37:1 accepted
-41:1 accepted
-44:1 accepted
-47:1 accepted
-50:1 accepted
-54:1 rejected 42P10
-58:1 rejected 42702
-64:1 accepted
-69:1 accepted
-74:1 accepted
-78:1 accepted
-83:1 accepted
-89:1 accepted
-94:1 accepted
-100:1 accepted
-105:1 accepted
-111:1 rejected 42803
-114:1 accepted
-117:1 accepted
-121:1 accepted
-124:1 accepted
-129:1 rejected 42702
-134:1 accepted
-140:1 rejected 42702
-146:1 accepted
-151:1 accepted
-154:1 accepted
-155:1 accepted
-156:1 accepted
+248..315 accepted
+316..375 accepted
+376..435 accepted
+436..495 accepted
+496..555 accepted
+556..615 accepted
+616..675 accepted
+676..735 accepted
+736..795 accepted
+796..855 accepted
+856..915 accepted
+951..1037 accepted
+1114..1197 accepted
+1300..1363 rejected 42803
+1437..1500 accepted
+1567..1655 accepted
+1691..1736 accepted
+1772..1840 accepted
+1876..1933 accepted
+1969..2035 accepted
+2106..2161 rejected 42P10
+2264..2370 rejected 42702
+2445..2494 accepted
+2580..2635 accepted
+2721..2789 accepted
+2856..2971 accepted
+3039..3149 accepted
+3235..3382 accepted
+3383..3418 accepted
+3485..3597 accepted
+3674..3791 accepted
+3894..3957 rejected 42803
+4031..4098 accepted
+4165..4274 accepted
+4310..4362 accepted
+4398..4487 accepted
+4590..4702 rejected 42702
+4769..4892 accepted
+5013..5112 rejected 42702
+5198..5351 accepted
+5352..5387 accepted
+5402..5433 accepted
+5434..5466 accepted
+5467..5499 accepted

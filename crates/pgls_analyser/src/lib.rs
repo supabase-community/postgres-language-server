@@ -123,6 +123,21 @@ pub struct AnalysisResult {
     pub stopped: bool,
 }
 
+impl AnalysisResult {
+    /// What the analyser learned about the statement at `range`, if it analysed it. The
+    /// statements are in the order of the file, each top-level statement followed by the
+    /// statements of its SQL function body, so their starts increase and a binary search finds
+    /// it.
+    pub fn statement(&self, range: TextRange) -> Option<&StatementAnalysis> {
+        let index = self
+            .statements
+            .partition_point(|statement| statement.range.start() < range.start());
+        self.statements
+            .get(index)
+            .filter(|statement| statement.range == range)
+    }
+}
+
 pub struct AnalyserConfig<'a> {
     pub options: &'a LinterOptions,
     pub filter: AnalysisFilter<'a>,
@@ -687,5 +702,51 @@ mod tests {
         });
         assert!(stopped.stopped);
         assert_eq!(stopped.diagnostics.len(), 127);
+    }
+
+    /// Top-level statements and the statements of a SQL function body between them are found by
+    /// their range.
+    #[test]
+    fn finds_a_statement_by_its_range() {
+        let statement = |start: u32, end: u32| crate::StatementAnalysis {
+            range: TextRange::new(start.into(), end.into()),
+            database_only: false,
+            has_typecheck_findings: false,
+            has_duplicate_assignments: false,
+            search_path: Vec::new(),
+        };
+        // `select 1;`, a SQL function with two statements in its body, `select 2;`.
+        let result = crate::AnalysisResult {
+            statements: vec![
+                statement(0, 9),
+                statement(10, 80),
+                statement(50, 58),
+                statement(60, 68),
+                statement(81, 90),
+            ],
+            ..Default::default()
+        };
+
+        for expected in &result.statements {
+            let found = result.statement(expected.range).map(|s| s.range);
+            assert_eq!(found, Some(expected.range));
+        }
+        // Not analysed, e.g. in a down section that isn't linted.
+        assert!(
+            result
+                .statement(TextRange::new(91.into(), 99.into()))
+                .is_none()
+        );
+        // The same start, but not the same statement.
+        assert!(
+            result
+                .statement(TextRange::new(10.into(), 20.into()))
+                .is_none()
+        );
+        assert!(
+            crate::AnalysisResult::default()
+                .statement(TextRange::new(0.into(), 9.into()))
+                .is_none()
+        );
     }
 }

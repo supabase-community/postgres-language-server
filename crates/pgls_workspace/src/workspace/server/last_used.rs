@@ -1,33 +1,23 @@
-use std::sync::LazyLock;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-/// The instant [LastUsed] counts from.
-static EPOCH: LazyLock<Instant> = LazyLock::new(Instant::now);
+use super::runtime::Clock;
 
-/// When a cached value was last used. It can be updated through a shared reference, so that a
-/// cache hit under a read lock still counts as a use.
+/// When a cached value was last used, on the workspace's [Clock]. It can be updated through a
+/// shared reference, so that a cache hit under a read lock still counts as a use.
 pub(crate) struct LastUsed(AtomicU64);
 
-impl Default for LastUsed {
-    fn default() -> Self {
-        Self::now()
-    }
-}
-
 impl LastUsed {
-    pub(crate) fn now() -> Self {
-        Self(AtomicU64::new(Self::millis_since_epoch()))
+    pub(crate) fn now(clock: &Clock) -> Self {
+        Self(AtomicU64::new(Self::millis(clock)))
     }
 
-    pub(crate) fn touch(&self) {
-        self.0.store(Self::millis_since_epoch(), Ordering::Relaxed);
+    pub(crate) fn touch(&self, clock: &Clock) {
+        self.0.store(Self::millis(clock), Ordering::Relaxed);
     }
 
-    pub(crate) fn idle_for(&self) -> Duration {
-        Duration::from_millis(
-            Self::millis_since_epoch().saturating_sub(self.0.load(Ordering::Relaxed)),
-        )
+    pub(crate) fn idle_for(&self, clock: &Clock) -> Duration {
+        Duration::from_millis(Self::millis(clock).saturating_sub(self.0.load(Ordering::Relaxed)))
     }
 
     /// Pretends it was last used `duration` earlier, for tests of idle eviction.
@@ -40,11 +30,12 @@ impl LastUsed {
         );
     }
 
-    fn millis_since_epoch() -> u64 {
-        // The epoch is set on first use, so pretend it was earlier than any recorded use.
-        u64::try_from(EPOCH.elapsed().as_millis()).unwrap_or(u64::MAX) + Self::OFFSET_MILLIS
+    /// The milliseconds since the clock was created. Pretends it was created earlier than any
+    /// recorded use.
+    fn millis(clock: &Clock) -> u64 {
+        u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX) + Self::OFFSET_MILLIS
     }
 
-    /// Lets [LastUsed::backdate] go back before the epoch was set.
+    /// Lets [LastUsed::backdate] go back before the clock was created.
     const OFFSET_MILLIS: u64 = 24 * 60 * 60 * 1000;
 }
