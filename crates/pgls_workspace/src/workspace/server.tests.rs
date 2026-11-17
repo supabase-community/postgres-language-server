@@ -1146,35 +1146,6 @@ async fn test_positional_params(test_db: PgPool) {
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
 }
 
-/// The text of each plpgsql_check diagnostic of `content`, the open content of `path`.
-fn plpgsql_check_findings(
-    workspace: &WorkspaceServer,
-    project_key: ProjectKey,
-    path: &PgLSPath,
-    content: &str,
-    database_checks: DatabaseChecks,
-) -> Vec<String> {
-    workspace
-        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
-            project_key,
-            path: path.clone(),
-            categories: RuleCategories::all(),
-            max_diagnostics: 100,
-            only: vec![],
-            skip: vec![],
-            database_checks,
-        })
-        .expect("Unable to pull diagnostics")
-        .diagnostics
-        .iter()
-        .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
-        .map(|d| {
-            let span = d.location().span.expect("a span");
-            content[std::ops::Range::<usize>::from(span)].to_string()
-        })
-        .collect()
-}
-
 /// A pull with `DatabaseChecks::Reuse` doesn't query the database. It reports what the last run
 /// found for the statements whose text is unchanged, where they are now, and nothing for an
 /// edited statement until the next run.
@@ -1207,8 +1178,27 @@ async fn test_database_checks_reuse_the_results_of_unchanged_statements(test_db:
             "CREATE FUNCTION public.f1() RETURNS int LANGUAGE plpgsql AS $$\nBEGIN\n    RETURN {variable};\nEND;\n$$;\n"
         )
     };
-    let findings = |content: &str, checks| {
-        plpgsql_check_findings(&workspace, project_key, &path, content, checks)
+    // The text of each plpgsql_check diagnostic of `content`, the open content of `path`.
+    let findings = |content: &str, database_checks| {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks,
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
+            .map(|d| {
+                let span = d.location().span.expect("a span");
+                content[std::ops::Range::<usize>::from(span)].to_string()
+            })
+            .collect::<Vec<_>>()
     };
     let change = |content: &str, version| {
         workspace
