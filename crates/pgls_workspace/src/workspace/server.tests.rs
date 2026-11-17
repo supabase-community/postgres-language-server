@@ -7214,10 +7214,12 @@ async fn test_settings_update_during_database_checks_does_not_block_requests(tes
             workspace.update_settings(UpdateSettingsParams {
                 project_key,
                 configuration: PartialConfiguration {
-                    plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
-                        enabled: Some(false),
-                        ..Default::default()
-                    }),
+                    plpgsql_check: Some(
+                        pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration {
+                            enabled: Some(false),
+                            ..Default::default()
+                        },
+                    ),
                     ..Default::default()
                 },
                 gitignore_matches: vec![],
