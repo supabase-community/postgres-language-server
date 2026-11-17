@@ -1,9 +1,9 @@
 use pgls_console::fmt;
 
 use crate::{
-    Category, DiagnosticTags, Error, Resource, Severity, SourceCode,
+    Category, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
     diagnostic::internal::AsDiagnostic,
-    location::{AsResource, AsSourceCode, AsSpan},
+    location::{AsResource, AsSpan},
 };
 
 /// This trait is implemented for all types implementing [Diagnostic](super::Diagnostic)
@@ -39,7 +39,10 @@ pub trait DiagnosticExt: internal::Sealed + Sized {
 
     /// Returns a new diagnostic using the provided `source_code` if `self`
     /// doesn't already have one.
-    fn with_file_source_code(self, source_code: impl AsSourceCode) -> Error
+    ///
+    /// Pass the same [SharedSourceCode] to all the diagnostics of a file: from a `&str`, every
+    /// diagnostic gets a copy of the text and a line index of its own.
+    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
     where
         Error: From<internal::Decorated<Self>>;
 
@@ -99,12 +102,12 @@ impl<E: AsDiagnostic> DiagnosticExt for E {
         })
     }
 
-    fn with_file_source_code(self, source_code: impl AsSourceCode) -> Error
+    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
     where
         Error: From<internal::Decorated<Self>>,
     {
         Error::from(internal::Decorated {
-            source_code: source_code.as_source_code().map(SourceCode::to_owned),
+            source_code: Some(source_code.into()),
             ..internal::Decorated::new(self)
         })
     }
@@ -256,8 +259,8 @@ mod internal {
     use pgls_text_size::TextRange;
 
     use crate::{
-        Advices, Backtrace, Category, Diagnostic, DiagnosticTags, LineIndex, LineIndexBuf,
-        Location, LogCategory, Resource, Severity, SourceCode, Visit,
+        Advices, Backtrace, Category, Diagnostic, DiagnosticTags, LineIndex, Location, LogCategory,
+        Resource, Severity, SharedSourceCode, SourceCode, Visit,
         diagnostic::internal::AsDiagnostic,
     };
 
@@ -370,7 +373,7 @@ mod internal {
         /// Replaces the span of `source`.
         pub(super) span: Option<TextRange>,
         /// Used if `source` has no source code, also for the code frames of its advices.
-        pub(super) source_code: Option<SourceCode<String, LineIndexBuf>>,
+        pub(super) source_code: Option<SharedSourceCode>,
         /// Added to the tags of `source`.
         pub(super) tags: DiagnosticTags,
         /// Replaces the severity of `source`.
@@ -440,7 +443,7 @@ mod internal {
             if let Some(source_code) = &self.source_code {
                 let mut visitor = FileSourceCodeVisitor {
                     visitor,
-                    source_code: source_code.as_deref(),
+                    source_code: source_code.as_borrowed(),
                 };
 
                 self.source.as_diagnostic().advices(&mut visitor)
@@ -453,7 +456,7 @@ mod internal {
             if let Some(source_code) = &self.source_code {
                 let mut visitor = FileSourceCodeVisitor {
                     visitor,
-                    source_code: source_code.as_deref(),
+                    source_code: source_code.as_borrowed(),
                 };
 
                 self.source.as_diagnostic().verbose_advices(&mut visitor)
@@ -475,7 +478,7 @@ mod internal {
                 span: self.span.or(location.span),
                 source_code: location
                     .source_code
-                    .or_else(|| Some(self.source_code.as_ref()?.as_deref())),
+                    .or_else(|| Some(self.source_code.as_ref()?.as_borrowed())),
             }
         }
 
