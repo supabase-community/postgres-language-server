@@ -152,7 +152,7 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
 // expr op ANY (subquery)
 fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.space();
     }
 
@@ -179,7 +179,7 @@ fn emit_aexpr_op_any(e: &mut EventEmitter, n: &AExpr) {
 // expr op ALL (subquery)
 fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.space();
     }
 
@@ -205,7 +205,7 @@ fn emit_aexpr_op_all(e: &mut EventEmitter, n: &AExpr) {
 
 // expr IS DISTINCT FROM expr2
 fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
-    let parent_info = aexpr_operator_info(n);
+    let parent_info = OperatorInfo::of_aexpr(n);
 
     if let Some(ref lexpr) = n.lexpr {
         emit_operand_with_parens(e, lexpr, parent_info, OperandSide::Left);
@@ -227,7 +227,7 @@ fn emit_aexpr_distinct(e: &mut EventEmitter, n: &AExpr) {
 
 // expr IS NOT DISTINCT FROM expr2
 fn emit_aexpr_not_distinct(e: &mut EventEmitter, n: &AExpr) {
-    let parent_info = aexpr_operator_info(n);
+    let parent_info = OperatorInfo::of_aexpr(n);
 
     if let Some(ref lexpr) = n.lexpr {
         emit_operand_with_parens(e, lexpr, parent_info, OperandSide::Left);
@@ -271,7 +271,7 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
 // expr IN (values)
 fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -319,7 +319,7 @@ fn emit_aexpr_in(e: &mut EventEmitter, n: &AExpr) {
 // expr LIKE pattern [ESCAPE escape]
 fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.space();
     }
 
@@ -337,14 +337,14 @@ fn emit_aexpr_like(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        emit_operand_with_parens(e, rexpr, aexpr_operator_info(n), OperandSide::Right);
+        emit_operand_with_parens(e, rexpr, OperatorInfo::of_aexpr(n), OperandSide::Right);
     }
 }
 
 // expr ILIKE pattern [ESCAPE escape]
 fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.space();
     }
 
@@ -362,14 +362,14 @@ fn emit_aexpr_ilike(e: &mut EventEmitter, n: &AExpr) {
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref rexpr) = n.rexpr {
-        emit_operand_with_parens(e, rexpr, aexpr_operator_info(n), OperandSide::Right);
+        emit_operand_with_parens(e, rexpr, OperatorInfo::of_aexpr(n), OperandSide::Right);
     }
 }
 
 // expr SIMILAR TO pattern [ESCAPE escape]
 fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.space();
     }
 
@@ -397,26 +397,26 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
             }) {
                 // Emit just the pattern (first argument)
                 if let Some(pattern) = func.args.first() {
-                    emit_operand_with_parens(e, pattern, aexpr_operator_info(n), OperandSide::Right);
+                    emit_operand_with_parens(e, pattern, OperatorInfo::of_aexpr(n), OperandSide::Right);
                 }
                 // If there's a second argument, it's the ESCAPE character
                 if let Some(escape) = func.args.get(1) {
                     e.space();
                     e.token(TokenKind::ESCAPE_KW);
                     e.space();
-                    emit_operand_with_parens(e, escape, aexpr_operator_info(n), OperandSide::Right);
+                    emit_operand_with_parens(e, escape, OperatorInfo::of_aexpr(n), OperandSide::Right);
                 }
                 return;
             }
         // Fallback for other patterns
-        emit_operand_with_parens(e, rexpr, aexpr_operator_info(n), OperandSide::Right);
+        emit_operand_with_parens(e, rexpr, OperatorInfo::of_aexpr(n), OperandSide::Right);
     }
 }
 
 // expr BETWEEN expr2 AND expr3
 fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -436,7 +436,7 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN expr2 AND expr3
 fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -458,7 +458,7 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
 // expr BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -480,7 +480,7 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
 // expr NOT BETWEEN SYMMETRIC expr2 AND expr3
 fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     if let Some(ref lexpr) = n.lexpr {
-        emit_operand_with_parens(e, lexpr, aexpr_operator_info(n), OperandSide::Left);
+        emit_operand_with_parens(e, lexpr, OperatorInfo::of_aexpr(n), OperandSide::Left);
         e.line(LineType::SoftOrSpace);
     }
 
@@ -505,7 +505,7 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
 /// binds less tightly than `BETWEEN`, so both are operands on the right.
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15241
 fn emit_between_bounds(e: &mut EventEmitter, n: &AExpr, bounds: &[Node]) {
-    let parent_info = aexpr_operator_info(n);
+    let parent_info = OperatorInfo::of_aexpr(n);
     if let Some(lower) = bounds.first() {
         emit_operand_with_parens(e, lower, parent_info, OperandSide::Right);
     }
@@ -549,7 +549,7 @@ fn starts_with_operator_char(node: &Node) -> bool {
                             .is_some_and(|op| !operator_needs_space(op));
                 }
                 Some(lexpr) => {
-                    let parent = aexpr_operator_info(expr);
+                    let parent = OperatorInfo::of_aexpr(expr);
                     if matches!(expr.kind(), AExprKind::AexprNullif)
                         || needs_parentheses(
                             lexpr,

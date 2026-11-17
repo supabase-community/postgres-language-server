@@ -135,7 +135,7 @@ fn emit_test_expr(e: &mut EventEmitter, n: &SubLink, testexpr: &Node) {
     if needs_parentheses(
         testexpr,
         Position::Operand {
-            parent: sub_link_operator_info(n),
+            parent: OperatorInfo::of_sub_link(n),
             side: OperandSide::Left,
         },
     ) {

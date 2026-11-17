@@ -118,6 +118,53 @@ pub(crate) struct OperatorInfo {
     pub(crate) associativity: OperatorAssociativity,
 }
 
+impl OperatorInfo {
+    /// The precedence of an operator expression, from the precedence table of the grammar.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L825
+    pub(crate) fn of_aexpr(expr: &AExpr) -> Option<Self> {
+        match expr.kind() {
+            AExprKind::AexprOp => operator_info(&expr.name, OperatorArity::from_aexpr(expr)),
+            // The parser decides by the operator before `ANY` whether the left operand ends there.
+            AExprKind::AexprOpAny | AExprKind::AexprOpAll => {
+                operator_info(&expr.name, OperatorArity::Binary)
+            }
+            AExprKind::AexprDistinct | AExprKind::AexprNotDistinct => Some(Self {
+                precedence: PREC_IS,
+                associativity: OperatorAssociativity::None,
+            }),
+            AExprKind::AexprIn
+            | AExprKind::AexprLike
+            | AExprKind::AexprIlike
+            | AExprKind::AexprSimilar
+            | AExprKind::AexprBetween
+            | AExprKind::AexprNotBetween
+            | AExprKind::AexprBetweenSym
+            | AExprKind::AexprNotBetweenSym => Some(Self {
+                precedence: PREC_LIKE,
+                associativity: OperatorAssociativity::None,
+            }),
+            // `nullif(a, b)` is written like a function call.
+            AExprKind::AexprNullif | AExprKind::Undefined => None,
+        }
+    }
+
+    /// The precedence of `a op ANY (subquery)`, `a op ALL (subquery)` and `a IN (subquery)`, written
+    /// like the operator expressions of the same shape. The others are self-contained.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15318
+    pub(crate) fn of_sub_link(sub_link: &SubLink) -> Option<Self> {
+        match sub_link.sub_link_type() {
+            SubLinkType::AnySublink if sub_link.oper_name.is_empty() => Some(Self {
+                precedence: PREC_LIKE,
+                associativity: OperatorAssociativity::None,
+            }),
+            SubLinkType::AnySublink | SubLinkType::AllSublink => {
+                operator_info(&sub_link.oper_name, OperatorArity::Binary)
+            }
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum OperatorAssociativity {
     Left,
@@ -152,64 +199,19 @@ pub(crate) enum OperandSide {
 
 pub(crate) fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
     match node.node.as_ref()? {
-        NodeEnum::AExpr(expr) => aexpr_operator_info(expr),
+        NodeEnum::AExpr(expr) => OperatorInfo::of_aexpr(expr),
         // IS [NOT] NULL and IS [NOT] TRUE have PREC_IS precedence
         NodeEnum::NullTest(_) | NodeEnum::BooleanTest(_) => Some(OperatorInfo {
             precedence: PREC_IS,
             associativity: OperatorAssociativity::None,
         }),
-        NodeEnum::SubLink(sub_link) => sub_link_operator_info(sub_link),
+        NodeEnum::SubLink(sub_link) => OperatorInfo::of_sub_link(sub_link),
         // Boolean expressions (AND/OR) need parens when nested in comparison
         // Use a low precedence so they get wrapped
         NodeEnum::BoolExpr(_) => Some(OperatorInfo {
             precedence: 20, // Lower than PREC_NOT (35)
             associativity: OperatorAssociativity::Left,
         }),
-        _ => None,
-    }
-}
-
-/// The precedence of an operator expression, from the precedence table of the grammar.
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L825
-pub(crate) fn aexpr_operator_info(expr: &AExpr) -> Option<OperatorInfo> {
-    match expr.kind() {
-        AExprKind::AexprOp => operator_info(&expr.name, OperatorArity::from_aexpr(expr)),
-        // The parser decides by the operator before `ANY` whether the left operand ends there.
-        AExprKind::AexprOpAny | AExprKind::AexprOpAll => {
-            operator_info(&expr.name, OperatorArity::Binary)
-        }
-        AExprKind::AexprDistinct | AExprKind::AexprNotDistinct => Some(OperatorInfo {
-            precedence: PREC_IS,
-            associativity: OperatorAssociativity::None,
-        }),
-        AExprKind::AexprIn
-        | AExprKind::AexprLike
-        | AExprKind::AexprIlike
-        | AExprKind::AexprSimilar
-        | AExprKind::AexprBetween
-        | AExprKind::AexprNotBetween
-        | AExprKind::AexprBetweenSym
-        | AExprKind::AexprNotBetweenSym => Some(OperatorInfo {
-            precedence: PREC_LIKE,
-            associativity: OperatorAssociativity::None,
-        }),
-        // `nullif(a, b)` is written like a function call.
-        AExprKind::AexprNullif | AExprKind::Undefined => None,
-    }
-}
-
-/// The precedence of `a op ANY (subquery)`, `a op ALL (subquery)` and `a IN (subquery)`, written
-/// like the operator expressions of the same shape. The others are self-contained.
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15318
-pub(crate) fn sub_link_operator_info(sub_link: &SubLink) -> Option<OperatorInfo> {
-    match sub_link.sub_link_type() {
-        SubLinkType::AnySublink if sub_link.oper_name.is_empty() => Some(OperatorInfo {
-            precedence: PREC_LIKE,
-            associativity: OperatorAssociativity::None,
-        }),
-        SubLinkType::AnySublink | SubLinkType::AllSublink => {
-            operator_info(&sub_link.oper_name, OperatorArity::Binary)
-        }
         _ => None,
     }
 }
