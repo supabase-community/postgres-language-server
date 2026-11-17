@@ -1,6 +1,5 @@
 use pgls_diagnostics::{
-    Advices, Category, DatabaseObjectOwned, Diagnostic, LogCategory, MessageAndDescription,
-    Severity, Visit,
+    Advices, Category, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit,
 };
 use serde_json::Value;
 use std::io;
@@ -10,9 +9,6 @@ use std::io;
 pub struct SplinterDiagnostic {
     #[category]
     pub category: &'static Category,
-
-    #[location(database_object)]
-    pub db_object: Option<DatabaseObjectOwned>,
 
     #[message]
     #[description]

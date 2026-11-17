@@ -8,12 +8,11 @@ pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
 use pgls_catalog::Snapshot;
-use pgls_diagnostics::DatabaseObjectOwned;
 use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
 pub use cache::{PglinterCache, RuleMessage};
-pub use diagnostics::{PglinterAdvices, PglinterDiagnostic};
+pub use diagnostics::{DatabaseObject, PglinterAdvices, PglinterDiagnostic};
 pub use rule::PglinterRule;
 
 /// PostgreSQL catalog OIDs for different object types
@@ -188,14 +187,14 @@ fn resolve_object_from_cache(
     classid: i64,
     objid: i64,
     objsubid: i32,
-) -> Option<DatabaseObjectOwned> {
+) -> Option<DatabaseObject> {
     match classid {
         pg_catalog::PG_CLASS => {
             // pg_class contains tables, views, indexes, sequences, etc.
             // Try tables first, then indexes, then sequences
             snapshot
                 .find_table_by_id(objid)
-                .map(|t| DatabaseObjectOwned {
+                .map(|t| DatabaseObject {
                     schema: Some(t.schema.clone()),
                     name: t.name.clone(),
                     object_type: Some(format!("{:?}", t.table_kind).to_lowercase()),
@@ -203,7 +202,7 @@ fn resolve_object_from_cache(
                 .or_else(|| {
                     snapshot
                         .find_index_by_id(objid)
-                        .map(|i| DatabaseObjectOwned {
+                        .map(|i| DatabaseObject {
                             schema: Some(i.schema.clone()),
                             name: i.name.clone(),
                             object_type: Some("index".to_string()),
@@ -212,7 +211,7 @@ fn resolve_object_from_cache(
                 .or_else(|| {
                     snapshot
                         .find_sequence_by_id(objid)
-                        .map(|s| DatabaseObjectOwned {
+                        .map(|s| DatabaseObject {
                             schema: Some(s.schema.clone()),
                             name: s.name.clone(),
                             object_type: Some("sequence".to_string()),
@@ -223,7 +222,7 @@ fn resolve_object_from_cache(
             // Functions and procedures
             snapshot
                 .find_function_by_id(objid)
-                .map(|f| DatabaseObjectOwned {
+                .map(|f| DatabaseObject {
                     schema: Some(f.schema.clone()),
                     name: f.name.clone(),
                     object_type: Some(format!("{:?}", f.kind).to_lowercase()),
@@ -233,7 +232,7 @@ fn resolve_object_from_cache(
             // Types
             snapshot
                 .find_type_by_id(objid)
-                .map(|t| DatabaseObjectOwned {
+                .map(|t| DatabaseObject {
                     schema: Some(t.schema.clone()),
                     name: t.name.clone(),
                     object_type: Some("type".to_string()),
@@ -243,7 +242,7 @@ fn resolve_object_from_cache(
             // Schemas
             snapshot
                 .find_schema_by_id(objid)
-                .map(|s| DatabaseObjectOwned {
+                .map(|s| DatabaseObject {
                     schema: None,
                     name: s.name.clone(),
                     object_type: Some("schema".to_string()),
@@ -257,7 +256,7 @@ fn resolve_object_from_cache(
                 .columns
                 .iter()
                 .find(|c| c.table_oid == objid && c.number == col_num)
-                .map(|c| DatabaseObjectOwned {
+                .map(|c| DatabaseObject {
                     schema: Some(c.schema_name.clone()),
                     name: format!("{}.{}", c.table_name, c.name),
                     object_type: Some("column".to_string()),

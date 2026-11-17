@@ -458,7 +458,6 @@ mod internal {
                 resource: match loc.resource {
                     Some(Resource::Argv) => Some(Resource::Argv),
                     Some(Resource::Memory) => Some(Resource::Memory),
-                    Some(Resource::Database) => Some(Resource::Database),
                     Some(Resource::File(file)) => {
                         if let Some(Resource::File(path)) = &self.path {
                             Some(Resource::File(path.as_ref()))
@@ -469,7 +468,6 @@ mod internal {
                     None => self.path.as_ref().map(Resource::as_deref),
                 },
                 span: loc.span,
-                database_object: loc.database_object,
                 source_code: loc.source_code,
             }
         }
@@ -525,7 +523,6 @@ mod internal {
             Location {
                 resource: loc.resource,
                 span: self.span.or(loc.span),
-                database_object: loc.database_object,
                 source_code: loc.source_code,
             }
         }
