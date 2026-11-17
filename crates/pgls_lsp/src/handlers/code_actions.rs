@@ -19,7 +19,9 @@ use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
     FixFileParams,
 };
-use pgls_workspace::workspace::GetFileContentParams;
+use pgls_workspace::workspace::{
+    GetFileContentParams, InvalidateSchemaCacheParams, SchemaCacheScope,
+};
 use std::sync::Arc;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
@@ -381,7 +383,11 @@ pub async fn execute_command(
             Ok(Some(value))
         }
         "pgls.invalidateSchemaCache" => {
-            session.workspace.invalidate_schema_cache(true)?;
+            session
+                .workspace
+                .invalidate_schema_cache(InvalidateSchemaCacheParams {
+                    scope: SchemaCacheScope::All,
+                })?;
             // Everything that depends on the schema is out of date.
             session.update_all_diagnostics().await;
 
