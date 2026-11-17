@@ -162,16 +162,6 @@ fn is_lint_group(group: &str) -> bool {
     pgls_analyser::METADATA.groups().contains(&group) || matches!(group, "typecheck" | "nursery")
 }
 
-/// The suppression comment on `line`: the line without its leading whitespace, if it then starts
-/// with `-- pgt-ignore` or `-- pgls-ignore`. Whitespace is any Unicode whitespace, so that a comment
-/// indented with a non-breaking space (e.g. pasted from a web page) is a suppression too. The parser
-/// and [`Suppression::from_line`] both use this, so they agree on which lines are suppressions.
-pub(crate) fn suppression_comment(line: &str) -> Option<&str> {
-    let comment = line.trim_start();
-    (comment.starts_with("-- pgt-ignore") || comment.starts_with("-- pgls-ignore"))
-        .then_some(comment)
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Suppression {
     pub(crate) suppression_range: TextRange,
@@ -184,10 +174,21 @@ pub(crate) struct Suppression {
 }
 
 impl Suppression {
+    /// The suppression comment on `line`: the line without its leading whitespace, if it then
+    /// starts with `-- pgt-ignore` or `-- pgls-ignore`. Whitespace is any Unicode whitespace, so
+    /// that a comment indented with a non-breaking space (e.g. pasted from a web page) is a
+    /// suppression too. The parser and [`Suppression::from_line`] both use this, so they agree on
+    /// which lines are suppressions.
+    pub(crate) fn comment_on(line: &str) -> Option<&str> {
+        let comment = line.trim_start();
+        (comment.starts_with("-- pgt-ignore") || comment.starts_with("-- pgls-ignore"))
+            .then_some(comment)
+    }
+
     /// Creates a suppression from a suppression comment line, which `line` must start with after
-    /// leading whitespace (see [`suppression_comment`]). Returns an error for any other line.
+    /// leading whitespace (see [`Suppression::comment_on`]). Returns an error for any other line.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
-        let Some(start_trimmed) = suppression_comment(line) else {
+        let Some(start_trimmed) = Self::comment_on(line) else {
             return Err(SuppressionDiagnostic {
                 span: TextRange::at(*offset, TextSize::of(line)),
                 message: MessageAndDescription::from(

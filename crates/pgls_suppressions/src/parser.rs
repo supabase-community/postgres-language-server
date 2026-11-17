@@ -9,9 +9,7 @@ use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
     Suppressions,
-    suppression::{
-        RangeSuppression, Suppression, SuppressionDiagnostic, SuppressionKind, suppression_comment,
-    },
+    suppression::{RangeSuppression, Suppression, SuppressionDiagnostic, SuppressionKind},
 };
 
 #[derive(Debug)]
@@ -101,7 +99,7 @@ impl<'a> SuppressionsParser<'a> {
 
     fn parse_suppressions(&mut self) {
         for (idx, line) in self.lines.by_ref() {
-            if suppression_comment(line).is_none() {
+            if Suppression::comment_on(line).is_none() {
                 continue;
             }
 
