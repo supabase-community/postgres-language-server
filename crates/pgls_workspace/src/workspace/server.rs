@@ -71,11 +71,13 @@ use crate::{
     workspace::WithCSTMapper,
 };
 
+#[cfg(feature = "db")]
+use super::SchemaCacheScope;
 use super::{
     FindProjectParams, GetFileContentParams, InvalidateSchemaCacheParams, IsPathIgnoredParams,
-    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, SchemaCacheScope,
-    ServerInfo, UnregisterProjectFolderParams, UpdateNestedSettingsParams,
-    UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
