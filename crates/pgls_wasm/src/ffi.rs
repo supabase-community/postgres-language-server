@@ -21,7 +21,7 @@
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 use crate::{WasmError, Workspace};
 
@@ -37,11 +37,11 @@ fn with_workspace<F, T>(f: F) -> T
 where
     F: FnOnce(&mut Workspace) -> T,
 {
-    let mut guard = WORKSPACE.lock().unwrap();
-    if guard.is_none() {
-        *guard = Some(Workspace::new());
-    }
-    f(guard.as_mut().unwrap())
+    // A panic in an earlier call poisons the lock. Keep using the workspace instead of failing
+    // every later call until the page reloads: WASM is single-threaded, so no call saw it half
+    // changed.
+    let mut guard = WORKSPACE.lock().unwrap_or_else(PoisonError::into_inner);
+    f(guard.get_or_insert_with(Workspace::new))
 }
 
 /// Convert a C string to a Rust string slice.
@@ -377,7 +377,7 @@ pub unsafe extern "C" fn pgls_split_statements(sql: *const c_char) -> *mut c_cha
 /// The returned string must be freed with `pgls_free_string`.
 #[unsafe(no_mangle)]
 pub extern "C" fn pgls_version() -> *mut c_char {
-    str_to_c_string(env!("CARGO_PKG_VERSION"))
+    str_to_c_string(pgls_env::VERSION)
 }
 
 // =============================================================================
@@ -421,12 +421,11 @@ pub unsafe extern "C" fn pgls_lsp_handle_message(message: *const c_char) -> *mut
         None => return str_to_c_string("[]"),
     };
 
-    let mut guard = LSP_HANDLER.lock().unwrap();
-    if guard.is_none() {
-        *guard = Some(LspHandler::new());
-    }
-
-    let response = guard.as_mut().unwrap().handle_message(msg);
+    // Like the workspace API, keep using the handler after a panic poisoned the lock.
+    let mut guard = LSP_HANDLER.lock().unwrap_or_else(PoisonError::into_inner);
+    let response = guard
+        .get_or_insert_with(LspHandler::new)
+        .handle_message(msg);
     str_to_c_string(&response)
 }
 
@@ -445,7 +444,7 @@ mod tests {
         assert!(!version.is_null());
         unsafe {
             let version_str = CStr::from_ptr(version).to_str().unwrap();
-            assert_eq!(version_str, "0.0.0");
+            assert_eq!(version_str, pgls_env::VERSION);
             pgls_free_string(version);
         }
     }

@@ -1,28 +1,28 @@
-1:1 rejected 42704
-3:1 accepted
-4:1 accepted
-5:1 accepted
-6:1 accepted
-9:1 accepted
-15:1 accepted
-18:1 rejected 42809
-19:1 rejected 42809
-20:1 rejected 42809
-21:1 rejected 42809
-22:1 accepted
-23:1 rejected 42809
-25:1 rejected 42703
-27:1 accepted
-34:1 accepted
-41:1 rejected 42701
-46:1 rejected 2BP01
-47:1 accepted
-49:1 rejected 42809
-51:1 accepted
-56:1 accepted
-57:1 accepted
-58:1 accepted
-60:1 accepted
-61:1 accepted
-63:1 accepted
-70:1 accepted
+0..32 rejected 42704
+34..81 accepted
+82..118 accepted
+119..169 accepted
+170..192 accepted
+195..304 accepted
+306..338 accepted
+406..450 rejected 42809
+451..488 rejected 42809
+489..533 rejected 42809
+534..585 rejected 42809
+586..614 accepted
+615..649 rejected 42809
+651..719 rejected 42703
+730..822 accepted
+826..922 accepted
+926..1068 rejected 42701
+1070..1101 rejected 2BP01
+1102..1132 accepted
+1134..1165 rejected 42809
+1208..1225 accepted
+1249..1296 accepted
+1297..1333 accepted
+1334..1373 accepted
+1375..1469 accepted
+1470..1511 accepted
+1513..1605 accepted
+1609..1701 accepted

@@ -60,11 +60,11 @@ pub struct CliOptions {
         env("PGLS_LOG_LEVEL"),
         env("PGT_LOG_LEVEL"),
         long("log-level"),
-        argument("none|debug|info|warn|error"),
+        argument("none|trace|debug|info|warn|error"),
         fallback(LoggingLevel::default()),
         display_fallback
     )]
-    /// The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+    /// The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
     ///
     /// The value `none` won't show any logging.
     pub log_level: LoggingLevel,

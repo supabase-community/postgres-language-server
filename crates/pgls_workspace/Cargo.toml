@@ -62,7 +62,7 @@ pgls_resolve       = { workspace = true }
 pgls_splinter      = { workspace = true, optional = true }
 pgls_typecheck     = { workspace = true, optional = true }
 sqlx               = { workspace = true, optional = true }
-tokio              = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
+tokio              = { workspace = true, features = ["rt", "rt-multi-thread", "time"], optional = true }
 url                = { version = "2.5.8", optional = true }
 
 [features]
@@ -92,7 +92,7 @@ schema = [
 pgls_test_utils = { workspace = true }
 sqlx            = { workspace = true }
 tempfile        = "3.15.0"
-tokio           = { workspace = true }
+tokio           = { workspace = true, features = ["test-util"] }
 
 [lib]
 doctest = false
