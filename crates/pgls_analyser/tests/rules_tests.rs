@@ -220,6 +220,7 @@ fn analyse(
         }
     }
 
+    // Like the workspace, the fixes that don't keep the SQL valid are not used.
     analyser
         .analyse(AnalyserParams {
             stmts,
@@ -228,10 +229,18 @@ fn analyse(
             search_path: vec!["public".into()],
             typecheck: is_typecheck,
             sections: migration_sections(query),
-            source: Some(query.to_owned()),
             ..Default::default()
         })
         .diagnostics
+        .into_iter()
+        .map(|diagnostic| {
+            let fix = diagnostic
+                .get_fix()
+                .filter(|fix| fix.keeps_sql_valid(query, &split.ranges))
+                .cloned();
+            diagnostic.maybe_fix(fix)
+        })
+        .collect()
 }
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must
