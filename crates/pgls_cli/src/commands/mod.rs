@@ -282,10 +282,11 @@ pub enum PgLSCommand {
             env("PGLS_LOG_LEVEL"),
             env("PGT_LOG_LEVEL"),
             long("log-level"),
-            argument("trace|debug|info|warn|error|none"),
-            fallback(String::from("debug"))
+            argument("none|trace|debug|info|warn|error"),
+            fallback(LoggingLevel::Debug),
+            display_fallback
         )]
-        log_level: String,
+        log_level: LoggingLevel,
 
         /// Allows to change the logging format kind. Default is hierarchical.
         #[bpaf(

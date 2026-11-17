@@ -400,6 +400,41 @@ fn check_stdin_fails_on_warnings_with_error_on_warnings() {
     assert!(output.contains("preferJsonb"), "{output}");
 }
 
+/// The server and the CLI read `PGLS_LOG_LEVEL`, and both take every level the server documents.
+#[test]
+fn check_accepts_every_log_level_of_the_environment() {
+    for level in ["none", "off", "trace", "debug", "info", "warn", "error"] {
+        let output = cargo_bin_cmd!("postgres-language-server")
+            .env("PGLS_LOG_LEVEL", level)
+            .args([
+                "check",
+                "--config-path",
+                CONFIG_PATH,
+                "--disable-db",
+                "--stdin-file-path",
+                "virtual.sql",
+            ])
+            .write_stdin("select 1;\n")
+            .output()
+            .expect("failed to run CLI");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "{level}: {stderr}");
+    }
+
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .env("PGLS_LOG_LEVEL", "verbose")
+        .args(["check", "--disable-db", "--stdin-file-path", "virtual.sql"])
+        .write_stdin("select 1;\n")
+        .output()
+        .expect("failed to run CLI");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success(), "{stderr}");
+    assert!(
+        stderr.contains("use none, trace, debug, info, warn or error"),
+        "{stderr}"
+    );
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 fn check_fails_on_invalid_connection_string() {
