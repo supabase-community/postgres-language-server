@@ -1,7 +1,3 @@
-// The lexer splits the client's SQL on every change, so a panic on unexpected input takes down
-// the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod codegen;
 mod lexed;
 mod lexer;

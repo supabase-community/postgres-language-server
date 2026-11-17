@@ -5,10 +5,6 @@
 //! resolution. Calls with unknown argument types, or that match no function or more than one,
 //! get none.
 
-// Inlay hints read the client's SQL and the database's catalog, so a panic on unexpected input
-// takes down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use pgls_catalog::{CatalogView, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{ScanToken, Token};

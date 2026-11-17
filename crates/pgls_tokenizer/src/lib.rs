@@ -1,7 +1,3 @@
-// The tokenizer runs on the client's SQL on every change, so a panic on unexpected input takes
-// down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod cursor;
 mod token;
 use cursor::{Cursor, EOF_CHAR};

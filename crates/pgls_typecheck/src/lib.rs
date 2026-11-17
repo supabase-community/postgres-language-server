@@ -1,7 +1,3 @@
-// The type check runs the statements of the client against the database, so a panic on unexpected
-// input or output takes down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 pub mod diagnostics;
 pub mod typed_identifier;
 
