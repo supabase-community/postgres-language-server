@@ -1,3 +1,3 @@
-4:1 accepted
-16:1 rejected 42601
-27:1 rejected 54001
+97..188 accepted
+714..785 rejected 42601
+893..919 rejected 54001

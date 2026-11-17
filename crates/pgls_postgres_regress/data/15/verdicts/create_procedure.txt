@@ -1,107 +1,107 @@
-1:1 rejected 42883
-2:1 rejected 42809
-4:1 accepted
-6:1 accepted
-8:1 accepted
-15:1 accepted
-23:1 rejected 42809
-24:1 accepted
-25:1 accepted
-26:1 accepted
-28:1 accepted
-32:1 accepted
-39:1 accepted
-41:1 accepted
-43:1 accepted
-46:1 rejected 0A000
-53:1 accepted
-59:1 accepted
-63:1 accepted
-65:1 accepted
-72:1 accepted
-74:1 accepted
-79:1 accepted
-85:1 accepted
-87:1 rejected 0A000
-94:1 rejected 42704
-100:1 rejected 42883
-102:1 rejected 42883
-107:1 accepted
-114:1 accepted
-116:1 accepted
-117:1 accepted
-118:1 accepted
-119:1 accepted
-121:1 accepted
-126:1 accepted
-132:1 accepted
-134:1 accepted
-140:1 accepted
-141:1 accepted
-143:1 accepted
-149:1 accepted
-150:1 accepted
-152:1 accepted
-158:1 accepted
-159:1 accepted
-164:1 accepted
-170:1 accepted
-174:1 accepted
-179:1 accepted
-180:1 accepted
-185:1 accepted
-193:1 accepted
-195:1 accepted
-197:1 rejected 42883
-200:1 accepted
-203:1 accepted
-204:1 accepted
-205:1 accepted
-206:1 accepted
-207:1 accepted
-209:1 accepted
-212:1 accepted
-216:1 accepted
-221:1 rejected 42725
-222:1 rejected 42725
-223:1 skipped
-224:1 accepted
-226:1 accepted
-227:1 skipped
-228:1 skipped
-229:1 rejected 42883
-231:1 rejected 42883
-232:1 skipped
-236:1 rejected 42809
-237:1 rejected 42809
-239:1 rejected 42P13
-240:1 rejected 42P13
-241:1 rejected 42P13
-243:1 rejected 42P13
-246:1 rejected 42P13
-247:1 rejected 42809
-248:1 rejected 42809
-249:1 rejected 42883
-251:1 rejected 42809
-252:1 rejected 42809
-253:1 rejected 42883
-258:1 accepted
-259:1 accepted
-260:1 accepted
-261:1 accepted
-262:1 rejected 42501
-263:1 accepted
-264:1 accepted
-265:1 accepted
-266:1 accepted
-267:1 accepted
-272:1 accepted
-273:1 accepted
-275:1 accepted
-276:1 accepted
-278:1 accepted
-283:1 accepted
-284:1 accepted
-285:1 accepted
-287:1 accepted
-289:1 accepted
+0..19 rejected 42883
+30..44 rejected 42809
+56..135 accepted
+137..174 accepted
+176..265 accepted
+268..313 accepted
+373..392 rejected 42809
+403..420 accepted
+428..455 accepted
+484..545 accepted
+568..613 accepted
+637..737 accepted
+740..786 accepted
+788..806 accepted
+808..853 accepted
+906..988 rejected 0A000
+991..1049 accepted
+1051..1065 accepted
+1083..1100 accepted
+1102..1189 accepted
+1191..1208 accepted
+1210..1232 accepted
+1256..1342 accepted
+1344..1369 accepted
+1371..1489 rejected 0A000
+1564..1650 rejected 42704
+1652..1671 rejected 42883
+1673..1705 rejected 42883
+1741..1900 accepted
+1902..1919 accepted
+1921..1950 accepted
+1951..1976 accepted
+1977..2007 accepted
+2008..2043 accepted
+2045..2067 accepted
+2092..2177 accepted
+2179..2197 accepted
+2199..2299 accepted
+2301..2323 accepted
+2324..2348 accepted
+2350..2467 accepted
+2469..2497 accepted
+2498..2528 accepted
+2530..2631 accepted
+2633..2655 accepted
+2656..2680 accepted
+2729..2805 accepted
+2807..2841 accepted
+2858..2907 accepted
+2910..2955 accepted
+2956..2972 accepted
+2994..3098 accepted
+3130..3148 accepted
+3204..3221 accepted
+3292..3311 rejected 42883
+3357..3448 accepted
+3450..3475 accepted
+3476..3516 accepted
+3517..3547 accepted
+3548..3584 accepted
+3585..3622 accepted
+3624..3721 accepted
+3723..3754 accepted
+3804..3898 accepted
+3902..3925 rejected 42725
+3935..3973 rejected 42725
+3983..3989 skipped
+3990..4032 accepted
+4034..4072 accepted
+4097..4106 skipped
+4107..4113 skipped
+4114..4155 rejected 42883
+4157..4195 rejected 42883
+4220..4229 skipped
+4255..4270 rejected 42809
+4298..4310 rejected 42809
+4339..4430 rejected 42P13
+4431..4522 rejected 42P13
+4523..4612 rejected 42P13
+4613..4699 rejected 42P13
+4701..4737 rejected 42P13
+4738..4775 rejected 42809
+4802..4845 rejected 42809
+4873..4912 rejected 42883
+4914..4941 rejected 42809
+4968..5001 rejected 42809
+5029..5058 rejected 42883
+5076..5105 accepted
+5106..5150 accepted
+5151..5204 accepted
+5205..5231 accepted
+5232..5249 rejected 42501
+5260..5271 accepted
+5272..5332 accepted
+5333..5359 accepted
+5360..5377 accepted
+5385..5396 accepted
+5418..5474 accepted
+5475..5526 accepted
+5528..5573 accepted
+5574..5613 accepted
+5615..5646 accepted
+5661..5683 accepted
+5684..5707 accepted
+5708..5730 accepted
+5732..5751 accepted
+5753..5780 accepted

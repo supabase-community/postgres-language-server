@@ -1,22 +1,22 @@
-7:1 accepted
-9:1 accepted
-11:1 accepted
-13:1 accepted
-15:1 accepted
-17:1 accepted
-19:1 accepted
-21:1 accepted
-23:1 accepted
-25:1 accepted
-29:1 rejected 22P02
-31:1 rejected 22P02
-33:1 rejected 22P02
-35:1 rejected 22P02
-37:1 rejected 22P02
-39:1 accepted
-41:1 accepted
-44:1 accepted
-47:1 accepted
-50:1 accepted
-52:1 accepted
-54:1 accepted
+118..146 accepted
+148..184 accepted
+186..230 accepted
+232..278 accepted
+280..326 accepted
+328..382 accepted
+384..439 accepted
+441..499 accepted
+501..545 accepted
+562..608 accepted
+639..689 rejected 22P02
+691..739 rejected 22P02
+741..792 rejected 22P02
+794..837 rejected 22P02
+839..885 rejected 22P02
+887..912 accepted
+914..960 accepted
+962..1008 accepted
+1010..1060 accepted
+1062..1109 accepted
+1111..1162 accepted
+1164..1363 accepted
