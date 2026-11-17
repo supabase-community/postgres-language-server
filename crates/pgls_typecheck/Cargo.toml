@@ -24,9 +24,7 @@ pgls_treesitter.workspace         = true
 pgls_treesitter_grammar.workspace = true
 regex                             = "1.11.1"
 sqlx.workspace                    = true
-tokio.workspace                   = true
 tree-sitter.workspace             = true
-uuid                              = { version = "1.18.1", features = ["v4"] }
 
 [dev-dependencies]
 criterion.workspace       = true

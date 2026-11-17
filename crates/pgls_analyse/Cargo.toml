@@ -13,16 +13,12 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_catalog               = { workspace = true }
 pgls_console.workspace     = true
 pgls_diagnostics.workspace = true
-pgls_query.workspace       = true
-rustc-hash                 = { workspace = true }
 
-enumflags2.workspace     = true
-pgls_text_size.workspace = true
-schemars                 = { workspace = true, optional = true }
-serde                    = { workspace = true, features = ["derive"], optional = true }
+enumflags2.workspace = true
+schemars             = { workspace = true, optional = true }
+serde                = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 schema = ["dep:schemars"]

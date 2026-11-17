@@ -360,8 +360,8 @@ where
 {
     fn as_span(&self) -> Option<TextRange> {
         Some(TextRange::new(
-            TextSize::try_from(self.start).expect("integer overflow"),
-            TextSize::try_from(self.end).expect("integer overflow"),
+            TextSize::try_from(self.start).ok()?,
+            TextSize::try_from(self.end).ok()?,
         ))
     }
 }

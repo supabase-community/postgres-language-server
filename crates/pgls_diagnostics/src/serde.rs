@@ -44,16 +44,22 @@ impl Diagnostic {
 
         let mut message = MarkupBuf::default();
         let mut fmt = fmt::Formatter::new(&mut message);
-        // SAFETY: Writing to a MarkupBuf should never fail
-        diag.message(&mut fmt).unwrap();
+        let written = diag.message(&mut fmt);
+        debug_assert!(written.is_ok(), "writing to a MarkupBuf never fails");
 
         let mut advices = Advices::new();
-        // SAFETY: The Advices visitor never returns an error
-        diag.advices(&mut advices).unwrap();
+        let recorded = diag.advices(&mut advices);
+        debug_assert!(
+            recorded.is_ok(),
+            "the Advices visitor never returns an error"
+        );
 
         let mut verbose_advices = Advices::new();
-        // SAFETY: The Advices visitor never returns an error
-        diag.verbose_advices(&mut verbose_advices).unwrap();
+        let recorded = diag.verbose_advices(&mut verbose_advices);
+        debug_assert!(
+            recorded.is_ok(),
+            "the Advices visitor never returns an error"
+        );
 
         let location = diag.location().into();
 
@@ -396,8 +402,10 @@ mod tests {
     };
     use pgls_diagnostics_macros::Diagnostic;
 
-    // Only used by the serialization tests below, which are commented out.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "only used by the serialization tests below, which are commented out"
+    )]
     #[derive(Debug, Diagnostic)]
     #[diagnostic(
         severity = Warning,
@@ -433,7 +441,10 @@ mod tests {
         }
     }
 
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "only used by the serialization tests below, which are commented out"
+    )]
     #[derive(Debug)]
     struct TestAdvices;
 

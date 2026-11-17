@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use core::slice;
 use std::{
     collections::{HashMap, HashSet},
@@ -23,7 +30,7 @@ static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::n
 fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
     TYPECHECK_CATALOG
         .get_or_init(|| {
-            let database_url = pgls_test_utils::db::database_url();
+            let database_url = pgls_test_utils::db::database_url().unwrap_or_else(|error| panic!("{error}"));
             let runtime = tokio::runtime::Runtime::new().expect("failed to create test database runtime");
             let snapshot = runtime.block_on(async {
                 let pool = sqlx::postgres::PgPoolOptions::new()
@@ -95,7 +102,7 @@ fn builtin_snapshot(mut snapshot: pgls_catalog::Snapshot) -> pgls_catalog::Snaps
     glob: "**/*.sql",
     loader: read_to_string,
 )]
-#[dir_test_attr(#[allow(non_snake_case)])]
+#[dir_test_attr(#[allow(non_snake_case, reason = "test names come from camelCase rule directories")])]
 fn rule_test(fixture: Fixture<std::io::Result<String>>) {
     let full_path = fixture.path();
     let input_file = Path::new(full_path);
