@@ -83,9 +83,7 @@ pub(crate) fn resolve_procedure_call(r: &mut Resolver<'_>, n: &pgls_query::proto
     if !r.collects_references() {
         return;
     }
-    let findings = r.findings.len();
-    let args = call_args(r, n);
-    r.findings.truncate(findings);
+    let args = r.without_findings(|r| call_args(r, n));
     let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.funcname) else {
         return;
     };

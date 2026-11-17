@@ -11,12 +11,12 @@ use crate::{output::QueryOutput, scope::Level, utils::resolve_expr};
 ///
 /// [`transformDeleteStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L553
 pub(super) fn resolve_delete_stmt(r: &mut Resolver, n: &DeleteStmt) -> Option<QueryOutput> {
-    let ctes = r.ctes.len();
-    if let Some(with) = &n.with_clause {
-        resolve_with_clause(r, with);
-    }
-    let output = resolve_delete(r, n);
-    r.ctes.truncate(ctes);
+    let output = r.with_ctes(|r| {
+        if let Some(with) = &n.with_clause {
+            resolve_with_clause(r, with);
+        }
+        resolve_delete(r, n)
+    });
     output
 }
 
@@ -29,12 +29,10 @@ fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Option<QueryOutput> {
 
     let mut level = Level::with_item(target.clone());
     level.extend(resolve_from_clause(r, &n.using_clause));
-    r.enter_level(level);
-
-    if let Some(where_clause) = n.where_clause.as_deref() {
-        resolve_expr(r, where_clause);
-    }
-
-    let level = r.exit_level();
+    let ((), level) = r.in_level(level, |r| {
+        if let Some(where_clause) = n.where_clause.as_deref() {
+            resolve_expr(r, where_clause);
+        }
+    });
     resolve_returning_clause(r, n.returning_clause.as_ref(), &target, level)
 }

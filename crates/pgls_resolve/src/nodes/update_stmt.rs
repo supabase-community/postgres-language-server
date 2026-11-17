@@ -15,12 +15,12 @@ use crate::{output::QueryOutput, scope::Level, utils::resolve_expr};
 /// [`transformUpdateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2472
 /// [`transformUpdateTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2546
 pub(super) fn resolve_update_stmt(r: &mut Resolver, n: &UpdateStmt) -> Option<QueryOutput> {
-    let ctes = r.ctes.len();
-    if let Some(with) = &n.with_clause {
-        resolve_with_clause(r, with);
-    }
-    let output = resolve_update(r, n);
-    r.ctes.truncate(ctes);
+    let output = r.with_ctes(|r| {
+        if let Some(with) = &n.with_clause {
+            resolve_with_clause(r, with);
+        }
+        resolve_update(r, n)
+    });
     output
 }
 
@@ -33,13 +33,11 @@ fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Option<QueryOutput> {
 
     let mut level = Level::with_item(target.clone());
     level.extend(resolve_from_clause(r, &n.from_clause));
-    r.enter_level(level);
-
-    resolve_set_clause(r, &target, &n.target_list);
-    if let Some(where_clause) = n.where_clause.as_deref() {
-        resolve_expr(r, where_clause);
-    }
-
-    let level = r.exit_level();
+    let ((), level) = r.in_level(level, |r| {
+        resolve_set_clause(r, &target, &n.target_list);
+        if let Some(where_clause) = n.where_clause.as_deref() {
+            resolve_expr(r, where_clause);
+        }
+    });
     resolve_returning_clause(r, n.returning_clause.as_ref(), &target, level)
 }

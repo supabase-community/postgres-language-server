@@ -29,12 +29,12 @@ use pgls_catalog::typing::{Type, TypedColumn};
 /// [`checkInsertTargets`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1018
 /// [`transformInsertRow`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1060
 pub(super) fn resolve_insert_stmt(r: &mut Resolver, n: &InsertStmt) -> Option<QueryOutput> {
-    let ctes = r.ctes.len();
-    if let Some(with) = &n.with_clause {
-        resolve_with_clause(r, with);
-    }
-    let output = resolve_insert(r, n);
-    r.ctes.truncate(ctes);
+    let output = r.with_ctes(|r| {
+        if let Some(with) = &n.with_clause {
+            resolve_with_clause(r, with);
+        }
+        resolve_insert(r, n)
+    });
     output
 }
 
