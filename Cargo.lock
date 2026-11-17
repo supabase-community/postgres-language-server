@@ -2905,10 +2905,8 @@ dependencies = [
 name = "pgls_typecheck"
 version = "0.0.0"
 dependencies = [
- "criterion",
  "insta",
  "itertools 0.14.0",
- "once_cell",
  "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
@@ -2916,13 +2914,10 @@ dependencies = [
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
- "pgls_treesitter",
  "pgls_treesitter_grammar",
- "regex",
  "sqlx",
  "tokio",
  "tree-sitter",
- "uuid",
 ]
 
 [[package]]
