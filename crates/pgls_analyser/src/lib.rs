@@ -105,11 +105,9 @@ pub struct StatementAnalysis {
     /// `true` when typechecking is enabled and everything the statement references comes
     /// unchanged from the database, so checking it against the database is still correct.
     pub database_only: bool,
-    /// `true` when a typecheck rule reported a diagnostic for this statement.
-    pub has_typecheck_findings: bool,
-    /// `true` when `banDuplicateColumnAssignments` reported the statement. Postgres reports
-    /// the same assignments when it prepares the statement, without a position.
-    pub has_duplicate_assignments: bool,
+    /// `true` when a rule that reports an error of the database reported the statement, see
+    /// [`LinterRule::REPORTS_DATABASE_ERROR`].
+    pub reported_database_error: bool,
     /// The explicit search path of the session at this statement.
     pub search_path: Vec<String>,
 }
@@ -138,10 +136,6 @@ impl<'a> Analyser<'a> {
             registry,
             options: conf.options,
         }
-    }
-
-    pub fn run(&self, params: AnalyserParams) -> Vec<LinterDiagnostic> {
-        self.analyse(params).diagnostics
     }
 
     /// Runs the rules statement by statement, while the catalog and the session follow the
@@ -230,8 +224,7 @@ impl<'a> Analyser<'a> {
                 && validated;
 
             let statement = StatementContext::new(stmt, collect_lookups);
-            let mut has_typecheck_findings = false;
-            let mut has_duplicate_assignments = false;
+            let mut reported_database_error = false;
 
             let rule_params = LinterRegistryRuleParams {
                 root,
@@ -244,11 +237,7 @@ impl<'a> Analyser<'a> {
                     continue;
                 }
                 let diagnostics = (rule.run)(&rule_params);
-                has_typecheck_findings |= rule.group == TYPECHECK_GROUP && !diagnostics.is_empty();
-                has_duplicate_assignments |= diagnostics.iter().any(|diagnostic| {
-                    diagnostic.category
-                        == pgls_diagnostics::category!("lint/banDuplicateColumnAssignments")
-                });
+                reported_database_error |= rule.reports_database_error && !diagnostics.is_empty();
 
                 result
                     .diagnostics
@@ -283,8 +272,7 @@ impl<'a> Analyser<'a> {
             result.statements.push(StatementAnalysis {
                 range: stmt.range,
                 database_only,
-                has_typecheck_findings,
-                has_duplicate_assignments,
+                reported_database_error,
                 search_path: file_context.session().search_path().to_vec(),
             });
         });
@@ -409,12 +397,13 @@ pub(crate) fn spanned_texts(group: &str, rule: &str, sql: &str) -> Vec<String> {
         })
         .collect();
     analyser
-        .run(AnalyserParams {
+        .analyse(AnalyserParams {
             stmts,
             search_path: vec!["public".into()],
             source: Some(sql.to_owned()),
             ..Default::default()
         })
+        .diagnostics
         .iter()
         .map(|diagnostic| {
             let span = pgls_diagnostics::Diagnostic::location(diagnostic)
@@ -592,7 +581,7 @@ mod tests {
                 stmts: vec![AnalysableStatement::new(ast, range)],
                 ..Default::default()
             });
-            result.statements[0].has_duplicate_assignments
+            result.statements[0].reported_database_error
         };
         assert!(marked(
             "merge into users u using imports i on u.id = i.id \
@@ -632,10 +621,12 @@ mod tests {
             filter,
         });
 
-        let results = analyser.run(crate::AnalyserParams {
-            stmts: vec![AnalysableStatement::new(ast.into_root().unwrap(), range)],
-            ..Default::default()
-        });
+        let results = analyser
+            .analyse(crate::AnalyserParams {
+                stmts: vec![AnalysableStatement::new(ast.into_root().unwrap(), range)],
+                ..Default::default()
+            })
+            .diagnostics;
 
         println!("*******************");
         for result in &results {

@@ -15,7 +15,7 @@ pub mod serde;
 
 mod suggestion;
 
-pub use self::suggestion::{Applicability, CodeSuggestion};
+pub use self::suggestion::Applicability;
 pub use termcolor;
 
 #[doc(hidden)]

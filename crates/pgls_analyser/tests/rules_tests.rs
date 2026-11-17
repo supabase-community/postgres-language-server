@@ -214,7 +214,7 @@ fn analyse(
         }
     }
 
-    analyser.run(AnalyserParams {
+    analyser.analyse(AnalyserParams {
         stmts,
         unparsable,
         catalog_base: catalog,
@@ -224,6 +224,7 @@ fn analyse(
         source: Some(query.to_owned()),
         ..Default::default()
     })
+    .diagnostics
 }
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must
