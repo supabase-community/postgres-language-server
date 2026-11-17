@@ -2960,6 +2960,7 @@ dependencies = [
  "pgls_completions",
  "pgls_configuration",
  "pgls_diagnostics",
+ "pgls_env",
  "pgls_fs",
  "pgls_line_index",
  "pgls_query",

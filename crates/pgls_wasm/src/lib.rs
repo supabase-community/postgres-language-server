@@ -20,6 +20,8 @@
 //! const errors = workspace.parse("SELECT * FROM users;");
 //! ```
 
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::path::PathBuf;
 
 use pgls_analyse::RuleCategories;
@@ -623,10 +625,12 @@ impl Workspace {
         self.inner
             .split_statements(sql)
             .into_iter()
-            .map(|range| Statement {
-                sql: sql[range].to_string(),
-                start: u32::from(range.start()),
-                end: u32::from(range.end()),
+            .filter_map(|range| {
+                Some(Statement {
+                    sql: sql.get(std::ops::Range::<usize>::from(range))?.to_string(),
+                    start: u32::from(range.start()),
+                    end: u32::from(range.end()),
+                })
             })
             .collect()
     }
