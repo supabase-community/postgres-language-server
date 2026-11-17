@@ -2123,9 +2123,13 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
         .await
         .expect("Failed to add column to table");
 
-    // Invalidate the schema cache (all = false for current connection only)
+    // Invalidate the schemas loaded from database connections
     server
-        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
+        .request::<_, ()>(
+            "pgls/invalidate_schema_cache",
+            "_invalidate_cache",
+            serde_json::json!({ "scope": "connections" }),
+        )
         .await?;
 
     // Get completions after invalidating cache - 'name' should NOW be present

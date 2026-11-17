@@ -1,2 +1,2 @@
-4:1 rejected 42601
-10:1 accepted
+194..267 rejected 42601
+332..461 accepted

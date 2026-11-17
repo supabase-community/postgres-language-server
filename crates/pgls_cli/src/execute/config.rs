@@ -1,10 +1,13 @@
 use pgls_configuration::RuleSelector;
+use pgls_diagnostics::{Diagnostic, category};
 use pgls_workspace::features::code_actions::FixFileMode;
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub mode: ExecutionMode,
     pub max_diagnostics: u32,
     pub allow_writes: bool,
+    /// Skip files with syntax errors instead of reporting them (`--skip-errors`).
+    pub skip_errors: bool,
 }
 
 impl ExecutionConfig {
@@ -14,7 +17,24 @@ impl ExecutionConfig {
             mode,
             max_diagnostics,
             allow_writes,
+            skip_errors: false,
         }
+    }
+
+    pub fn with_skip_errors(mut self, skip_errors: bool) -> Self {
+        self.skip_errors = skip_errors;
+        self
+    }
+
+    /// Whether `--skip-errors` skips a file with `diagnostics`: they contain a syntax error.
+    pub(crate) fn skips<'a, D: Diagnostic + 'a>(
+        &self,
+        diagnostics: impl IntoIterator<Item = &'a D>,
+    ) -> bool {
+        self.skip_errors
+            && diagnostics
+                .into_iter()
+                .any(|diagnostic| diagnostic.category() == Some(category!("syntax")))
     }
 
     pub fn max_diagnostics(&self) -> u32 {

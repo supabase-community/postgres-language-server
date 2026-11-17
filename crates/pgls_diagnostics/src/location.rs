@@ -2,6 +2,7 @@ use pgls_text_size::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::ops::Range;
+use std::sync::Arc;
 use std::{borrow::Borrow, ops::Deref};
 
 /// Represents a database object (table, function, etc.)
@@ -144,16 +145,6 @@ impl<T, L> SourceCode<T, L> {
     }
 }
 
-impl BorrowedSourceCode<'_> {
-    /// Converts a `SourceCode<&str, &LineIndex>` to `SourceCode<String, LineIndexBuf>`.
-    pub(crate) fn to_owned(self) -> OwnedSourceCode {
-        SourceCode {
-            text: self.text.to_owned(),
-            line_starts: self.line_starts.map(ToOwned::to_owned),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct LineIndex([TextSize]);
 
@@ -208,6 +199,60 @@ impl Deref for LineIndexBuf {
 impl Borrow<LineIndex> for LineIndexBuf {
     fn borrow(&self) -> &LineIndex {
         self
+    }
+}
+
+/// The source code of a file with its line index, shared by all the diagnostics of the file.
+///
+/// Each diagnostic holds a reference to it, instead of a copy of the file and a line index of its
+/// own: with a copy per diagnostic, the CLI held file size × diagnostics bytes until it printed
+/// them (6.2 GB for 2,000 diagnostics on a 20,000-statement file).
+#[derive(Debug, Clone)]
+pub struct SharedSourceCode(Arc<OwnedSourceCode>);
+
+impl SharedSourceCode {
+    /// Takes `text` and builds its line index, once for all the diagnostics of the file.
+    pub fn new(text: impl Into<String>) -> Self {
+        let text = text.into();
+        let line_starts = LineIndexBuf::from_source_text(&text);
+        Self(Arc::new(SourceCode {
+            text,
+            line_starts: Some(line_starts),
+        }))
+    }
+
+    pub(crate) fn as_borrowed(&self) -> BorrowedSourceCode<'_> {
+        self.0.as_deref()
+    }
+}
+
+impl From<&str> for SharedSourceCode {
+    fn from(text: &str) -> Self {
+        Self::new(text)
+    }
+}
+
+impl From<&String> for SharedSourceCode {
+    fn from(text: &String) -> Self {
+        Self::new(text.as_str())
+    }
+}
+
+impl From<String> for SharedSourceCode {
+    fn from(text: String) -> Self {
+        Self::new(text)
+    }
+}
+
+impl From<&SharedSourceCode> for SharedSourceCode {
+    fn from(source_code: &SharedSourceCode) -> Self {
+        source_code.clone()
+    }
+}
+
+impl AsSourceCode for SharedSourceCode {
+    fn as_source_code(&self) -> Option<BorrowedSourceCode<'_>> {
+        Some(self.as_borrowed())
     }
 }
 
@@ -408,7 +453,42 @@ impl AsDatabaseObject for DatabaseObjectOwned {
 mod tests {
     use pgls_text_size::TextSize;
 
-    use super::LineIndexBuf;
+    use super::{LineIndexBuf, SharedSourceCode};
+    use crate::{Diagnostic, DiagnosticExt, Error};
+
+    #[derive(Debug)]
+    struct TestDiagnostic;
+
+    impl Diagnostic for TestDiagnostic {}
+
+    /// The diagnostics of a file share its text and line index instead of copying them.
+    #[test]
+    fn diagnostics_share_the_source_code_of_their_file() {
+        let source_code = SharedSourceCode::new("select 1;\nselect 2;\n");
+        let diagnostics: Vec<Error> = (0..2)
+            .map(|_| TestDiagnostic.with_file_source_code(&source_code))
+            .collect();
+
+        let [first, second] = [&diagnostics[0], &diagnostics[1]].map(|diagnostic| {
+            diagnostic
+                .location()
+                .source_code
+                .expect("the diagnostic has a source code")
+        });
+        assert!(std::ptr::eq(first.text, second.text));
+        assert!(std::ptr::eq(
+            first.line_starts.expect("a line index"),
+            second.line_starts.expect("a line index"),
+        ));
+        assert_eq!(
+            &**first.line_starts.unwrap(),
+            &[
+                TextSize::from(0u32),
+                TextSize::from(10u32),
+                TextSize::from(20u32)
+            ]
+        );
+    }
 
     #[test]
     fn line_starts_with_carriage_return_line_feed() {

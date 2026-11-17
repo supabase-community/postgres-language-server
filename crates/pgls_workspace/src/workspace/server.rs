@@ -70,10 +70,10 @@ use crate::{
 };
 
 use super::{
-    FindProjectParams, GetFileContentParams, IsPathIgnoredParams, NestedSettingsError,
-    OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
-    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
-    UpdateSettingsParams, Workspace,
+    FindProjectParams, GetFileContentParams, InvalidateSchemaCacheParams, IsPathIgnoredParams,
+    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, SchemaCacheScope,
+    ServerInfo, UnregisterProjectFolderParams, UpdateNestedSettingsParams,
+    UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
@@ -477,11 +477,7 @@ impl WorkspaceServer {
                 .iter(TypecheckDiagnosticsMapper)
                 .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
-                    let statement = analysis
-                        .statements()
-                        .iter()
-                        .find(|statement| statement.range == range)
-                        .cloned();
+                    let statement = analysis.statement(range).cloned();
                     (id, range, ast, cst, statement)
                 })
                 .collect::<Vec<_>>();
@@ -1165,8 +1161,11 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(feature = "db")]
-    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
-        if all {
+    fn invalidate_schema_cache(
+        &self,
+        params: InvalidateSchemaCacheParams,
+    ) -> Result<(), WorkspaceError> {
+        if params.scope == SchemaCacheScope::All {
             // Clear all schemas - both db-loaded and json-loaded
             // DB completions always take precedence when a connection is available,
             // so clearing the json schema keeps behavior consistent
@@ -1179,7 +1178,10 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(not(feature = "db"))]
-    fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
+    fn invalidate_schema_cache(
+        &self,
+        _params: InvalidateSchemaCacheParams,
+    ) -> Result<(), WorkspaceError> {
         self.snapshot.clear_all();
         Ok(())
     }
