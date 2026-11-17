@@ -238,8 +238,8 @@ impl WorkspaceServer {
 
     /// Records what the caches of the document at `path` keep after a request, and drops the
     /// caches of the least recently used other documents to stay within
-    /// [`DOCUMENT_CACHE_ENTRIES_MAX`]. The document of the request is never dropped, so a
-    /// single file larger than the budget stays cached while it is used.
+    /// [`DOCUMENT_CACHE_ENTRIES_MAX`], off the thread of the request. The document of the request
+    /// is never dropped, so a single file larger than the budget stays cached while it is used.
     fn charge_document_caches(&self, path: &PgLSPath, doc: &Document) {
         let evicted = self.document_caches.record(path, doc.cache().usage());
         if evicted.is_empty() {
@@ -253,7 +253,7 @@ impl WorkspaceServer {
                     evicted.display(),
                     self.document_caches.max()
                 );
-                doc.cache().clear();
+                doc.cache().clear().drop_in_background();
             }
         }
     }
