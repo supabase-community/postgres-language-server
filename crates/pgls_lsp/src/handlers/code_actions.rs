@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     adapters::{PositionEncoding, get_cursor_position, to_lsp},
+    blocking::Blocking,
     session::Session,
 };
 use anyhow::{Result, anyhow};
@@ -335,10 +336,16 @@ pub async fn execute_command(
             // The statement runs on a blocking thread, so that the server keeps handling requests,
             // `$/cancelRequest` included. That drops this future, and the guard then cancels the
             // statement in the database.
-            let guard = CancelStatementOnDrop(Some((session.workspace.clone(), params.clone())));
+            let guard = CancelStatementOnDrop(Some((
+                session.workspace.clone(),
+                params.clone(),
+                session.blocking,
+            )));
             let workspace = session.workspace.clone();
-            let result =
-                tokio::task::spawn_blocking(move || workspace.execute_statement(params)).await??;
+            let result = session
+                .blocking
+                .spawn(move || workspace.execute_statement(params))
+                .await??;
             guard.disarm();
 
             /*
@@ -390,7 +397,7 @@ pub async fn execute_command(
 }
 
 /// Cancels the execution of a statement when dropped, unless disarmed.
-struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams)>);
+struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams, Blocking)>);
 
 impl CancelStatementOnDrop {
     fn disarm(mut self) {
@@ -400,8 +407,8 @@ impl CancelStatementOnDrop {
 
 impl Drop for CancelStatementOnDrop {
     fn drop(&mut self) {
-        if let Some((workspace, params)) = self.0.take() {
-            tokio::task::spawn_blocking(move || {
+        if let Some((workspace, params, blocking)) = self.0.take() {
+            blocking.spawn(move || {
                 if let Err(err) = workspace.cancel_statement_execution(params) {
                     tracing::warn!("Could not cancel the statement execution: {err}");
                 }
