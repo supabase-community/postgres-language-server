@@ -22,7 +22,9 @@ pub fn complete_tables<'a>(
         let relevance = CompletionRelevanceData::Table(table);
 
         let detail: Option<String> = match table.table_kind {
-            pgls_catalog::TableKind::Ordinary | pgls_catalog::TableKind::Partitioned => None,
+            pgls_catalog::TableKind::Ordinary
+            | pgls_catalog::TableKind::Partitioned
+            | pgls_catalog::TableKind::Unknown => None,
             pgls_catalog::TableKind::View => Some("View".into()),
             pgls_catalog::TableKind::MaterializedView => Some("MView".into()),
         };

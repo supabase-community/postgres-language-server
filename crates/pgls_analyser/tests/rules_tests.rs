@@ -220,16 +220,18 @@ fn analyse(
         }
     }
 
-    analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: catalog,
-        search_path: vec!["public".into()],
-        typecheck: is_typecheck,
-        sections: migration_sections(query),
-        source: Some(query.to_owned()),
-        ..Default::default()
-    })
+    analyser
+        .analyse(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: catalog,
+            search_path: vec!["public".into()],
+            typecheck: is_typecheck,
+            sections: migration_sections(query),
+            source: Some(query.to_owned()),
+            ..Default::default()
+        })
+        .diagnostics
 }
 
 /// Applies all fixes, safe and unsafe, until none is left, like `check --fix --unsafe`. That must

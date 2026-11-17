@@ -13,6 +13,29 @@ pub struct PullFileDiagnosticsParams {
     pub max_diagnostics: u32,
     pub only: Vec<RuleSelector>,
     pub skip: Vec<RuleSelector>,
+    /// Whether to check the statements against the database. Defaults to
+    /// [`DatabaseChecks::Run`].
+    #[serde(default)]
+    pub database_checks: DatabaseChecks,
+}
+
+/// Whether a diagnostics pull checks the statements against the database: EXPLAIN for the
+/// statements whose references all come unchanged from the database, and plpgsql_check for
+/// PL/pgSQL functions. The checks take a round trip per statement, seconds on long files, so the
+/// language server runs them when a file is opened or saved, and reuses their results while the
+/// user types.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub enum DatabaseChecks {
+    /// Check against the database, and keep the results of each statement for
+    /// [`DatabaseChecks::Reuse`].
+    #[default]
+    Run,
+    /// Don't query the database: report what the last [`DatabaseChecks::Run`] found for the
+    /// statements whose text is unchanged since. An edited statement has no results until the
+    /// next run.
+    Reuse,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Default)]

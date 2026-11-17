@@ -3,6 +3,10 @@ import type { Transport } from "./transport";
 export interface PullFileDiagnosticsParams {
   categories: RuleCategories;
   /**
+   * Whether to check the statements against the database. Defaults to [`DatabaseChecks::Run`].
+   */
+  database_checks?: DatabaseChecks;
+  /**
    * At most this many diagnostics are returned, the most severe first.
    */
   max_diagnostics: number;
@@ -12,6 +16,10 @@ export interface PullFileDiagnosticsParams {
   skip: RuleCode[];
 }
 export type RuleCategories = RuleCategory[];
+/**
+ * Whether a diagnostics pull checks the statements against the database: EXPLAIN for the statements whose references all come unchanged from the database, and plpgsql_check for PL/pgSQL functions. The checks take a round trip per statement, seconds on long files, so the language server runs them when a file is opened or saved, and reuses their results while the user types.
+ */
+export type DatabaseChecks = "run" | "reuse";
 export type RuleCode = string;
 export interface PgLSPath {
   /**
@@ -31,7 +39,7 @@ export interface ProjectKey {
   idx: number;
   version: number;
 }
-export type RuleCategory = "Lint" | "Action" | "Transformation";
+export type RuleCategory = "Lint";
 export type FileKind = FileKind2[];
 /**
  * The priority of the file
@@ -252,7 +260,7 @@ export type Advice =
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = "database" | "argv" | "memory" | { file: string };
+export type Resource_for_String = "argv" | "memory" | { file: string };
 export type TextRange = [TextSize, TextSize];
 export interface MarkupNodeBuf {
   content: string;
@@ -641,7 +649,7 @@ export interface PartialConfiguration {
    */
   pglinter?: PartialPglinterConfiguration;
   /**
-   * The configuration for type checking
+   * The configuration for plpgsql_check
    */
   plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
   /**
@@ -833,7 +841,7 @@ export interface PartialLinterConfiguration {
   rules?: LinterRules;
 }
 /**
- * The configuration of the filesystem
+ * The configuration of the migration files
  */
 export interface PartialMigrationsConfiguration {
   /**
@@ -884,7 +892,7 @@ export interface PartialPlPgSqlCheckConfiguration {
    */
   constantTracing?: boolean;
   /**
-   * if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
+   * if `false`, it disables the feature and plpgsql_check won't be executed. `true` by default
    */
   enabled?: boolean;
   /**
@@ -1428,25 +1436,25 @@ export type MigrationVersion = number | string;
 export type MigrationTool = "none" | "supabase" | "dbmate" | "goose";
 export interface PglinterRules {
   /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   * It enables all rules.
    */
   all?: boolean;
   base?: Base;
   cluster?: Cluster;
   /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   * It enables the recommended rules. `true` by default.
    */
   recommended?: boolean;
   schema?: Schema;
 }
 export interface SplinterRules {
   /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   * It enables all rules.
    */
   all?: boolean;
   performance?: Performance;
   /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   * It enables the recommended rules. `true` by default.
    */
   recommended?: boolean;
   security?: Security;

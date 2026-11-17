@@ -13,15 +13,14 @@ mod candidates;
 mod function;
 mod operator;
 
-pub use function::select_function;
-pub use operator::select_operator;
-
-use crate::CatalogView;
+use crate::Catalog;
 use crate::typing::coerce::can_coerce;
 use crate::typing::pseudo::{Polymorphic, PolymorphicIds};
 use crate::typing::types::{base_type, type_category};
 use crate::typing::unify::{check_generic_type_consistency, resolve_polymorphic_result};
 use crate::typing::{CoercionContext, Decision, Type, TypeId};
+pub use function::select_function;
+pub use operator::select_operator;
 
 /// An operator or function with its declared argument types, in the order of the call's
 /// arguments.
@@ -38,7 +37,7 @@ pub(super) struct Candidate<T> {
 ///
 /// [`func_match_argtypes`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L978
 pub(super) fn match_argtypes<T>(
-    c: &dyn CatalogView,
+    c: &Catalog,
     pseudo: &PolymorphicIds,
     inputs: &[Type],
     candidates: Vec<Candidate<T>>,
@@ -59,7 +58,7 @@ pub(super) fn match_argtypes<T>(
 ///
 /// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
 pub(super) fn can_coerce_args(
-    c: &dyn CatalogView,
+    c: &Catalog,
     pseudo: &PolymorphicIds,
     inputs: &[Type],
     targets: &[TypeId],
@@ -105,7 +104,7 @@ pub(super) fn can_coerce_args(
 ///
 /// [`func_select_candidate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1063
 pub(super) fn select_candidate<T: Clone>(
-    c: &dyn CatalogView,
+    c: &Catalog,
     pseudo: &PolymorphicIds,
     inputs: &[Type],
     mut candidates: Vec<Candidate<T>>,
@@ -293,7 +292,7 @@ pub(super) fn keep_best<T>(
 ///
 /// [`enforce_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2134
 pub(super) fn resolve_result(
-    c: &dyn CatalogView,
+    c: &Catalog,
     pseudo: &PolymorphicIds,
     inputs: &[Type],
     declared: &[TypeId],
@@ -309,30 +308,13 @@ pub(super) fn resolve_result(
 #[cfg(test)]
 mod incomplete_candidates_tests {
     use super::{select_function, select_operator};
-    use crate::OperatorKind;
-    use crate::lookup::{CatalogView, FunctionInfo, Lookup, RelationInfo, TypeInfo};
     use crate::typing::{CallArg, Selection, Type};
-
-    struct Incomplete;
-
-    impl CatalogView for Incomplete {
-        fn relation(&self, _: Option<&str>, _: &str, _: &[String]) -> Lookup<RelationInfo> {
-            Lookup::Unknown
-        }
-        fn schema(&self, _: &str) -> Lookup<()> {
-            Lookup::Unknown
-        }
-        fn functions(&self, _: Option<&str>, _: &str, _: &[String]) -> Lookup<Vec<FunctionInfo>> {
-            Lookup::Unknown
-        }
-        fn type_(&self, _: Option<&str>, _: &str, _: &[String]) -> Lookup<TypeInfo> {
-            Lookup::Unknown
-        }
-    }
+    use crate::{Catalog, OperatorKind};
 
     #[test]
     fn incomplete_candidate_lists_never_prove_errors() {
-        let catalog = Incomplete;
+        // Without a database, every lookup is unknown and no candidate list is complete.
+        let catalog = Catalog::without_database();
         let args = [CallArg {
             ty: Some(Type::UnknownLiteral),
             name: None,
