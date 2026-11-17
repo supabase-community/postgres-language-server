@@ -143,6 +143,22 @@ impl Document {
             },
             self.generation,
         );
+        // The statements around the change are new to the checks against the database, which
+        // only run on save, see `DatabaseResults`.
+        #[cfg(feature = "db")]
+        {
+            let after = old_split.ranges.len().saturating_sub(changed.end);
+            let added = changed.start..self.split.ranges.len().saturating_sub(after);
+            let text = self.text();
+            self.cache.statements_edited(
+                self.split
+                    .ranges
+                    .get(added)
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|range| text.get(std::ops::Range::<usize>::from(*range))),
+            );
+        }
         // The statements around the change that are no longer in the document drop what was
         // cached for them, with the statements of their function bodies. The other statements
         // have the same text as before.
@@ -289,17 +305,6 @@ impl Document {
             .ranges
             .iter()
             .filter_map(|range| Some((text.get(std::ops::Range::<usize>::from(*range))?, *range)))
-    }
-
-    /// What the last run of the database checks found for the statements that are unchanged
-    /// since, at their places in this content, see [`DatabaseResults::reuse`].
-    ///
-    /// [`DatabaseResults::reuse`]: super::document_cache::DatabaseResults::reuse
-    #[cfg(feature = "db")]
-    pub(crate) fn reused_database_results(&self) -> super::document_cache::ReusedDatabaseResults {
-        self.cache
-            .database_results()
-            .reuse(self.top_level_statements())
     }
 
     pub fn get_document_content(&self) -> &str {

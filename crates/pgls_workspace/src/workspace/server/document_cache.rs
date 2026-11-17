@@ -32,7 +32,7 @@ mod walk;
 
 pub(crate) use budget::CacheBudget;
 #[cfg(feature = "db")]
-pub(crate) use database::{DatabaseResults, ReusedDatabaseResults, StatementDatabaseResult};
+pub(crate) use database::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
@@ -208,6 +208,16 @@ impl DocumentCache {
         // this lock, so the results of a previous generation never stay.
         if self.is_current(generation) {
             *database = results;
+        }
+    }
+
+    /// An edit added the top-level statements with the texts `texts`, which the last run of the
+    /// database checks didn't check.
+    #[cfg(feature = "db")]
+    pub(crate) fn statements_edited<'a>(&self, texts: impl IntoIterator<Item = &'a str>) {
+        let mut database = self.database.lock();
+        for text in texts {
+            database.edited(StatementId::new(text));
         }
     }
 

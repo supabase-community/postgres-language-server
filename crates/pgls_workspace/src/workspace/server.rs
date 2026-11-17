@@ -27,7 +27,7 @@ use document::{Document, ExecuteStatementMapper};
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
-use document_cache::{DatabaseResults, StatementDatabaseResult};
+use document_cache::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use parking_lot::{Mutex, RwLock};
@@ -45,6 +45,8 @@ use pgls_diagnostics::{
 };
 use pgls_fs::{ConfigName, PgLSPath};
 use pgls_migrations::MigrationTool;
+#[cfg(not(feature = "db"))]
+use pgls_suppressions::PendingDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -472,12 +474,17 @@ impl WorkspaceServer {
         checks: DatabaseChecks,
         should_stop: &dyn Fn() -> bool,
     ) -> Result<Option<DatabaseDiagnostics>, WorkspaceError> {
+        // The statements that a run checks: the top-level ones outside the migration sections
+        // that aren't linted. A reuse reads the results of the same ones, so that the occurrences
+        // of a statement match and the current sections apply.
+        let checked_statements = || {
+            doc.top_level_statements()
+                .filter(|(_, range)| !analysis.is_skipped(range.start()))
+        };
         if checks == DatabaseChecks::Reuse {
-            let (diagnostics, plpgsql_checked) = doc.reused_database_results();
-            return Ok(Some(DatabaseDiagnostics {
-                diagnostics,
-                plpgsql_checked,
-            }));
+            return Ok(Some(
+                doc.cache().database_results().reuse(checked_statements()),
+            ));
         }
 
         let typecheck_enabled = settings.typecheck;
@@ -636,12 +643,9 @@ impl WorkspaceServer {
                 // The diagnostics of this pull are the results it keeps, at the statements'
                 // places.
                 let results = DatabaseResults::new(checked);
-                let (diagnostics, plpgsql_checked) = results.reuse(doc.top_level_statements());
+                let diagnostics = results.reuse(checked_statements());
                 doc.cache().set_database_results(results, doc.generation());
-                Ok(Some(DatabaseDiagnostics {
-                    diagnostics,
-                    plpgsql_checked,
-                }))
+                Ok(Some(diagnostics))
             }
             Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
                 // Database-backed diagnostics are best-effort. If the connection is
@@ -684,15 +688,6 @@ impl DatabaseCheckSettings {
             plpgsql_check: settings.plpgsql_check.clone(),
         }
     }
-}
-
-/// See [`WorkspaceServer::database_diagnostics`].
-#[cfg(feature = "db")]
-#[derive(Default)]
-struct DatabaseDiagnostics {
-    diagnostics: Vec<SDiagnostic>,
-    /// The ranges of the statements that plpgsql_check checked.
-    plpgsql_checked: Vec<TextRange>,
 }
 
 /// Check whether a file is a migration up to `migrations.after`. Both versions are read in the
@@ -1317,7 +1312,7 @@ impl Workspace for WorkspaceServer {
          * plpgsql_check.
          */
         #[cfg(feature = "db")]
-        let plpgsql_checked = {
+        let (plpgsql_checked, pending_diagnostics) = {
             let Some(database) = self.database_diagnostics(
                 &database_settings,
                 &params.path,
@@ -1330,11 +1325,17 @@ impl Workspace for WorkspaceServer {
                 // The document changed or the request was cancelled.
                 return Ok(PullDiagnosticsResult::default());
             };
+            // A statement that the checks haven't checked since an edit may still need its
+            // suppressions of them.
+            let pending = database.pending();
             diagnostics.extend(database.diagnostics);
-            database.plpgsql_checked
+            (database.plpgsql_checked, pending)
         };
         #[cfg(not(feature = "db"))]
-        let plpgsql_checked: Vec<TextRange> = Vec::new();
+        let (plpgsql_checked, pending_diagnostics): (
+            Vec<TextRange>,
+            Vec<PendingDiagnostic>,
+        ) = (Vec::new(), Vec::new());
 
         for diagnostic in analysis.syntax_diagnostics() {
             // Ignore the syntax error if we already have more specialized diagnostics for the
@@ -1372,7 +1373,7 @@ impl Workspace for WorkspaceServer {
             suppressions.get_disabled_diagnostic_suppressions_as_errors(analysis.disabled_rules());
 
         let mut unused_suppression_errors =
-            suppressions.get_unused_suppressions_as_errors(&diagnostics);
+            suppressions.get_unused_suppressions_as_errors(&diagnostics, &pending_diagnostics);
         unused_suppression_errors.retain(|error| !analysis.is_skipped(error.span.start()));
 
         let suppression_errors: Vec<Error> = suppressions
