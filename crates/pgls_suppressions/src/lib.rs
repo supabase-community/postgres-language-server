@@ -111,7 +111,8 @@ impl Suppressions {
                 if used[index] {
                     continue;
                 }
-                let Some(specifier) = specifier.get_or_insert_with(|| specifier_of(diagnostic))
+                let Some(specifier) =
+                    specifier.get_or_insert_with(|| RuleSpecifier::of(diagnostic))
                 else {
                     break;
                 };
@@ -156,7 +157,8 @@ impl Suppressions {
             return false;
         }
 
-        specifier_of(diagnostic).is_some_and(|specifier| candidates.any(|s| s.matches(&specifier)))
+        RuleSpecifier::of(diagnostic)
+            .is_some_and(|specifier| candidates.any(|s| s.matches(&specifier)))
     }
 
     /// The indices of the line suppressions that target a line of `span`, or the first line of
@@ -200,11 +202,6 @@ impl Suppressions {
             .contains_inclusive(offset)
             .then_some(statement.start())
     }
-}
-
-/// The rule specifier of a diagnostic's category, if it has one that a suppression can name.
-fn specifier_of<D: Diagnostic>(diagnostic: &D) -> Option<RuleSpecifier> {
-    RuleSpecifier::try_from(diagnostic.category()?.name()).ok()
 }
 
 #[cfg(test)]
