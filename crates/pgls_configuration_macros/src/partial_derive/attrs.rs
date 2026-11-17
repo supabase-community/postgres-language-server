@@ -1,7 +1,9 @@
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{ToTokens, quote};
 use std::collections::HashSet;
-use syn::{AttrStyle, Attribute, Error, Lit, Meta, MetaNameValue, Path, Type, parse_quote};
+use syn::{
+    AttrStyle, Attribute, Error, Expr, ExprLit, Lit, Meta, MetaNameValue, Path, Type, parse_quote,
+};
 
 use crate::util::parse_meta_list;
 
@@ -33,8 +35,8 @@ impl TryFrom<&Vec<Attribute>> for Attrs {
     fn try_from(attrs: &Vec<Attribute>) -> Result<Self, Self::Error> {
         let mut opts = Self::default();
         for attr in attrs {
-            if attr.path.is_ident("partial") {
-                parse_meta_list(&attr.parse_meta()?, |meta| {
+            if attr.path().is_ident("partial") {
+                parse_meta_list(&attr.meta, |meta| {
                     match meta {
                         Meta::List(_) if meta.path().is_ident("derive") => {
                             parse_meta_list(meta, |meta| {
@@ -54,8 +56,15 @@ impl TryFrom<&Vec<Attribute>> for Attrs {
                     }
                     Ok(())
                 })?;
-            } else if attr.style == AttrStyle::Outer && attr.path.is_ident("doc") {
-                opts.doc_lines.push(attr.tokens.clone());
+            } else if attr.style == AttrStyle::Outer
+                && let Meta::NameValue(MetaNameValue {
+                    path,
+                    eq_token,
+                    value,
+                }) = &attr.meta
+                && path.is_ident("doc")
+            {
+                opts.doc_lines.push(quote! { #eq_token #value });
             }
         }
         Ok(opts)
@@ -75,15 +84,18 @@ impl TryFrom<&Vec<Attribute>> for FieldAttrs {
     fn try_from(attrs: &Vec<Attribute>) -> Result<Self, Self::Error> {
         let mut opts = Self::default();
         for attr in attrs {
-            if attr.path.is_ident("partial") {
-                parse_meta_list(&attr.parse_meta()?, |meta| {
+            if attr.path().is_ident("partial") {
+                parse_meta_list(&attr.meta, |meta| {
                     match meta {
                         syn::Meta::Path(path) if opts.ty.is_none() && path.is_ident("type") => {
                             opts.ty = Some(PartialType::Prefixed);
                         }
                         syn::Meta::NameValue(MetaNameValue {
                             path,
-                            lit: Lit::Str(s),
+                            value:
+                                Expr::Lit(ExprLit {
+                                    lit: Lit::Str(s), ..
+                                }),
                             ..
                         }) if opts.ty.is_none() && path.is_ident("type") => {
                             opts.ty = Some(PartialType::Literal(s.parse()?));
@@ -94,8 +106,15 @@ impl TryFrom<&Vec<Attribute>> for FieldAttrs {
                     }
                     Ok(())
                 })?;
-            } else if attr.style == AttrStyle::Outer && attr.path.is_ident("doc") {
-                opts.doc_lines.push(attr.tokens.clone());
+            } else if attr.style == AttrStyle::Outer
+                && let Meta::NameValue(MetaNameValue {
+                    path,
+                    eq_token,
+                    value,
+                }) = &attr.meta
+                && path.is_ident("doc")
+            {
+                opts.doc_lines.push(quote! { #eq_token #value });
             }
         }
         Ok(opts)

@@ -66,6 +66,31 @@ fn format_option_errors_list_the_valid_values() {
     assert!(!stderr.contains("Layout"), "{stderr}");
 }
 
+/// Input that can't be read, like text that isn't UTF-8, fails with the read error, not as if
+/// nothing was piped.
+#[test]
+fn format_reports_a_stdin_read_error() {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    let output = cmd
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--stdin-file-path",
+            "virtual.sql",
+        ])
+        .write_stdin(b"select '\xff';".as_slice())
+        .assert()
+        .failure()
+        .get_output()
+        .clone();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("valid UTF-8"), "{stderr}");
+    assert!(!stderr.contains("stdin"), "{stderr}");
+}
+
 #[test]
 fn format_rejects_a_zero_line_width_or_indent_size() {
     for option in ["--line-width", "--indent-size"] {
@@ -181,6 +206,45 @@ fn format_without_write_succeeds_on_formatted_files_snapshot() {
 )]
 fn format_without_write_reports_extra_blank_lines_snapshot() {
     assert_snapshot!(run_format(&[BLANK_LINES_PATH]));
+}
+
+/// With `--skip-errors`, a file with a syntax error is left as it is, and doesn't fail the run.
+#[test]
+fn format_write_skip_errors_leaves_files_with_syntax_errors() {
+    let content = "SELECT a,b FROM t;\nselect from where;\n";
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("broken.sql");
+    std::fs::write(&path, content).unwrap();
+
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--write",
+            "--skip-errors",
+            path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run CLI");
+
+    let report = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(output.status.success(), "{report}");
+    assert_eq!(
+        std::fs::read(&path).unwrap(),
+        content.as_bytes(),
+        "{report}"
+    );
+    assert!(
+        report.contains("Skipped file with syntax errors"),
+        "{report}"
+    );
 }
 
 fn run_format(args: &[&str]) -> String {

@@ -1,9 +1,9 @@
-use proc_macro_error::*;
+use proc_macro_error3::*;
 use proc_macro2::{Ident, TokenStream};
 use quote::{ToTokens, quote};
 use syn::{
     Attribute, DataEnum, DataStruct, Generics, Token, Variant,
-    parse::{Error, Parse, ParseStream, Parser, Result, discouraged::Speculative},
+    parse::{Error, Parse, ParseStream, Result, discouraged::Speculative},
     punctuated::Punctuated,
     spanned::Spanned,
     token::Paren,
@@ -83,9 +83,8 @@ impl DeriveStructInput {
         };
 
         for attr in attrs {
-            if attr.path.is_ident("diagnostic") {
-                let tokens = attr.tokens.into();
-                let attrs = match DiagnosticAttrs::parse.parse(tokens) {
+            if attr.path().is_ident("diagnostic") {
+                let attrs = match attr.parse_args::<DiagnosticAttrs>() {
                     Ok(attrs) => attrs,
                     Err(err) => abort!(
                         err.span(),
@@ -143,39 +142,38 @@ impl DeriveStructInput {
             };
 
             for attr in field.attrs {
-                if attr.path.is_ident("category") {
+                if attr.path().is_ident("category") {
                     result.category = Some(StaticOrDynamic::Dynamic(ident.clone()));
                     continue;
                 }
 
-                if attr.path.is_ident("severity") {
+                if attr.path().is_ident("severity") {
                     result.severity = Some(StaticOrDynamic::Dynamic(ident.clone()));
                     continue;
                 }
 
-                if attr.path.is_ident("description") {
+                if attr.path().is_ident("description") {
                     result.description = Some(StaticOrDynamic::Dynamic(ident.clone()));
                     continue;
                 }
 
-                if attr.path.is_ident("message") {
+                if attr.path().is_ident("message") {
                     result.message = Some(StaticOrDynamic::Dynamic(ident.clone()));
                     continue;
                 }
 
-                if attr.path.is_ident("advice") {
+                if attr.path().is_ident("advice") {
                     result.advices.push(ident.clone());
                     continue;
                 }
 
-                if attr.path.is_ident("verbose_advice") {
+                if attr.path().is_ident("verbose_advice") {
                     result.verbose_advices.push(ident.clone());
                     continue;
                 }
 
-                if attr.path.is_ident("location") {
-                    let tokens = attr.tokens.into();
-                    let attr = match LocationAttr::parse.parse(tokens) {
+                if attr.path().is_ident("location") {
+                    let attr = match attr.parse_args::<LocationAttr>() {
                         Ok(attr) => attr,
                         Err(err) => abort!(
                             err.span(),
@@ -188,12 +186,12 @@ impl DeriveStructInput {
                     continue;
                 }
 
-                if attr.path.is_ident("tags") {
+                if attr.path().is_ident("tags") {
                     result.tags = Some(StaticOrDynamic::Dynamic(ident.clone()));
                     continue;
                 }
 
-                if attr.path.is_ident("source") {
+                if attr.path().is_ident("source") {
                     result.source = Some(ident.clone());
                     continue;
                 }
@@ -212,7 +210,7 @@ impl DeriveEnumInput {
         data: DataEnum,
     ) -> Self {
         for attr in attrs {
-            if attr.path.is_ident("diagnostic") {
+            if attr.path().is_ident("diagnostic") {
                 abort!(
                     attr.span(),
                     "\"diagnostic\" attributes are not supported on enums"
@@ -253,16 +251,13 @@ impl From<TokenStream> for StringOrMarkup {
 }
 
 struct DiagnosticAttrs {
-    _paren_token: Paren,
     attrs: Punctuated<DiagnosticAttr, Token![,]>,
 }
 
 impl Parse for DiagnosticAttrs {
     fn parse(input: ParseStream) -> Result<Self> {
-        let content;
         Ok(Self {
-            _paren_token: syn::parenthesized!(content in input),
-            attrs: content.parse_terminated(DiagnosticAttr::parse)?,
+            attrs: input.parse_terminated(DiagnosticAttr::parse, Token![,])?,
         })
     }
 }
@@ -373,7 +368,7 @@ impl Parse for SplitMessageAttrs {
         let content;
         Ok(Self {
             _paren_token: syn::parenthesized!(content in input),
-            attrs: content.parse_terminated(SplitMessageAttr::parse)?,
+            attrs: content.parse_terminated(SplitMessageAttr::parse, Token![,])?,
         })
     }
 }
@@ -422,13 +417,12 @@ impl Parse for TagsAttr {
         let content;
         Ok(Self {
             _paren_token: syn::parenthesized!(content in input),
-            tags: content.parse_terminated(Ident::parse)?,
+            tags: content.parse_terminated(Ident::parse, Token![|])?,
         })
     }
 }
 
 struct LocationAttr {
-    _paren_token: Paren,
     field: LocationField,
 }
 
@@ -441,9 +435,7 @@ pub(crate) enum LocationField {
 
 impl Parse for LocationAttr {
     fn parse(input: ParseStream) -> Result<Self> {
-        let content;
-        let _paren_token = syn::parenthesized!(content in input);
-        let ident: Ident = content.parse()?;
+        let ident: Ident = input.parse()?;
 
         let field = if ident == "resource" {
             LocationField::Resource(ident)
@@ -457,10 +449,7 @@ impl Parse for LocationAttr {
             return Err(Error::new_spanned(ident, "unknown location field"));
         };
 
-        Ok(Self {
-            _paren_token,
-            field,
-        })
+        Ok(Self { field })
     }
 }
 
