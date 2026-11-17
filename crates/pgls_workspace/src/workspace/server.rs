@@ -91,7 +91,11 @@ use connection_key::ConnectionKey;
 #[cfg(feature = "db")]
 mod connection_manager;
 #[cfg(feature = "db")]
+mod database;
+#[cfg(feature = "db")]
 pub(crate) use connection_manager::DatabasePools;
+#[cfg(feature = "db")]
+pub use database::{DatabaseQueries, Postgres};
 pub(crate) mod document;
 mod document_cache;
 mod formatting;
@@ -174,7 +178,17 @@ impl WorkspaceServer {
     /// threads, as the language server does.
     #[cfg(feature = "db")]
     pub fn with_runtime(handle: tokio::runtime::Handle) -> Self {
-        Self::on(WorkspaceRuntime::with_handle(handle))
+        Self::on(WorkspaceRuntime::with_handle(handle, Arc::new(Postgres)))
+    }
+
+    /// Like [`Self::with_runtime`], with the database queries answered by `database`, e.g. a fake
+    /// that injects failures. The statements a user executes still go to the database.
+    #[cfg(feature = "db")]
+    pub fn with_runtime_and_database(
+        handle: tokio::runtime::Handle,
+        database: Arc<dyn DatabaseQueries>,
+    ) -> Self {
+        Self::on(WorkspaceRuntime::with_handle(handle, database))
     }
 
     #[cfg(feature = "db")]
@@ -482,6 +496,7 @@ impl WorkspaceServer {
                 })
                 .collect::<Vec<_>>();
             let pool = pool.clone();
+            let database = self.runtime.database();
             let path = path.clone();
             let stopped = Arc::clone(&stop);
 
@@ -494,6 +509,7 @@ impl WorkspaceServer {
                             })
                             .map(|(id, range, ast, cst, statement)| {
                                 let pool = pool.clone();
+                                let database = Arc::clone(&database);
                                 let path = path.clone();
                                 let snapshot = Arc::clone(&snapshot);
                                 let plpgsql_check = plpgsql_check.clone();
@@ -518,8 +534,8 @@ impl WorkspaceServer {
                                         );
 
                                         if !conversion.has_identifier_parameters {
-                                            let result =
-                                                pgls_typecheck::check_sql(TypecheckParams {
+                                            let result = database
+                                                .typecheck(TypecheckParams {
                                                     conn: &pool,
                                                     sql: conversion.sql.as_str(),
                                                     ast: &ast,
@@ -550,8 +566,8 @@ impl WorkspaceServer {
                                     }
 
                                     if plpgsql_check.enabled {
-                                        let results = pgls_plpgsql_check::check_plpgsql(
-                                            pgls_plpgsql_check::PlPgSqlCheckParams {
+                                        let results = database
+                                            .plpgsql_check(pgls_plpgsql_check::PlPgSqlCheckParams {
                                                 conn: &pool,
                                                 sql: id.content(),
                                                 ast: &ast,
@@ -571,11 +587,10 @@ impl WorkspaceServer {
                                                 incomment_options_usage_warning: plpgsql_check
                                                     .incomment_options_usage_warning,
                                                 constant_tracing: plpgsql_check.constant_tracing,
-                                            },
-                                        )
-                                        .await
-                                        .ok()
-                                        .flatten();
+                                            })
+                                            .await
+                                            .ok()
+                                            .flatten();
 
                                         if results.is_some() {
                                             plpgsql_checked = Some(range);
@@ -1372,6 +1387,7 @@ impl Workspace for WorkspaceServer {
             };
 
             let pool = pool.clone();
+            let database = self.runtime.database();
             let splinter_result = self.runtime.run(async move {
                 let filter = AnalysisFilter {
                     categories,
@@ -1383,7 +1399,7 @@ impl Workspace for WorkspaceServer {
                     snapshot: snapshot.as_deref(),
                     config: Some(&splinter_config),
                 };
-                pgls_splinter::run_splinter(splinter_params, &filter).await
+                database.splinter(splinter_params, &filter).await
             })?;
 
             splinter_result.map_err(WorkspaceError::from)

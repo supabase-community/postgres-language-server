@@ -7,7 +7,11 @@
 //! The server runs on a current-thread runtime whose clock is paused, the workspace runs its async
 //! work on the same runtime, and the work that blocks runs inline ([`Blocking::Inline`]). So a
 //! session gives one interleaving of the server's tasks, the debounces fire at their virtual time,
-//! and a failure replays. There is no database: the connection is disabled.
+//! and a failure replays.
+//!
+//! The database is a fake ([`FakeDatabase`]) that answers the workspace's queries at once. The
+//! session makes it unreachable, lets its snapshot query fail, and gives plpgsql_check's
+//! diagnostics spans no database would report. Long waits let the backoffs expire.
 //!
 //! After every action, the simulation checks that:
 //! - every request answers within [`REQUEST_TIMEOUT`] of virtual time;
@@ -17,29 +21,43 @@
 //! - the diagnostics of a document are never published for an older version than earlier ones,
 //!   nor for a closed document.
 //!
-//! At the end of a session, the last diagnostics of every open document are for its current
-//! version, and equal those of a fresh server that opens the final texts.
+//! At the end of a session, the database is reachable again and the backoffs expire. Then the last
+//! diagnostics of every open document are for its current version, and equal those of a fresh
+//! server that opens the final texts.
 //!
 //! `PROPTEST_CASES` sets the number of sessions, [`SESSIONS_DEFAULT`] by default.
 
+use std::borrow::Cow;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
-use std::sync::{Arc, Once};
+use std::sync::{Arc, LazyLock, Once};
 use std::time::Duration;
 
 use anyhow::Result;
+use futures::FutureExt;
 use futures::channel::mpsc::{Receiver, channel};
+use futures::future::BoxFuture;
+use parking_lot::Mutex;
+use pgls_analyse::AnalysisFilter;
+use pgls_catalog::Snapshot;
 use pgls_configuration::database::PartialDatabaseConfiguration;
+use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_configuration::{Merge, PartialConfiguration};
+use pgls_diagnostics::Severity;
 use pgls_fs::MemoryFileSystem;
 use pgls_lsp::testing::{Client, Server, ServerNotification};
 use pgls_lsp::{Blocking, ServerFactory};
+use pgls_plpgsql_check::{PlPgSqlCheckAdvices, PlPgSqlCheckDiagnostic, PlPgSqlCheckParams};
+use pgls_splinter::{SplinterDiagnostic, SplinterParams};
+use pgls_text_size::{TextRange, TextSize};
+use pgls_typecheck::{TypecheckDiagnostic, TypecheckParams};
 use pgls_workspace::DynRef;
-use pgls_workspace::workspace::server::WorkspaceServer;
+use pgls_workspace::workspace::server::{DatabaseQueries, WorkspaceServer};
 use proptest::prelude::*;
 use proptest::strategy::Union;
 use proptest_state_machine::{ReferenceStateMachine, StateMachineTest, prop_state_machine};
 use serde_json::{Value, from_value, json};
+use sqlx::PgPool;
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
 use tower_lsp_server::jsonrpc::ErrorCode;
@@ -65,6 +83,9 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 /// How long a session may take in real time. A session that waits for something outside its
 /// runtime never ends, since its clock is paused, so the [`Watchdog`] aborts it.
 const SESSION_WALL_TIME_MAX: Duration = Duration::from_secs(120);
+
+/// The longest backoff of the workspace, after a database failed again and again.
+const BACKOFF_MAX: Duration = Duration::from_secs(61);
 
 /// How long the end of a session waits for the debounced work: the diagnostics and a
 /// configuration reload.
@@ -411,6 +432,8 @@ enum Action {
     Wait {
         millis: u64,
     },
+    /// Changes what the fake database does.
+    SetDatabase(DatabaseState),
     /// Sets the configuration overrides of the client.
     SetLinter {
         enabled: bool,
@@ -435,11 +458,13 @@ impl Action {
     }
 }
 
-/// The editor's view of a session: the documents it has open, and its configuration.
+/// The editor's view of a session: the documents it has open, its configuration, and what the
+/// fake database does.
 #[derive(Clone, Debug, Default)]
 struct Editor {
     documents: [Option<ClientText>; DOCUMENTS],
     linter: Option<bool>,
+    database: DatabaseState,
 }
 
 impl ReferenceStateMachine for Editor {
@@ -456,6 +481,29 @@ impl ReferenceStateMachine for Editor {
                 2,
                 (1..400u64)
                     .prop_map(|millis| Action::Wait { millis })
+                    .boxed(),
+            ),
+            // Long enough for a backoff to expire, which takes up to a minute.
+            (
+                1,
+                (1_000..90_000u64)
+                    .prop_map(|millis| Action::Wait { millis })
+                    .boxed(),
+            ),
+            (
+                1,
+                (
+                    prop::bool::weighted(0.7),
+                    prop::bool::weighted(0.2),
+                    any::<bool>(),
+                )
+                    .prop_map(|(reachable, snapshot_denied, garbage_spans)| {
+                        Action::SetDatabase(DatabaseState {
+                            reachable,
+                            snapshot_denied,
+                            garbage_spans,
+                        })
+                    })
                     .boxed(),
             ),
             (
@@ -544,7 +592,10 @@ impl ReferenceStateMachine for Editor {
             Action::Replace { document, .. }
             | Action::EditOutOfRange { document, .. }
             | Action::Close { document } => state.documents[*document].is_some(),
-            Action::Wait { .. } | Action::SetLinter { .. } | Action::ReloadConfiguration => true,
+            Action::Wait { .. }
+            | Action::SetDatabase(_)
+            | Action::SetLinter { .. }
+            | Action::ReloadConfiguration => true,
         }
     }
 
@@ -565,12 +616,179 @@ impl ReferenceStateMachine for Editor {
             }
             Action::Close { document } => state.documents[*document] = None,
             Action::SetLinter { enabled } => state.linter = Some(*enabled),
+            Action::SetDatabase(database) => state.database = *database,
             Action::EditOutOfRange { .. }
             | Action::Request { .. }
             | Action::Wait { .. }
             | Action::ReloadConfiguration => {}
         }
         state
+    }
+}
+
+/// What the fake database does, as the session's actions set it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct DatabaseState {
+    /// Whether it accepts connections. If not, every query fails like a connection that is
+    /// refused.
+    reachable: bool,
+    /// Whether the snapshot query fails on a working connection, like for a role that may not
+    /// read `pg_proc`.
+    snapshot_denied: bool,
+    /// Whether plpgsql_check's diagnostics have spans after the end of their statement or inside a
+    /// character, which the workspace must not pass on.
+    garbage_spans: bool,
+}
+
+impl Default for DatabaseState {
+    fn default() -> Self {
+        Self {
+            reachable: true,
+            snapshot_denied: false,
+            garbage_spans: false,
+        }
+    }
+}
+
+/// The catalog of a fresh database on the newest recorded Postgres version.
+static FRESH_CATALOG: LazyLock<Snapshot> = LazyLock::new(|| {
+    let version = pgls_postgres_regress::versions()
+        .pop()
+        .expect("a recorded Postgres version");
+    serde_json::from_str(&version.catalog_json()).expect("the recorded catalog")
+});
+
+/// Answers the workspace's queries at once, from its [`DatabaseState`], so that a session stays
+/// on the runtime's thread.
+#[derive(Default)]
+struct FakeDatabase {
+    state: Mutex<DatabaseState>,
+}
+
+/// An error that a query raises on a working connection.
+#[derive(Debug)]
+struct QueryError {
+    code: &'static str,
+    message: &'static str,
+}
+
+impl std::fmt::Display for QueryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.message)
+    }
+}
+
+impl std::error::Error for QueryError {}
+
+impl sqlx::error::DatabaseError for QueryError {
+    fn message(&self) -> &str {
+        self.message
+    }
+
+    fn code(&self) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed(self.code))
+    }
+
+    fn as_error(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
+        self
+    }
+
+    fn as_error_mut(&mut self) -> &mut (dyn std::error::Error + Send + Sync + 'static) {
+        self
+    }
+
+    fn into_error(self: Box<Self>) -> Box<dyn std::error::Error + Send + Sync + 'static> {
+        self
+    }
+
+    fn kind(&self) -> sqlx::error::ErrorKind {
+        sqlx::error::ErrorKind::Other
+    }
+}
+
+impl FakeDatabase {
+    /// The state, or the error of a refused connection if the database is unreachable.
+    fn connect(&self) -> Result<DatabaseState, sqlx::Error> {
+        let state = *self.state.lock();
+        if state.reachable {
+            Ok(state)
+        } else {
+            Err(sqlx::Error::Io(
+                std::io::ErrorKind::ConnectionRefused.into(),
+            ))
+        }
+    }
+
+    /// A diagnostic of plpgsql_check on `sql`: on its first word, or on a span that is after its
+    /// end or inside a character, if the spans are garbage.
+    fn plpgsql_diagnostic(sql: &str, garbage: bool) -> PlPgSqlCheckDiagnostic {
+        let len = TextSize::of(sql);
+        let span = match sql.char_indices().find(|(_, c)| c.len_utf8() > 1) {
+            Some((start, _)) if garbage && u32::from(len) % 2 == 0 => {
+                let inside = TextSize::try_from(start + 1).unwrap();
+                TextRange::new(inside, inside)
+            }
+            _ if garbage => TextRange::new(len, len + TextSize::from(7)),
+            _ => {
+                let end = sql.find(char::is_whitespace).unwrap_or(sql.len());
+                TextRange::up_to(TextSize::try_from(end).unwrap())
+            }
+        };
+        PlPgSqlCheckDiagnostic {
+            span: Some(span),
+            message: "simulated plpgsql_check error".into(),
+            advices: PlPgSqlCheckAdvices {
+                code: Some("42P01".to_string()),
+                detail: None,
+                hint: None,
+                relation: None,
+            },
+            severity: Severity::Error,
+        }
+    }
+}
+
+impl DatabaseQueries for FakeDatabase {
+    fn snapshot<'a>(&'a self, _: &'a PgPool) -> BoxFuture<'a, Result<Snapshot, sqlx::Error>> {
+        let snapshot = self.connect().and_then(|state| {
+            if state.snapshot_denied {
+                Err(sqlx::Error::Database(Box::new(QueryError {
+                    code: "42501",
+                    message: "permission denied for table pg_proc",
+                })))
+            } else {
+                Ok(FRESH_CATALOG.clone())
+            }
+        });
+        futures::future::ready(snapshot).boxed()
+    }
+
+    fn typecheck<'a>(
+        &'a self,
+        _: TypecheckParams<'a>,
+    ) -> BoxFuture<'a, Result<Option<TypecheckDiagnostic>, sqlx::Error>> {
+        futures::future::ready(self.connect().map(|_| None)).boxed()
+    }
+
+    fn plpgsql_check<'a>(
+        &'a self,
+        params: PlPgSqlCheckParams<'a>,
+    ) -> BoxFuture<'a, Result<Option<Vec<PlPgSqlCheckDiagnostic>>, sqlx::Error>> {
+        let diagnostics = self.connect().map(|state| {
+            params
+                .sql
+                .contains("function")
+                .then(|| vec![Self::plpgsql_diagnostic(params.sql, state.garbage_spans)])
+        });
+        futures::future::ready(diagnostics).boxed()
+    }
+
+    fn splinter<'a>(
+        &'a self,
+        _: SplinterParams<'a>,
+        _: &'a AnalysisFilter<'a>,
+    ) -> BoxFuture<'a, Result<Vec<SplinterDiagnostic>, sqlx::Error>> {
+        futures::future::ready(self.connect().map(|_| Vec::new())).boxed()
     }
 }
 
@@ -609,17 +827,25 @@ struct Connection {
 }
 
 impl Connection {
-    /// Starts a server on the current runtime, with the database connection disabled and the
+    /// Starts a server on the current runtime, with `database` answering the queries, and the
     /// linter `enabled`, if set.
-    async fn start(linter: Option<bool>) -> Self {
-        let workspace = WorkspaceServer::with_runtime(tokio::runtime::Handle::current());
+    async fn start(linter: Option<bool>, database: Arc<FakeDatabase>) -> Self {
+        let workspace =
+            WorkspaceServer::with_runtime_and_database(tokio::runtime::Handle::current(), database);
         let factory = ServerFactory::default()
             .with_workspace(Arc::new(workspace))
             .with_blocking(Blocking::Inline);
         let mut configuration = PartialConfiguration::init();
         configuration.merge_with(PartialConfiguration {
+            // The fake answers every query, so the pools never connect.
             db: Some(PartialDatabaseConfiguration {
-                disable_connection: Some(true),
+                host: Some("simulated.invalid".to_string()),
+                database: Some("simulation".to_string()),
+                disable_connection: Some(false),
+                ..Default::default()
+            }),
+            plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
+                enabled: Some(true),
                 ..Default::default()
             }),
             ..Default::default()
@@ -715,9 +941,10 @@ impl Simulation {
     }
 }
 
-/// The server and the client's documents.
+/// The server, the client's documents, and the fake database.
 struct Session {
     connection: Connection,
+    database: Arc<FakeDatabase>,
     uris: [Uri; DOCUMENTS],
     documents: [Option<ClientDocument>; DOCUMENTS],
     linter: Option<bool>,
@@ -869,6 +1096,7 @@ impl Session {
             Action::Wait { millis } => {
                 tokio::time::sleep(Duration::from_millis(millis)).await;
             }
+            Action::SetDatabase(state) => *self.database.state.lock() = state,
             Action::SetLinter { enabled } => {
                 self.connection
                     .server
@@ -955,13 +1183,26 @@ impl Session {
         sorted
     }
 
-    /// Waits for the debounced work, and checks that the last diagnostics of every open document
-    /// are for its current version, and equal those of a fresh server that opens the final texts.
+    /// Makes the database reachable, waits for the backoffs to expire, and checks that the last
+    /// diagnostics of every open document are for its current version, and equal those of a fresh
+    /// server that opens the final texts.
     async fn finish(&mut self) {
+        {
+            let mut database = self.database.state.lock();
+            database.reachable = true;
+            database.snapshot_denied = false;
+        }
+        tokio::time::sleep(BACKOFF_MAX).await;
+        // Nothing refreshes the diagnostics when a backoff ends, but a configuration reload does.
+        self.connection
+            .server
+            .change_watched_configuration_file()
+            .await
+            .unwrap();
         tokio::time::sleep(SETTLE_TIMEOUT).await;
         self.read_notifications();
 
-        let mut fresh = Connection::start(self.linter).await;
+        let mut fresh = Connection::start(self.linter, Arc::clone(&self.database)).await;
         for (index, document) in self.documents.iter().enumerate() {
             let Some(document) = document else {
                 continue;
@@ -1019,11 +1260,13 @@ impl StateMachineTest for Simulation {
             .start_paused(true)
             .build()
             .unwrap();
-        let connection = runtime.block_on(Connection::start(None));
+        let database = Arc::new(FakeDatabase::default());
+        let connection = runtime.block_on(Connection::start(None, Arc::clone(&database)));
         Self {
             runtime,
             session: Session {
                 connection,
+                database,
                 uris: std::array::from_fn(|index| Server::uri(&format!("simulation/{index}.sql"))),
                 documents: Default::default(),
                 linter: None,
