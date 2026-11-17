@@ -609,13 +609,19 @@ fn check_skip_errors_skips_files_with_syntax_errors() {
             "postgres-language-server.jsonc",
             r#"{ "db": { "disableConnection": true } }"#,
         ),
-        ("broken.sql", "alter table users drop column name;\nselect from where;\n"),
+        (
+            "broken.sql",
+            "alter table users drop column name;\nselect from where;\n",
+        ),
         ("valid.sql", "alter table users drop column name;\n"),
     ]);
 
     let (success, output) = check_in(root.path(), &["--skip-errors", "--fix", "."], &[]);
     assert!(success, "{output}");
-    assert!(output.contains("Skipped file with syntax errors"), "{output}");
+    assert!(
+        output.contains("Skipped file with syntax errors"),
+        "{output}"
+    );
     assert!(!output.contains("Invalid statement"), "{output}");
     // The file it skips isn't fixed either.
     assert_eq!(
@@ -623,7 +629,7 @@ fn check_skip_errors_skips_files_with_syntax_errors() {
         "alter table users drop column name;\nselect from where;\n"
     );
     assert!(output.contains("valid.sql"), "{output}");
-    assert!(output.contains("safety/banDropColumn"), "{output}");
+    assert!(output.contains("lint/banDropColumn"), "{output}");
 
     // Only a file with syntax errors: nothing fails.
     let (success, output) = check_in(root.path(), &["--skip-errors", "broken.sql"], &[]);
@@ -646,8 +652,14 @@ fn check_skip_errors_skips_files_with_syntax_errors() {
         .expect("failed to run CLI");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(output.status.success(), "{stderr}");
-    assert_eq!(String::from_utf8_lossy(&output.stdout), "select from where;\n");
-    assert!(stderr.contains("Skipped file with syntax errors"), "{stderr}");
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "select from where;\n"
+    );
+    assert!(
+        stderr.contains("Skipped file with syntax errors"),
+        "{stderr}"
+    );
 
     // Without `--skip-errors`, the syntax error fails the run.
     let (success, output) = check_in(root.path(), &["broken.sql"], &[]);

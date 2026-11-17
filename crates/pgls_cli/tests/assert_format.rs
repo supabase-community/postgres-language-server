@@ -216,7 +216,10 @@ fn format_write_skip_errors_leaves_files_with_syntax_errors() {
         content.as_bytes(),
         "{report}"
     );
-    assert!(report.contains("Skipped file with syntax errors"), "{report}");
+    assert!(
+        report.contains("Skipped file with syntax errors"),
+        "{report}"
+    );
 }
 
 fn run_format(args: &[&str]) -> String {

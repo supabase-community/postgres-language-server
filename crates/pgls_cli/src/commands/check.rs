@@ -55,8 +55,8 @@ pub fn check(
         only: args.only.clone(),
         skip: args.skip.clone(),
     };
-    let execution = ExecutionConfig::new(mode, max_diagnostics)
-        .with_skip_errors(cli_options.skip_errors);
+    let execution =
+        ExecutionConfig::new(mode, max_diagnostics).with_skip_errors(cli_options.skip_errors);
 
     let database_errors = check_database_connection(&session)?;
     if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {
