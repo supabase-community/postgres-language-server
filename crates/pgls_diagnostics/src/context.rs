@@ -2,9 +2,9 @@ use pgls_console::fmt;
 
 use crate::context::internal::{SeverityDiagnostic, TagsDiagnostic};
 use crate::{
-    Category, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
+    Category, DiagnosticTags, Error, Resource, Severity,
     diagnostic::internal::AsDiagnostic,
-    location::{AsResource, AsSpan},
+    location::{AsResource, AsSpan, IntoSharedSourceCode},
 };
 
 /// This trait is implemented for all types implementing [Diagnostic](super::Diagnostic)
@@ -39,11 +39,11 @@ pub trait DiagnosticExt: internal::Sealed + Sized {
         Error: From<internal::FileSpanDiagnostic<Self>>;
 
     /// Returns a new diagnostic using the provided `source_code` if `self`
-    /// doesn't already have one.
+    /// doesn't already have one. `None` adds no source code.
     ///
-    /// Pass the same [SharedSourceCode] to all the diagnostics of a file: from a `&str`, every
-    /// diagnostic gets a copy of the text and a line index of its own.
-    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
+    /// Pass the same [SharedSourceCode](crate::SharedSourceCode) to all the diagnostics of a file:
+    /// from a `&str`, every diagnostic gets a copy of the text and a line index of its own.
+    fn with_file_source_code(self, source_code: impl IntoSharedSourceCode) -> Error
     where
         Error: From<internal::FileSourceCodeDiagnostic<Self>>;
 
@@ -103,12 +103,12 @@ impl<E: AsDiagnostic> DiagnosticExt for E {
         })
     }
 
-    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
+    fn with_file_source_code(self, source_code: impl IntoSharedSourceCode) -> Error
     where
         Error: From<internal::FileSourceCodeDiagnostic<Self>>,
     {
         Error::from(internal::FileSourceCodeDiagnostic {
-            source_code: source_code.into(),
+            source_code: source_code.into_shared_source_code(),
             source: self,
         })
     }
@@ -542,7 +542,7 @@ mod internal {
     /// uses `source_code` as its location source code if `source` doesn't
     /// return one.
     pub struct FileSourceCodeDiagnostic<E> {
-        pub(super) source_code: SharedSourceCode,
+        pub(super) source_code: Option<SharedSourceCode>,
         pub(super) source: E,
     }
 
@@ -573,31 +573,37 @@ mod internal {
         }
 
         fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            let mut visitor = FileSourceCodeVisitor {
-                visitor,
-                source_code: self.source_code.as_borrowed(),
-            };
+            if let Some(source_code) = &self.source_code {
+                let mut visitor = FileSourceCodeVisitor {
+                    visitor,
+                    source_code: source_code.as_borrowed(),
+                };
 
-            self.source.as_diagnostic().advices(&mut visitor)
+                self.source.as_diagnostic().advices(&mut visitor)
+            } else {
+                self.source.as_diagnostic().advices(visitor)
+            }
         }
 
         fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            let mut visitor = FileSourceCodeVisitor {
-                visitor,
-                source_code: self.source_code.as_borrowed(),
-            };
+            if let Some(source_code) = &self.source_code {
+                let mut visitor = FileSourceCodeVisitor {
+                    visitor,
+                    source_code: source_code.as_borrowed(),
+                };
 
-            self.source.as_diagnostic().verbose_advices(&mut visitor)
+                self.source.as_diagnostic().verbose_advices(&mut visitor)
+            } else {
+                self.source.as_diagnostic().verbose_advices(visitor)
+            }
         }
 
         fn location(&self) -> Location<'_> {
             let location = self.source.as_diagnostic().location();
             Location {
-                source_code: Some(
-                    location
-                        .source_code
-                        .unwrap_or_else(|| self.source_code.as_borrowed()),
-                ),
+                source_code: location
+                    .source_code
+                    .or_else(|| Some(self.source_code.as_ref()?.as_borrowed())),
                 ..location
             }
         }

@@ -250,9 +250,46 @@ impl From<&SharedSourceCode> for SharedSourceCode {
     }
 }
 
-impl AsSourceCode for SharedSourceCode {
-    fn as_source_code(&self) -> Option<BorrowedSourceCode<'_>> {
-        Some(self.as_borrowed())
+impl From<BorrowedSourceCode<'_>> for SharedSourceCode {
+    /// Copies the text, and the line index if there is one; builds the line index otherwise.
+    fn from(source_code: BorrowedSourceCode<'_>) -> Self {
+        let Some(line_starts) = source_code.line_starts else {
+            return Self::new(source_code.text);
+        };
+        Self(Arc::new(SourceCode {
+            text: source_code.text.to_owned(),
+            line_starts: Some(line_starts.to_owned()),
+        }))
+    }
+}
+
+/// The source code that [DiagnosticExt::with_file_source_code](crate::DiagnosticExt::with_file_source_code)
+/// takes, `None` for none:
+/// - a [SharedSourceCode] or a reference to one, which all the diagnostics of a file share;
+/// - anything that implements [AsSourceCode] (`&str`, `String`, [SourceCode], an `Option` of
+///   them, ...), which each diagnostic copies.
+///
+/// [SharedSourceCode] doesn't implement [AsSourceCode], so that a `&SharedSourceCode` is shared
+/// instead of copied.
+pub trait IntoSharedSourceCode {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode>;
+}
+
+impl<T: AsSourceCode> IntoSharedSourceCode for T {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode> {
+        self.as_source_code().map(SharedSourceCode::from)
+    }
+}
+
+impl IntoSharedSourceCode for SharedSourceCode {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode> {
+        Some(self)
+    }
+}
+
+impl IntoSharedSourceCode for &SharedSourceCode {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode> {
+        Some(self.clone())
     }
 }
 
@@ -453,7 +490,7 @@ impl AsDatabaseObject for DatabaseObjectOwned {
 mod tests {
     use pgls_text_size::TextSize;
 
-    use super::{LineIndexBuf, SharedSourceCode};
+    use super::{LineIndex, LineIndexBuf, SharedSourceCode, SourceCode};
     use crate::{Diagnostic, DiagnosticExt, Error};
 
     #[derive(Debug)]
@@ -488,6 +525,56 @@ mod tests {
                 TextSize::from(20u32)
             ]
         );
+    }
+
+    /// `with_file_source_code` takes the inputs it took before `SharedSourceCode`, and `None`
+    /// still means no source code.
+    #[test]
+    fn with_file_source_code_takes_every_source_code_input() {
+        let text = String::from("select 1;\nselect 2;");
+        let line_index = LineIndexBuf::from_source_text(&text);
+        let shared = SharedSourceCode::new(text.as_str());
+        let with_source: Vec<Error> = vec![
+            TestDiagnostic.with_file_source_code(text.as_str()),
+            TestDiagnostic.with_file_source_code(&text),
+            TestDiagnostic.with_file_source_code(text.clone()),
+            TestDiagnostic.with_file_source_code(Some(text.as_str())),
+            TestDiagnostic.with_file_source_code(Some(text.clone())),
+            TestDiagnostic.with_file_source_code(SourceCode::<&str, &LineIndex> {
+                text: &text,
+                line_starts: None,
+            }),
+            TestDiagnostic.with_file_source_code(SourceCode::<&str, &LineIndex> {
+                text: &text,
+                line_starts: Some(&line_index),
+            }),
+            TestDiagnostic.with_file_source_code(SourceCode::<String, LineIndexBuf> {
+                text: text.clone(),
+                line_starts: Some(line_index.clone()),
+            }),
+            TestDiagnostic.with_file_source_code(&shared),
+            TestDiagnostic.with_file_source_code(shared.clone()),
+        ];
+        for diagnostic in &with_source {
+            let source_code = diagnostic
+                .location()
+                .source_code
+                .expect("the diagnostic has a source code");
+            assert_eq!(source_code.text, text);
+            assert_eq!(
+                &**source_code.line_starts.expect("a line index"),
+                &**line_index
+            );
+        }
+
+        let without_source: Vec<Error> = vec![
+            TestDiagnostic.with_file_source_code(None::<&str>),
+            TestDiagnostic.with_file_source_code(None::<String>),
+            TestDiagnostic.with_file_source_code(None::<SourceCode<&str, &LineIndex>>),
+        ];
+        for diagnostic in &without_source {
+            assert!(diagnostic.location().source_code.is_none());
+        }
     }
 
     #[test]
