@@ -70,6 +70,46 @@ The language server runs for hours on files we don't control: `pg_dump` output w
 - **State the cost of anything on the request path.** A PR that adds work per keystroke or per request says how it scales (O(statements before the cursor), O(range), ...) and how long it takes on a 20,000-statement file. A quadratic dedupe, a full walk per request and re-running the analyser for every code action all passed the tests on small files.
 - **Turn "Not covered" into issues.** Keep the "Not covered" list in the PR description and open an issue for each item, so the gaps don't get lost once the PR is merged.
 
+## API conventions
+
+These describe the shape we're moving the code to. New code follows them, and existing code is brought in line crate by crate, so you will still find code that doesn't. They come from [oxc](https://github.com/oxc-project/oxc) and [biome](https://github.com/biomejs/biome) and from our own review of the code base.
+
+### Structure
+
+- **No standalone helper functions.** Every helper gets a home on the type it's about, as a method or an associated function: `RuleSpecifier::of(diagnostic)`, `select.leftmost()`, `catalog.end_transaction()`, `Lines::new(text)`. Never write a free function that a method only forwards to; fold it into the method. If the type is defined in another crate, add an inherent impl in the crate that owns the type when that crate is the right layer, and use an extension trait only when it isn't. A crate's established entry points (the printer's per-node `emit_*` functions, the splitter's `split`) stay until that crate's refactor, but new helpers inside them still go on a type.
+- **Keep logic in the crate that owns it.** Call it from there instead of copying it into the crate that needs it. Line breaks, for example, are found by `pgls_line_index`, not by hand-written `\n`/`\r` searches in each crate.
+- **A crate root is a table of contents.** Modules are private, and `lib.rs` has one explicit `pub use` list, without `pub use x::*`. Each item has one public path. A crate re-exports another crate only as a documented facade, like `pgls_diagnostics` does for `pgls_console`. Items that only benchmarks need sit behind a feature and `#[doc(hidden)]`. See [`oxc_semantic/src/lib.rs`](https://github.com/oxc-project/oxc/blob/6774a439d419fde946ddb45c620bcd2b0ed14572/crates/oxc_semantic/src/lib.rs#L30-L57).
+- **Entry points take a params struct or a builder and return a named struct.** Recoverable problems are part of the returned value, not the error. A crate has one entry point per operation, and no test-only convenience entry points in its public API; tests use a test helper. See oxc's [`ParserReturn`](https://github.com/oxc-project/oxc/blob/6774a439d419fde946ddb45c620bcd2b0ed14572/crates/oxc_parser/src/lib.rs#L166).
+- **Names.** `*Params` are the inputs of one call, `*Options` are reusable knobs, `*Configuration` is the configuration file (only in `pgls_configuration`) and `*Settings` is resolved workspace state (only in `pgls_workspace`). No `get_` prefix. `as_`/`to_`/`into_` follow their cost, as in the [API guidelines](https://rust-lang.github.io/api-guidelines/naming.html). The method names of the `Workspace` trait are wire names used by the TypeScript bindings, so they only change with the protocol.
+- **No `bool` pairs or sentinel values in public signatures.** Use an enum or a struct with named fields. No `-1` or `0` for an unknown position, no `""` for "unset", and no `(Option, Option)` tuples with an `unreachable!()` case.
+- **Unknown is an error value.** "We can't tell" is `Err(Unknown)`, so `?` propagates it. Lookups keep found, missing and unknown apart.
+- **State that always travels together is one value.** A catalog and its search path are one value. A `TextRange` keeps one coordinate system for its whole life; converting it to another one makes a value of another type.
+- **Errors.** What a user should see is a `Diagnostic`. An infrastructure failure is the crate's own `thiserror` enum, not named `Error`; don't pass our own failures off as a third-party error such as `sqlx::Error::Protocol`. No third-party error types in the public signatures of crates that don't own the dependency, and no `anyhow` in library crates (`pgls_lsp` may use it). Lower crates return plain error data, such as a parse error with its position, and the workspace turns it into diagnostics.
+- **Frontends see workspace types only.** `pgls_lsp`, `pgls_wasm` and `pgls_cli` depend on the types of `pgls_workspace`, not on feature or analysis crates. Wire types live in the workspace, so a rename inside a feature crate can't change the protocol.
+- **Proc macros only where a function or `macro_rules!` can't do the job.** Their crates end in `_macros` and use syn 2.
+- **Every `lib.rs` starts with `//!` docs** that say what the crate does and doesn't do, and show its main call site. [ARCHITECTURE.md](./ARCHITECTURE.md) is the map and links to them.
+
+### Performance
+
+- **Data-oriented design.** Use flat arrays and indices instead of hash maps and pointers, and a struct of arrays where passes read different fields. The layout is what makes the request path fast on a 20,000-statement file.
+- **No caches for costs we control.** When something we compute is slow, fix its layout or its algorithm instead of caching the result. A cache is fine only where the cost is outside our control: libpg_query's parse, database round trips and connection handshakes. Such a cache still has a limit, as the engineering rules ask.
+
+### Build and generated code
+
+- **Lints live in `[workspace.lints]`.** Each crate inherits them with `[lints] workspace = true`, and a crate that opts out of a lint says why. The set includes the engineering rules' panic lints, `allow_attributes_without_reason` and `unreachable_pub`. `cargo shear` catches unused dependencies.
+- **Generated code has one input and one generator, is checked in, and is diffed in CI.** Upstream inputs are read from the libpg_query submodule only. Generators are `xtask` commands that write `src/generated/`, and `just check-codegen` re-runs them. Build scripts write only to `OUT_DIR` and never use the network. Grammar node kinds and fields are generated constants, never string literals. Don't edit generated files by hand.
+
+### Tests
+
+- Unit tests go inline, or in a sibling `foo.tests.rs` once they outgrow the module.
+- Specs and fixtures go in `tests/`, with their insta snapshots next to them.
+- Conformance suites, like the Postgres regression suite, are data: recorded verdicts and one runner that uses the production entry point. Their fixtures don't depend on the code under test.
+- Database tests use `#[pgls_test_utils::db_test]`, not `#[sqlx::test]`.
+
+### Pull requests
+
+- **Keep refactors and behaviour changes apart.** A refactor changes no behaviour and no snapshot. A behaviour change comes with spec or server tests. When a refactor uncovers a bug, fix it in its own commit or PR.
+
 ## Before opening a pull request
 
 ```bash
