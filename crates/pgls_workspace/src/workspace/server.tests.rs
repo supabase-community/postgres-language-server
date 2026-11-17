@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use pgls_analyse::{ActionCategory, Applicability, RefactorKind, RuleCategories};
+use pgls_analyse::{Applicability, RuleCategories};
 use pgls_configuration::{Merge, StringSet};
 use pgls_configuration::{
     PartialConfiguration, PartialFormatConfiguration, PartialTypecheckConfiguration,
@@ -31,10 +31,10 @@ use crate::{
         is_searched_for_configuration, load_configuration,
     },
     features::code_actions::{
-        CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
+        ActionCategory, CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
         EXECUTE_STATEMENT_MAX_RESULT_SIZE, EXECUTE_STATEMENT_MAX_ROWS,
         EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
-        ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
+        ExecuteStatementResult, FixFileMode, FixFileParams, RefactorKind, TextEdit,
     },
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},

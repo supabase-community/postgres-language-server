@@ -28,7 +28,7 @@ export interface ProjectKey {
   idx: number;
   version: number;
 }
-export type RuleCategory = "Lint" | "Action" | "Transformation";
+export type RuleCategory = "Lint";
 export type FileKind = FileKind2[];
 /**
  * The priority of the file
@@ -246,7 +246,7 @@ export type Advice =
 /**
  * Represents the resource a diagnostic is associated with.
  */
-export type Resource_for_String = "database" | "argv" | "memory" | { file: string };
+export type Resource_for_String = "argv" | "memory" | { file: string };
 export type TextRange = [TextSize, TextSize];
 export interface MarkupNodeBuf {
   content: string;

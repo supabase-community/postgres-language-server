@@ -609,15 +609,6 @@ impl CatalogView for Catalog {
             return Lookup::Unknown;
         }
         base.cast(source, target)
-            .cloned()
-            .map(Lookup::Found)
-            .unwrap_or_else(|| {
-                if base.snapshot().typing_metadata {
-                    Lookup::Missing
-                } else {
-                    Lookup::Unknown
-                }
-            })
     }
 
     fn function_candidates(
@@ -682,7 +673,10 @@ impl CatalogView for Catalog {
             items,
             complete: !self.lookups_tainted()
                 && !self.operators_incomplete
-                && base.snapshot().typing_metadata,
+                && base.snapshot().typing_metadata
+                && !schemas
+                    .iter()
+                    .any(|s| base.has_operator_of_unknown_kind(s, name)),
         }
     }
 

@@ -136,7 +136,7 @@ async fn infers_fields_of_a_composite_without_its_kind(test_db: PgPool) {
         .iter_mut()
         .find(|ty| ty.schema == "public" && ty.name == "pair")
         .expect("the composite type pair");
-    pair.typtype = String::new();
+    pair.typtype = Default::default();
     let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
     assert_eq!(
         output_types(&mut catalog, "", "select (p).a from items"),

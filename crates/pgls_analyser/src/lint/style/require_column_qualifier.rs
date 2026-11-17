@@ -2,7 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_resolve::{LookupKind, SearchPathLookup};
+use pgls_resolve::LookupKind;
 
 declare_lint_rule! {
     /// Columns in queries should be qualified with their table.
@@ -67,14 +67,9 @@ impl LinterRule for RequireColumnQualifier {
     const READS_LOOKUPS: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut lookups: Vec<&SearchPathLookup> = ctx
-            .lookups()
+        ctx.lookups()
             .iter()
             .filter(|lookup| lookup.kind == LookupKind::Column)
-            .collect();
-        lookups.sort_by_key(|lookup| lookup.location);
-        lookups
-            .into_iter()
             .map(|lookup| {
                 let name = &lookup.name;
                 LinterDiagnostic::new(
