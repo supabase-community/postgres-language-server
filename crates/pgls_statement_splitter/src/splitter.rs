@@ -13,9 +13,28 @@ use crate::splitter::common::{ReachedEOFException, SplitterResult};
 pub struct SplitResult {
     pub ranges: Vec<TextRange>,
     pub errors: Vec<SplitError>,
-    /// The offsets of the statement keywords after a token that needs an operand, see
-    /// [`Splitter::hold_back`].
-    pub operand_keywords: Vec<TextSize>,
+    /// The statement keywords after a token that needs an operand, see [`Splitter::hold_back`].
+    pub operand_keywords: OperandKeywords,
+}
+
+/// The offsets of the statement keywords after a token that needs an operand, in order, see
+/// [`Splitter::hold_back`].
+#[derive(Debug, Default)]
+pub struct OperandKeywords(Vec<TextSize>);
+
+impl OperandKeywords {
+    /// Whether one of the keywords is in `range`.
+    pub fn any_in(&self, range: TextRange) -> bool {
+        let first = self.0.partition_point(|&offset| offset < range.start());
+        self.0
+            .get(first)
+            .is_some_and(|&offset| offset < range.end())
+    }
+
+    /// Whether `range` starts at one of the keywords.
+    pub fn start(&self, range: TextRange) -> bool {
+        self.0.binary_search(&range.start()).is_ok()
+    }
 }
 
 pub static TRIVIA_TOKENS: &[SyntaxKind] = &[
@@ -149,11 +168,12 @@ impl<'a> Splitter<'a> {
             })
             .collect();
 
-        let operand_keywords = self
-            .operand_keywords
-            .iter()
-            .map(|&token| self.lexed.range(token).start())
-            .collect();
+        let operand_keywords = OperandKeywords(
+            self.operand_keywords
+                .iter()
+                .map(|&token| self.lexed.range(token).start())
+                .collect(),
+        );
 
         SplitResult {
             ranges,

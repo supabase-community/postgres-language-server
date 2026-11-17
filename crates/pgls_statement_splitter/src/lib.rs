@@ -49,11 +49,13 @@ pub fn split(sql: &str) -> SplitResult {
             .map(|idx| lexed.range(idx))
             .peekable()
     });
-    let mut operand_keywords = coarse.operand_keywords.iter().copied().peekable();
 
-    let mut ranges = Vec::with_capacity(coarse.ranges.len());
-    let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
-    let lex_errors = errors.len();
+    let errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
+    let mut result = SplitResult {
+        ranges: Vec::with_capacity(coarse.ranges.len()),
+        lex_errors: errors.len(),
+        errors,
+    };
 
     for range in coarse.ranges {
         let contains_blank_line = blank_lines.as_mut().is_some_and(|blank_lines| {
@@ -66,17 +68,17 @@ pub fn split(sql: &str) -> SplitResult {
                 .peek()
                 .is_some_and(|blank_line| range.contains_range(*blank_line))
         });
-        let holds_back = contains_offset(&mut operand_keywords, range);
+        let holds_back = coarse.operand_keywords.any_in(range);
 
         // The two passes differ only in how they treat a blank line, so a
         // fragment without one would come back from the recovery pass
         // byte-identical, errors included. Nothing to ask PostgreSQL about.
         if !contains_blank_line {
-            if holds_back && split_at_held_back(sql, range, false, &mut ranges, &mut errors) {
+            if holds_back && result.push_split_at_operand_keywords(sql, range, false) {
                 continue;
             }
-            ranges.push(range);
-            errors.extend(
+            result.ranges.push(range);
+            result.errors.extend(
                 coarse_errors
                     .iter()
                     .filter(|(span, _)| range.contains_range(*span))
@@ -98,24 +100,23 @@ pub fn split(sql: &str) -> SplitResult {
         {
             // PostgreSQL is happy with the fragment as a whole, so any splitter
             // complaint about it was a false positive. Drop it with the blank line.
-            ranges.push(range);
+            result.ranges.push(range);
             continue;
         }
 
         // A piece that holds back a statement start may be split again at it,
         // replacing the errors of the recovery pass in it.
         let mut split_again = Vec::new();
-        let mut piece_keywords = recovered.operand_keywords.iter().copied().peekable();
         for piece in recovered.ranges {
-            if contains_offset(&mut piece_keywords, piece)
-                && split_at_held_back(sql, piece + offset, true, &mut ranges, &mut errors)
+            if recovered.operand_keywords.any_in(piece)
+                && result.push_split_at_operand_keywords(sql, piece + offset, true)
             {
                 split_again.push(piece);
             } else {
-                ranges.push(piece + offset);
+                result.ranges.push(piece + offset);
             }
         }
-        errors.extend(
+        result.errors.extend(
             recovered
                 .errors
                 .into_iter()
@@ -125,55 +126,45 @@ pub fn split(sql: &str) -> SplitResult {
         );
     }
 
-    SplitResult {
-        ranges,
-        errors,
-        lex_errors,
-    }
+    result
 }
 
-/// Whether `range` contains one of the `offsets`, which are sorted, as are the ranges it is
-/// called with. Skips the ones before `range`.
-fn contains_offset(
-    offsets: &mut std::iter::Peekable<impl Iterator<Item = TextSize>>,
-    range: TextRange,
-) -> bool {
-    while offsets.next_if(|&offset| offset < range.start()).is_some() {}
-    offsets.peek().is_some_and(|&offset| offset < range.end())
-}
-
-/// Splits `range` of `sql` at the statement keywords it holds back, e.g. the `update` after
-/// `where`, if PostgreSQL can't parse the range as a whole but a statement that starts at one of
-/// them: that is what a `;` missing before it looks like, as when a statement is typed above
-/// another one. Pushes the statements and their errors, and returns whether it did. A range
-/// that stays whole is one statement, finished or not, like `where update = ` while typing.
-fn split_at_held_back(
-    sql: &str,
-    range: TextRange,
-    blank_line_is_boundary: bool,
-    ranges: &mut Vec<TextRange>,
-    errors: &mut Vec<SplitDiagnostic>,
-) -> bool {
-    if parses(&sql[range]) {
-        return false;
+impl SplitResult {
+    /// Splits `range` of `sql` at the statement keywords it holds back, e.g. the `update` after
+    /// `where`, if PostgreSQL can't parse the range as a whole but a statement that starts at
+    /// one of them: that is what a `;` missing before it looks like, as when a statement is
+    /// typed above another one. Pushes the statements and their errors, and returns whether it
+    /// did. A range that stays whole is one statement, finished or not, like `where update = `
+    /// while typing.
+    fn push_split_at_operand_keywords(
+        &mut self,
+        sql: &str,
+        range: TextRange,
+        blank_line_is_boundary: bool,
+    ) -> bool {
+        if parses(&sql[range]) {
+            return false;
+        }
+        let offset = range.start();
+        let fragment = Lexer::new(&sql[range]).lex();
+        let pass = split_pass(&fragment, blank_line_is_boundary, false);
+        // Each statement keyword the pass didn't hold back starts a statement.
+        let starts_statement = pass
+            .ranges
+            .iter()
+            .any(|piece| pass.operand_keywords.start(*piece) && parses(&sql[*piece + offset]));
+        if !starts_statement {
+            return false;
+        }
+        self.ranges
+            .extend(pass.ranges.into_iter().map(|r| r + offset));
+        self.errors.extend(
+            pass.errors
+                .into_iter()
+                .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
+        );
+        true
     }
-    let offset = range.start();
-    let fragment = Lexer::new(&sql[range]).lex();
-    let pass = split_pass(&fragment, blank_line_is_boundary, false);
-    // Each statement keyword the pass didn't hold back starts a statement.
-    let starts_statement = pass.ranges.iter().any(|piece| {
-        pass.operand_keywords.contains(&piece.start()) && parses(&sql[*piece + offset])
-    });
-    if !starts_statement {
-        return false;
-    }
-    ranges.extend(pass.ranges.into_iter().map(|r| r + offset));
-    errors.extend(
-        pass.errors
-            .into_iter()
-            .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
-    );
-    true
 }
 
 /// The statements around a change that are split again by [`split_edited`], on each side of it.
