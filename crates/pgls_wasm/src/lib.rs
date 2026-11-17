@@ -252,7 +252,7 @@ impl Workspace {
         let configuration = if json.trim().is_empty() {
             PartialConfiguration::default()
         } else {
-            pgls_workspace::configuration::parse_configuration(json)
+            pgls_workspace::configuration::parse_configuration(json, None)
                 .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?
         };
         self.set_configuration(configuration)
