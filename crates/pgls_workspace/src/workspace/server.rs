@@ -13,6 +13,7 @@ use crate::features::code_actions::execute_statement::{
     execution,
     running::{RUNNING_STATEMENTS_MAX, RunningStatements},
 };
+#[cfg(feature = "db")]
 use analyser::AnalyserVisitorBuilder;
 use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
@@ -21,14 +22,15 @@ use analysis::DocumentAnalysis;
 use async_helper::{run_async, run_async_until};
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
+use document::Document;
 #[cfg(feature = "db")]
-use document::TypecheckDiagnosticsMapper;
-use document::{Document, ExecuteStatementMapper};
+use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use parking_lot::{Mutex, RwLock};
+#[cfg(feature = "db")]
 use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]

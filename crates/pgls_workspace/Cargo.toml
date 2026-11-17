@@ -97,5 +97,10 @@ tokio           = { workspace = true }
 [lib]
 doctest = false
 
+# Loads the snapshot from the database.
+[[test]]
+name              = "snapshot_memory"
+required-features = ["db"]
+
 [lints]
 workspace = true
