@@ -414,10 +414,7 @@ mod tests {
         let path = migrations_dir.join("0000_init.sql");
         fs::write(&path, "").unwrap();
 
-        assert_eq!(
-            version_of(&path, &migrations_dir),
-            Some(Version::Number(0))
-        );
+        assert_eq!(version_of(&path, &migrations_dir), Some(Version::Number(0)));
     }
 
     #[test]
