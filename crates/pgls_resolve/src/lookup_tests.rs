@@ -33,9 +33,8 @@ fn lookups_in(
         collect_references: false,
         collect_lookups: true,
     });
-    let mut lookups = resolution.lookups;
-    lookups.sort_by_key(|lookup| lookup.location);
-    lookups
+    resolution
+        .lookups
         .iter()
         .map(|lookup| {
             let kind = match lookup.kind {

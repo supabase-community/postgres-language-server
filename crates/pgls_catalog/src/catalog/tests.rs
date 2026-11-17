@@ -2183,3 +2183,146 @@ mod typing_overlay_tests {
         );
     }
 }
+
+/// A snapshot with codes we don't know, as a `SchemaCache` from a newer Postgres, or edited
+/// by hand, may have them.
+fn snapshot_with_unknown_codes() -> Snapshot {
+    let type_ = |id: i64, name: &str, typtype: &str| crate::PostgresType {
+        id,
+        schema: "pg_catalog".into(),
+        name: name.into(),
+        typtype: typtype.into(),
+        ..Default::default()
+    };
+    let argument = |mode: &str| crate::FunctionArg {
+        mode: mode.into(),
+        name: "x".into(),
+        type_id: 23,
+        has_default: Some(false),
+    };
+    let function = |name: &str, kind, mode: &str| crate::Function {
+        schema: "public".into(),
+        name: name.into(),
+        kind,
+        args: crate::FunctionArgs {
+            args: vec![argument(mode)],
+        },
+        ..Default::default()
+    };
+    let operator = |oid: i64, name: &str, kind: &str| crate::PostgresOperator {
+        oid,
+        schema: "pg_catalog".into(),
+        name: name.into(),
+        kind: kind.into(),
+        left: 23,
+        right: 23,
+        result: 23,
+    };
+    let cast = |source: i64, target: i64, context: &str| crate::PostgresCast {
+        source,
+        target,
+        context: context.into(),
+        method: "f".into(),
+    };
+    let mut cycle = type_(901, "d1", "d");
+    cycle.typbasetype = 902;
+    let mut other = type_(902, "d2", "d");
+    other.typbasetype = 901;
+    let mut array = type_(903, "_a", "b");
+    array.is_array = true;
+    array.typelem = 904;
+    let mut element = type_(904, "_b", "b");
+    element.is_array = true;
+    element.typelem = 903;
+    Snapshot {
+        schemas: vec![schema("public"), schema("pg_catalog")],
+        types: vec![
+            type_(23, "int4", "b"),
+            type_(25, "text", "b"),
+            type_(900, "future", "x"),
+            cycle,
+            other,
+            array,
+            element,
+        ],
+        functions: vec![
+            function("by_mode", crate::ProcKind::Function, "sideways"),
+            function("by_kind", crate::ProcKind::Unknown, "in"),
+            function("known", crate::ProcKind::Function, "in"),
+        ],
+        operators: vec![operator(1, "!", "r"), operator(2, "+", "infix")],
+        casts: vec![cast(23, 25, "q"), cast(25, 23, "e")],
+        typing_metadata: true,
+        ..Default::default()
+    }
+}
+
+#[test]
+fn unknown_codes_are_unknown_not_missing() {
+    use crate::typing::{CoercionContext, Decision, Type, TypeId, base_type, format_type};
+
+    let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(
+        snapshot_with_unknown_codes(),
+    )))));
+    let search_path = path(&["public"]);
+    let id = TypeId::Snapshot;
+
+    assert_eq!(catalog.cast(&id(23), &id(25)), Lookup::Unknown);
+    assert!(matches!(
+        catalog.cast(&id(25), &id(23)),
+        Lookup::Found(cast) if cast.context == CoercionContext::Explicit
+    ));
+    assert_eq!(catalog.cast(&id(23), &id(23)), Lookup::Missing);
+
+    let infix = crate::OperatorKind::Infix;
+    assert!(
+        !catalog
+            .operator_candidates(None, "!", infix, &search_path)
+            .complete
+    );
+    assert!(
+        catalog
+            .operator_candidates(None, "+", infix, &search_path)
+            .complete
+    );
+
+    assert_eq!(catalog.type_by_id(&id(900)).found().unwrap().kind, None);
+    assert_eq!(base_type(&catalog, &id(901)), Decision::Unknown);
+    assert_eq!(format_type(&catalog, &Type::Named(id(903))), None);
+
+    for name in ["by_mode", "by_kind"] {
+        let function = &catalog.functions(None, name, &search_path).found().unwrap()[0];
+        assert_eq!(function.signature, None, "{name}");
+        assert_eq!((function.min_args, function.max_args), (0, None), "{name}");
+    }
+    let known = &catalog
+        .functions(None, "known", &search_path)
+        .found()
+        .unwrap()[0];
+    assert_eq!((known.min_args, known.max_args), (1, Some(1)));
+}
+
+#[test]
+fn snapshot_json_keeps_its_codes() {
+    let json = serde_json::to_string(&snapshot_with_unknown_codes()).unwrap();
+    for code in [
+        r#""typtype":"d""#,
+        r#""context":"e""#,
+        r#""method":"f""#,
+        r#""kind":"infix""#,
+        r#""mode":"in""#,
+        r#""kind":"Function""#,
+    ] {
+        assert!(json.contains(code), "{code} in {json}");
+    }
+    let read: Snapshot = serde_json::from_str(&json).unwrap();
+    assert_eq!(serde_json::to_string(&read).unwrap(), json);
+
+    // Codes of a newer Postgres don't make the whole `SchemaCache` invalid.
+    let json = json
+        .replacen(r#""kind":"Function""#, r#""kind":"Routine""#, 1)
+        .replacen(r#""mode":"in""#, r#""mode":"sideways""#, 1);
+    let read: Snapshot = serde_json::from_str(&json).unwrap();
+    assert_eq!(read.functions[0].kind, crate::ProcKind::Unknown);
+    assert_eq!(read.functions[1].args.args[0].mode(), None);
+}

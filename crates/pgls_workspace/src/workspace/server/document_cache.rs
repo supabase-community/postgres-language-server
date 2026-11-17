@@ -294,7 +294,7 @@ impl DocumentCache {
     }
 
     /// The cached analysis, whatever its key.
-    #[cfg(test)]
+    #[cfg(all(test, feature = "db"))]
     pub(crate) fn cached_analysis(&self) -> Option<Arc<DocumentAnalysis>> {
         self.keyed.lock().analysis.clone()
     }

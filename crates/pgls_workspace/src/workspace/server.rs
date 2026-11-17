@@ -15,15 +15,16 @@ use crate::features::code_actions::execute_statement::{
 };
 #[cfg(feature = "db")]
 use crate::features::diagnostics::DatabaseChecks;
+#[cfg(feature = "db")]
 use analyser::AnalyserVisitorBuilder;
 use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
 use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
+use document::Document;
 #[cfg(feature = "db")]
-use document::TypecheckDiagnosticsMapper;
-use document::{Document, ExecuteStatementMapper};
+use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
@@ -31,6 +32,7 @@ use document_cache::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResu
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use parking_lot::{Mutex, RwLock};
+#[cfg(feature = "db")]
 use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
@@ -75,11 +77,13 @@ use crate::{
     workspace::WithCSTMapper,
 };
 
+#[cfg(feature = "db")]
+use super::SchemaCacheScope;
 use super::{
     FindProjectParams, GetFileContentParams, InvalidateSchemaCacheParams, IsPathIgnoredParams,
-    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, SchemaCacheScope,
-    ServerInfo, UnregisterProjectFolderParams, UpdateNestedSettingsParams,
-    UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
@@ -556,7 +560,7 @@ impl WorkspaceServer {
                                                     search_path: &statement.search_path,
                                                     identifiers: Vec::new(),
                                                     duplicate_assignments_reported: statement
-                                                        .has_duplicate_assignments,
+                                                        .reported_database_error,
                                                 })
                                                 .await?;
 

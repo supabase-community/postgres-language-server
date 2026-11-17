@@ -104,7 +104,14 @@ lint:
 check:
   just format-ci
   cargo clippy --workspace --all-targets -- -D warnings
+  just lint-features
   just check-codegen
+
+# Lints the feature sets that `cargo clippy --workspace` misses, like CI's "Lint Project" job. It unifies features,
+# so `db` is always on, which `pgls_wasm` builds without, and the recorder of the regression fixtures always off
+lint-features:
+  cargo clippy -p pgls_workspace -p pgls_catalog --no-default-features --all-targets -- -D warnings
+  cargo clippy -p pgls_postgres_regress --features record --all-targets -- -D warnings
 
 # Compares a snapshot of the working tree (tracked and untracked files) before and after, so it also works with uncommitted changes.
 # Fails if `just gen-lint` changes any file, like CI's "Check Codegen" job
