@@ -23,7 +23,7 @@ pub(crate) struct SuppressionsParser<'a> {
 
 impl<'a> SuppressionsParser<'a> {
     pub fn new(doc: &'a str) -> Self {
-        let lines = pgls_line_index::lines(doc).enumerate().peekable();
+        let lines = Lines::new(doc).enumerate().peekable();
 
         Self {
             file_suppressions: vec![],

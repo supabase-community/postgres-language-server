@@ -1,7 +1,7 @@
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, WideLineCol, changed_range, lines, offset_of_char_position};
+use crate::{LineCol, LineIndex, Lines, WideLineCol, changed_range, offset_of_char_position};
 
 #[test]
 fn line_breaks_and_wide_characters() {
@@ -55,7 +55,7 @@ fn line_breaks_and_wide_characters() {
 
 #[test]
 fn lines_end_like_in_the_line_index() {
-    let collect = |text| lines(text).collect::<Vec<_>>();
+    let collect = |text| Lines::new(text).collect::<Vec<_>>();
     let line = |start: u32, text| (TextSize::from(start), text);
 
     assert_eq!(collect(""), [line(0, "")]);
@@ -189,31 +189,35 @@ mod properties {
     use proptest::prelude::*;
 
     use crate::WideEncoding::{Utf16, Utf32};
-    use crate::{LineCol, LineIndex, changed_range, lines};
+    use crate::{LineCol, LineIndex, Lines, changed_range};
 
-    /// Texts of line breaks and characters of 1, 2 and 4 bytes in UTF-8, so that every line break,
-    /// `\r\n` split or not, and every width of character shows up next to each other.
-    fn text() -> impl Strategy<Value = String> {
-        proptest::collection::vec(
-            proptest::sample::select(vec!['a', 'é', '😀', '\r', '\n']),
-            0..24,
-        )
-        .prop_map(|chars| chars.into_iter().collect())
-    }
+    /// A text of line breaks and characters of 1, 2 and 4 bytes in UTF-8, so that every line
+    /// break, `\r\n` split or not, and every width of character shows up next to each other.
+    #[derive(Debug)]
+    struct Text(String);
 
-    /// Whether `offset` is between the `\r` and the `\n` of a line break.
-    fn splits_crlf(text: &str, offset: usize) -> bool {
-        text[..offset].ends_with('\r') && text[offset..].starts_with('\n')
+    impl Arbitrary for Text {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with((): ()) -> Self::Strategy {
+            proptest::collection::vec(
+                proptest::sample::select(vec!['a', 'é', '😀', '\r', '\n']),
+                0..24,
+            )
+            .prop_map(|chars| Text(chars.into_iter().collect()))
+            .boxed()
+        }
     }
 
     proptest! {
-        /// `lines` returns the lines of the line index, and between two lines there is exactly one
+        /// `Lines` returns the lines of the line index, and between two lines there is exactly one
         /// line break.
         #[test]
-        fn lines_are_the_lines_of_the_index(text in text()) {
+        fn lines_are_the_lines_of_the_index(Text(text) in any::<Text>()) {
             let line_index = LineIndex::new(&text);
             prop_assert_eq!(line_index.len(), TextSize::of(text.as_str()));
-            let lines: Vec<_> = lines(&text).collect();
+            let lines: Vec<_> = Lines::new(&text).collect();
             let starts: Vec<_> = lines.iter().map(|(start, _)| *start).collect();
             prop_assert_eq!(line_index.line_starts(), starts.as_slice());
 
@@ -235,9 +239,9 @@ mod properties {
         /// `\n` of a line break, which is the end of its line. An offset inside a character is
         /// no char boundary.
         #[test]
-        fn positions_round_trip(text in text()) {
+        fn positions_round_trip(Text(text) in any::<Text>()) {
             let line_index = LineIndex::new(&text);
-            let starts: Vec<_> = lines(&text).map(|(start, _)| usize::from(start)).collect();
+            let starts: Vec<_> = Lines::new(&text).map(|(start, _)| usize::from(start)).collect();
             for offset in 0..=text.len() + 1 {
                 let size = TextSize::try_from(offset).unwrap();
                 if offset > text.len() || !text.is_char_boundary(offset) {
@@ -246,7 +250,7 @@ mod properties {
                 }
                 prop_assert!(line_index.is_char_boundary(size), "{offset}");
                 let line_col = line_index.line_col(size).unwrap();
-                let at = if splits_crlf(&text, offset) { offset - 1 } else { offset };
+                let at = if Lines::splits_crlf(&text, offset) { offset - 1 } else { offset };
                 let line = starts.partition_point(|&start| start <= at) - 1;
                 prop_assert_eq!(
                     line_col,
@@ -264,9 +268,9 @@ mod properties {
 
         /// A column past the end of a line is the start of its line break.
         #[test]
-        fn columns_past_the_end_of_a_line_are_clamped(text in text()) {
+        fn columns_past_the_end_of_a_line_are_clamped(Text(text) in any::<Text>()) {
             let line_index = LineIndex::new(&text);
-            for (line, (start, content)) in lines(&text).enumerate() {
+            for (line, (start, content)) in Lines::new(&text).enumerate() {
                 let end = start + TextSize::of(content);
                 let line_col = LineCol { line: line as u32, col: u32::from(TextSize::of(content)) + 3 };
                 prop_assert_eq!(line_index.offset_clamped(line_col), end);
@@ -276,14 +280,14 @@ mod properties {
         /// The edit turns `old` into `new`, replaces no more than what changed, and neither of its
         /// ends is between the `\r` and the `\n` of a line break.
         #[test]
-        fn changed_range_is_the_change(old in text(), new in text()) {
+        fn changed_range_is_the_change(Text(old) in any::<Text>(), Text(new) in any::<Text>()) {
             let (range, new_text) = changed_range(&old, &new).unwrap();
             let mut applied = old.clone();
             applied.replace_range(std::ops::Range::<usize>::from(range), new_text);
             prop_assert_eq!(&applied, &new);
 
             let (start, end) = (usize::from(range.start()), usize::from(range.end()));
-            prop_assert!(!splits_crlf(&old, start) && !splits_crlf(&old, end));
+            prop_assert!(!Lines::splits_crlf(&old, start) && !Lines::splits_crlf(&old, end));
             let prefix = old
                 .char_indices()
                 .zip(new.chars())
@@ -291,7 +295,7 @@ mod properties {
                 .map_or(old.len().min(new.len()), |((index, _), _)| index);
             // Only a `\r\n` that the change would split is taken in whole.
             prop_assert!(
-                start == prefix || (start + 1 == prefix && splits_crlf(&old, prefix)),
+                start == prefix || (start + 1 == prefix && Lines::splits_crlf(&old, prefix)),
                 "{:?} {}", range, prefix
             );
             let suffix: usize = old[prefix..]
@@ -304,7 +308,7 @@ mod properties {
             let unchanged_end = old.len() - suffix;
             prop_assert!(
                 end == unchanged_end
-                    || (end == unchanged_end + 1 && splits_crlf(&old, unchanged_end)),
+                    || (end == unchanged_end + 1 && Lines::splits_crlf(&old, unchanged_end)),
                 "{:?} {}", range, unchanged_end
             );
         }

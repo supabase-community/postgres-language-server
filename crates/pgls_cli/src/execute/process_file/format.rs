@@ -77,7 +77,7 @@ fn format_with_guard<'ctx>(
         let start_byte: usize = stmt.range.start().into();
         // Lines end at `\n`, `\r\n` and a lone `\r`, like in the diagnostics' line numbers.
         let start_line =
-            pgls_line_index::lines(&format_result.original[..start_byte]).count() as u32 - 1;
+            pgls_line_index::Lines::new(&format_result.original[..start_byte]).count() as u32 - 1;
         diagnostics.push(pgls_diagnostics::Error::from(FormatDiffDiagnostic {
             file_name: path.display().to_string(),
             diff,

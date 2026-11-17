@@ -3,7 +3,7 @@
 //!
 //! Lines end at `\n`, `\r\n` or a lone `\r`, like in the LSP. The `\r` of a `\r\n` belongs to the
 //! line break: a position can't point between the `\r` and the `\n`. [`changed_range`] follows
-//! that rule for the edit that turns one text into another, and [`lines`] splits a text into the
+//! that rule for the edit that turns one text into another, and [`Lines`] splits a text into the
 //! same lines.
 //!
 //! [`offset_of_char_position`] converts the character positions that Postgres reports.
@@ -20,7 +20,7 @@ use pgls_text_size::TextSize;
 pub use changed_range::changed_range;
 pub use char_position::offset_of_char_position;
 pub use line_index::LineIndex;
-pub use lines::{Lines, lines};
+pub use lines::Lines;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum WideEncoding {

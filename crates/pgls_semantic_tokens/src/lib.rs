@@ -233,7 +233,7 @@ fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
         return vec![token];
     }
     let mut parts = Vec::new();
-    for (line_start, line) in pgls_line_index::lines(text) {
+    for (line_start, line) in pgls_line_index::Lines::new(text) {
         let trimmed = line.trim_start();
         let start =
             token.range.start() + line_start + TextSize::of(&line[..line.len() - trimmed.len()]);
