@@ -742,6 +742,9 @@ fn rollback_restores_the_catalog() {
 #[test]
 fn rollback_to_nested_savepoints_undoes_their_changes() {
     let search_path = path(&["public"]);
+    let exists = |catalog: &Catalog, name: &str| {
+        catalog.relation(None, name, &search_path).found().is_some()
+    };
     let catalog = catalog_after(
         "begin;
          create table a (id int);
@@ -761,13 +764,10 @@ fn rollback_to_nested_savepoints_undoes_their_changes() {
     );
     // `ROLLBACK TO` keeps the savepoint, so the second one undoes `d`. `ROLLBACK` after `COMMIT`
     // undoes nothing.
-    assert!(relation_exists(&catalog, "a", &search_path));
-    assert!(relation_exists(&catalog, "e", &search_path));
+    assert!(exists(&catalog, "a"));
+    assert!(exists(&catalog, "e"));
     for name in ["a2", "b", "c", "d"] {
-        assert!(
-            !relation_exists(&catalog, name, &search_path),
-            "{name} survived the rollback"
-        );
+        assert!(!exists(&catalog, name), "{name} survived the rollback");
     }
 
     // `ROLLBACK` returns to `BEGIN` through every savepoint, and restores the flags and the
@@ -782,8 +782,8 @@ fn rollback_to_nested_savepoints_undoes_their_changes() {
         &search_path,
     );
     assert!(!catalog.is_tainted());
-    assert!(relation_exists(&catalog, "users", &search_path));
-    assert!(!relation_exists(&catalog, "x", &search_path));
+    assert!(exists(&catalog, "users"));
+    assert!(!exists(&catalog, "x"));
 
     // A rename inside the transaction moves the inheritance edges, and the rollback moves them
     // back: the child still gets the parent's new column.
@@ -800,10 +800,6 @@ fn rollback_to_nested_savepoints_undoes_their_changes() {
         column_names(&catalog, None, "child", &search_path).unwrap(),
         ["id", "extra"]
     );
-}
-
-fn relation_exists(catalog: &Catalog, name: &str, search_path: &[String]) -> bool {
-    catalog.relation(None, name, search_path).found().is_some()
 }
 
 #[test]

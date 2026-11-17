@@ -18,75 +18,78 @@ pub(super) fn apply_transaction_stmt(c: &mut Catalog, n: &TransactionStmt) {
         Kind::TransStmtBegin | Kind::TransStmtStart => {
             // A nested BEGIN only warns.
             if c.savepoints.is_empty() {
-                push_savepoint(c, None);
+                c.push_savepoint(None);
             }
         }
-        Kind::TransStmtSavepoint => push_savepoint(c, Some(n.savepoint_name.clone())),
+        Kind::TransStmtSavepoint => c.push_savepoint(Some(n.savepoint_name.clone())),
         Kind::TransStmtRelease => {
-            if let Some(position) = savepoint_position(c, &n.savepoint_name) {
+            if let Some(position) = c.savepoint_position(&n.savepoint_name) {
                 c.savepoints.truncate(position);
                 if c.savepoints.is_empty() {
-                    end_transaction(c);
+                    c.end_transaction();
                 }
             }
         }
         Kind::TransStmtRollbackTo => {
-            if let Some(position) = savepoint_position(c, &n.savepoint_name) {
+            if let Some(position) = c.savepoint_position(&n.savepoint_name) {
                 // The savepoint stays, and a later ROLLBACK TO returns to it again.
                 c.savepoints.truncate(position + 1);
-                roll_back_to_last(c);
+                c.roll_back_to_last_savepoint();
             }
         }
         Kind::TransStmtRollback | Kind::TransStmtRollbackPrepared => {
             if !c.savepoints.is_empty() {
                 c.savepoints.truncate(1);
-                roll_back_to_last(c);
-                end_transaction(c);
+                c.roll_back_to_last_savepoint();
+                c.end_transaction();
             }
         }
         Kind::TransStmtCommit | Kind::TransStmtCommitPrepared | Kind::TransStmtPrepare => {
-            end_transaction(c);
+            c.end_transaction();
         }
         _ => {}
     }
 }
 
-/// Remembers where the undo logs and flags are, and starts the logs at the first savepoint.
-fn push_savepoint(c: &mut Catalog, name: Option<String>) {
-    if c.savepoints.is_empty() {
-        for journal in c.journals() {
-            journal.set_recording(true);
+impl Catalog {
+    /// Remembers where the undo logs and flags are, and starts the logs at the first savepoint.
+    fn push_savepoint(&mut self, name: Option<String>) {
+        if self.savepoints.is_empty() {
+            for journal in self.journals() {
+                journal.set_recording(true);
+            }
+        }
+        let savepoint = Savepoint {
+            name,
+            undo_lens: self.journals().map(|journal| journal.undo_len()),
+            flags: self.flags(),
+        };
+        self.savepoints.push(savepoint);
+    }
+
+    /// Undoes the changes made since the last savepoint. O(changes since then).
+    fn roll_back_to_last_savepoint(&mut self) {
+        let Some(savepoint) = self.savepoints.last().cloned() else {
+            return;
+        };
+        for (journal, len) in self.journals().into_iter().zip(savepoint.undo_lens) {
+            journal.undo_to(len);
+        }
+        self.restore_flags(savepoint.flags);
+    }
+
+    /// Forgets the savepoints and the undo logs.
+    fn end_transaction(&mut self) {
+        self.savepoints.clear();
+        for journal in self.journals() {
+            journal.set_recording(false);
         }
     }
-    let savepoint = Savepoint {
-        name,
-        undo_lens: c.journals().map(|journal| journal.undo_len()),
-        flags: c.flags(),
-    };
-    c.savepoints.push(savepoint);
-}
 
-/// Undoes the changes made since the last savepoint. O(changes since then).
-fn roll_back_to_last(c: &mut Catalog) {
-    let Some(savepoint) = c.savepoints.last().cloned() else {
-        return;
-    };
-    for (journal, len) in c.journals().into_iter().zip(savepoint.undo_lens) {
-        journal.undo_to(len);
+    /// The innermost savepoint called `name`.
+    fn savepoint_position(&self, name: &str) -> Option<usize> {
+        self.savepoints
+            .iter()
+            .rposition(|savepoint| savepoint.name.as_deref() == Some(name))
     }
-    c.restore_flags(savepoint.flags);
-}
-
-/// Forgets the savepoints and the undo logs.
-fn end_transaction(c: &mut Catalog) {
-    c.savepoints.clear();
-    for journal in c.journals() {
-        journal.set_recording(false);
-    }
-}
-
-fn savepoint_position(c: &Catalog, name: &str) -> Option<usize> {
-    c.savepoints
-        .iter()
-        .rposition(|savepoint| savepoint.name.as_deref() == Some(name))
 }
