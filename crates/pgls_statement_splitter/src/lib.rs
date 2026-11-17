@@ -32,7 +32,7 @@ pub struct SplitResult {
 /// two just because it is formatted across a blank line.
 pub fn split(sql: &str) -> SplitResult {
     let lexed = Lexer::new(sql).lex();
-    let coarse = split_pass(&lexed, false);
+    let coarse = split_pass(&lexed, false, true);
 
     // Resolved to text ranges up front so each one can be attributed to the
     // fragment that contains it. There is normally none at all.
@@ -49,6 +49,7 @@ pub fn split(sql: &str) -> SplitResult {
             .map(|idx| lexed.range(idx))
             .peekable()
     });
+    let mut operand_keywords = coarse.operand_keywords.iter().copied().peekable();
 
     let mut ranges = Vec::with_capacity(coarse.ranges.len());
     let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
@@ -65,11 +66,15 @@ pub fn split(sql: &str) -> SplitResult {
                 .peek()
                 .is_some_and(|blank_line| range.contains_range(*blank_line))
         });
+        let holds_back = contains_offset(&mut operand_keywords, range);
 
         // The two passes differ only in how they treat a blank line, so a
         // fragment without one would come back from the recovery pass
         // byte-identical, errors included. Nothing to ask PostgreSQL about.
         if !contains_blank_line {
+            if holds_back && split_at_held_back(sql, range, false, &mut ranges, &mut errors) {
+                continue;
+            }
             ranges.push(range);
             errors.extend(
                 coarse_errors
@@ -85,7 +90,7 @@ pub fn split(sql: &str) -> SplitResult {
         // the whole-source lex above already reported them.
         let offset = range.start();
         let fragment = Lexer::new(&sql[range]).lex();
-        let recovered = split_pass(&fragment, true);
+        let recovered = split_pass(&fragment, true, true);
 
         if parses(&sql[range])
             && (continues_schema_elements(&fragment, &recovered.ranges)
@@ -97,12 +102,26 @@ pub fn split(sql: &str) -> SplitResult {
             continue;
         }
 
-        ranges.extend(recovered.ranges.into_iter().map(|r| r + offset));
+        // A piece that holds back a statement start may be split again at it,
+        // replacing the errors of the recovery pass in it.
+        let mut split_again = Vec::new();
+        let mut piece_keywords = recovered.operand_keywords.iter().copied().peekable();
+        for piece in recovered.ranges {
+            if contains_offset(&mut piece_keywords, piece)
+                && split_at_held_back(sql, piece + offset, true, &mut ranges, &mut errors)
+            {
+                split_again.push(piece);
+            } else {
+                ranges.push(piece + offset);
+            }
+        }
         errors.extend(
             recovered
                 .errors
                 .into_iter()
-                .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
+                .map(|err| (fragment.range(err.token), err.msg))
+                .filter(|(span, _)| !split_again.iter().any(|piece| piece.contains_range(*span)))
+                .map(|(span, msg)| SplitDiagnostic::new(msg, span + offset)),
         );
     }
 
@@ -111,6 +130,50 @@ pub fn split(sql: &str) -> SplitResult {
         errors,
         lex_errors,
     }
+}
+
+/// Whether `range` contains one of the `offsets`, which are sorted, as are the ranges it is
+/// called with. Skips the ones before `range`.
+fn contains_offset(
+    offsets: &mut std::iter::Peekable<impl Iterator<Item = TextSize>>,
+    range: TextRange,
+) -> bool {
+    while offsets.next_if(|&offset| offset < range.start()).is_some() {}
+    offsets.peek().is_some_and(|&offset| offset < range.end())
+}
+
+/// Splits `range` of `sql` at the statement keywords it holds back, e.g. the `update` after
+/// `where`, if PostgreSQL can't parse the range as a whole but a statement that starts at one of
+/// them: that is what a `;` missing before it looks like, as when a statement is typed above
+/// another one. Pushes the statements and their errors, and returns whether it did. A range
+/// that stays whole is one statement, finished or not, like `where update = ` while typing.
+fn split_at_held_back(
+    sql: &str,
+    range: TextRange,
+    blank_line_is_boundary: bool,
+    ranges: &mut Vec<TextRange>,
+    errors: &mut Vec<SplitDiagnostic>,
+) -> bool {
+    if parses(&sql[range]) {
+        return false;
+    }
+    let offset = range.start();
+    let fragment = Lexer::new(&sql[range]).lex();
+    let pass = split_pass(&fragment, blank_line_is_boundary, false);
+    // Each statement keyword the pass didn't hold back starts a statement.
+    let starts_statement = pass.ranges.iter().any(|piece| {
+        pass.operand_keywords.contains(&piece.start()) && parses(&sql[*piece + offset])
+    });
+    if !starts_statement {
+        return false;
+    }
+    ranges.extend(pass.ranges.into_iter().map(|r| r + offset));
+    errors.extend(
+        pass.errors
+            .into_iter()
+            .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
+    );
+    true
 }
 
 /// The statements around a change that are split again by [`split_edited`], on each side of it.
@@ -367,12 +430,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     })
 }
 
-fn split_pass(lexed: &Lexed, blank_line_is_boundary: bool) -> PassResult {
-    let mut splitter = if blank_line_is_boundary {
-        Splitter::with_blank_line_boundaries(lexed)
-    } else {
-        Splitter::new(lexed)
-    };
+fn split_pass(
+    lexed: &Lexed,
+    blank_line_is_boundary: bool,
+    hold_back_statement_starts: bool,
+) -> PassResult {
+    let mut splitter = Splitter::new(lexed, blank_line_is_boundary, hold_back_statement_starts);
 
     let _ = source(&mut splitter);
 
@@ -1509,6 +1572,51 @@ VALUES
     fn blank_line_splits_when_both_halves_are_valid_statements() {
         Tester::from("SELECT a FROM t\n\nBEGIN;")
             .expect_statements(vec!["SELECT a FROM t", "BEGIN;"]);
+    }
+
+    /// `alter`, `insert`, `update` and `delete` are unreserved, so they can name a column or a
+    /// table. After a token that needs an operand they don't start a statement.
+    #[test]
+    fn statement_keywords_as_identifiers() {
+        for sql in [
+            "select * from t where update = 1;",
+            "update t set delete = 1;",
+            "select id, alter from t;",
+            "select * from alter;",
+            "select 1 +\nalter;",
+            "select insert, update, delete from permissions;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+    }
+
+    /// If the statement doesn't parse with the keyword, but a statement starting at the keyword
+    /// does, a `;` is missing before it.
+    #[test]
+    fn statement_keyword_after_an_unfinished_statement() {
+        // While typing, neither parses: the statement stays whole.
+        Tester::from("select * from t where update = ")
+            .assert_single_statement()
+            .assert_no_errors();
+        Tester::from("select * from t where\nupdate t set x = 1;")
+            .expect_statements(vec!["select * from t where", "update t set x = 1;"])
+            .assert_no_errors();
+        Tester::from("select\ninsert into t values (1);")
+            .expect_statements(vec!["select", "insert into t values (1);"])
+            .assert_no_errors();
+        // The same in a piece of the recovery pass on blank lines.
+        Tester::from("select * from t where\nupdate t set x = 1\n\nvacuum")
+            .expect_statements(vec![
+                "select * from t where",
+                "update t set x = 1",
+                "vacuum",
+            ])
+            .assert_no_errors();
+        Tester::from("select * from t where update = 1\n\nvacuum")
+            .expect_statements(vec!["select * from t where update = 1", "vacuum"])
+            .assert_no_errors();
     }
 
     #[test]
