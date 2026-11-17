@@ -336,8 +336,8 @@ Results:
 id - public.users.id (Column)
 name - public.users.name (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -346,9 +346,9 @@ merge into users u using posts p on p.post_id = u.id when matched and p.title <>
 Results:
 name - public.users.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -468,8 +468,8 @@ Results:
 id - public.users.id (Column)
 name - public.users.name (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -479,8 +479,8 @@ Results:
 id - public.users.id (Column)
 name - public.users.name (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -501,8 +501,8 @@ Results:
 id - public.users.id (Column)
 name - public.users.name (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -511,9 +511,9 @@ merge into users u using posts p on p.post_id = u.id when matched and p.title <>
 Results:
 name - public.users.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -540,8 +540,8 @@ Results:
 p.post_id - public.posts.post_id (Column)
 p.title - public.posts.title (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -566,8 +566,8 @@ Results:
 p.post_id - public.posts.post_id (Column)
 p.title - public.posts.title (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 

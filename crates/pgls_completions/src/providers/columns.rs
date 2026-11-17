@@ -1049,4 +1049,53 @@ mod tests {
             }
         }
     }
+
+    /// Columns with the same name in different tables are different items.
+    #[pgls_test_utils::db_test]
+    async fn completes_same_named_columns_of_each_table(pool: PgPool) {
+        pool.execute(
+            "create table public.users (id int, created_at timestamptz, name text);
+             create table public.posts (id int, created_at timestamptz, title text);",
+        )
+        .await
+        .unwrap();
+
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let aliased = format!("select {cursor} from users u join posts p on true");
+        let unaliased = format!("select {cursor} from users join posts on true");
+        for (query, label, expected) in [
+            (
+                &aliased,
+                "id",
+                [("public.posts", "p.id"), ("public.users", "u.id")],
+            ),
+            (
+                &aliased,
+                "created_at",
+                [
+                    ("public.posts", "p.created_at"),
+                    ("public.users", "u.created_at"),
+                ],
+            ),
+            (
+                &unaliased,
+                "id",
+                [("public.posts", "id"), ("public.users", "id")],
+            ),
+        ] {
+            let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let items = complete(get_test_params(&tree, &snapshot, query.as_str().into()));
+
+            let mut found: Vec<(&str, &str)> = items
+                .iter()
+                .filter(|item| item.label == label && item.kind == CompletionItemKind::Column)
+                .filter_map(|item| {
+                    let text = item.completion_text.as_ref()?;
+                    Some((item.description.as_str(), text.text.as_str()))
+                })
+                .collect();
+            found.sort();
+            assert_eq!(found, expected, "{query} → {label}");
+        }
+    }
 }
