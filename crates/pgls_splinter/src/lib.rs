@@ -140,18 +140,19 @@ pub async fn run_splinter(
     if let Some(config) = params.config {
         // The workspace reports invalid patterns when it loads the configuration.
         let invalid_pattern = |err: pgls_configuration::ConfigurationDiagnostic| {
-            sqlx::Error::Configuration(
-                pgls_diagnostics::PrintDescription(&err)
-                    .to_string()
-                    .into(),
-            )
+            sqlx::Error::Configuration(pgls_diagnostics::PrintDescription(&err).to_string().into())
         };
 
         // Build global ignore matcher if patterns exist
-        let global_ignore_matcher = config.get_global_ignore_matcher().map_err(invalid_pattern)?;
+        let global_ignore_matcher = config
+            .get_global_ignore_matcher()
+            .map_err(invalid_pattern)?;
 
         // Get per-rule ignore matchers
-        let rule_matchers = config.rules.get_ignore_matchers().map_err(invalid_pattern)?;
+        let rule_matchers = config
+            .rules
+            .get_ignore_matchers()
+            .map_err(invalid_pattern)?;
 
         // Filter diagnostics based on global and per-rule ignore patterns
         if global_ignore_matcher.is_some() || !rule_matchers.is_empty() {

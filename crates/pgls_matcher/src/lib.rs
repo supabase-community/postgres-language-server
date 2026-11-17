@@ -207,8 +207,7 @@ mod test {
         });
         ignore.add_pattern(dir).unwrap();
         let path = env::current_dir().unwrap().join("src/lib.rs");
-        let result = ignore.matches(path.to_str().unwrap());
-
-        assert!(result);
+        // A file name matches the paths that end with it.
+        assert!(ignore.matches_path(&path));
     }
 }
