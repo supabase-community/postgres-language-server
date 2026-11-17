@@ -1,0 +1,2 @@
+relation	r	public	path_tbl	f1	pg_catalog.path
+schema	public

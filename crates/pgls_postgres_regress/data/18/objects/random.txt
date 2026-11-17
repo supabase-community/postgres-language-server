@@ -1,0 +1,6 @@
+function	f	public	ks_test_normal_random	1
+function	f	public	ks_test_uniform_random	1
+function	f	public	ks_test_uniform_random_bigint_in_range	1
+function	f	public	ks_test_uniform_random_int_in_range	1
+function	f	public	ks_test_uniform_random_numeric_in_range	1
+schema	public

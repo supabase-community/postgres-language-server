@@ -1,0 +1,29 @@
+function	f	public	float8multirange	3
+function	f	public	float8range	2
+function	f	public	part_hashint4_noop	1
+function	f	public	part_hashtext_length	1
+function	f	public	textmultirange	3
+function	f	public	textrange	2
+relation	r	public	char_tbl	f1	pg_catalog.bpchar
+relation	r	public	emp	name	pg_catalog.text	age	pg_catalog.int4	location	pg_catalog.point	salary	pg_catalog.int4	manager	pg_catalog.name
+relation	r	public	float8_tbl	f1	pg_catalog.float8
+relation	r	public	ihighway	name	pg_catalog.text	thepath	pg_catalog.path
+relation	r	public	int2_tbl	f1	pg_catalog.int2
+relation	r	public	int4_tbl	f1	pg_catalog.int4
+relation	r	public	int8_tbl	q1	pg_catalog.int8	q2	pg_catalog.int8
+relation	r	public	onek	unique1	pg_catalog.int4	unique2	pg_catalog.int4	two	pg_catalog.int4	four	pg_catalog.int4	ten	pg_catalog.int4	twenty	pg_catalog.int4	hundred	pg_catalog.int4	thousand	pg_catalog.int4	twothousand	pg_catalog.int4	fivethous	pg_catalog.int4	tenthous	pg_catalog.int4	odd	pg_catalog.int4	even	pg_catalog.int4	stringu1	pg_catalog.name	stringu2	pg_catalog.name	string4	pg_catalog.name
+relation	r	public	onek2	unique1	pg_catalog.int4	unique2	pg_catalog.int4	two	pg_catalog.int4	four	pg_catalog.int4	ten	pg_catalog.int4	twenty	pg_catalog.int4	hundred	pg_catalog.int4	thousand	pg_catalog.int4	twothousand	pg_catalog.int4	fivethous	pg_catalog.int4	tenthous	pg_catalog.int4	odd	pg_catalog.int4	even	pg_catalog.int4	stringu1	pg_catalog.name	stringu2	pg_catalog.name	string4	pg_catalog.name
+relation	r	public	person	name	pg_catalog.text	age	pg_catalog.int4	location	pg_catalog.point
+relation	r	public	point_tbl	f1	pg_catalog.point
+relation	r	public	road	name	pg_catalog.text	thepath	pg_catalog.path
+relation	r	public	shighway	name	pg_catalog.text	thepath	pg_catalog.path	surface	pg_catalog.text
+relation	r	public	stud_emp	name	pg_catalog.text	age	pg_catalog.int4	location	pg_catalog.point	salary	pg_catalog.int4	manager	pg_catalog.name	gpa	pg_catalog.float8	percent	pg_catalog.int4
+relation	r	public	student	name	pg_catalog.text	age	pg_catalog.int4	location	pg_catalog.point	gpa	pg_catalog.float8
+relation	r	public	tenk1	unique1	pg_catalog.int4	unique2	pg_catalog.int4	two	pg_catalog.int4	four	pg_catalog.int4	ten	pg_catalog.int4	twenty	pg_catalog.int4	hundred	pg_catalog.int4	thousand	pg_catalog.int4	twothousand	pg_catalog.int4	fivethous	pg_catalog.int4	tenthous	pg_catalog.int4	odd	pg_catalog.int4	even	pg_catalog.int4	stringu1	pg_catalog.name	stringu2	pg_catalog.name	string4	pg_catalog.name
+relation	r	public	tenk2	unique1	pg_catalog.int4	unique2	pg_catalog.int4	two	pg_catalog.int4	four	pg_catalog.int4	ten	pg_catalog.int4	twenty	pg_catalog.int4	hundred	pg_catalog.int4	thousand	pg_catalog.int4	twothousand	pg_catalog.int4	fivethous	pg_catalog.int4	tenthous	pg_catalog.int4	odd	pg_catalog.int4	even	pg_catalog.int4	stringu1	pg_catalog.name	stringu2	pg_catalog.name	string4	pg_catalog.name
+relation	r	public	text_tbl	f1	pg_catalog.text
+relation	r	public	varchar_tbl	f1	pg_catalog.varchar
+schema	public
+type	e	public	stoplight
+type	r	public	float8range
+type	r	public	textrange

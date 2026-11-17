@@ -1,0 +1,2 @@
+relation	r	public	clean_aborted_self	key	pg_catalog.int4	data	pg_catalog.text
+schema	public

@@ -1,0 +1,8 @@
+function	f	public	check_estimated_rows	1
+relation	r	public	functional_dependencies	filler1	pg_catalog.text	filler2	pg_catalog.numeric	a	pg_catalog.int4	b	pg_catalog.text	filler3	pg_catalog.date	c	pg_catalog.numeric	d	pg_catalog.text
+relation	r	public	mcv_lists	filler1	pg_catalog.text	filler2	pg_catalog.numeric	a	pg_catalog.int4	b	pg_catalog.varchar	filler3	pg_catalog.date	c	pg_catalog.numeric	d	pg_catalog.varchar	ia	pg_catalog._int4
+relation	r	public	mcv_lists_arrays	a	pg_catalog._text	b	pg_catalog._numeric	c	pg_catalog._int4
+relation	r	public	mcv_lists_bool	a	pg_catalog.bool	b	pg_catalog.bool	c	pg_catalog.bool
+relation	r	public	ndistinct	filler1	pg_catalog.text	filler2	pg_catalog.numeric	a	pg_catalog.int4	b	pg_catalog.int4	filler3	pg_catalog.date	c	pg_catalog.int4	d	pg_catalog.int4
+schema	public
+schema	regress_schema_2

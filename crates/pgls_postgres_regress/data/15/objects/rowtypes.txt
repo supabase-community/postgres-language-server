@@ -1,0 +1,9 @@
+function	f	public	price_key_from_input	1
+function	f	public	price_key_from_table	1
+relation	r	public	price	id	pg_catalog.int4	active	pg_catalog.bool	price	pg_catalog.numeric
+schema	public
+type	c	public	cantcompare
+type	c	public	complex
+type	c	public	price_input
+type	c	public	price_key
+type	c	public	quad

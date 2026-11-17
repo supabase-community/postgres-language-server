@@ -1,0 +1,2 @@
+relation	r	public	reloptions_test	s	pg_catalog.varchar
+schema	public

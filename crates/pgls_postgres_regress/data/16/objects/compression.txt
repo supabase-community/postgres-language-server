@@ -1,0 +1,11 @@
+relation	m	public	compressmv	x	pg_catalog.text
+relation	p	public	cmpart	f1	pg_catalog.text
+relation	r	public	cmdata	f1	pg_catalog.text
+relation	r	public	cmdata1	f1	pg_catalog.text
+relation	r	public	cmdata2	f1	pg_catalog.text	f2	pg_catalog.text
+relation	r	public	cmmove1	f1	pg_catalog.text
+relation	r	public	cmmove2	f1	pg_catalog.text
+relation	r	public	cmmove3	f1	pg_catalog.text
+relation	r	public	cmpart1	f1	pg_catalog.text
+relation	r	public	cmpart2	f1	pg_catalog.text
+schema	public

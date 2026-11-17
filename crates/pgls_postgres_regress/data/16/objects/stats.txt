@@ -1,0 +1,4 @@
+relation	r	public	stats_test_tab1	a	pg_catalog.int4
+relation	r	public	test_io_bulkwrite_strategy	i	pg_catalog.int4
+relation	r	public	test_io_vac_strategy	a	pg_catalog.int4	b	pg_catalog.int4
+schema	public

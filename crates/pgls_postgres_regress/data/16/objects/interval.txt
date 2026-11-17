@@ -1,0 +1,2 @@
+relation	r	public	interval_tbl	f1	pg_catalog.interval
+schema	public

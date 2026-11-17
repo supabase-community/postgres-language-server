@@ -1,0 +1,5 @@
+schema	public
+type	e	public	bogon
+type	e	public	bogus
+type	e	public	insenum
+type	e	public	planets

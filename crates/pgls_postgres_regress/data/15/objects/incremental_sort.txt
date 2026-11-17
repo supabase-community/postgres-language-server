@@ -1,0 +1,5 @@
+function	f	public	explain_analyze_inc_sort_nodes	1
+function	f	public	explain_analyze_inc_sort_nodes_verify_invariants	1
+function	f	public	explain_analyze_inc_sort_nodes_without_memory	1
+function	f	public	explain_analyze_without_memory	1
+schema	public

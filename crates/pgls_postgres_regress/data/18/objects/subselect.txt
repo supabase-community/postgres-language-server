@@ -1,0 +1,4 @@
+function	f	public	bogus_int8_text_eq	1
+relation	r	public	subselect_tbl	f1	pg_catalog.int4	f2	pg_catalog.int4	f3	pg_catalog.float8
+schema	public
+type	c	public	t_rec

@@ -1,0 +1,6 @@
+function	f	public	namelen	1
+relation	r	public	persons	id	pg_catalog.int4	name	pg_catalog.text
+relation	r	public	persons2	id	pg_catalog.int4	name	pg_catalog.text
+relation	r	public	persons3	id	pg_catalog.int4	name	pg_catalog.text
+schema	public
+type	c	public	person_type

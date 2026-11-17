@@ -1,0 +1,3 @@
+function	f	public	part_ins_func	1
+relation	f	public	copytest_foreign_table	a	pg_catalog.int4
+schema	public
