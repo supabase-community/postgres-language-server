@@ -28,7 +28,7 @@ use crate::{WasmError, Workspace};
 /// JSON-RPC request/notification structure
 #[derive(Debug, Deserialize)]
 struct JsonRpcMessage {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "required by JSON-RPC; its value isn't checked")]
     jsonrpc: String,
     id: Option<Value>,
     method: String,

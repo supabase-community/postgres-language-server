@@ -80,8 +80,10 @@ pub enum WorkspaceRef<'app> {
 impl<'app> Deref for WorkspaceRef<'app> {
     type Target = dyn Workspace + 'app;
 
-    // False positive
-    #[allow(clippy::explicit_auto_deref)]
+    #[allow(
+        clippy::explicit_auto_deref,
+        reason = "false positive: `&**inner` turns the box into the trait object"
+    )]
     fn deref(&self) -> &Self::Target {
         match self {
             WorkspaceRef::Owned(inner) => &**inner,

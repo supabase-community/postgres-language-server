@@ -5,7 +5,7 @@ use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
-static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static TS_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     [
         (statement (insert (table_reference) @target) (returning) @returning)
@@ -15,7 +15,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     ]
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 /// The target table of an INSERT, UPDATE, DELETE, or MERGE with a RETURNING clause. Since
@@ -96,7 +97,6 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a ReturningAliasMatch<'a> {
         match q {
             QueryResult::ReturningAliases(r) => Ok(r),
 
-            #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
         }
     }
@@ -110,10 +110,13 @@ impl<'a> Query<'a> for ReturningAliasMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
-        let mut matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
+        let Some(query) = TS_QUERY.as_ref() else {
+            return vec![];
+        };
+        let mut matches = cursor.matches(query, root_node, stmt.as_bytes());
 
-        let target_index = TS_QUERY.capture_index_for_name("target");
-        let returning_index = TS_QUERY.capture_index_for_name("returning");
+        let target_index = query.capture_index_for_name("target");
+        let returning_index = query.capture_index_for_name("returning");
 
         let mut to_return = vec![];
 

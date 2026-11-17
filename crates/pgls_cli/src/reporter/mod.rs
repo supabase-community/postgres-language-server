@@ -72,7 +72,6 @@ pub struct TraversalData {
     pub evaluated_paths: BTreeSet<PgLSPath>,
     pub changed: usize,
     pub unchanged: usize,
-    pub matches: usize,
     pub skipped: usize,
     /// The unsafe fixes that `--fix` didn't apply.
     pub suggested_fixes_skipped: u32,
@@ -123,7 +122,7 @@ impl Report {
     }
 }
 
-pub trait ReportWriter {
+pub(crate) trait ReportWriter {
     fn write(
         &mut self,
         console: &mut dyn Console,

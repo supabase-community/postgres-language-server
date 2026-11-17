@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use std::sync::Arc;
 
 use pgls_catalog::{Catalog, CatalogBase, Snapshot};

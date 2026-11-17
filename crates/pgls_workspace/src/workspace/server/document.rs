@@ -23,7 +23,7 @@ use super::{
 /// An open document. Clones share the cache, which is keyed so that each clone only sees what
 /// was cached for its own content.
 #[derive(Clone)]
-pub struct Document {
+pub(crate) struct Document {
     content: String,
     /// Changes on every change of the content or of the migration tool, see
     /// [`Document::generation`].
@@ -56,7 +56,7 @@ fn next_generation() -> u64 {
 impl Document {
     /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
-    pub fn new(content: String, version: i32) -> Document {
+    pub(crate) fn new(content: String, version: i32) -> Document {
         Self::open(
             ProjectKey::default(),
             0,
@@ -102,7 +102,7 @@ impl Document {
 
     /// Replaces the content of the document. Returns what the change invalidated in its cache,
     /// for the caller to drop, see [`StaleEntries::drop_in_background`].
-    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+    pub(crate) fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
         let migration_script = self.migration_tool.read(&content);
         // The text that is split is the content with the placeholders of the migration tool.
         let old_text = self.text();
@@ -164,12 +164,12 @@ impl Document {
     /// Which version of the content this is. Unlike the client's version, it is unique across
     /// all documents: it changes on every change, also of the migration tool, and a document that
     /// is closed and opened again gets a new one.
-    pub fn generation(&self) -> u64 {
+    pub(crate) fn generation(&self) -> u64 {
         self.generation
     }
 
     /// Where the last change of the content starts.
-    pub fn edited_at(&self) -> Option<TextSize> {
+    pub(crate) fn edited_at(&self) -> Option<TextSize> {
         self.edited_at
     }
 
@@ -257,7 +257,7 @@ impl Document {
 
     /// The migration sections of the document, like the up and down migrations of dbmate and
     /// goose. A tool without section markers has none.
-    pub fn migration_sections(&self) -> &[Unit] {
+    pub(crate) fn migration_sections(&self) -> &[Unit] {
         &self.migration_script.units
     }
 
@@ -272,16 +272,16 @@ impl Document {
         self.cache.stats(&statements)
     }
 
-    pub fn suppressions(&self) -> &Suppressions {
+    pub(crate) fn suppressions(&self) -> &Suppressions {
         &self.suppressions
     }
 
     /// The ranges of the top-level statements, in file order.
-    pub fn statement_ranges(&self) -> &[TextRange] {
+    pub(crate) fn statement_ranges(&self) -> &[TextRange] {
         &self.split.ranges
     }
 
-    pub fn get_document_content(&self) -> &str {
+    pub(crate) fn get_document_content(&self) -> &str {
         &self.content
     }
 
@@ -293,7 +293,7 @@ impl Document {
 
     /// Whether `range` overlaps a part of the content that the migration tool replaces, like a
     /// goose `ENVSUB` expansion. Edits there would write the placeholder into the file.
-    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+    pub(crate) fn touches_placeholder(&self, range: TextRange) -> bool {
         self.migration_script
             .preprocessed
             .as_ref()
@@ -309,25 +309,29 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_unknown_value(range))
     }
 
-    pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
+    pub(crate) fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
         &self.diagnostics
     }
 
-    pub fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
+    pub(crate) fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
     where
         M: StatementMapper<'a>,
     {
         self.iter_with_filter(mapper, IdFilter::new(id)).next()
     }
 
-    pub fn iter<'a, M>(&'a self, mapper: M) -> ParseIterator<'a, M, NoFilter>
+    pub(crate) fn iter<'a, M>(&'a self, mapper: M) -> ParseIterator<'a, M, NoFilter>
     where
         M: StatementMapper<'a>,
     {
         self.iter_with_filter(mapper, NoFilter)
     }
 
-    pub fn iter_with_filter<'a, M, F>(&'a self, mapper: M, filter: F) -> ParseIterator<'a, M, F>
+    pub(crate) fn iter_with_filter<'a, M, F>(
+        &'a self,
+        mapper: M,
+        filter: F,
+    ) -> ParseIterator<'a, M, F>
     where
         M: StatementMapper<'a>,
         F: StatementFilter<'a>,
@@ -338,7 +342,7 @@ impl Document {
     /// The statements that contain `position`, outermost first: the top-level statement, and the
     /// body of a SQL function if `position` is in it. Unlike filtering all statements with a
     /// [`CursorPositionFilter`], this doesn't look at the other statements of the document.
-    pub fn iter_at<'a, M>(
+    pub(crate) fn iter_at<'a, M>(
         &'a self,
         mapper: M,
         position: TextSize,
@@ -360,7 +364,11 @@ impl Document {
     }
 
     /// The statements from the first top-level statement that starts at or after `offset` on.
-    pub fn iter_from<'a, M>(&'a self, mapper: M, offset: TextSize) -> ParseIterator<'a, M, NoFilter>
+    pub(crate) fn iter_from<'a, M>(
+        &'a self,
+        mapper: M,
+        offset: TextSize,
+    ) -> ParseIterator<'a, M, NoFilter>
     where
         M: StatementMapper<'a>,
     {
@@ -376,7 +384,7 @@ impl Document {
 
     /// The statements that [`GetCompletionsFilter`] accepts for `position`, without looking at
     /// the statements far from it.
-    pub fn iter_for_completions<'a, M>(
+    pub(crate) fn iter_for_completions<'a, M>(
         &'a self,
         mapper: M,
         position: TextSize,
@@ -408,7 +416,7 @@ impl Document {
 /// A statement of a document: a top-level statement, or a statement embedded in one, like a
 /// statement of a SQL function body.
 #[derive(Debug, Clone)]
-pub struct DocumentStatement {
+pub(crate) struct DocumentStatement {
     pub id: StatementId,
     /// Where the statement is in the document.
     pub range: TextRange,
@@ -429,31 +437,31 @@ impl DocumentStatement {
 
     /// The range in the document of `range` in the statement text. Like [`Self::statement_offset`],
     /// it can end after the statement text.
-    pub fn document_range(&self, range: TextRange) -> TextRange {
+    pub(crate) fn document_range(&self, range: TextRange) -> TextRange {
         self.offsets.range_to_source(range) + self.range.start()
     }
 
     /// The offset in the statement text of `offset` in the document, which is in the
     /// statement's range, or up to two bytes after the end of an unterminated statement, where
     /// [`GetCompletionsFilter`] finds the cursor of a completion.
-    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
+    pub(crate) fn statement_offset(&self, offset: TextSize) -> TextSize {
         debug_assert!(self.range.start() <= offset);
         self.offsets
             .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
     }
 }
 
-pub trait StatementMapper<'a> {
+pub(crate) trait StatementMapper<'a> {
     type Output;
 
     fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output;
 }
 
-pub trait StatementFilter<'a> {
+pub(crate) trait StatementFilter<'a> {
     fn predicate(&self, stmt: &DocumentStatement) -> bool;
 }
 
-pub struct ParseIterator<'a, M, F> {
+pub(crate) struct ParseIterator<'a, M, F> {
     parser: &'a Document,
     mapper: M,
     filter: F,
@@ -463,7 +471,7 @@ pub struct ParseIterator<'a, M, F> {
 }
 
 impl<'a, M, F> ParseIterator<'a, M, F> {
-    pub fn new(parser: &'a Document, mapper: M, filter: F) -> Self {
+    pub(crate) fn new(parser: &'a Document, mapper: M, filter: F) -> Self {
         Self {
             parser,
             mapper,
@@ -512,7 +520,7 @@ where
     }
 }
 
-pub struct DefaultMapper;
+pub(crate) struct DefaultMapper;
 impl<'a> StatementMapper<'a> for DefaultMapper {
     type Output = (StatementId, TextRange, String);
 
@@ -522,7 +530,7 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
     }
 }
 
-pub struct ExecuteStatementMapper;
+pub(crate) struct ExecuteStatementMapper;
 impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     type Output = (
         StatementId,
@@ -543,7 +551,7 @@ impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     }
 }
 
-pub struct FormatStatementMapper;
+pub(crate) struct FormatStatementMapper;
 impl<'a> StatementMapper<'a> for FormatStatementMapper {
     type Output = (
         StatementId,
@@ -564,7 +572,7 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
     }
 }
 
-pub struct TypecheckDiagnosticsMapper;
+pub(crate) struct TypecheckDiagnosticsMapper;
 impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
@@ -587,7 +595,7 @@ impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     }
 }
 
-pub struct AnalyserDiagnosticsMapper;
+pub(crate) struct AnalyserDiagnosticsMapper;
 impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
     /// The statement if it parses, its syntax error, and the statement again if it is a
     /// top-level statement that doesn't parse.
@@ -649,7 +657,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
         )
     }
 }
-pub struct WithCSTMapper;
+pub(crate) struct WithCSTMapper;
 impl<'a> StatementMapper<'a> for WithCSTMapper {
     type Output = (DocumentStatement, Arc<tree_sitter::Tree>);
 
@@ -669,7 +677,7 @@ impl<'a> StatementMapper<'a> for WithCSTMapper {
  *
  * select * from users; | <-- no autocompletions here.
  */
-pub struct GetCompletionsFilter {
+pub(crate) struct GetCompletionsFilter {
     pub cursor_position: TextSize,
 }
 impl StatementFilter<'_> for GetCompletionsFilter {
@@ -686,19 +694,19 @@ impl StatementFilter<'_> for GetCompletionsFilter {
     }
 }
 
-pub struct NoFilter;
+pub(crate) struct NoFilter;
 impl StatementFilter<'_> for NoFilter {
     fn predicate(&self, _stmt: &DocumentStatement) -> bool {
         true
     }
 }
 
-pub struct CursorPositionFilter {
+pub(crate) struct CursorPositionFilter {
     pos: TextSize,
 }
 
 impl CursorPositionFilter {
-    pub fn new(pos: TextSize) -> Self {
+    pub(crate) fn new(pos: TextSize) -> Self {
         Self { pos }
     }
 }
@@ -709,12 +717,12 @@ impl StatementFilter<'_> for CursorPositionFilter {
     }
 }
 
-pub struct IdFilter {
+pub(crate) struct IdFilter {
     id: StatementId,
 }
 
 impl IdFilter {
-    pub fn new(id: StatementId) -> Self {
+    pub(crate) fn new(id: StatementId) -> Self {
         Self { id }
     }
 }

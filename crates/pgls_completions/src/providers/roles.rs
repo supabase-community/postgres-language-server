@@ -8,7 +8,7 @@ use pgls_treesitter::TreesitterContext;
 
 use super::helper::{get_range_to_replace, with_schema_or_alias};
 
-pub fn complete_roles<'a>(
+pub(crate) fn complete_roles<'a>(
     ctx: &TreesitterContext<'a>,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,

@@ -95,7 +95,7 @@ impl LoadFailure {
 /// DB-only API:
 /// - `load()` - Load schema from database connection
 /// - `clear_all_connections()` - Clear the schemas of all connections
-pub struct SnapshotManager {
+pub(super) struct SnapshotManager {
     /// Connection-based snapshots (db mode only). Each connection has its own lock, held while
     /// its snapshot loads, so that a slow or unreachable database doesn't block the others.
     #[cfg(feature = "db")]
@@ -129,7 +129,7 @@ impl SnapshotManager {
     // ==================== Common API (both modes) ====================
 
     /// Set schema from JSON string.
-    pub fn set(&self, json: &str) -> Result<(), WorkspaceError> {
+    pub(super) fn set(&self, json: &str) -> Result<(), WorkspaceError> {
         let schema: Snapshot = serde_json::from_str(json)
             .map_err(|e| WorkspaceError::runtime(&format!("Invalid schema JSON: {e}")))?;
         *self.schema.write() = Some(Arc::new(schema));
@@ -137,12 +137,12 @@ impl SnapshotManager {
     }
 
     /// Get the current schema if available.
-    pub fn get(&self) -> Option<Arc<Snapshot>> {
+    pub(super) fn get(&self) -> Option<Arc<Snapshot>> {
         self.schema.read().clone()
     }
 
     /// Clear the current schema.
-    pub fn clear(&self) {
+    pub(super) fn clear(&self) {
         *self.schema.write() = None;
     }
 
@@ -151,7 +151,7 @@ impl SnapshotManager {
     /// Load schema from a database connection.
     /// Returns cached schema if available, otherwise loads from database.
     #[cfg(feature = "db")]
-    pub fn load(&self, pool: &PgPool) -> Result<Arc<Snapshot>, WorkspaceError> {
+    pub(super) fn load(&self, pool: &PgPool) -> Result<Arc<Snapshot>, WorkspaceError> {
         let key: ConnectionKey = pool.into();
         let clock = self.runtime.clock();
 
@@ -287,7 +287,7 @@ impl SnapshotManager {
 
     /// Clear the snapshot for a specific connection.
     #[cfg(feature = "db")]
-    pub fn clear_connection(&self, pool: &PgPool) {
+    pub(super) fn clear_connection(&self, pool: &PgPool) {
         let key: ConnectionKey = pool.into();
         let mut schemas = self.db_schemas.write();
         schemas.remove(&key);
@@ -295,13 +295,13 @@ impl SnapshotManager {
 
     /// Clear all connection-based snapshots.
     #[cfg(feature = "db")]
-    pub fn clear_all_connections(&self) {
+    pub(super) fn clear_all_connections(&self) {
         let mut schemas = self.db_schemas.write();
         schemas.clear();
     }
 
     /// Clear everything (both JSON schema and all db connections in db mode).
-    pub fn clear_all(&self) {
+    pub(super) fn clear_all(&self) {
         self.clear();
         #[cfg(feature = "db")]
         self.clear_all_connections();

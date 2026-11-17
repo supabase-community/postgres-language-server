@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use convert_case::{Case, Casing};
 use pgls_analyse::{AnalysisFilter, AppliesTo, FixKind, RuleFilter, RuleMetadata};
 use pgls_analyser::{AnalysableStatement, Analyser, AnalyserConfig, LinterOptions};
@@ -468,7 +468,7 @@ fn print_diagnostics(
 
     let mut write_diagnostic = |_: &str, diag: pgls_diagnostics::Error| -> Result<()> {
         let printer = PrintDiagnostic::simple(&diag);
-        writeln!(content, "{}", StdDisplay(printer)).unwrap();
+        writeln!(content, "{}", StdDisplay(printer))?;
 
         Ok(())
     };
@@ -513,7 +513,11 @@ fn print_diagnostics(
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
     let diagnostics = analyser.run(pgls_analyser::AnalyserParams {
         stmts,
-        catalog_base: is_typecheck.then(builtin_catalog),
+        catalog_base: if is_typecheck {
+            Some(builtin_catalog()?)
+        } else {
+            None
+        },
         search_path: vec!["public".into()],
         typecheck: is_typecheck,
         ..Default::default()
@@ -521,10 +525,10 @@ fn print_diagnostics(
     for rule_diag in diagnostics {
         let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 
-        let category = diag.category().expect("linter diagnostic has no code");
-        let severity = settings
-            .get_severity_from_rule_code(category)
-            .expect("If you see this error, it means you need to run cargo codegen-configuration");
+        let category = diag.category().context("linter diagnostic has no code")?;
+        let severity = settings.get_severity_from_rule_code(category).context(
+            "If you see this error, it means you need to run cargo codegen-configuration",
+        )?;
 
         let error = diag
             .with_severity(severity)
@@ -538,19 +542,19 @@ fn print_diagnostics(
 }
 
 /// The catalog of a fresh database on the latest Postgres version with regression fixtures.
-fn builtin_catalog() -> std::sync::Arc<pgls_catalog::CatalogBase> {
+fn builtin_catalog() -> Result<std::sync::Arc<pgls_catalog::CatalogBase>> {
     static CATALOG: std::sync::OnceLock<std::sync::Arc<pgls_catalog::CatalogBase>> =
         std::sync::OnceLock::new();
-    CATALOG
-        .get_or_init(|| {
-            let version = pgls_postgres_regress::versions()
-                .pop()
-                .expect("regression fixtures for at least one version");
-            let snapshot: pgls_catalog::Snapshot =
-                serde_json::from_str(&version.catalog_json()).expect("parse the built-in catalog");
-            std::sync::Arc::new(pgls_catalog::CatalogBase::new(std::sync::Arc::new(
-                snapshot,
-            )))
-        })
-        .clone()
+    if let Some(catalog) = CATALOG.get() {
+        return Ok(catalog.clone());
+    }
+    let version = pgls_postgres_regress::versions()
+        .pop()
+        .context("regression fixtures for at least one version")?;
+    let snapshot: pgls_catalog::Snapshot =
+        serde_json::from_str(&version.catalog_json()).context("parse the built-in catalog")?;
+    let catalog = std::sync::Arc::new(pgls_catalog::CatalogBase::new(std::sync::Arc::new(
+        snapshot,
+    )));
+    Ok(CATALOG.get_or_init(|| catalog).clone())
 }

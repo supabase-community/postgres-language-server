@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -218,8 +225,10 @@ impl Server {
 
     /// Like [Server::initialize], with the workspace root at `root_uri`, the given workspace
     /// folders and the given client capabilities
-    // The `root_path` field is deprecated, but we still need to specify it
-    #[allow(deprecated)]
+    #[allow(
+        deprecated,
+        reason = "`root_path` is deprecated, but clients still send it"
+    )]
     async fn initialize_with_options(
         &mut self,
         root_uri: Option<Uri>,
@@ -252,7 +261,10 @@ impl Server {
     /// It creates two workspaces, one at folder `test_one` and the other in `test_two`.
     ///
     /// Hence, the two roots will be `/workspace/test_one` and `/workspace/test_two`
-    #[allow(deprecated)]
+    #[allow(
+        deprecated,
+        reason = "`root_path` is deprecated, but clients still send it"
+    )]
     async fn initialize_workspaces(&mut self) -> Result<()> {
         let _res: InitializeResult = self
             .request(
@@ -382,7 +394,7 @@ impl Server {
             .await
     }
 
-    #[allow(unused)]
+    #[allow(dead_code, reason = "a step of the test client that no test uses yet")]
     async fn close_document(&mut self) -> Result<()> {
         self.notify(
             "textDocument/didClose",

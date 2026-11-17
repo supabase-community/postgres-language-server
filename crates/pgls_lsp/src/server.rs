@@ -105,7 +105,10 @@ impl LSPServer {
 }
 
 impl LanguageServer for LSPServer {
-    #[allow(deprecated)]
+    #[allow(
+        deprecated,
+        reason = "reads `root_uri` of clients that send no workspace folders"
+    )]
     #[tracing::instrument(
         level = "info",
         skip_all,

@@ -1,4 +1,5 @@
 use crate::project_root;
+use anyhow::{Context, Result};
 use bpaf::Bpaf;
 use convert_case::{Case, Casing};
 use pgls_diagnostics::Severity;
@@ -95,14 +96,14 @@ pub fn generate_new_analyser_rule(
     rule_name: &str,
     group: &str,
     severity: Severity,
-) {
+) -> Result<()> {
     let rule_name_camel = rule_name.to_case(Case::Camel);
     let crate_folder = project_root().join("crates/pgls_analyser");
     let rule_folder = match &category {
         Category::Lint => crate_folder.join(format!("src/lint/{group}")),
     };
     if !rule_folder.exists() {
-        std::fs::create_dir(rule_folder.clone()).expect("To create the rule folder");
+        std::fs::create_dir(rule_folder.clone()).context("To create the rule folder")?;
     }
 
     // Generate rule code
@@ -117,10 +118,10 @@ pub fn generate_new_analyser_rule(
         rule_folder.display(),
         crate::to_snake_case(rule_name)
     );
-    std::fs::write(file_name.clone(), code).unwrap_or_else(|_| panic!("To write {}", file_name));
+    std::fs::write(file_name.clone(), code).with_context(|| format!("To write {file_name}"))?;
 
     let categories_path = "crates/pgls_diagnostics_categories/src/categories.rs";
-    let mut categories = std::fs::read_to_string(categories_path).unwrap();
+    let mut categories = std::fs::read_to_string(categories_path)?;
 
     if !categories.contains(&rule_name_camel) {
         let kebab_case_rule = rule_name_camel.to_case(Case::Kebab);
@@ -136,30 +137,36 @@ pub fn generate_new_analyser_rule(
         let lint_end = match category {
             Category::Lint => "\n    // end lint rules\n",
         };
-        debug_assert!(categories.contains(lint_start), "{}", lint_start);
-        debug_assert!(categories.contains(lint_end), "{}", lint_end);
-        let lint_start_index = categories.find(lint_start).unwrap() + lint_start.len();
-        let lint_end_index = categories.find(lint_end).unwrap();
-        let lint_rule_text = &categories[lint_start_index..lint_end_index];
+        let lint_start_index = categories
+            .find(lint_start)
+            .with_context(|| format!("{categories_path} has no {lint_start:?}"))?
+            + lint_start.len();
+        let lint_end_index = categories
+            .find(lint_end)
+            .with_context(|| format!("{categories_path} has no {lint_end:?}"))?;
+        let lint_rule_text = categories
+            .get(lint_start_index..lint_end_index)
+            .with_context(|| format!("{categories_path} has the lint rules out of order"))?;
         let mut lint_rules: Vec<_> = lint_rule_text.lines().chain(Some(&rule_line[..])).collect();
         lint_rules.sort_unstable();
         let new_lint_rule_text = lint_rules.join("\n");
         categories.replace_range(lint_start_index..lint_end_index, &new_lint_rule_text);
-        std::fs::write(categories_path, categories).unwrap();
+        std::fs::write(categories_path, categories)?;
     }
 
     let test_group_folder = match &category {
         Category::Lint => crate_folder.join(format!("tests/specs/{group}")),
     };
     if !test_group_folder.exists() {
-        std::fs::create_dir(test_group_folder.clone()).expect("To create the test group folder");
+        std::fs::create_dir(test_group_folder.clone())
+            .context("To create the test group folder")?;
     }
 
     let test_folder = match &category {
         Category::Lint => crate_folder.join(format!("tests/specs/{group}/{rule_name_camel}")),
     };
     if !test_folder.exists() {
-        std::fs::create_dir(test_folder.clone()).expect("To create the test rule folder");
+        std::fs::create_dir(test_folder.clone()).context("To create the test rule folder")?;
     }
 
     let test_file_name = format!("{}/basic.sql", test_folder.display());
@@ -167,5 +174,6 @@ pub fn generate_new_analyser_rule(
         test_file_name.clone(),
         gen_sql(format!("lint/{rule_name_camel}").as_str()),
     )
-    .unwrap_or_else(|_| panic!("To write {}", test_file_name));
+    .with_context(|| format!("To write {test_file_name}"))?;
+    Ok(())
 }

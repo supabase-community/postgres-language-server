@@ -19,7 +19,7 @@ fn parse_with_replaced_keyword(
     text: &str,
     keyword: &str,
     range: Range<usize>,
-) -> Tree {
+) -> Option<Tree> {
     let start_byte = range.start;
     let start_position = point_at(text, start_byte);
     let old_end_byte = range.end;
@@ -41,9 +41,6 @@ fn parse_with_replaced_keyword(
     });
 
     let mut parser = tree_sitter::Parser::new();
-    parser
-        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
-        .unwrap();
 
     let replaced_sql = format!(
         "{}{}{}",
@@ -52,7 +49,11 @@ fn parse_with_replaced_keyword(
         &text[old_end_byte..]
     );
 
-    let tree = parser.parse(replaced_sql, Some(shared_tree)).unwrap();
+    // No tree means a cancelled parse; the edit is undone either way.
+    let tree = parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .ok()
+        .and_then(|()| parser.parse(replaced_sql, Some(shared_tree)));
 
     // undo edit so shared_tree can be reused
     shared_tree.edit(&InputEdit {
@@ -69,7 +70,7 @@ fn parse_with_replaced_keyword(
 
 /// The row and the byte column of `byte` in `text`.
 fn point_at(text: &str, byte: usize) -> Point {
-    let before = &text.as_bytes()[..byte];
+    let before = text.as_bytes().get(..byte).unwrap_or_default();
     let line_start = before
         .iter()
         .rposition(|b| *b == b'\n')
@@ -93,7 +94,11 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionFilter<'a> {
 }
 
 impl CompletionFilter<'_> {
-    pub fn is_relevant(&self, ctx: &TreesitterContext, shared_tree: &mut Tree) -> Option<()> {
+    pub(crate) fn is_relevant(
+        &self,
+        ctx: &TreesitterContext,
+        shared_tree: &mut Tree,
+    ) -> Option<()> {
         if let CompletionRelevanceData::Keyword(kw) = self.data {
             self.check_keyword_requires_prefix(ctx, kw)?;
             self.valid_keyword(ctx, shared_tree)?;
@@ -553,10 +558,8 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        if !kw
-            .name
-            .starts_with(content.chars().next().unwrap().to_ascii_lowercase())
-        {
+        let first = content.chars().next()?;
+        if !kw.name.starts_with(first.to_ascii_lowercase()) {
             return None;
         }
 
@@ -594,7 +597,7 @@ impl CompletionFilter<'_> {
 
         let word = word_at_cursor(ctx);
         let start_byte = word.start;
-        let tree = parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, word);
+        let tree = parse_with_replaced_keyword(shared_tree, ctx.text, keyword.name, word)?;
 
         if tree.root_node().has_error() {
             return None;
@@ -647,7 +650,7 @@ impl CompletionFilter<'_> {
                 return None;
             }
 
-            let old_unfinished_parent = clause_to_investigate.unwrap();
+            let old_unfinished_parent = clause_to_investigate?;
 
             let mut new_parent = investigated_node.parent();
 

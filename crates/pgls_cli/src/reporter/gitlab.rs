@@ -6,7 +6,7 @@ use pgls_console::{Console, ConsoleExt, markup};
 use pgls_diagnostics::display::SourceFile;
 use pgls_diagnostics::{Error, PrintDescription, Resource, Severity};
 use serde::Serialize;
-use std::sync::RwLock;
+use std::sync::{PoisonError, RwLock};
 use std::{
     collections::HashSet,
     hash::{DefaultHasher, Hash, Hasher},
@@ -102,7 +102,7 @@ impl<'a> GitLabDiagnostics<'a> {
 
 impl Display for GitLabDiagnostics<'_> {
     fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
-        let mut hasher = self.hasher.write().unwrap();
+        let mut hasher = self.hasher.write().unwrap_or_else(PoisonError::into_inner);
         let gitlab_diagnostics: Vec<_> = self
             .report
             .diagnostics
@@ -139,7 +139,7 @@ impl Display for GitLabDiagnostics<'_> {
 /// An entry in the GitLab Code Quality report.
 /// See https://docs.gitlab.com/ee/ci/testing/code_quality.html#implement-a-custom-tool
 #[derive(Serialize)]
-pub struct GitLabDiagnostic<'a> {
+pub(crate) struct GitLabDiagnostic<'a> {
     /// A description of the code quality violation.
     description: String,
     /// A unique name representing the static analysis check that emitted this issue.
@@ -153,7 +153,7 @@ pub struct GitLabDiagnostic<'a> {
 }
 
 impl<'a> GitLabDiagnostic<'a> {
-    pub fn try_from_diagnostic(
+    pub(crate) fn try_from_diagnostic(
         diagnostic: &'a Error,
         path: String,
         fingerprint: u64,
@@ -191,18 +191,18 @@ impl<'a> GitLabDiagnostic<'a> {
 }
 
 #[derive(Serialize)]
-pub struct Location {
+pub(crate) struct Location {
     path: String,
     lines: GitLabLines,
 }
 
 #[derive(Serialize)]
-pub struct GitLabLines {
+pub(crate) struct GitLabLines {
     begin: usize,
 }
 
 #[derive(Hash, Serialize)]
-pub struct Fingerprint<'a> {
+pub(crate) struct Fingerprint<'a> {
     code: &'a str,
     check_name: &'a str,
     path: &'a str,
