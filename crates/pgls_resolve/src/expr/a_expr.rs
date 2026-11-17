@@ -73,7 +73,7 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 let op = NameParts::last(&n.name)?;
                 // An unknown literal array, like `'{happy,sad}'`, becomes an array of the type
                 // that the operator resolves its element to (`make_scalar_array_op`).
-                if let Some(operator) = check_operator(r, &op, Some(&left), &element, n.location) {
+                if let Some(operator) = check_operator(r, op, Some(&left), &element, n.location) {
                     record_enum_operands(r, &operator, (lexpr, &left), (rexpr, &element));
                 }
                 return named(r, "bool");
