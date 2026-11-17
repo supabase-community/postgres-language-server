@@ -10,6 +10,7 @@
 
 mod changed_range;
 mod char_position;
+mod line_break;
 mod line_index;
 mod lines;
 #[cfg(test)]
@@ -19,6 +20,7 @@ use pgls_text_size::TextSize;
 
 pub use changed_range::changed_range;
 pub use char_position::offset_of_char_position;
+pub use line_break::LineBreak;
 pub use line_index::LineIndex;
 pub use lines::Lines;
 

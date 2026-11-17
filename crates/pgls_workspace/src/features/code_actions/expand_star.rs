@@ -2,6 +2,7 @@
 
 use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
 use pgls_catalog::{NamePosition, quote_identifier};
+use pgls_line_index::Lines;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
@@ -47,13 +48,9 @@ pub(crate) fn expand_star_action(
 /// and strings, `count(*)`, and multiplications don't count. If the line doesn't scan, like
 /// a line inside a multi-line string, any `*` on it counts.
 pub(crate) fn is_at_star(content: &str, position: TextSize) -> bool {
-    let offset = usize::from(position).min(content.len());
-    // A lone `\r` ends a line too, as in the LSP.
-    let line_start = content[..offset].rfind(['\n', '\r']).map_or(0, |i| i + 1);
-    let line_end = content[offset..]
-        .find(['\n', '\r'])
-        .map_or(content.len(), |i| offset + i);
-    is_at_star_in(&content[line_start..line_end], offset - line_start)
+    let line = Lines::new(content).line_at(position);
+    let cursor = position.clamp(line.start(), line.end()) - line.start();
+    is_at_star_in(&content[line], usize::from(cursor))
 }
 
 /// Whether `cursor` is on a `*` of a select list in `text`, a line or a string constant on it.

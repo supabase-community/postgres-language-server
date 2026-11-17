@@ -8,6 +8,7 @@ use pgls_analyser::{LinterDiagnostic, RuleFix};
 use pgls_configuration::RuleSelector;
 use pgls_diagnostics::Diagnostic;
 use pgls_fs::PgLSPath;
+use pgls_line_index::{LineBreak, Lines};
 use pgls_text_size::{TextRange, TextSize};
 use tracing::warn;
 
@@ -197,21 +198,12 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         .iter()
         .find(|statement| statement.contains_inclusive(offset))
         .map_or(offset, |statement| statement.start());
-    // The first line break of the file. A lone `\r` is one too, as in the LSP.
-    let line_ending = match content
-        .find(['\n', '\r'])
-        .map(|newline| &content[newline..])
-    {
-        Some(rest) if rest.starts_with("\r\n") => "\r\n",
-        Some(rest) if rest.starts_with('\r') => "\r",
-        _ => "\n",
-    };
+    let line_ending = LineBreak::first_in(content)
+        .unwrap_or(LineBreak::Lf)
+        .as_str();
 
-    let before_start = &content[..usize::from(start)];
-    let line_start = before_start
-        .rfind(['\n', '\r'])
-        .map_or(0, |newline| newline + 1);
-    let before = &before_start[line_start..];
+    let line_start = Lines::new(content).line_at(start).start();
+    let before = &content[usize::from(line_start)..usize::from(start)];
     let indentation: String = before
         .chars()
         .take_while(|c| *c == ' ' || *c == '\t')

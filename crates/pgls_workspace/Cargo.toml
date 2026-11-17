@@ -29,6 +29,7 @@ pgls_fs                           = { workspace = true, features = ["serde"] }
 pgls_hover                        = { workspace = true }
 pgls_inlay_hints                  = { workspace = true }
 pgls_lexer                        = { workspace = true }
+pgls_line_index                   = { workspace = true }
 pgls_matcher                      = { workspace = true }
 pgls_migrations                   = { workspace = true }
 pgls_pretty_print                 = { workspace = true }
@@ -55,7 +56,6 @@ tree-sitter.workspace             = true
 
 # Optional DB dependencies
 futures            = { version = "0.3.31", optional = true }
-pgls_line_index    = { workspace = true, optional = true }
 pgls_pglinter      = { workspace = true, optional = true }
 pgls_plpgsql_check = { workspace = true, optional = true }
 pgls_resolve       = { workspace = true }
@@ -70,7 +70,6 @@ db = [
   "dep:futures",
   "dep:sqlx",
   "dep:tokio",
-  "dep:pgls_line_index",
   "dep:pgls_pglinter",
   "dep:pgls_plpgsql_check",
   "dep:pgls_splinter",

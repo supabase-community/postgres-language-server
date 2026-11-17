@@ -217,7 +217,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     let line_index = stmt.line_number.parse::<usize>().ok()?.checked_sub(1)?;
     let text = &stmt.text;
 
-    // calculate the offset to the target line, keeping `\r\n` line endings
+    // calculate the offset to the target line, keeping `\r\n` line endings. `\n` only: plpgsql
+    // counts the lines of a function body at `\n`.
     let line_offset: usize = fn_body
         .split_inclusive('\n')
         .take(line_index)

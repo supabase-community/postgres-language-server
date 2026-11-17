@@ -247,7 +247,8 @@ pub(super) fn format_document(
     })
 }
 
-/// Keeps at most one blank line in `text`, which only holds whitespace and comments.
+/// Keeps at most one blank line in `text`, which only holds whitespace and comments. `\n` only:
+/// the formatter writes its output with `\n`.
 fn collapse_blank_lines(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
     // Line breaks since the last text that is not whitespace. Two make a blank line.

@@ -12,6 +12,7 @@
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 use pgls_catalog::{CatalogView, identifier_name};
+use pgls_line_index::{LineBreak, Lines};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
@@ -229,11 +230,11 @@ fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
     let Some(text) = sql.get(std::ops::Range::<usize>::from(token.range)) else {
         return vec![token];
     };
-    if !text.contains(['\n', '\r']) {
+    if !LineBreak::is_in(text) {
         return vec![token];
     }
     let mut parts = Vec::new();
-    for (line_start, line) in pgls_line_index::Lines::new(text) {
+    for (line_start, line) in Lines::new(text) {
         let trimmed = line.trim_start();
         let start =
             token.range.start() + line_start + TextSize::of(&line[..line.len() - trimmed.len()]);

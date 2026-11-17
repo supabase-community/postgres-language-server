@@ -1,4 +1,6 @@
-use pgls_text_size::TextSize;
+use pgls_text_size::{TextRange, TextSize};
+
+use crate::LineBreak;
 
 /// The lines of a text, each with the offset of its start and without its line break. A line ends
 /// at `\n`, `\r\n` or a lone `\r`, like in [`LineIndex`](crate::LineIndex). Unlike [`str::lines`],
@@ -21,6 +23,31 @@ impl<'a> Lines<'a> {
         }
     }
 
+    /// The range of the line that contains `offset` of the text, without its line break. Only
+    /// looks at that line, not at the lines before it. An offset in a line break is on the line it
+    /// ends, an offset past the end of the text is on the last line, and an offset inside a
+    /// character is at its start.
+    pub fn line_at(self, offset: TextSize) -> TextRange {
+        let text = self.rest.unwrap_or_default();
+        let mut at =
+            usize::from(offset.checked_sub(self.offset).unwrap_or_default()).min(text.len());
+        while !text.is_char_boundary(at) {
+            at -= 1;
+        }
+        if Self::splits_crlf(text, at) {
+            at -= 1;
+        }
+        let (before, after) = text.split_at(at);
+        let start = before
+            .rfind(LineBreak::START_CHARS)
+            .map_or(0, |line_break| line_break + 1);
+        let end = after
+            .find(LineBreak::START_CHARS)
+            .map_or(text.len(), |line_break| at + line_break);
+        let to_size = |offset: usize| self.offset + TextSize::try_from(offset).unwrap_or_default();
+        TextRange::new(to_size(start), to_size(end))
+    }
+
     /// Whether `offset` is between the `\r` and the `\n` of a line break, where no position can
     /// point.
     pub(crate) fn splits_crlf(text: &str, offset: usize) -> bool {
@@ -34,15 +61,14 @@ impl<'a> Iterator for Lines<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let rest = self.rest?;
         let start = self.offset;
-        let Some(end) = rest.find(['\n', '\r']) else {
+        let Some(end) = rest.find(LineBreak::START_CHARS) else {
             self.rest = None;
             return Some((start, rest));
         };
         let (line, after) = rest.split_at(end);
-        let after = after
-            .strip_prefix("\r\n")
-            .or_else(|| after.get(1..))
-            .unwrap_or_default();
+        let line_break =
+            LineBreak::at_start_of(after).map_or(1, |line_break| line_break.as_str().len());
+        let after = after.get(line_break..).unwrap_or_default();
         self.offset += TextSize::of(rest) - TextSize::of(after);
         self.rest = Some(after);
         Some((start, line))

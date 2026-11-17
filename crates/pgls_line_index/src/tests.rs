@@ -1,7 +1,9 @@
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, Lines, WideLineCol, changed_range, offset_of_char_position};
+use crate::{
+    LineBreak, LineCol, LineIndex, Lines, WideLineCol, changed_range, offset_of_char_position,
+};
 
 #[test]
 fn line_breaks_and_wide_characters() {
@@ -68,6 +70,43 @@ fn lines_end_like_in_the_line_index() {
         collect("\r\r\n\n"),
         [line(0, ""), line(1, ""), line(3, ""), line(4, "")]
     );
+}
+
+#[test]
+fn line_breaks_of_a_text() {
+    assert_eq!(LineBreak::first_in("a\rb\r\n"), Some(LineBreak::Cr));
+    assert_eq!(LineBreak::first_in("a\r\nb\n"), Some(LineBreak::CrLf));
+    assert_eq!(LineBreak::first_in("a\nb\r"), Some(LineBreak::Lf));
+    assert_eq!(LineBreak::first_in("ab"), None);
+    assert_eq!(LineBreak::at_start_of("\r\nb"), Some(LineBreak::CrLf));
+    assert_eq!(LineBreak::at_start_of("a\n"), None);
+    assert!(LineBreak::is_in("a\rb"));
+    assert!(!LineBreak::is_in("ab"));
+    for line_break in [LineBreak::Lf, LineBreak::CrLf, LineBreak::Cr] {
+        assert_eq!(
+            LineBreak::at_start_of(line_break.as_str()),
+            Some(line_break)
+        );
+    }
+}
+
+#[test]
+fn line_at_an_offset() {
+    let text = "ab\r\ncé\rd\n";
+    let line_at = |offset: u32| {
+        let range = Lines::new(text).line_at(TextSize::from(offset));
+        &text[range]
+    };
+    assert_eq!(line_at(0), "ab");
+    assert_eq!(line_at(2), "ab");
+    // Between the `\r` and the `\n`: the line it ends.
+    assert_eq!(line_at(3), "ab");
+    assert_eq!(line_at(4), "cé");
+    // Inside the `é`: its line.
+    assert_eq!(line_at(6), "cé");
+    assert_eq!(line_at(8), "d");
+    assert_eq!(line_at(10), "");
+    assert_eq!(line_at(100), "");
 }
 
 #[test]
@@ -185,7 +224,7 @@ fn character_positions_are_one_based() {
 }
 
 mod properties {
-    use pgls_text_size::TextSize;
+    use pgls_text_size::{TextRange, TextSize};
     use proptest::prelude::*;
 
     use crate::WideEncoding::{Utf16, Utf32};
@@ -263,6 +302,23 @@ mod properties {
                     let wide = line_index.to_wide(enc, line_col).unwrap();
                     prop_assert_eq!(line_index.to_utf8(enc, wide), line_col);
                 }
+            }
+        }
+
+        /// `Lines::line_at` finds the line that the line index puts an offset on.
+        #[test]
+        fn line_at_is_the_line_of_the_index(Text(text) in any::<Text>()) {
+            let line_index = LineIndex::new(&text);
+            let lines: Vec<_> = Lines::new(&text).collect();
+            for offset in (0..=text.len()).filter(|&offset| text.is_char_boundary(offset)) {
+                let size = TextSize::try_from(offset).unwrap();
+                let line = line_index.line_col(size).unwrap().line as usize;
+                let (start, content) = lines[line];
+                prop_assert_eq!(
+                    Lines::new(&text).line_at(size),
+                    TextRange::at(start, TextSize::of(content)),
+                    "{}", offset
+                );
             }
         }
 
