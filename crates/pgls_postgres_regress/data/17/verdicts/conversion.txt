@@ -1,65 +1,65 @@
-11:1 rejected 42601
-14:1 rejected 42883
-16:1 rejected 42601
-20:1 accepted
-21:1 accepted
-22:1 rejected 42501
-26:1 rejected 42501
-30:1 rejected 42501
-34:1 rejected 42501
-36:1 rejected 42704
-37:1 rejected 42704
-38:1 rejected 42704
-42:1 rejected 42704
-43:1 rejected 42704
-51:1 accepted
-52:1 accepted
-60:1 accepted
-94:1 accepted
-95:1 accepted
-121:1 rejected 42883
-132:1 rejected 42883
-156:1 rejected 42883
-180:1 rejected 42883
-204:1 rejected 42883
-226:1 accepted
-227:1 accepted
-243:1 rejected 42883
-245:1 rejected 42883
-246:1 rejected 42883
-247:1 rejected 42883
-248:1 rejected 42883
-249:1 rejected 42883
-250:1 rejected 42883
-255:1 accepted
-256:1 accepted
-267:1 rejected 42883
-269:1 rejected 42883
-274:1 accepted
-275:1 accepted
-287:1 rejected 42883
-289:1 rejected 42883
-290:1 rejected 42883
-295:1 accepted
-296:1 accepted
-310:1 rejected 42883
-312:1 rejected 42883
-318:1 accepted
-319:1 accepted
-327:1 rejected 42883
-329:1 rejected 42883
-330:1 rejected 42883
-331:1 rejected 42883
-336:1 accepted
-337:1 accepted
-345:1 rejected 42883
-347:1 rejected 42883
-348:1 rejected 42883
-353:1 accepted
-354:1 accepted
-367:1 rejected 42883
-369:1 rejected 42883
-370:1 rejected 42883
-371:1 rejected 42883
-372:1 rejected 42883
-373:1 rejected 42883
+120..227 rejected 42601
+228..257 rejected 42883
+259..422 rejected 42601
+424..489 accepted
+490..540 accepted
+541..612 rejected 42501
+670..741 rejected 42501
+797..882 rejected 42501
+965..1051 rejected 42501
+1069..1111 rejected 42704
+1112..1150 rejected 42704
+1151..1188 rejected 42704
+1227..1250 rejected 42704
+1251..1273 rejected 42704
+1419..1447 accepted
+1448..1482 accepted
+1660..2489 accepted
+2549..2633 accepted
+2634..3626 accepted
+3665..3754 rejected 42883
+4230..4730 rejected 42883
+4848..5392 rejected 42883
+5485..6010 rejected 42883
+6116..6659 rejected 42883
+6661..6720 accepted
+6721..7453 accepted
+7482..7558 rejected 42883
+7590..7683 rejected 42883
+7684..7771 rejected 42883
+7772..7859 rejected 42883
+7860..7947 rejected 42883
+7948..8034 rejected 42883
+8035..8123 rejected 42883
+8147..8214 accepted
+8215..8583 accepted
+8619..8728 rejected 42883
+8767..8868 rejected 42883
+8894..8961 accepted
+8962..9415 accepted
+9453..9562 rejected 42883
+9603..9704 rejected 42883
+9705..9814 rejected 42883
+9833..9895 accepted
+9896..10375 accepted
+10551..10658 rejected 42883
+10692..10783 rejected 42883
+10806..10870 accepted
+10871..11083 accepted
+11117..11217 rejected 42883
+11254..11349 rejected 42883
+11350..11446 rejected 42883
+11447..11551 rejected 42883
+11567..11626 accepted
+11627..11865 accepted
+11893..11978 rejected 42883
+12009..12094 rejected 42883
+12095..12189 rejected 42883
+12214..12272 accepted
+12273..12727 accepted
+12764..12866 rejected 42883
+12906..13000 rejected 42883
+13001..13099 rejected 42883
+13100..13193 rejected 42883
+13194..13287 rejected 42883
+13288..13383 rejected 42883

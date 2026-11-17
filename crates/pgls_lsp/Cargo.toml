@@ -37,7 +37,7 @@ pgls_test_utils = { workspace = true }
 sqlx            = { workspace = true }
 tempfile        = "3.15.0"
 test-log        = { workspace = true }
-tokio           = { workspace = true, features = ["macros"] }
+tokio           = { workspace = true, features = ["macros", "test-util"] }
 tower           = { version = "0.5.3", features = ["timeout", "util"] }
 
 [lib]

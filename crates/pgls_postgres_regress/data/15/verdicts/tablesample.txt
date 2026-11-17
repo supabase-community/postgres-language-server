@@ -1,56 +1,56 @@
-1:1 accepted
-4:1 accepted
-7:1 accepted
-8:1 accepted
-9:1 accepted
-10:1 accepted
-11:1 accepted
-14:1 accepted
-15:1 accepted
-16:1 accepted
-18:1 accepted
-20:1 accepted
-26:1 skipped
-27:1 rejected 25P01
-30:1 rejected 34000
-31:1 rejected 34000
-32:1 rejected 34000
-34:1 accepted
-36:1 rejected 34000
-37:1 rejected 34000
-38:1 rejected 34000
-40:1 rejected 34000
-41:1 rejected 34000
-42:1 rejected 34000
-43:1 rejected 34000
-44:1 rejected 34000
-45:1 rejected 34000
-47:1 rejected 34000
-48:1 skipped
-50:1 accepted
-52:1 accepted
-56:1 rejected 42P01
-58:1 rejected 42P01
-59:1 rejected 42P01
-62:1 accepted
-65:1 rejected 42P01
-68:1 rejected 42P01
-71:1 rejected 42P01
-76:1 rejected 42P01
-80:1 rejected 42P01
-86:1 rejected 42704
-88:1 rejected 2202H
-89:1 rejected 2202G
-91:1 rejected 2202H
-92:1 rejected 2202H
-93:1 rejected 2202H
-94:1 rejected 2202H
-96:1 rejected 0A000
-97:1 rejected 55000
-99:1 rejected 0A000
-102:1 rejected 42601
-105:1 accepted
-106:1 accepted
-107:1 accepted
-108:1 accepted
-110:1 accepted
+0..71 accepted
+152..246 accepted
+248..326 accepted
+327..404 accepted
+405..476 accepted
+477..551 accepted
+552..627 accepted
+701..764 accepted
+765..845 accepted
+846..926 accepted
+928..1038 accepted
+1039..1132 accepted
+1195..1201 skipped
+1202..1317 rejected 25P01
+1319..1352 rejected 34000
+1353..1385 rejected 34000
+1386..1418 rejected 34000
+1420..1491 accepted
+1493..1525 rejected 34000
+1526..1558 rejected 34000
+1559..1591 rejected 34000
+1593..1626 rejected 34000
+1627..1659 rejected 34000
+1660..1692 rejected 34000
+1693..1725 rejected 34000
+1726..1758 rejected 34000
+1759..1791 rejected 34000
+1793..1815 rejected 34000
+1816..1820 skipped
+1822..1915 accepted
+1916..1972 accepted
+2004..2082 rejected 42P01
+2083..2139 rejected 42P01
+2140..2168 rejected 42P01
+2241..2332 accepted
+2411..2524 rejected 42P01
+2525..2635 rejected 42P01
+2636..2795 rejected 42P01
+2796..2935 rejected 42P01
+2936..3072 rejected 42P01
+3084..3139 rejected 42704
+3141..3199 rejected 2202H
+3200..3274 rejected 2202G
+3276..3335 rejected 2202H
+3336..3396 rejected 2202H
+3397..3453 rejected 2202H
+3454..3511 rejected 2202H
+3513..3574 rejected 0A000
+3575..3617 rejected 55000
+3619..3743 rejected 0A000
+3745..3825 rejected 42601
+3875..3932 accepted
+3933..4007 accepted
+4008..4082 accepted
+4083..4161 accepted
+4162..4221 accepted

@@ -1098,4 +1098,26 @@ mod tests {
             assert_eq!(found, expected, "{query} → {label}");
         }
     }
+
+    /// The cursor is a byte offset, also after multibyte characters earlier in the statement.
+    #[pgls_test_utils::db_test]
+    async fn completes_columns_after_multibyte_characters(pool: PgPool) {
+        pool.execute("create table public.users (id int, name text, note text);")
+            .await
+            .unwrap();
+
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        for literal in ["'ä'", "'🦀'", "'ああ'"] {
+            let query =
+                format!("select * from users where note = {literal} and na{cursor} or true");
+            let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let items = complete(get_test_params(&tree, &snapshot, query.as_str().into()));
+
+            let first = items
+                .first()
+                .unwrap_or_else(|| panic!("no completions in {query}"));
+            assert_eq!(first.label, "name", "{query}");
+            assert_eq!(first.kind, CompletionItemKind::Column, "{query}");
+        }
+    }
 }

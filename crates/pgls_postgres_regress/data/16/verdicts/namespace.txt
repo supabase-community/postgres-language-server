@@ -1,28 +1,28 @@
-7:1 accepted
-9:1 accepted
-21:1 accepted
-22:1 skipped
-23:1 accepted
-24:1 rejected 42703
-26:1 skipped
-27:1 accepted
-31:1 skipped
-32:1 accepted
-33:1 accepted
-35:1 accepted
-36:1 skipped
-37:1 accepted
-38:1 accepted
-41:1 accepted
-44:1 accepted
-45:1 accepted
-46:1 accepted
-48:1 accepted
-49:1 accepted
-51:1 accepted
-52:1 accepted
-56:1 rejected 42P06
-57:1 accepted
-58:1 rejected 0A000
-64:1 accepted
-67:1 accepted
+165..221 accepted
+223..470 accepted
+529..555 accepted
+556..562 skipped
+563..607 accepted
+608..688 rejected 42703
+689..696 skipped
+697..714 accepted
+808..814 skipped
+815..859 accepted
+860..940 accepted
+941..958 accepted
+959..966 skipped
+967..984 accepted
+985..1022 accepted
+1064..1185 accepted
+1187..1235 accepted
+1236..1284 accepted
+1285..1333 accepted
+1335..1370 accepted
+1371..1411 accepted
+1413..1476 accepted
+1477..1598 accepted
+1628..1665 rejected 42P06
+1690..1741 accepted
+1760..1917 rejected 0A000
+1919..1962 accepted
+2004..2131 accepted

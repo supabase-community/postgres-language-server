@@ -1,615 +1,615 @@
-3:1 accepted
-7:1 accepted
-8:1 accepted
-11:1 accepted
-12:1 accepted
-14:1 accepted
-15:1 accepted
-17:1 accepted
-21:1 accepted
-22:1 accepted
-23:1 accepted
-25:1 accepted
-26:1 accepted
-30:1 accepted
-33:1 accepted
-34:1 accepted
-35:1 rejected 0A000
-36:1 accepted
-40:1 accepted
-41:1 accepted
-42:1 accepted
-43:1 accepted
-44:1 accepted
-48:1 accepted
-49:1 accepted
-50:1 accepted
-51:1 accepted
-52:1 accepted
-53:1 accepted
-57:1 accepted
-58:1 accepted
-59:1 accepted
-60:1 accepted
-62:1 accepted
-68:1 accepted
-69:1 accepted
-70:1 rejected 42P17
-71:1 accepted
-72:1 accepted
-75:1 rejected 42809
-76:1 accepted
-79:1 accepted
-80:1 accepted
-81:1 accepted
-82:1 accepted
-84:1 accepted
-88:1 accepted
-91:1 accepted
-92:1 accepted
-93:1 accepted
-94:1 rejected 2BP01
-95:1 rejected 0A000
-96:1 accepted
-97:1 accepted
-99:1 accepted
-100:1 accepted
-101:1 accepted
-103:1 accepted
-106:1 accepted
-107:1 accepted
-108:1 accepted
-110:1 rejected 2BP01
-112:1 accepted
-113:1 accepted
-115:1 accepted
-118:1 accepted
-119:1 accepted
-120:1 accepted
-121:1 accepted
-122:1 accepted
-123:1 accepted
-124:1 accepted
-126:1 rejected 42809
-127:1 rejected 42P17
-128:1 rejected 55000
-129:1 rejected 42P01
-130:1 rejected 42P17
-131:1 rejected 42P17
-132:1 rejected 42P17
-134:1 accepted
-135:1 accepted
-138:1 accepted
-139:1 rejected 55000
-140:1 accepted
-142:1 accepted
-146:1 accepted
-147:1 accepted
-148:1 accepted
-149:1 accepted
-150:1 accepted
-151:1 accepted
-152:1 accepted
-153:1 accepted
-155:1 accepted
-160:1 accepted
-161:1 accepted
-162:1 accepted
-164:1 accepted
-165:1 accepted
-166:1 accepted
-167:1 accepted
-168:1 accepted
-174:1 accepted
-178:1 accepted
-179:1 accepted
-184:1 accepted
-187:1 accepted
-188:1 accepted
-190:1 accepted
-195:1 accepted
-196:1 accepted
-197:1 accepted
-198:1 accepted
-200:1 accepted
-204:1 accepted
-206:1 accepted
-211:1 accepted
-213:1 accepted
-217:1 accepted
-219:1 accepted
-223:1 accepted
-229:1 accepted
-230:1 accepted
-231:1 accepted
-232:1 accepted
-233:1 accepted
-235:1 accepted
-238:1 accepted
-239:1 accepted
-243:1 accepted
-244:1 accepted
-245:1 accepted
-247:1 accepted
-252:1 accepted
-253:1 accepted
-254:1 accepted
-256:1 accepted
-258:1 accepted
-259:1 accepted
-260:1 accepted
-262:1 accepted
-263:1 rejected 22012
-264:1 accepted
-267:1 accepted
-268:1 accepted
-269:1 accepted
-270:1 accepted
-273:1 accepted
-274:1 accepted
-276:1 accepted
-277:1 accepted
-279:1 accepted
-283:1 accepted
-284:1 accepted
-285:1 accepted
-286:1 accepted
-288:1 accepted
-289:1 accepted
-290:1 rejected 22012
-291:1 rejected 22012
-292:1 accepted
-295:1 accepted
-296:1 accepted
-297:1 accepted
-300:1 accepted
-301:1 accepted
-303:1 accepted
-304:1 accepted
-306:1 accepted
-309:1 accepted
-310:1 accepted
-311:1 accepted
-312:1 accepted
-313:1 accepted
-314:1 accepted
-315:1 accepted
-316:1 accepted
-317:1 accepted
-319:1 accepted
-320:1 accepted
-321:1 accepted
-322:1 accepted
-323:1 accepted
-324:1 accepted
-325:1 accepted
-326:1 accepted
-327:1 accepted
-329:1 accepted
-330:1 accepted
-331:1 accepted
-332:1 accepted
-333:1 accepted
-334:1 accepted
-335:1 accepted
-336:1 accepted
-338:1 accepted
-339:1 accepted
-340:1 accepted
-341:1 accepted
-342:1 accepted
-343:1 accepted
-344:1 accepted
-345:1 accepted
-347:1 accepted
-348:1 accepted
-349:1 accepted
-350:1 accepted
-351:1 accepted
-353:1 accepted
-355:1 accepted
-358:1 accepted
-359:1 accepted
-360:1 accepted
-361:1 accepted
-362:1 accepted
-363:1 accepted
-364:1 accepted
-365:1 accepted
-366:1 accepted
-370:1 accepted
-373:1 accepted
-374:1 accepted
-375:1 accepted
-376:1 accepted
-377:1 accepted
-378:1 accepted
-379:1 accepted
-380:1 accepted
-381:1 accepted
-382:1 accepted
-383:1 accepted
-384:1 accepted
-388:1 accepted
-391:1 accepted
-392:1 accepted
-393:1 accepted
-394:1 accepted
-395:1 accepted
-396:1 accepted
-397:1 accepted
-398:1 accepted
-399:1 accepted
-401:1 accepted
-405:1 accepted
-406:1 accepted
-408:1 rejected 42P17
-409:1 accepted
-412:1 accepted
-413:1 accepted
-414:1 accepted
-415:1 accepted
-416:1 accepted
-417:1 accepted
-418:1 accepted
-419:1 accepted
-421:1 accepted
-422:1 accepted
-423:1 accepted
-424:1 accepted
-425:1 rejected 42P17
-426:1 accepted
-427:1 rejected 42P17
-428:1 rejected 42P17
-429:1 accepted
-430:1 accepted
-434:1 accepted
-437:1 accepted
-438:1 accepted
-439:1 accepted
-440:1 accepted
-441:1 accepted
-442:1 accepted
-443:1 accepted
-444:1 accepted
-445:1 accepted
-446:1 accepted
-450:1 accepted
-453:1 accepted
-454:1 accepted
-455:1 accepted
-456:1 accepted
-457:1 accepted
-458:1 accepted
-459:1 accepted
-460:1 accepted
-461:1 accepted
-462:1 accepted
-463:1 accepted
-464:1 accepted
-468:1 accepted
-471:1 accepted
-472:1 accepted
-473:1 accepted
-474:1 accepted
-475:1 accepted
-476:1 accepted
-477:1 accepted
-478:1 accepted
-479:1 accepted
-480:1 accepted
-481:1 accepted
-485:1 accepted
-488:1 accepted
-489:1 accepted
-490:1 accepted
-491:1 accepted
-492:1 accepted
-493:1 accepted
-494:1 accepted
-495:1 accepted
-498:1 accepted
-501:1 accepted
-504:1 accepted
-505:1 accepted
-506:1 accepted
-507:1 accepted
-508:1 accepted
-509:1 accepted
-510:1 accepted
-511:1 accepted
-514:1 accepted
-517:1 accepted
-524:1 accepted
-527:1 rejected 42P16
-528:1 accepted
-530:1 accepted
-531:1 accepted
-533:1 accepted
-536:1 rejected 0A000
-537:1 rejected 0A000
-538:1 rejected 0A000
-539:1 rejected 0A000
-542:1 accepted
-543:1 accepted
-546:1 accepted
-547:1 accepted
-549:1 accepted
-550:1 accepted
-552:1 accepted
-553:1 accepted
-555:1 rejected 0A000
-557:1 rejected 0A000
-559:1 accepted
-560:1 accepted
-562:1 rejected 0A000
-564:1 accepted
-565:1 accepted
-568:1 rejected 0A000
-569:1 rejected 0A000
-572:1 accepted
-573:1 rejected 0A000
-574:1 accepted
-576:1 accepted
-578:1 accepted
-581:1 accepted
-582:1 rejected 0A000
-583:1 accepted
-585:1 accepted
-588:1 accepted
-589:1 accepted
-590:1 accepted
-592:1 accepted
-593:1 accepted
-594:1 accepted
-596:1 accepted
-597:1 accepted
-598:1 accepted
-600:1 accepted
-601:1 rejected 0A000
-602:1 accepted
-604:1 accepted
-605:1 rejected 0A000
-606:1 accepted
-608:1 accepted
-609:1 accepted
-610:1 accepted
-612:1 accepted
-613:1 rejected 0A000
-614:1 accepted
-616:1 accepted
-617:1 accepted
-618:1 accepted
-621:1 accepted
-622:1 accepted
-623:1 accepted
-625:1 accepted
-626:1 accepted
-627:1 accepted
-628:1 accepted
-629:1 accepted
-632:1 accepted
-636:1 accepted
-637:1 rejected 0A000
-639:1 accepted
-642:1 accepted
-643:1 accepted
-645:1 rejected 0A000
-646:1 accepted
-649:1 accepted
-650:1 accepted
-651:1 accepted
-652:1 accepted
-655:1 accepted
-661:1 accepted
-662:1 accepted
-663:1 accepted
-664:1 accepted
-665:1 accepted
-666:1 accepted
-672:1 rejected 2BP01
-673:1 rejected 2BP01
-674:1 rejected 42P16
-675:1 rejected 42P16
-676:1 accepted
-677:1 accepted
-683:1 accepted
-687:1 accepted
-688:1 accepted
-689:1 accepted
-690:1 rejected 42P16
-691:1 accepted
-694:1 accepted
-695:1 accepted
-696:1 accepted
-697:1 accepted
-698:1 rejected 42P16
-699:1 accepted
-703:1 accepted
-704:1 accepted
-705:1 accepted
-706:1 accepted
-707:1 accepted
-708:1 accepted
-714:1 accepted
-715:1 accepted
-721:1 accepted
-725:1 accepted
-726:1 accepted
-727:1 accepted
-728:1 accepted
-729:1 rejected XX000
-730:1 accepted
-731:1 accepted
-732:1 accepted
-733:1 accepted
-737:1 accepted
-738:1 accepted
-739:1 accepted
-740:1 accepted
-741:1 accepted
-742:1 accepted
-748:1 accepted
-751:1 accepted
-752:1 accepted
-753:1 accepted
-754:1 accepted
-755:1 accepted
-756:1 rejected 42P17
-757:1 accepted
-760:1 accepted
-761:1 accepted
-762:1 accepted
-763:1 accepted
-764:1 accepted
-765:1 accepted
-766:1 accepted
-767:1 accepted
-768:1 rejected 23505
-769:1 accepted
-770:1 accepted
-771:1 rejected 23505
-772:1 rejected 23505
-773:1 accepted
-774:1 accepted
-775:1 accepted
-778:1 accepted
-779:1 accepted
-780:1 accepted
-782:1 accepted
-783:1 accepted
-784:1 accepted
-786:1 accepted
-787:1 accepted
-788:1 accepted
-790:1 accepted
-791:1 accepted
-792:1 accepted
-794:1 accepted
-795:1 accepted
-798:1 accepted
-799:1 accepted
-800:1 accepted
-802:1 accepted
-803:1 accepted
-804:1 accepted
-805:1 accepted
-806:1 accepted
-807:1 accepted
-808:1 accepted
-809:1 accepted
-810:1 accepted
-811:1 accepted
-812:1 accepted
-813:1 accepted
-814:1 accepted
-818:1 accepted
-819:1 accepted
-820:1 accepted
-821:1 accepted
-822:1 accepted
-823:1 accepted
-824:1 accepted
-825:1 accepted
-826:1 accepted
-827:1 accepted
-828:1 accepted
-829:1 accepted
-830:1 accepted
-831:1 accepted
-832:1 accepted
-833:1 accepted
-836:1 accepted
-837:1 accepted
-838:1 accepted
-839:1 accepted
-840:1 accepted
-841:1 rejected 23505
-842:1 accepted
-843:1 accepted
-844:1 accepted
-845:1 accepted
-846:1 rejected 23505
-847:1 accepted
-848:1 accepted
-849:1 accepted
-850:1 accepted
-851:1 accepted
-852:1 rejected 23505
-853:1 rejected 0A000
-856:1 accepted
-857:1 accepted
-858:1 rejected 42P16
-859:1 accepted
-860:1 accepted
-861:1 accepted
-862:1 accepted
-863:1 accepted
-864:1 rejected 42P16
-865:1 accepted
-866:1 accepted
-867:1 accepted
-871:1 accepted
-873:1 accepted
-876:1 accepted
-878:1 accepted
-880:1 accepted
-881:1 accepted
-882:1 accepted
-883:1 accepted
-888:1 accepted
-891:1 accepted
-892:1 accepted
-893:1 accepted
-894:1 accepted
-896:1 accepted
-899:1 accepted
-902:1 accepted
-904:1 accepted
-910:1 accepted
-915:1 accepted
-916:1 accepted
-918:1 accepted
-920:1 accepted
-922:1 accepted
-925:1 accepted
-926:1 rejected 22012
-929:1 accepted
-930:1 accepted
-936:1 accepted
-939:1 skipped
-940:1 accepted
-941:1 accepted
-943:1 accepted
-945:1 accepted
-947:1 accepted
-950:1 accepted
-952:1 accepted
-953:1 accepted
-961:1 accepted
-962:1 accepted
-969:1 accepted
-970:1 accepted
-972:1 skipped
-973:1 accepted
-979:1 accepted
-982:1 accepted
-983:1 accepted
-985:1 rejected 42601
-986:1 rejected 42601
-988:1 rejected 42P01
-989:1 rejected 42704
-990:1 rejected 42601
-992:1 rejected 42P01
-993:1 rejected 42704
-994:1 accepted
-995:1 accepted
-998:1 accepted
-999:1 accepted
-1000:1 accepted
-1001:1 accepted
-1002:1 accepted
-1004:1 rejected 42P17
-1006:1 accepted
-1007:1 accepted
-1008:1 accepted
+96..163 accepted
+302..342 accepted
+343..409 accepted
+472..540 accepted
+541..564 accepted
+566..637 accepted
+638..735 accepted
+736..810 accepted
+927..971 accepted
+972..1038 accepted
+1039..1062 accepted
+1064..1092 accepted
+1093..1317 accepted
+1318..1337 accepted
+1368..1435 accepted
+1436..1507 accepted
+1508..1549 rejected 0A000
+1550..1569 accepted
+1717..1775 accepted
+1776..1807 accepted
+1808..1844 accepted
+1845..1921 accepted
+1922..1954 accepted
+2113..2179 accepted
+2180..2264 accepted
+2265..2315 accepted
+2316..2391 accepted
+2392..2440 accepted
+2441..2460 accepted
+2579..2646 accepted
+2647..2684 accepted
+2685..2726 accepted
+2727..2764 accepted
+2766..2840 accepted
+2920..2963 accepted
+2964..3004 accepted
+3005..3084 rejected 42P17
+3085..3135 accepted
+3136..3245 accepted
+3246..3296 rejected 42809
+3297..3316 accepted
+3389..3451 accepted
+3452..3530 accepted
+3531..3563 accepted
+3564..3595 accepted
+3597..3821 accepted
+3822..3841 accepted
+3884..3936 accepted
+3937..3965 accepted
+3966..4037 accepted
+4038..4064 rejected 2BP01
+4075..4113 rejected 0A000
+4129..4154 accepted
+4179..4266 accepted
+4267..4295 accepted
+4296..4316 accepted
+4358..4445 accepted
+4446..4465 accepted
+4519..4581 accepted
+4582..4614 accepted
+4615..4703 accepted
+4704..4735 rejected 2BP01
+4809..4852 accepted
+4853..4945 accepted
+4946..4970 accepted
+5010..5072 accepted
+5073..5151 accepted
+5152..5204 accepted
+5205..5254 accepted
+5255..5301 accepted
+5302..5356 accepted
+5357..5416 accepted
+5418..5464 rejected 42809
+5465..5519 rejected 42P17
+5520..5581 rejected 55000
+5582..5642 rejected 42P01
+5643..5702 rejected 42P17
+5703..5762 rejected 42P17
+5763..5822 rejected 42P17
+5829..5891 accepted
+5892..5954 accepted
+5980..6027 accepted
+6028..6088 rejected 55000
+6089..6108 accepted
+6140..6253 accepted
+6297..6356 accepted
+6357..6394 accepted
+6395..6435 accepted
+6436..6477 accepted
+6478..6513 accepted
+6514..6546 accepted
+6547..6575 accepted
+6576..6652 accepted
+6654..6673 accepted
+6856..6908 accepted
+6909..6981 accepted
+6982..7082 accepted
+7083..7159 accepted
+7160..7236 accepted
+7237..7267 accepted
+7268..7302 accepted
+7303..7331 accepted
+7458..7707 accepted
+7708..7768 accepted
+7769..8018 accepted
+8089..8149 accepted
+8175..8205 accepted
+8206..8266 accepted
+8268..8287 accepted
+8467..8542 accepted
+8543..8580 accepted
+8581..8622 accepted
+8623..8678 accepted
+8680..8888 accepted
+8889..8963 accepted
+8965..9173 accepted
+9248..9296 accepted
+9298..9506 accepted
+9507..9564 accepted
+9566..9774 accepted
+9775..9794 accepted
+10056..10115 accepted
+10116..10212 accepted
+10213..10287 accepted
+10288..10322 accepted
+10323..10356 accepted
+10397..10522 accepted
+10597..10655 accepted
+10656..10781 accepted
+10881..10911 accepted
+10912..10972 accepted
+10973..11098 accepted
+11099..11118 accepted
+11292..11351 accepted
+11352..11448 accepted
+11449..11523 accepted
+11564..11663 accepted
+11689..11726 accepted
+11727..11765 accepted
+11766..11804 accepted
+11867..11903 accepted
+11904..11951 rejected 22012
+11952..12077 accepted
+12122..12188 accepted
+12189..12253 accepted
+12254..12318 accepted
+12319..12444 accepted
+12484..12518 accepted
+12519..12565 accepted
+12632..12698 accepted
+12699..12824 accepted
+12825..12844 accepted
+12949..13008 accepted
+13009..13081 accepted
+13082..13157 accepted
+13158..13195 accepted
+13239..13274 accepted
+13275..13312 accepted
+13313..13359 rejected 22012
+13360..13406 rejected 22012
+13407..13532 accepted
+13570..13634 accepted
+13635..13699 accepted
+13700..13825 accepted
+13887..13920 accepted
+13921..13966 accepted
+14024..14088 accepted
+14089..14214 accepted
+14215..14234 accepted
+14302..14354 accepted
+14355..14392 accepted
+14393..14422 accepted
+14423..14451 accepted
+14452..14489 accepted
+14490..14569 accepted
+14570..14649 accepted
+14650..14726 accepted
+14727..14812 accepted
+14888..14934 accepted
+14935..14981 accepted
+14982..15028 accepted
+15029..15055 accepted
+15056..15082 accepted
+15083..15109 accepted
+15110..15195 accepted
+15196..15245 accepted
+15246..15331 accepted
+15333..15385 accepted
+15386..15423 accepted
+15424..15453 accepted
+15454..15482 accepted
+15483..15520 accepted
+15521..15600 accepted
+15601..15680 accepted
+15681..15757 accepted
+15837..15922 accepted
+15923..15969 accepted
+15970..16016 accepted
+16017..16063 accepted
+16064..16089 accepted
+16090..16175 accepted
+16176..16225 accepted
+16226..16311 accepted
+16313..16378 accepted
+16379..16406 accepted
+16407..16479 accepted
+16480..16554 accepted
+16555..16601 accepted
+16603..16638 accepted
+16640..16669 accepted
+16723..16782 accepted
+16783..16820 accepted
+16821..16856 accepted
+16857..16891 accepted
+16892..16929 accepted
+16930..17009 accepted
+17010..17089 accepted
+17090..17166 accepted
+17167..17418 accepted
+17419..17438 accepted
+17486..17539 accepted
+17540..17577 accepted
+17578..17615 accepted
+17616..17661 accepted
+17662..17691 accepted
+17692..17733 accepted
+17734..17815 accepted
+17816..17897 accepted
+17898..17976 accepted
+17977..18017 accepted
+18018..18096 accepted
+18097..18353 accepted
+18354..18373 accepted
+18419..18472 accepted
+18473..18510 accepted
+18511..18548 accepted
+18549..18578 accepted
+18579..18660 accepted
+18661..18742 accepted
+18743..18821 accepted
+18822..18867 accepted
+18868..18946 accepted
+19008..19264 accepted
+19265..19290 accepted
+19291..19341 accepted
+19357..19415 rejected 42P17
+19416..19435 accepted
+19503..19582 accepted
+19583..19650 accepted
+19651..19706 accepted
+19707..19781 accepted
+19782..19858 accepted
+19859..19909 accepted
+19910..19957 accepted
+19958..20003 accepted
+20057..20122 accepted
+20123..20185 accepted
+20186..20249 accepted
+20250..20313 accepted
+20314..20373 rejected 42P17
+20382..20440 accepted
+20441..20500 rejected 42P17
+20509..20568 rejected 42P17
+20577..20635 accepted
+20642..20898 accepted
+20899..20918 accepted
+20976..21043 accepted
+21044..21081 accepted
+21082..21123 accepted
+21124..21169 accepted
+21170..21244 accepted
+21245..21290 accepted
+21291..21320 accepted
+21321..21353 accepted
+21354..21429 accepted
+21430..21633 accepted
+21634..21653 accepted
+21721..21800 accepted
+21801..21858 accepted
+21859..21916 accepted
+21917..21972 accepted
+21973..22029 accepted
+22030..22086 accepted
+22087..22121 accepted
+22122..22195 accepted
+22196..22229 accepted
+22230..22264 accepted
+22265..22338 accepted
+22339..22542 accepted
+22543..22562 accepted
+22637..22716 accepted
+22717..22772 accepted
+22773..22850 accepted
+22851..22943 accepted
+22944..23020 accepted
+23021..23078 accepted
+23079..23123 accepted
+23124..23180 accepted
+23181..23260 accepted
+23261..23304 accepted
+23305..23508 accepted
+23509..23528 accepted
+23589..23662 accepted
+23663..23703 accepted
+23704..23744 accepted
+23745..23785 accepted
+23786..23822 accepted
+23823..23889 accepted
+23890..23925 accepted
+23926..24002 accepted
+24005..24168 accepted
+24169..24188 accepted
+24252..24353 accepted
+24354..24393 accepted
+24394..24433 accepted
+24434..24473 accepted
+24474..24511 accepted
+24512..24548 accepted
+24549..24584 accepted
+24585..24661 accepted
+24664..24827 accepted
+24828..24847 accepted
+24960..25031 accepted
+25078..25166 rejected 42P16
+25167..25186 accepted
+25258..25310 accepted
+25311..25401 accepted
+25403..25422 accepted
+25480..25549 rejected 0A000
+25550..25619 rejected 0A000
+25620..25694 rejected 0A000
+25695..25769 rejected 0A000
+25813..25910 accepted
+25911..25930 accepted
+26005..26095 accepted
+26096..26115 accepted
+26149..26264 accepted
+26265..26284 accepted
+26373..26485 accepted
+26486..26505 accepted
+26595..26701 rejected 0A000
+26726..26818 rejected 0A000
+26877..26990 accepted
+26991..27010 accepted
+27077..27203 rejected 0A000
+27253..27392 accepted
+27393..27412 accepted
+27463..27540 rejected 0A000
+27541..27613 rejected 0A000
+27655..27725 accepted
+27726..27766 rejected 0A000
+27799..27842 accepted
+27858..27940 accepted
+27942..27961 accepted
+28009..28071 accepted
+28072..28107 rejected 0A000
+28142..28180 accepted
+28197..28216 accepted
+28294..28365 accepted
+28366..28420 accepted
+28421..28440 accepted
+28474..28548 accepted
+28549..28613 accepted
+28614..28633 accepted
+28722..28793 accepted
+28794..28858 accepted
+28859..28878 accepted
+28968..29042 accepted
+29043..29097 rejected 0A000
+29098..29117 accepted
+29142..29216 accepted
+29217..29273 rejected 0A000
+29274..29293 accepted
+29352..29423 accepted
+29424..29489 accepted
+29490..29509 accepted
+29576..29660 accepted
+29661..29726 rejected 0A000
+29727..29746 accepted
+29796..29883 accepted
+29884..29959 accepted
+29960..29979 accepted
+30051..30133 accepted
+30134..30212 accepted
+30213..30318 accepted
+30319..30393 accepted
+30394..30468 accepted
+30469..30524 accepted
+30525..30608 accepted
+30609..30794 accepted
+30795..30814 accepted
+30954..31030 accepted
+31031..31127 rejected 0A000
+31136..31155 accepted
+31196..31262 accepted
+31263..31352 accepted
+31353..31429 rejected 0A000
+31430..31459 accepted
+31519..31598 accepted
+31599..31695 accepted
+31696..31771 accepted
+31772..31957 accepted
+31958..31977 accepted
+32231..32282 accepted
+32283..32371 accepted
+32372..32460 accepted
+32461..32501 accepted
+32502..32541 accepted
+32542..32932 accepted
+32933..32958 rejected 2BP01
+32974..32999 rejected 2BP01
+33015..33066 rejected 42P16
+33076..33127 rejected 42P16
+33137..33186 accepted
+33194..33584 accepted
+33585..33604 accepted
+33713..33802 accepted
+33803..33840 accepted
+33841..33887 accepted
+33888..33965 rejected 42P16
+33966..33995 accepted
+34066..34142 accepted
+34143..34212 accepted
+34213..34272 accepted
+34273..34351 accepted
+34352..34429 rejected 42P16
+34430..34470 accepted
+34590..34642 accepted
+34643..34680 accepted
+34681..34722 accepted
+34723..34799 accepted
+34800..34845 accepted
+34846..35236 accepted
+35237..35293 accepted
+35294..35684 accepted
+35685..35704 accepted
+35832..35884 accepted
+35885..35922 accepted
+35923..35959 accepted
+35960..36014 accepted
+36015..36060 rejected XX000
+36094..36143 accepted
+36144..36189 accepted
+36207..36264 accepted
+36265..36284 accepted
+36408..36467 accepted
+36468..36514 accepted
+36515..36551 accepted
+36552..36592 accepted
+36593..36669 accepted
+36670..37060 accepted
+37061..37080 accepted
+37142..37201 accepted
+37202..37248 accepted
+37249..37285 accepted
+37286..37362 accepted
+37363..37408 accepted
+37409..37466 rejected 42P17
+37475..37494 accepted
+37540..37620 accepted
+37621..37696 accepted
+37697..37741 accepted
+37742..37811 accepted
+37812..37847 accepted
+37848..37883 accepted
+37884..37968 accepted
+37969..38041 accepted
+38042..38137 rejected 23505
+38138..38181 accepted
+38182..38249 accepted
+38250..38334 rejected 23505
+38335..38379 rejected 23505
+38380..38423 accepted
+38424..38477 accepted
+38478..38497 accepted
+38540..38609 accepted
+38610..38685 accepted
+38686..38712 accepted
+38714..38765 accepted
+38766..38825 accepted
+38826..38850 accepted
+38852..38907 accepted
+38908..38967 accepted
+38968..38994 accepted
+38996..39045 accepted
+39046..39109 accepted
+39110..39133 accepted
+39135..39156 accepted
+39157..39176 accepted
+39221..39273 accepted
+39274..39346 accepted
+39347..39447 accepted
+39448..39524 accepted
+39525..39601 accepted
+39602..39632 accepted
+39633..39667 accepted
+39668..39728 accepted
+39729..39757 accepted
+39758..39845 accepted
+39846..39935 accepted
+39936..40003 accepted
+40004..40054 accepted
+40055..40133 accepted
+40134..40212 accepted
+40213..40292 accepted
+40446..40477 accepted
+40478..40514 accepted
+40515..40574 accepted
+40575..40638 accepted
+40639..40671 accepted
+40672..40702 accepted
+40703..40740 accepted
+40741..40810 accepted
+40811..40877 accepted
+40878..40905 accepted
+40906..40975 accepted
+40976..41026 accepted
+41027..41095 accepted
+41096..41164 accepted
+41165..41234 accepted
+41235..41253 accepted
+41319..41380 accepted
+41381..41431 accepted
+41432..41499 accepted
+41500..41567 accepted
+41568..41605 accepted
+41606..41643 rejected 23505
+41644..41691 accepted
+41692..41723 accepted
+41724..41794 accepted
+41795..41832 accepted
+41833..41870 rejected 23505
+41871..41911 accepted
+41912..41963 accepted
+41964..42003 accepted
+42004..42074 accepted
+42075..42112 accepted
+42113..42150 rejected 23505
+42151..42201 rejected 0A000
+42295..42372 accepted
+42373..42462 accepted
+42463..42542 rejected 42P16
+42558..42632 accepted
+42633..42712 accepted
+42713..42770 accepted
+42771..42845 accepted
+42846..42939 accepted
+42940..43024 rejected 42P16
+43040..43118 accepted
+43119..43203 accepted
+43204..43265 accepted
+43357..43437 accepted
+43438..43551 accepted
+43594..43707 accepted
+43708..43801 accepted
+43802..43844 accepted
+43845..43887 accepted
+43888..43933 accepted
+43934..43982 accepted
+43987..44020 accepted
+44097..44158 accepted
+44159..44213 accepted
+44214..44277 accepted
+44278..44374 accepted
+44375..44472 accepted
+44507..44570 accepted
+44715..44811 accepted
+44812..45094 accepted
+45095..45123 accepted
+45291..45361 accepted
+45362..45481 accepted
+45482..45602 accepted
+45603..45701 accepted
+45702..45801 accepted
+45855..45903 accepted
+45904..45985 rejected 22012
+46088..46150 accepted
+46151..46435 accepted
+46436..46466 accepted
+46530..46536 skipped
+46537..46611 accepted
+46612..46732 accepted
+46733..46831 accepted
+46832..46917 accepted
+46918..47007 accepted
+47086..47176 accepted
+47177..47261 accepted
+47262..47562 accepted
+47654..47723 accepted
+47724..48024 accepted
+48067..48139 accepted
+48140..48230 accepted
+48231..48238 skipped
+48239..48539 accepted
+48540..48570 accepted
+48640..48687 accepted
+48688..48816 accepted
+48817..48877 rejected 42601
+48878..48997 rejected 42601
+48998..49051 rejected 42P01
+49052..49102 rejected 42704
+49103..49209 rejected 42601
+49210..49250 rejected 42P01
+49251..49288 rejected 42704
+49289..49328 accepted
+49329..49366 accepted
+49445..49521 accepted
+49522..49578 accepted
+49579..49678 accepted
+49679..49787 accepted
+49788..49896 accepted
+49964..50037 rejected 42P17
+50102..50169 accepted
+50170..50277 accepted
+50278..50351 accepted

@@ -1,41 +1,41 @@
-3:1 accepted
-9:1 rejected 22P02
-10:1 rejected 22P02
-13:1 accepted
-14:1 accepted
-15:1 accepted
-16:1 accepted
-21:1 accepted
-24:1 accepted
-25:1 accepted
-26:1 accepted
-27:1 accepted
-32:1 accepted
-33:1 rejected 22023
-34:1 accepted
-35:1 accepted
-36:1 accepted
-37:1 accepted
-38:1 accepted
-41:1 accepted
-42:1 accepted
-43:1 accepted
-46:1 accepted
-47:1 rejected 42809
-48:1 accepted
-51:1 accepted
-52:1 rejected 0A000
-53:1 accepted
-57:1 accepted
-58:1 rejected 0A000
-59:1 accepted
-61:1 accepted
-62:1 rejected 22023
-63:1 accepted
-64:1 accepted
-65:1 accepted
-66:1 accepted
-68:1 accepted
-69:1 rejected 0A000
-70:1 accepted
-72:1 accepted
+38..160 accepted
+162..191 rejected 22P02
+202..226 rejected 22P02
+281..320 accepted
+321..369 accepted
+370..412 accepted
+413..464 accepted
+515..544 accepted
+574..610 accepted
+611..641 accepted
+642..672 accepted
+673..690 accepted
+766..828 accepted
+829..880 rejected 22023
+890..921 accepted
+922..960 accepted
+961..1012 accepted
+1019..1054 accepted
+1055..1072 accepted
+1086..1110 accepted
+1111..1158 accepted
+1165..1187 accepted
+1234..1269 accepted
+1270..1317 rejected 42809
+1327..1346 accepted
+1381..1434 accepted
+1435..1483 rejected 0A000
+1493..1513 accepted
+1556..1610 accepted
+1611..1667 rejected 0A000
+1677..1704 accepted
+1753..1815 accepted
+1816..1874 rejected 22023
+1884..1915 accepted
+1916..1974 accepted
+1981..2010 accepted
+2011..2028 accepted
+2072..2131 accepted
+2132..2190 rejected 0A000
+2200..2229 accepted
+2231..2258 accepted
