@@ -7,7 +7,10 @@ mod diagnostics;
 pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
 use pgls_query::protobuf::CreateFunctionStmt;
-use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
+use pgls_query_ext::{
+    function_body::Language,
+    utils::{QualifiedName, find_option_value, qualified_name},
+};
 use regex::Regex;
 use serde::Deserialize;
 pub use sqlx::postgres::PgSeverity;
@@ -73,7 +76,7 @@ fn should_check_function<'a>(
         _ => return None,
     };
 
-    if find_option_value(create_fn, "language") != Some("plpgsql") {
+    if Language::of(create_fn) != Some(Language::PlPgSql) {
         return None;
     }
 
