@@ -77,12 +77,10 @@ fn should_check_function<'a>(
         return None;
     }
 
-    // The snapshot lists every extension the server has available; only an installed one has
-    // `plpgsql_check_function`.
+    // Only an installed extension has `plpgsql_check_function`.
     if !snapshot
-        .extensions
-        .iter()
-        .any(|e| e.name == "plpgsql_check" && e.installed_version.is_some())
+        .extension("plpgsql_check")
+        .is_some_and(pgls_catalog::Extension::is_installed)
     {
         return None;
     }
@@ -397,9 +395,8 @@ mod tests {
             .expect("Unable to load the snapshot");
         assert!(
             snapshot
-                .extensions
-                .iter()
-                .any(|e| e.name == "plpgsql_check" && e.installed_version.is_none()),
+                .extension("plpgsql_check")
+                .is_some_and(|extension| !extension.is_installed()),
             "the test server should have plpgsql_check available"
         );
 
