@@ -1,62 +1,62 @@
-1:1 accepted
-31:1 rejected 42P01
-62:1 rejected 42P01
-68:1 accepted
-101:1 accepted
-106:1 accepted
-292:1 accepted
-373:1 accepted
-374:1 accepted
-376:1 rejected 42P01
-406:1 accepted
-407:1 accepted
-409:1 accepted
-410:1 accepted
-413:1 rejected 42809
-414:1 rejected 42P01
-415:1 accepted
-418:1 rejected 22003
-419:1 accepted
-420:1 accepted
-421:1 accepted
-424:1 accepted
-427:1 accepted
-429:1 accepted
-440:1 accepted
-442:1 accepted
-444:1 accepted
-446:1 accepted
-448:1 rejected 22003
-449:1 rejected 22003
-452:1 accepted
-453:1 accepted
-454:1 accepted
-455:1 accepted
-456:1 accepted
-458:1 accepted
-459:1 accepted
-460:1 accepted
-463:1 accepted
-464:1 accepted
-465:1 accepted
-466:1 accepted
-467:1 accepted
-470:1 accepted
-472:1 accepted
-475:1 accepted
-479:1 accepted
-483:1 accepted
-484:1 accepted
-489:1 accepted
-490:1 accepted
-493:1 accepted
-498:1 accepted
-503:1 accepted
-505:1 accepted
-508:1 accepted
-510:1 accepted
-511:1 accepted
-514:1 accepted
-515:1 accepted
-516:1 accepted
-517:1 accepted
+0..654 accepted
+656..2019 rejected 42P01
+2066..2285 rejected 42P01
+2287..2764 accepted
+2766..2951 accepted
+2953..9971 accepted
+9973..12349 accepted
+12351..12372 accepted
+12373..12397 accepted
+12399..13765 rejected 42P01
+13767..13811 accepted
+13812..13828 accepted
+13873..13921 accepted
+13922..13981 accepted
+14022..14067 rejected 42809
+14091..14141 rejected 42P01
+14169..14213 accepted
+14277..14322 rejected 22003
+14347..14391 accepted
+14392..14436 accepted
+14437..14489 accepted
+14520..14613 accepted
+14614..14708 accepted
+14729..14895 accepted
+14920..14973 accepted
+15005..15058 accepted
+15082..15135 accepted
+15176..15238 accepted
+15270..15324 rejected 22003
+15325..15387 rejected 22003
+15424..15461 accepted
+15462..15514 accepted
+15515..15555 accepted
+15556..15617 accepted
+15618..15660 accepted
+15662..15706 accepted
+15707..15749 accepted
+15750..15772 accepted
+15847..15885 accepted
+15886..15962 accepted
+15963..16047 accepted
+16048..16132 accepted
+16133..16158 accepted
+16227..16283 accepted
+16348..16404 accepted
+16462..16519 accepted
+16622..16782 accepted
+16784..16849 accepted
+16850..16873 accepted
+17088..17150 accepted
+17151..17181 accepted
+17226..17244 accepted
+17410..17573 accepted
+17625..17650 accepted
+17652..17711 accepted
+17713..17752 accepted
+17754..17776 accepted
+17777..17798 accepted
+17868..17921 accepted
+17922..17988 accepted
+17989..18057 accepted
+18058..18087 accepted
