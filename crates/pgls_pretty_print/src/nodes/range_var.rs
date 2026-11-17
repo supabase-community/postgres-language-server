@@ -29,6 +29,13 @@ fn emit_range_var_tokens(e: &mut EventEmitter, n: &RangeVar, only: Only) {
         e.space();
     }
 
+    // `catalog.schema.relation`: Postgres accepts the current database's name as the catalog.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L19372
+    if !n.catalogname.is_empty() {
+        emit_identifier_maybe_quoted(e, &n.catalogname);
+        e.token(TokenKind::DOT);
+    }
+
     if !n.schemaname.is_empty() {
         emit_identifier_maybe_quoted(e, &n.schemaname);
         e.token(TokenKind::DOT);
