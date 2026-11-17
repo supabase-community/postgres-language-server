@@ -512,24 +512,13 @@ impl ServerFactory {
             },
         );
 
-        workspace_method!(builder, is_path_ignored);
-        workspace_method!(builder, update_settings);
-        workspace_method!(builder, update_nested_settings);
-        workspace_method!(builder, get_file_content);
-        workspace_method!(builder, open_file);
-        workspace_method!(builder, change_file);
-        workspace_method!(builder, close_file);
-        workspace_method!(builder, pull_file_diagnostics);
-        workspace_method!(builder, pull_code_actions);
-        workspace_method!(builder, fix_file);
-        workspace_method!(builder, check_database_connection);
-        workspace_method!(builder, get_completions);
-        workspace_method!(builder, pull_inlay_hints);
-        workspace_method!(builder, pull_semantic_tokens);
-        workspace_method!(builder, register_project_folder);
-        workspace_method!(builder, find_project);
-        workspace_method!(builder, unregister_project_folder);
-        workspace_method!(builder, invalidate_schema_cache);
+        // Every method of the workspace is a request `pgls/<name>`, which `WorkspaceClient` sends.
+        macro_rules! register_workspace_methods {
+            ([$builder:ident] $($(#[$attr:meta])* fn $name:ident($params:ty) -> $result:ty;)*) => {
+                $(workspace_method!($builder, $name);)*
+            };
+        }
+        pgls_workspace::for_each_workspace_method!(register_workspace_methods[builder]);
 
         let (service, socket) = builder.finish();
         ServerConnection { socket, service }
