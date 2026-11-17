@@ -5,7 +5,7 @@ use pgls_fs::PgLSPath;
 use pgls_query_ext::function_body::{OffsetMap, Quoting};
 use pgls_text_size::TextSize;
 
-use crate::workspace::{DefaultMapper, Document, DocumentStatement, WithCSTMapper};
+use crate::workspace::{Document, DocumentStatement};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -36,12 +36,12 @@ impl CompletionsResult {
                     Some(text_edit) => {
                         text_edit.range = stmt.document_range(text_edit.range);
                         if let Cow::Owned(escaped) =
-                            escape(&stmt.offsets, &text_edit.text, text_edit.is_snippet)
+                            escape(stmt.offsets(), &text_edit.text, text_edit.is_snippet)
                         {
                             text_edit.text = escaped;
                         }
                     }
-                    None if stmt.offsets.escape(&item.label) != item.label => return None,
+                    None if stmt.offsets().escape(&item.label) != item.label => return None,
                     None => {}
                 }
                 Some(item)
@@ -90,18 +90,18 @@ pub(crate) fn get_statement_for_completions(
     position: TextSize,
 ) -> Option<(DocumentStatement, Arc<tree_sitter::Tree>)> {
     // Only whether the document has no statement, one, or more matters.
-    let count = doc.iter(DefaultMapper).take(2).count();
+    let count = doc.statements().take(2).count();
     // no arms no cookies
     if count == 0 {
         return None;
     }
 
-    let mut eligible_statements = doc.iter_for_completions(WithCSTMapper, position);
+    let mut eligible_statements = doc.statements_near(position);
 
-    if count == 1 {
+    let stmt = if count == 1 {
         eligible_statements.next()
     } else {
-        let mut prev_stmt: Option<(DocumentStatement, Arc<tree_sitter::Tree>)> = None;
+        let mut prev_stmt: Option<DocumentStatement> = None;
 
         for current_stmt in eligible_statements {
             /*
@@ -113,8 +113,8 @@ pub(crate) fn get_statement_for_completions(
              * This is however ok if the current statement is a child of the previous one,
              * such as in CREATE FUNCTION bodies.
              */
-            if prev_stmt.is_some_and(|(prev, _)| {
-                current_stmt.0.range.contains(position) && !current_stmt.0.id.is_child_of(&prev.id)
+            if prev_stmt.as_ref().is_some_and(|prev| {
+                current_stmt.range().contains(position) && !current_stmt.is_embedded_in(prev)
             }) {
                 return None;
             }
@@ -123,7 +123,9 @@ pub(crate) fn get_statement_for_completions(
         }
 
         prev_stmt
-    }
+    }?;
+    let tree = doc.tree(&stmt);
+    Some((stmt, tree))
 }
 
 #[cfg(test)]
@@ -131,7 +133,7 @@ mod tests {
     use pgls_completions::{CompletionItem, CompletionItemKind, CompletionText};
     use pgls_text_size::{TextRange, TextSize};
 
-    use crate::workspace::{DefaultMapper, Document};
+    use crate::workspace::Document;
 
     use super::{CompletionsResult, get_statement_for_completions};
 
@@ -156,7 +158,7 @@ mod tests {
         let (doc, position) = get_doc_and_pos(function);
         let (stmt, _) =
             get_statement_for_completions(&doc, position).expect("a statement at the cursor");
-        assert!(stmt.id.is_child(), "the body of the function");
+        assert!(stmt.is_embedded(), "the body of the function");
         let at = stmt.statement_offset(position);
         let items = texts
             .iter()
@@ -277,7 +279,7 @@ mod tests {
 
         let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.id.content(), "update users set email = 'myemail@com';")
+        assert_eq!(doc.sql(&stmt), "update users set email = 'myemail@com';")
     }
 
     #[test]
@@ -299,7 +301,7 @@ mod tests {
         let (doc, position) = get_doc_and_pos(sql.as_str());
 
         // make sure these are parsed as two
-        assert_eq!(doc.iter(DefaultMapper).count(), 2);
+        assert_eq!(doc.statements().count(), 2);
 
         assert!(get_statement_for_completions(&doc, position).is_none());
     }
@@ -315,7 +317,7 @@ mod tests {
 
         let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.id.content(), "select * from          ;")
+        assert_eq!(doc.sql(&stmt), "select * from          ;")
     }
 
     #[test]
@@ -326,7 +328,7 @@ mod tests {
 
         let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.id.content(), "select * from")
+        assert_eq!(doc.sql(&stmt), "select * from")
     }
 
     #[test]
@@ -349,7 +351,7 @@ mod tests {
 
         let (stmt, _) = get_statement_for_completions(&doc, position).expect("Expected Statement");
 
-        assert_eq!(stmt.id.content().trim(), "select  from cool;")
+        assert_eq!(doc.sql(&stmt).trim(), "select  from cool;")
     }
 
     #[test]
@@ -380,23 +382,25 @@ mod tests {
     /// all statements of the document, at every position.
     #[test]
     fn finds_the_statement_like_a_filter_over_all_statements() {
-        use crate::workspace::{GetCompletionsFilter, WithCSTMapper};
-
         let sql = "select 1;\nselect * from\nselect 2 select 3;\n\ncreate function f() returns int language sql as $$ select 4; select  $$;\ninsert into t values (1)\n\nupdate t set a = 1;select\n";
         let doc = Document::new(sql.into(), 1);
         for position in 0..=sql.len() {
             let position = TextSize::new(position as u32);
-            let mut statements = doc.iter_with_filter(
-                WithCSTMapper,
-                GetCompletionsFilter {
-                    cursor_position: position,
-                },
-            );
-            // The lookup before it filtered all statements.
-            let mut expected: Option<(crate::workspace::DocumentStatement, _)> = None;
+            // The lookup before it filtered all statements: those that contain the position,
+            // or end at most two characters before it without a semicolon.
+            let mut statements = doc.statements().filter(|stmt| {
+                let range = stmt.range();
+                let range = if doc.sql(stmt).ends_with(';') {
+                    range
+                } else {
+                    range.checked_expand_end(2.into()).unwrap_or(range)
+                };
+                range.contains(position)
+            });
+            let mut expected: Option<crate::workspace::DocumentStatement> = None;
             for current in statements.by_ref() {
-                if expected.as_ref().is_some_and(|(previous, _)| {
-                    current.0.range.contains(position) && !current.0.id.is_child_of(&previous.id)
+                if expected.as_ref().is_some_and(|previous| {
+                    current.range().contains(position) && !current.is_embedded_in(previous)
                 }) {
                     expected = None;
                     break;
@@ -405,8 +409,8 @@ mod tests {
             }
             assert_eq!(
                 get_statement_for_completions(&doc, position)
-                    .map(|(stmt, _)| (stmt.id, stmt.range)),
-                expected.map(|(stmt, _)| (stmt.id, stmt.range)),
+                    .map(|(stmt, _)| (stmt.id().clone(), stmt.range())),
+                expected.map(|stmt| (stmt.id().clone(), stmt.range())),
                 "at {position:?}"
             );
         }
