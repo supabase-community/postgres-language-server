@@ -1160,15 +1160,42 @@ mod tests {
     #[test]
     fn language_is_looked_up_as_the_grammar_leaves_it() {
         let cases = [
-            ("create function f() returns int language SQL as 'select 1'", Some(Language::Sql)),
-            ("create function f() returns int language 'sql' as 'select 1'", Some(Language::Sql)),
-            ("create function f() returns int language 'SQL' as 'select 1'", Some(Language::Other)),
-            ("create function f() returns int language \"SQL\" as 'select 1'", Some(Language::Other)),
-            ("create function f() returns int language PLpgSQL as 'begin end'", Some(Language::PlPgSql)),
-            ("create function f() returns int language internal as 'int4in'", Some(Language::Internal)),
-            ("create function f() returns int language c as 'lib', 'f'", Some(Language::Other)),
-            ("create function f() returns int return 1", Some(Language::Sql)),
-            ("create function f() returns int begin atomic select 1; end", Some(Language::Sql)),
+            (
+                "create function f() returns int language SQL as 'select 1'",
+                Some(Language::Sql),
+            ),
+            (
+                "create function f() returns int language 'sql' as 'select 1'",
+                Some(Language::Sql),
+            ),
+            (
+                "create function f() returns int language 'SQL' as 'select 1'",
+                Some(Language::Other),
+            ),
+            (
+                "create function f() returns int language \"SQL\" as 'select 1'",
+                Some(Language::Other),
+            ),
+            (
+                "create function f() returns int language PLpgSQL as 'begin end'",
+                Some(Language::PlPgSql),
+            ),
+            (
+                "create function f() returns int language internal as 'int4in'",
+                Some(Language::Internal),
+            ),
+            (
+                "create function f() returns int language c as 'lib', 'f'",
+                Some(Language::Other),
+            ),
+            (
+                "create function f() returns int return 1",
+                Some(Language::Sql),
+            ),
+            (
+                "create function f() returns int begin atomic select 1; end",
+                Some(Language::Sql),
+            ),
             ("create function f() returns int as 'select 1'", None),
         ];
         for (input, expected) in cases {
@@ -1179,6 +1206,9 @@ mod tests {
     #[test]
     fn a_quoted_upper_case_sql_is_not_a_sql_function() {
         assert!(bodies("create function f() returns int language 'SQL' as 'select 1'").is_empty());
-        assert_eq!(bodies("create function f() returns int language 'sql' as 'select 1'").len(), 1);
+        assert_eq!(
+            bodies("create function f() returns int language 'sql' as 'select 1'").len(),
+            1
+        );
     }
 }
