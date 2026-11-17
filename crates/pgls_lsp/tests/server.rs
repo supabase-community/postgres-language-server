@@ -2,13 +2,11 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use anyhow::bail;
-use futures::FutureExt;
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;
 use futures::StreamExt;
 use futures::channel::mpsc::{Receiver, Sender, channel};
-use futures::future::BoxFuture;
 use pgls_configuration::Merge;
 use pgls_configuration::PartialConfiguration;
 use pgls_configuration::StringSet;
@@ -18,27 +16,20 @@ use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_configuration::{PartialLinterConfiguration, PartialTypecheckConfiguration};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
 use pgls_lsp::Blocking;
-use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
+use pgls_lsp::testing::{Client, Server, ServerNotification};
 use pgls_workspace::DynRef;
 use pgls_workspace::workspace::server::WorkspaceServer;
-use serde::Serialize;
-use serde::de::DeserializeOwned;
 use serde_json::Value;
-use serde_json::{from_value, json, to_value};
+use serde_json::json;
 use sqlx::Executor;
 use sqlx::PgPool;
-use std::any::type_name;
-use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower::timeout::Timeout;
-use tower::{Service, ServiceExt};
-use tower_lsp_server::LspService;
 use tower_lsp_server::jsonrpc;
 use tower_lsp_server::jsonrpc::Response;
 use tower_lsp_server::ls_types as lsp;
@@ -55,476 +46,11 @@ use tower_lsp_server::ls_types::TextDocumentPositionParams;
 use tower_lsp_server::ls_types::WorkDoneProgressParams;
 use tower_lsp_server::ls_types::WorkspaceFolder;
 use tower_lsp_server::ls_types::{
-    ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, FileChangeType, FileEvent, InitializeResult, InitializedParams,
-    PublishDiagnosticsParams, ShowMessageParams, TextDocumentContentChangeEvent,
-    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
+    ClientCapabilities, DidChangeConfigurationParams, DidChangeWatchedFilesParams,
+    DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, FileChangeType, FileEvent,
+    PublishDiagnosticsParams, TextDocumentContentChangeEvent, TextDocumentIdentifier, Uri,
     WorkspaceFoldersChangeEvent,
 };
-use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
-
-/// Statically build an [Uri] instance that points to the file at `$path`
-/// within the workspace. The filesystem path contained in the return URI is
-/// guaranteed to be a valid path for the underlying operating system, but
-/// doesn't have to refer to an existing file on the host machine.
-macro_rules! url {
-    ($path:literal) => {
-        if cfg!(windows) {
-            lsp::Uri::from_str(concat!("file:///z%3A/workspace/", $path)).unwrap()
-        } else {
-            lsp::Uri::from_str(concat!("file:///workspace/", $path)).unwrap()
-        }
-    };
-}
-
-struct Server {
-    service: Timeout<LspService<LSPServer>>,
-}
-
-impl Server {
-    fn new(service: LspService<LSPServer>) -> Self {
-        Self {
-            // The handlers run their work on the blocking thread pool, so the timeout measures
-            // wall time, including diagnostics against the database while the other tests run.
-            service: Timeout::new(service, Duration::from_secs(30)),
-        }
-    }
-
-    async fn notify<P>(&mut self, method: &'static str, params: P) -> Result<()>
-    where
-        P: Serialize,
-    {
-        self.service
-            .ready()
-            .await
-            .map_err(Error::msg)
-            .context("ready() returned an error")?
-            .call(
-                Request::build(method)
-                    .params(to_value(&params).context("failed to serialize params")?)
-                    .finish(),
-            )
-            .await
-            .map_err(Error::msg)
-            .context("call() returned an error")
-            .and_then(|res| match res {
-                Some(res) => {
-                    bail!("shutdown returned {res:?}")
-                }
-                _ => Ok(()),
-            })
-    }
-
-    async fn request<P, R>(
-        &mut self,
-        method: &'static str,
-        id: &'static str,
-        params: P,
-    ) -> Result<Option<R>>
-    where
-        P: Serialize,
-        R: DeserializeOwned,
-    {
-        self.send_request(method, id, params)
-            .await?
-            .await?
-            .map(|res| {
-                let (_, body) = res.into_parts();
-
-                let body =
-                    body.with_context(|| format!("response to {method:?} contained an error"))?;
-
-                from_value(body.clone()).with_context(|| {
-                    format!(
-                        "failed to deserialize type {} from response {body:?}",
-                        type_name::<R>()
-                    )
-                })
-            })
-            .transpose()
-    }
-
-    /// Sends a request and returns its response as a future, so that the client can send other
-    /// messages, like `$/cancelRequest`, before it awaits the response.
-    async fn send_request<P>(
-        &mut self,
-        method: &'static str,
-        id: &'static str,
-        params: P,
-    ) -> Result<BoxFuture<'static, Result<Option<Response>>>>
-    where
-        P: Serialize,
-    {
-        let response = self
-            .service
-            .ready()
-            .await
-            .map_err(Error::msg)
-            .context("ready() returned an error")?
-            .call(
-                Request::build(method)
-                    .id(id)
-                    .params(to_value(&params).context("failed to serialize params")?)
-                    .finish(),
-            );
-        Ok(async move {
-            response
-                .await
-                .map_err(Error::msg)
-                .context("call() returned an error")
-        }
-        .boxed())
-    }
-
-    /// Asks the server to cancel the request `id`.
-    async fn cancel_request(&mut self, id: &'static str) -> Result<()> {
-        self.notify("$/cancelRequest", json!({ "id": id })).await
-    }
-
-    /// Basic implementation of the `initialize` request for tests
-    async fn initialize(&mut self) -> Result<()> {
-        self.initialize_with_root(url!("")).await
-    }
-
-    /// Like [Server::initialize], with the given client capabilities
-    async fn initialize_with_capabilities(
-        &mut self,
-        capabilities: ClientCapabilities,
-    ) -> Result<()> {
-        self.initialize_with_options(Some(url!("")), None, capabilities)
-            .await
-    }
-
-    /// Like [Server::initialize], with the workspace root at `root_uri`
-    async fn initialize_with_root(&mut self, root_uri: Uri) -> Result<()> {
-        self.initialize_with_folders(root_uri, None).await
-    }
-
-    /// Like [Server::initialize], with the workspace root at `root_uri` and the given workspace
-    /// folders
-    async fn initialize_with_folders(
-        &mut self,
-        root_uri: Uri,
-        workspace_folders: Option<Vec<WorkspaceFolder>>,
-    ) -> Result<()> {
-        self.initialize_with_options(
-            Some(root_uri),
-            workspace_folders,
-            ClientCapabilities::default(),
-        )
-        .await
-    }
-
-    /// Like [Server::initialize], with the workspace root at `root_uri`, the given workspace
-    /// folders and the given client capabilities
-    // The `root_path` field is deprecated, but we still need to specify it
-    #[allow(deprecated)]
-    async fn initialize_with_options(
-        &mut self,
-        root_uri: Option<Uri>,
-        workspace_folders: Option<Vec<WorkspaceFolder>>,
-        capabilities: ClientCapabilities,
-    ) -> Result<()> {
-        let _res: InitializeResult = self
-            .request(
-                "initialize",
-                "_init",
-                InitializeParams {
-                    process_id: None,
-                    root_path: None,
-                    root_uri,
-                    initialization_options: None,
-                    capabilities,
-                    trace: None,
-                    workspace_folders,
-                    client_info: None,
-                    locale: None,
-                    work_done_progress_params: Default::default(),
-                },
-            )
-            .await?
-            .context("initialize returned None")?;
-
-        Ok(())
-    }
-
-    /// It creates two workspaces, one at folder `test_one` and the other in `test_two`.
-    ///
-    /// Hence, the two roots will be `/workspace/test_one` and `/workspace/test_two`
-    #[allow(deprecated)]
-    async fn initialize_workspaces(&mut self) -> Result<()> {
-        let _res: InitializeResult = self
-            .request(
-                "initialize",
-                "_init",
-                InitializeParams {
-                    process_id: None,
-                    root_path: None,
-                    root_uri: Some(url!("/")),
-                    initialization_options: None,
-                    capabilities: ClientCapabilities::default(),
-                    trace: None,
-                    workspace_folders: Some(vec![
-                        WorkspaceFolder {
-                            name: "test_one".to_string(),
-                            uri: url!("test_one"),
-                        },
-                        WorkspaceFolder {
-                            name: "test_two".to_string(),
-                            uri: url!("test_two"),
-                        },
-                    ]),
-                    client_info: None,
-                    locale: None,
-                    work_done_progress_params: Default::default(),
-                },
-            )
-            .await?
-            .context("initialize returned None")?;
-
-        Ok(())
-    }
-
-    /// Basic implementation of the `initialized` notification for tests
-    async fn initialized(&mut self) -> Result<()> {
-        self.notify("initialized", InitializedParams {}).await
-    }
-
-    /// Basic implementation of the `shutdown` notification for tests
-    async fn shutdown(&mut self) -> Result<()> {
-        self.service
-            .ready()
-            .await
-            .map_err(Error::msg)
-            .context("ready() returned an error")?
-            .call(Request::build("shutdown").finish())
-            .await
-            .map_err(Error::msg)
-            .context("call() returned an error")
-            .and_then(|res| match res {
-                Some(res) => {
-                    bail!("shutdown returned {res:?}")
-                }
-                _ => Ok(()),
-            })
-    }
-
-    async fn open_document(&mut self, text: impl Display) -> Result<()> {
-        self.notify(
-            "textDocument/didOpen",
-            DidOpenTextDocumentParams {
-                text_document: TextDocumentItem {
-                    uri: url!("document.sql"),
-                    language_id: String::from("sql"),
-                    version: 0,
-                    text: text.to_string(),
-                },
-            },
-        )
-        .await
-    }
-
-    /// Opens a document with given contents and given name. The name must contain the extension too
-    async fn open_named_document(
-        &mut self,
-        text: impl Display,
-        document_name: Uri,
-        language: impl Display,
-    ) -> Result<()> {
-        self.notify(
-            "textDocument/didOpen",
-            DidOpenTextDocumentParams {
-                text_document: TextDocumentItem {
-                    uri: document_name,
-                    language_id: language.to_string(),
-                    version: 0,
-                    text: text.to_string(),
-                },
-            },
-        )
-        .await
-    }
-
-    /// When calling this function, remember to insert the file inside the memory file system
-    async fn load_configuration(&mut self) -> Result<()> {
-        self.notify(
-            "workspace/didChangeConfiguration",
-            DidChangeConfigurationParams {
-                settings: to_value(()).unwrap(),
-            },
-        )
-        .await
-    }
-
-    async fn change_named_document(
-        &mut self,
-        uri: Uri,
-        version: i32,
-        content_changes: Vec<TextDocumentContentChangeEvent>,
-    ) -> Result<()> {
-        self.notify(
-            "textDocument/didChange",
-            DidChangeTextDocumentParams {
-                text_document: VersionedTextDocumentIdentifier { uri, version },
-                content_changes,
-            },
-        )
-        .await
-    }
-
-    async fn change_document(
-        &mut self,
-        version: i32,
-        content_changes: Vec<TextDocumentContentChangeEvent>,
-    ) -> Result<()> {
-        self.change_named_document(url!("document.sql"), version, content_changes)
-            .await
-    }
-
-    #[allow(unused)]
-    async fn close_document(&mut self) -> Result<()> {
-        self.notify(
-            "textDocument/didClose",
-            DidCloseTextDocumentParams {
-                text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
-                },
-            },
-        )
-        .await
-    }
-
-    async fn get_completion(
-        &mut self,
-        params: tower_lsp_server::ls_types::CompletionParams,
-    ) -> Result<Option<CompletionResponse>> {
-        self.request::<tower_lsp_server::ls_types::CompletionParams, CompletionResponse>(
-            "textDocument/completion",
-            "_get_completion",
-            params,
-        )
-        .await
-    }
-
-    /// Basic implementation of the `pgls/shutdown` request for tests
-    async fn pgls_shutdown(&mut self) -> Result<()> {
-        self.request::<_, ()>("pgls/shutdown", "_pgls_shutdown", ())
-            .await?
-            .context("pgls/shutdown returned None")?;
-        Ok(())
-    }
-
-    /// Sets or clears the sticky client configuration overrides
-    async fn set_configuration_overrides(&mut self, params: Value) -> Result<()> {
-        self.request::<_, ()>(
-            "pgls/set_configuration_overrides",
-            "_set_configuration_overrides",
-            params,
-        )
-        .await?
-        .context("pgls/set_configuration_overrides returned None")?;
-        Ok(())
-    }
-
-    /// Tells the server that the configuration file on disk changed, which triggers a configuration
-    /// reload that carries no client configuration at all
-    async fn change_watched_configuration_file(&mut self) -> Result<()> {
-        self.notify(
-            "workspace/didChangeWatchedFiles",
-            DidChangeWatchedFilesParams {
-                changes: vec![FileEvent {
-                    uri: url!("postgres-language-server.jsonc"),
-                    typ: FileChangeType::CHANGED,
-                }],
-            },
-        )
-        .await
-    }
-
-    /// Replaces the whole content of `document.sql`, which schedules a fresh diagnostics run
-    async fn replace_document(&mut self, version: i32, text: impl Display) -> Result<()> {
-        self.change_document(
-            version,
-            vec![TextDocumentContentChangeEvent {
-                range: None,
-                range_length: None,
-                text: text.to_string(),
-            }],
-        )
-        .await
-    }
-}
-
-/// Number of notifications buffered by the server-to-client channel before it starts blocking the current task
-const CHANNEL_BUFFER_SIZE: usize = 8;
-
-#[derive(Debug, PartialEq, Eq)]
-enum ServerNotification {
-    PublishDiagnostics(PublishDiagnosticsParams),
-    ShowMessage(ShowMessageParams),
-    /// A `workspace/*/refresh` request, by its method.
-    Refresh(String),
-}
-
-/// Basic handler for requests and notifications coming from the server for tests
-async fn client_handler<I, O>(
-    mut stream: I,
-    mut sink: O,
-    mut notify: Sender<ServerNotification>,
-) -> Result<()>
-where
-    // This function has to be generic as `RequestStream` and `ResponseSink`
-    // are not exported from `tower_lsp_server` and cannot be named in the signature
-    I: Stream<Item = Request> + Unpin,
-    O: Sink<Response> + Unpin,
-{
-    while let Some(req) = stream.next().await {
-        if req.method() == "textDocument/publishDiagnostics" {
-            let params = req.params().expect("invalid request");
-            let diagnostics = from_value(params.clone()).expect("invalid params");
-            let notification = ServerNotification::PublishDiagnostics(diagnostics);
-            match notify.send(notification).await {
-                Ok(_) => continue,
-                Err(_) => break,
-            }
-        }
-
-        if req.method() == "window/showMessage" {
-            let params = req.params().expect("invalid request");
-            let message = from_value(params.clone()).expect("invalid params");
-            match notify.send(ServerNotification::ShowMessage(message)).await {
-                Ok(_) => continue,
-                Err(_) => break,
-            }
-        }
-
-        let id = match req.id() {
-            Some(id) => id,
-            None => continue,
-        };
-
-        if matches!(
-            req.method(),
-            "workspace/inlayHint/refresh" | "workspace/semanticTokens/refresh"
-        ) {
-            sink.send(Response::from_ok(id.clone(), Value::Null))
-                .await
-                .ok();
-            let notification = ServerNotification::Refresh(req.method().to_string());
-            match notify.send(notification).await {
-                Ok(_) => continue,
-                Err(_) => break,
-            }
-        }
-
-        let res = Response::from_error(id.clone(), jsonrpc::Error::method_not_found());
-
-        sink.send(res).await.ok();
-    }
-
-    Ok(())
-}
 
 #[tokio::test]
 async fn basic_lifecycle() -> Result<()> {
@@ -533,8 +59,8 @@ async fn basic_lifecycle() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -611,7 +137,7 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -625,8 +151,8 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -682,7 +208,7 @@ async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -694,8 +220,8 @@ async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -771,7 +297,7 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -797,8 +323,8 @@ async fn client_configuration_overrides_are_sticky_and_clearable(test_db: PgPool
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -887,8 +413,8 @@ async fn server_shutdown() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -938,7 +464,7 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -952,8 +478,8 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -991,7 +517,7 @@ async fn test_completions(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -1029,7 +555,7 @@ async fn server_with_database(
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1043,8 +569,8 @@ async fn server_with_database(
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1063,7 +589,7 @@ async fn hover_text(server: &mut Server, position: Position) -> Result<String> {
             lsp::HoverParams {
                 text_document_position_params: TextDocumentPositionParams {
                     text_document: TextDocumentIdentifier {
-                        uri: url!("document.sql"),
+                        uri: Server::uri("document.sql"),
                     },
                     position,
                 },
@@ -1148,7 +674,7 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1162,8 +688,8 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1181,7 +707,7 @@ async fn test_inlay_hints(test_db: PgPool) -> Result<()> {
             lsp::InlayHintParams {
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 range: Range {
                     start: Position::new(0, 0),
@@ -1228,7 +754,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1242,8 +768,8 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1262,7 +788,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 partial_result_params: lsp::PartialResultParams::default(),
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
             },
         )
@@ -1301,7 +827,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 partial_result_params: lsp::PartialResultParams::default(),
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 range: Range {
                     start: Position::new(0, 0),
@@ -1362,7 +888,7 @@ async fn cancelled_requests_answer_request_cancelled(test_db: PgPool) -> Result<
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1376,8 +902,8 @@ async fn cancelled_requests_answer_request_cancelled(test_db: PgPool) -> Result<
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1393,7 +919,7 @@ async fn cancelled_requests_answer_request_cancelled(test_db: PgPool) -> Result<
         work_done_progress_params: WorkDoneProgressParams::default(),
         partial_result_params: lsp::PartialResultParams::default(),
         text_document: TextDocumentIdentifier {
-            uri: url!("document.sql"),
+            uri: Server::uri("document.sql"),
         },
     };
 
@@ -1488,7 +1014,7 @@ async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Resul
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1502,8 +1028,8 @@ async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Resul
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1518,7 +1044,7 @@ async fn test_completions_is_incomplete_when_truncated(test_db: PgPool) -> Resul
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -1564,7 +1090,7 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1578,8 +1104,8 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1594,7 +1120,7 @@ async fn test_completions_is_complete_when_no_db_configured() -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -1657,7 +1183,7 @@ async fn test_issue_271(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1671,8 +1197,8 @@ async fn test_issue_271(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1811,7 +1337,7 @@ async fn test_issue_271(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 position: Position {
                     line: 13,
@@ -1836,7 +1362,7 @@ async fn invalid_connection_string_warns_instead_of_crashing() -> Result<()> {
     let factory = ServerFactory::default();
     let mut fs = MemoryFileSystem::default();
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1850,8 +1376,8 @@ async fn invalid_connection_string_warns_instead_of_crashing() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -1937,7 +1463,7 @@ fn statement_execution_server(test_db: &PgPool) -> Server {
     });
 
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -1951,8 +1477,8 @@ fn statement_execution_server(test_db: &PgPool) -> Server {
     let (stream, sink) = client.split();
     let server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    tokio::spawn(Client::run(stream, sink, sender));
 
     server
 }
@@ -2063,7 +1589,7 @@ async fn test_execute_statement(test_db: PgPool) -> Result<()> {
         );
     "#;
 
-    let doc_url = url!("test.sql");
+    let doc_url = Server::uri("test.sql");
 
     server
         .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
@@ -2103,7 +1629,7 @@ async fn execute_statement_returns_the_postgres_error_at_its_position(
     server.initialized().await?;
     server.load_configuration().await?;
 
-    let doc_url = url!("test.sql");
+    let doc_url = Server::uri("test.sql");
     server
         .open_named_document(
             "select 1;\nselect 'ä' as a, missing_column from pg_class;\n",
@@ -2165,7 +1691,7 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     });
 
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2179,8 +1705,8 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -2208,7 +1734,7 @@ async fn test_lint_fix_code_actions(test_db: PgPool) -> Result<()> {
     );
 
     let doc_content = "reindex index my_index;";
-    let doc_url = url!("test.sql");
+    let doc_url = Server::uri("test.sql");
     server
         .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
         .await?;
@@ -2339,7 +1865,7 @@ async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     });
 
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2353,8 +1879,8 @@ async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -2362,7 +1888,7 @@ async fn test_expand_star_code_action(test_db: PgPool) -> Result<()> {
     server.load_configuration().await?;
 
     let doc_content = "select * from star_users;";
-    let doc_url = url!("test.sql");
+    let doc_url = Server::uri("test.sql");
     server
         .open_named_document(doc_content.to_string(), doc_url.clone(), "sql")
         .await?;
@@ -2428,7 +1954,7 @@ async fn cancel_request_cancels_the_executed_statement(test_db: PgPool) -> Resul
     server.initialized().await?;
     server.load_configuration().await?;
 
-    let doc_url = url!("test.sql");
+    let doc_url = Server::uri("test.sql");
     server
         .open_named_document("select pg_sleep(30);", doc_url.clone(), "sql")
         .await?;
@@ -2446,12 +1972,9 @@ async fn cancel_request_cancels_the_executed_statement(test_db: PgPool) -> Resul
     // The executed statement runs on a blocking thread, so the server handles the cancel
     // request while it waits for the database.
     let execution = tokio::spawn(
-        server.service.ready().await.map_err(Error::msg)?.call(
-            Request::build("workspace/executeCommand")
-                .id("exec")
-                .params(to_value(params)?)
-                .finish(),
-        ),
+        server
+            .send_request("workspace/executeCommand", "exec", params)
+            .await?,
     );
     tokio::time::timeout(Duration::from_secs(5), async {
         while sleeping().await == 0 {
@@ -2470,7 +1993,7 @@ async fn cancel_request_cancels_the_executed_statement(test_db: PgPool) -> Resul
         )
         .await?;
 
-    let response = execution.await?.map_err(Error::msg)?.unwrap();
+    let response = execution.await??.unwrap();
     assert_eq!(
         response.error().map(|error| error.code),
         Some(tower_lsp_server::jsonrpc::ErrorCode::RequestCancelled)
@@ -2525,7 +2048,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     });
 
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2539,8 +2062,8 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -2559,7 +2082,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -2613,7 +2136,7 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -2681,7 +2204,7 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2695,8 +2218,8 @@ async fn test_issue_281(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -2767,7 +2290,7 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2781,8 +2304,8 @@ async fn test_issue_303(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -2902,7 +2425,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("test_one/postgres-language-server.jsonc")
+        Server::uri("test_one/postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2919,7 +2442,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("test_two/postgres-language-server.jsonc")
+        Server::uri("test_two/postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -2933,8 +2456,8 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize_workspaces().await?;
     server.initialized().await?;
@@ -2946,14 +2469,14 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     server
         .open_named_document(
             "select  from public.users;\n",
-            url!("test_one/document.sql"),
+            Server::uri("test_one/document.sql"),
             "sql",
         )
         .await?;
 
     server
         .change_named_document(
-            url!("test_one/document.sql"),
+            Server::uri("test_one/document.sql"),
             3,
             vec![TextDocumentContentChangeEvent {
                 range: Some(Range {
@@ -2979,7 +2502,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("test_one/document.sql"),
+                    uri: Server::uri("test_one/document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -2993,14 +2516,14 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
     server
         .open_named_document(
             "select  from public.users;\n",
-            url!("test_two/document.sql"),
+            Server::uri("test_two/document.sql"),
             "sql",
         )
         .await?;
 
     server
         .change_named_document(
-            url!("test_two/document.sql"),
+            Server::uri("test_two/document.sql"),
             3,
             vec![TextDocumentContentChangeEvent {
                 range: Some(Range {
@@ -3026,7 +2549,7 @@ async fn multiple_projects(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("test_two/document.sql"),
+                    uri: Server::uri("test_two/document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -3073,7 +2596,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     // shared config with default db connection
     let conf_with_db = PartialConfiguration::init();
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -3104,7 +2627,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     });
 
     fs.insert(
-        url!("test_one/postgres-language-server.jsonc")
+        Server::uri("test_one/postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -3118,7 +2641,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("test_two/postgres-language-server.jsonc")
+        Server::uri("test_two/postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -3132,8 +2655,8 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize_workspaces().await?;
     server.initialized().await?;
@@ -3143,14 +2666,14 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     server
         .open_named_document(
             "select  from public.extends_config_test;\n",
-            url!("test_one/document.sql"),
+            Server::uri("test_one/document.sql"),
             "sql",
         )
         .await?;
 
     server
         .change_named_document(
-            url!("test_one/document.sql"),
+            Server::uri("test_one/document.sql"),
             3,
             vec![TextDocumentContentChangeEvent {
                 range: Some(Range {
@@ -3176,7 +2699,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("test_one/document.sql"),
+                    uri: Server::uri("test_one/document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -3190,14 +2713,14 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
     server
         .open_named_document(
             "select  from public.users;\n",
-            url!("test_two/document.sql"),
+            Server::uri("test_two/document.sql"),
             "sql",
         )
         .await?;
 
     server
         .change_named_document(
-            url!("test_two/document.sql"),
+            Server::uri("test_two/document.sql"),
             3,
             vec![TextDocumentContentChangeEvent {
                 range: Some(Range {
@@ -3223,7 +2746,7 @@ async fn extends_config(test_db: PgPool) -> Result<()> {
             context: None,
             text_document_position: TextDocumentPositionParams {
                 text_document: TextDocumentIdentifier {
-                    uri: url!("test_two/document.sql"),
+                    uri: Server::uri("test_two/document.sql"),
                 },
                 position: Position {
                     line: 0,
@@ -3310,7 +2833,7 @@ async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -3324,8 +2847,8 @@ async fn test_multiple_content_changes_single_request(test_db: PgPool) -> Result
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -3438,7 +2961,7 @@ async fn test_plpgsql(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -3452,8 +2975,8 @@ async fn test_plpgsql(test_db: PgPool) -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -3523,8 +3046,8 @@ async fn test_crash_on_delete_character() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -4038,7 +3561,7 @@ async fn inlay_hint_count(server: &mut Server) -> Result<usize> {
             lsp::InlayHintParams {
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
                 range: Range {
                     start: Position::new(0, 0),
@@ -4060,7 +3583,7 @@ async fn semantic_token_count(server: &mut Server) -> Result<usize> {
                 work_done_progress_params: WorkDoneProgressParams::default(),
                 partial_result_params: lsp::PartialResultParams::default(),
                 text_document: TextDocumentIdentifier {
-                    uri: url!("document.sql"),
+                    uri: Server::uri("document.sql"),
                 },
             },
         )
@@ -4101,7 +3624,7 @@ async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -4113,8 +3636,8 @@ async fn test_editor_features_refresh_and_settings(test_db: PgPool) -> Result<()
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_capabilities(ClientCapabilities {
@@ -4304,7 +3827,7 @@ async fn test_editor_features_refresh_when_the_database_becomes_reachable(
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -4316,8 +3839,8 @@ async fn test_editor_features_refresh_when_the_database_becomes_reachable(
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_capabilities(ClientCapabilities {
@@ -4405,13 +3928,13 @@ async fn closing_a_document_of_another_scheme_keeps_the_file() -> Result<()> {
     let (service, client) = factory.create(None).into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
 
-    let file = url!("a.sql");
+    let file = Server::uri("a.sql");
     let git = if cfg!(windows) {
         Uri::from_str("git:/z%3A/workspace/a.sql?%7B%22ref%22%3A%22HEAD%22%7D").unwrap()
     } else {
@@ -4462,8 +3985,8 @@ async fn execute_statement_without_arguments_is_invalid() -> Result<()> {
     let (service, client) = factory.create(None).into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -4522,7 +4045,7 @@ async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> 
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -4534,8 +4057,8 @@ async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> 
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server.initialize().await?;
     server.initialized().await?;
@@ -4558,7 +4081,7 @@ async fn test_inlay_hints_utf16_and_out_of_range(test_db: PgPool) -> Result<()> 
                 lsp::InlayHintParams {
                     work_done_progress_params: WorkDoneProgressParams::default(),
                     text_document: TextDocumentIdentifier {
-                        uri: url!("document.sql"),
+                        uri: Server::uri("document.sql"),
                     },
                     range: Range {
                         start: Position::new(0, 0),
@@ -4610,7 +4133,7 @@ async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
         ..Default::default()
     });
     fs.insert(
-        url!("postgres-language-server.jsonc")
+        Server::uri("postgres-language-server.jsonc")
             .to_file_path()
             .unwrap()
             .into_owned(),
@@ -4622,8 +4145,8 @@ async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, _) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, _) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     // The client supports versioned edits.
     server
@@ -4642,7 +4165,7 @@ async fn test_fix_all_code_action(test_db: PgPool) -> Result<()> {
     server.load_configuration().await?;
 
     // The section runs outside a transaction, so adding `CONCURRENTLY` is a safe fix.
-    let doc_url = url!("test.sql");
+    let doc_url = Server::uri("test.sql");
     server
         .open_named_document(
             "-- migrate:up transaction:false\nreindex index my_index;\n",
@@ -4810,8 +4333,8 @@ async fn nested_configuration_files_apply_to_their_directories() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
@@ -4942,8 +4465,8 @@ async fn workspace_folders_can_be_added_and_removed() -> Result<()> {
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
 
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_folders(folder("one").uri, Some(vec![folder("one")]))
@@ -5013,8 +4536,8 @@ async fn configuration_changes_are_coalesced() -> Result<()> {
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
@@ -5103,8 +4626,8 @@ async fn files_never_get_the_settings_of_another_workspace_folder() -> Result<()
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_folders(folder("one").uri, Some(vec![folder("one"), folder("two")]))
@@ -5230,7 +4753,7 @@ async fn the_configuration_files_of_every_workspace_folder_are_watched() -> Resu
             .into_inner();
         let (stream, sink) = client.split();
         let mut server = Server::new(service);
-        let (sender, mut registrations) = channel(CHANNEL_BUFFER_SIZE);
+        let (sender, mut registrations) = channel(Client::CHANNEL_BUFFER_SIZE);
         let reader = tokio::spawn(registration_capturing_client_handler(stream, sink, sender));
 
         let capabilities = ClientCapabilities {
@@ -5319,8 +4842,8 @@ async fn a_change_of_an_extended_file_reloads_the_configuration() -> Result<()> 
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_root(Uri::from_file_path(&workspace).unwrap())
@@ -5366,7 +4889,7 @@ async fn the_user_configuration_and_extended_files_are_watched() -> Result<()> {
     };
     let mut fs = MemoryFileSystem::default();
     fs.set_user_config_directories(vec![user_config_directory.clone()]);
-    let workspace = url!("").to_file_path().unwrap().into_owned();
+    let workspace = Server::uri("").to_file_path().unwrap().into_owned();
     fs.insert(
         workspace.join(ConfigName::pgls_jsonc()),
         r#"{ "extends": ["../shared/base.jsonc"] }"#.to_string(),
@@ -5384,7 +4907,7 @@ async fn the_user_configuration_and_extended_files_are_watched() -> Result<()> {
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut registrations) = channel(CHANNEL_BUFFER_SIZE);
+    let (sender, mut registrations) = channel(Client::CHANNEL_BUFFER_SIZE);
     let reader = tokio::spawn(registration_capturing_client_handler(stream, sink, sender));
 
     server.initialize().await?;
@@ -5428,8 +4951,8 @@ async fn relative_paths_of_the_root_configuration_are_relative_to_its_folder() -
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
@@ -5487,8 +5010,8 @@ async fn a_section_removed_from_the_configuration_goes_back_to_its_defaults() ->
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_root(Uri::from_file_path(root.path()).unwrap())
@@ -5557,8 +5080,8 @@ async fn files_opened_by_their_real_path_belong_to_a_symlinked_folder() -> Resul
         .into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
-    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
-    let reader = tokio::spawn(client_handler(stream, sink, sender));
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
 
     server
         .initialize_with_folders(folder.uri.clone(), Some(vec![folder]))
