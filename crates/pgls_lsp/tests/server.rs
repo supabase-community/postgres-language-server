@@ -55,10 +55,10 @@ use tower_lsp_server::ls_types::WorkspaceFolder;
 use tower_lsp_server::ls_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
     DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, FileChangeType, FileEvent,
-    InitializeResult, InitializedParams, PublishDiagnosticsParams, ShowMessageParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
-    VersionedTextDocumentIdentifier, WorkspaceFoldersChangeEvent,
+    DidOpenTextDocumentParams, FileChangeType, FileEvent, InitializeResult, InitializedParams,
+    PublishDiagnosticsParams, ShowMessageParams, TextDocumentContentChangeEvent,
+    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
+    WorkspaceFoldersChangeEvent,
 };
 use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
 
@@ -380,10 +380,13 @@ impl Server {
             .await
     }
 
+    /// Only `database_checks_run_on_open_and_save` saves, and it needs plpgsql_check, which the
+    /// Windows test database doesn't have.
+    #[cfg(not(target_os = "windows"))]
     async fn save_document(&mut self) -> Result<()> {
         self.notify(
             "textDocument/didSave",
-            DidSaveTextDocumentParams {
+            lsp::DidSaveTextDocumentParams {
                 text_document: TextDocumentIdentifier {
                     uri: url!("document.sql"),
                 },
