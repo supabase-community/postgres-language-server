@@ -2,7 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_resolve::{LookupKind, OperatorConstruct, SearchPathLookup};
+use pgls_resolve::LookupKind;
 
 declare_lint_rule! {
     /// Operators should be schema-qualified.
@@ -56,17 +56,12 @@ impl LinterRule for RequireOperatorSchema {
     const READS_LOOKUPS: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut lookups: Vec<(&SearchPathLookup, Option<OperatorConstruct>)> = ctx
-            .lookups()
+        ctx.lookups()
             .iter()
             .filter_map(|lookup| match lookup.kind {
                 LookupKind::Operator(construct) => Some((lookup, construct)),
                 _ => None,
             })
-            .collect();
-        lookups.sort_by_key(|(lookup, _)| lookup.location);
-        lookups
-            .into_iter()
             .map(|(lookup, construct)| {
                 let operator = &lookup.name;
                 let diagnostic = match construct {

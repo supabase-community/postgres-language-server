@@ -2,6 +2,7 @@
 //! `queries/`.
 
 mod casts;
+mod code;
 mod columns;
 mod extensions;
 mod functions;
@@ -18,9 +19,10 @@ mod types;
 mod versions;
 
 pub use casts::PostgresCast;
+pub use code::{CatalogCode, Code};
 pub use columns::*;
 pub use extensions::Extension;
-pub use functions::{Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
+pub use functions::{ArgumentMode, Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
 pub use indexes::Index;
 pub use operators::PostgresOperator;
 pub use policies::{Policy, PolicyCommand};
@@ -102,7 +104,7 @@ impl Snapshot {
         let version = versions
             .into_iter()
             .next()
-            .expect("Expected at least one version row");
+            .ok_or(sqlx::Error::RowNotFound)?;
 
         Ok(Snapshot {
             schemas,

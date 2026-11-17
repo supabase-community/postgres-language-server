@@ -314,37 +314,6 @@ pub enum TypeKind {
     Multirange,
 }
 
-impl TypeKind {
-    /// The kind for a `pg_type.typtype` code ([`TYPTYPE_BASE`] and the ones after it).
-    ///
-    /// [`TYPTYPE_BASE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/catalog/pg_type.h#L276
-    pub fn from_typtype(typtype: char) -> Option<Self> {
-        Some(match typtype {
-            'b' => Self::Base,
-            'c' => Self::Composite,
-            'd' => Self::Domain,
-            'e' => Self::Enum,
-            'p' => Self::Pseudo,
-            'r' => Self::Range,
-            'm' => Self::Multirange,
-            _ => return None,
-        })
-    }
-
-    /// The `pg_type.typtype` code of the kind.
-    pub fn typtype(self) -> char {
-        match self {
-            Self::Base => 'b',
-            Self::Composite => 'c',
-            Self::Domain => 'd',
-            Self::Enum => 'e',
-            Self::Pseudo => 'p',
-            Self::Range => 'r',
-            Self::Multirange => 'm',
-        }
-    }
-}
-
 /// Operator arity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperatorKind {
@@ -361,6 +330,27 @@ pub enum FunctionArgumentMode {
     /// An output argument (`OUT`, or `TABLE` of a function). `CALL` passes an argument for it
     /// too.
     Out,
+}
+
+impl FunctionArgumentMode {
+    /// Whether a function call passes an argument for it.
+    pub fn is_input(self) -> bool {
+        matches!(self, Self::In | Self::InOut | Self::Variadic)
+    }
+
+    /// Whether the function returns it.
+    pub fn is_output(self) -> bool {
+        matches!(self, Self::InOut | Self::Out)
+    }
+
+    /// Whether a call of a function, or of a procedure, passes an argument for it. `CALL`
+    /// passes the output arguments of procedures too ([`FuncnameGetCandidates`] with
+    /// `include_out_arguments`).
+    ///
+    /// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1272
+    pub fn is_call_argument(self, procedure: bool) -> bool {
+        self.is_input() || (procedure && self == Self::Out)
+    }
 }
 
 /// An argument of a function's call signature: its input arguments, and for procedures also its
@@ -407,14 +397,7 @@ impl FunctionSignature {
     pub(crate) fn input_types(&self) -> Option<Vec<&TypeId>> {
         self.arguments
             .iter()
-            .filter(|arg| {
-                matches!(
-                    arg.mode,
-                    FunctionArgumentMode::In
-                        | FunctionArgumentMode::InOut
-                        | FunctionArgumentMode::Variadic
-                )
-            })
+            .filter(|arg| arg.mode.is_input())
             .map(|arg| arg.ty.as_ref())
             .collect()
     }

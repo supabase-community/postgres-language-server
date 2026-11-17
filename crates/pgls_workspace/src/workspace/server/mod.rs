@@ -527,7 +527,7 @@ impl WorkspaceServer {
                                                     search_path: &statement.search_path,
                                                     identifiers: Vec::new(),
                                                     duplicate_assignments_reported: statement
-                                                        .has_duplicate_assignments,
+                                                        .reported_database_error,
                                                 })
                                                 .await?;
 

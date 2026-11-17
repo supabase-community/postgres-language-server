@@ -6,7 +6,7 @@ use crate::{
     session::Session,
 };
 use anyhow::{Result, anyhow};
-use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyse::Applicability;
 use pgls_line_index::{LineIndex, changed_range};
 use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
@@ -17,7 +17,7 @@ use tower_lsp_server::ls_types::{
 use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
-    FixFileParams,
+    FixFileParams, SUPPRESSION_ACTION_CATEGORY,
 };
 use pgls_workspace::workspace::{
     GetFileContentParams, InvalidateSchemaCacheParams, SchemaCacheScope,
