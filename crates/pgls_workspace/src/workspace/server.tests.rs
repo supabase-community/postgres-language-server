@@ -7138,3 +7138,148 @@ async fn test_cancelled_formatting_stops() {
     assert!(result.statements.is_empty());
     assert_eq!(format().formatted, "select 1;\n".repeat(200));
 }
+
+/// A settings update that arrives while a diagnostics pull waits on the database doesn't hold up
+/// the requests after it. The pull used to keep the settings locked while it checked, and the
+/// lock is task-fair: the waiting update blocked every request that reads the settings, edits
+/// included, until the database answered.
+#[pgls_test_utils::db_test]
+async fn test_settings_update_during_database_checks_does_not_block_requests(test_db: PgPool) {
+    test_db
+        .execute("create table public.locked (id int);")
+        .await
+        .expect("Unable to set up the database");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let workspace = Arc::new(workspace);
+    let path = PgLSPath::new("test.sql");
+    let content = "select id from public.locked;";
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let pull = {
+        let workspace = Arc::clone(&workspace);
+        let path = path.clone();
+        move || {
+            workspace.pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks: DatabaseChecks::Run,
+            })
+        }
+    };
+    // Loads the snapshot, so that the next pull only waits for the typecheck of the statement.
+    let slow_pull = pull.clone();
+    pull().expect("Unable to pull diagnostics");
+
+    // The typecheck of the statement waits for this lock.
+    let mut lock = test_db.begin().await.expect("Unable to begin");
+    lock.execute("lock table public.locked in access exclusive mode;")
+        .await
+        .expect("Unable to lock the table");
+    let slow_pull = tokio::task::spawn_blocking(slow_pull);
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            let waiting: bool = sqlx::query_scalar(
+                "select exists (select 1 from pg_locks where relation = 'public.locked'::regclass and not granted)",
+            )
+            .fetch_one(&test_db)
+            .await
+            .expect("Unable to read the locks");
+            if waiting {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("the pull didn't wait for the lock");
+
+    let update = tokio::task::spawn_blocking({
+        let workspace = Arc::clone(&workspace);
+        move || {
+            workspace.update_settings(UpdateSettingsParams {
+                project_key,
+                configuration: PartialConfiguration {
+                    plpgsql_check: Some(PartialPlPgSqlCheckConfiguration {
+                        enabled: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                gitignore_matches: vec![],
+                vcs_base_path: None,
+                workspace_directory: None,
+                replace: false,
+            })
+        }
+    });
+    // Long enough for the update to wait for the settings, if the pull still held them.
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    let requests = tokio::task::spawn_blocking({
+        let workspace = Arc::clone(&workspace);
+        let path = path.clone();
+        move || {
+            workspace
+                .change_file(crate::workspace::ChangeFileParams {
+                    project_key,
+                    path: path.clone(),
+                    version: 2,
+                    content: format!("{content}\n"),
+                })
+                .expect("Unable to change the file");
+            workspace
+                .on_hover(OnHoverParams {
+                    project_key,
+                    path,
+                    position: TextSize::from(7),
+                })
+                .expect("Unable to hover");
+        }
+    });
+    let answered = tokio::time::timeout(Duration::from_secs(5), requests).await;
+    let still_waiting = !slow_pull.is_finished();
+
+    // Let the pull finish in any case.
+    lock.rollback().await.expect("Unable to release the lock");
+    slow_pull
+        .await
+        .expect("The pull panicked")
+        .expect("Unable to pull diagnostics");
+    update
+        .await
+        .expect("The update panicked")
+        .expect("Unable to update the settings");
+
+    assert!(
+        answered.is_ok(),
+        "the change and the hover waited for the database checks"
+    );
+    assert!(
+        still_waiting,
+        "the pull should still have waited for the lock"
+    );
+}
