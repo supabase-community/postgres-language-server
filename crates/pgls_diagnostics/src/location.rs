@@ -205,7 +205,6 @@ impl<'a> LocationBuilder<'a> {
         self
     }
 
-
     pub fn build(self) -> Location<'a> {
         Location {
             resource: self.resource,

@@ -200,53 +200,43 @@ fn resolve_object_from_cache(
                     object_type: Some(format!("{:?}", t.table_kind).to_lowercase()),
                 })
                 .or_else(|| {
-                    snapshot
-                        .find_index_by_id(objid)
-                        .map(|i| DatabaseObject {
-                            schema: Some(i.schema.clone()),
-                            name: i.name.clone(),
-                            object_type: Some("index".to_string()),
-                        })
+                    snapshot.find_index_by_id(objid).map(|i| DatabaseObject {
+                        schema: Some(i.schema.clone()),
+                        name: i.name.clone(),
+                        object_type: Some("index".to_string()),
+                    })
                 })
                 .or_else(|| {
-                    snapshot
-                        .find_sequence_by_id(objid)
-                        .map(|s| DatabaseObject {
-                            schema: Some(s.schema.clone()),
-                            name: s.name.clone(),
-                            object_type: Some("sequence".to_string()),
-                        })
+                    snapshot.find_sequence_by_id(objid).map(|s| DatabaseObject {
+                        schema: Some(s.schema.clone()),
+                        name: s.name.clone(),
+                        object_type: Some("sequence".to_string()),
+                    })
                 })
         }
         pg_catalog::PG_PROC => {
             // Functions and procedures
-            snapshot
-                .find_function_by_id(objid)
-                .map(|f| DatabaseObject {
-                    schema: Some(f.schema.clone()),
-                    name: f.name.clone(),
-                    object_type: Some(format!("{:?}", f.kind).to_lowercase()),
-                })
+            snapshot.find_function_by_id(objid).map(|f| DatabaseObject {
+                schema: Some(f.schema.clone()),
+                name: f.name.clone(),
+                object_type: Some(format!("{:?}", f.kind).to_lowercase()),
+            })
         }
         pg_catalog::PG_TYPE => {
             // Types
-            snapshot
-                .find_type_by_id(objid)
-                .map(|t| DatabaseObject {
-                    schema: Some(t.schema.clone()),
-                    name: t.name.clone(),
-                    object_type: Some("type".to_string()),
-                })
+            snapshot.find_type_by_id(objid).map(|t| DatabaseObject {
+                schema: Some(t.schema.clone()),
+                name: t.name.clone(),
+                object_type: Some("type".to_string()),
+            })
         }
         pg_catalog::PG_NAMESPACE => {
             // Schemas
-            snapshot
-                .find_schema_by_id(objid)
-                .map(|s| DatabaseObject {
-                    schema: None,
-                    name: s.name.clone(),
-                    object_type: Some("schema".to_string()),
-                })
+            snapshot.find_schema_by_id(objid).map(|s| DatabaseObject {
+                schema: None,
+                name: s.name.clone(),
+                object_type: Some("schema".to_string()),
+            })
         }
         pg_catalog::PG_ATTRIBUTE => {
             // Columns: objid is table OID, objsubid is column number (attnum)

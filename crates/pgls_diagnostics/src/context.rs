@@ -574,6 +574,9 @@ mod tests {
         let location = error.location();
         assert_eq!(location.resource, Some(Resource::File("file.sql")));
         assert_eq!(location.span, Some(span));
-        assert_eq!(location.source_code.map(|code| code.text), Some("select 1;"));
+        assert_eq!(
+            location.source_code.map(|code| code.text),
+            Some("select 1;")
+        );
     }
 }

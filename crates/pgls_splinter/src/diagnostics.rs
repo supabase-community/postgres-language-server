@@ -61,10 +61,7 @@ impl Advices for SplinterAdvices {
                 .as_ref()
                 .map(|schema| format!("{schema}."))
                 .unwrap_or_default();
-            visitor.record_log(
-                LogCategory::Info,
-                &format!("{type_str}{schema_str}{name}"),
-            )?;
+            visitor.record_log(LogCategory::Info, &format!("{type_str}{schema_str}{name}"))?;
         }
 
         // Show additional metadata if present

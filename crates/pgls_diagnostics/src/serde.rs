@@ -337,6 +337,10 @@ impl Serialize for DiagnosticTags {
             flags.push(DiagnosticTag::DeprecatedCode);
         }
 
+        if self.contains(Self::VERBOSE) {
+            flags.push(DiagnosticTag::Verbose);
+        }
+
         serializer.collect_seq(flags)
     }
 }
@@ -389,14 +393,13 @@ mod tests {
     use std::io;
 
     use pgls_text_size::{TextRange, TextSize};
+    use serde_json::{Value, from_value, json, to_value};
 
     use crate::{
-        self as pgls_diagnostics, {Advices, LogCategory, Visit},
+        self as pgls_diagnostics, {Advices, DiagnosticTags, LogCategory, Visit},
     };
     use pgls_diagnostics_macros::Diagnostic;
 
-    // Only used by the serialization tests below, which are commented out.
-    #[allow(dead_code)]
     #[derive(Debug, Diagnostic)]
     #[diagnostic(
         severity = Warning,
@@ -405,7 +408,7 @@ mod tests {
             description = "text description",
             message(<Emphasis>"markup message"</Emphasis>),
         ),
-        tags(INTERNAL)
+        tags(INTERNAL | VERBOSE)
     )]
     struct TestDiagnostic {
         #[location(resource)]
@@ -432,7 +435,6 @@ mod tests {
         }
     }
 
-    #[allow(dead_code)]
     #[derive(Debug)]
     struct TestAdvices;
 
@@ -443,74 +445,79 @@ mod tests {
         }
     }
 
-    // fn serialized() -> Value {
-    //     let advices = json!([
-    //         {
-    //             "log": [
-    //                 "warn",
-    //                 [
-    //                     {
-    //                         "elements": [],
-    //                         "content": "log"
-    //                     }
-    //                 ]
-    //             ]
-    //         }
-    //     ]);
-    //
-    //     json!({
-    //         "category": "internalError/io",
-    //         "severity": "warning",
-    //         "description": "text description",
-    //         "message": [
-    //             {
-    //                 "elements": [
-    //                     "Emphasis"
-    //                 ],
-    //                 "content": "markup message"
-    //             }
-    //         ],
-    //         "advices": {
-    //             "advices": advices
-    //         },
-    //         "verbose_advices": {
-    //             "advices": advices
-    //         },
-    //         "location": {
-    //             "path": {
-    //                 "file": "path"
-    //             },
-    //             "sourceCode": "source_code",
-    //             "span": [
-    //                 0,
-    //                 6
-    //             ]
-    //         },
-    //         "tags": [
-    //             "internal"
-    //         ],
-    //         "source": null
-    //     })
-    // }
+    fn serialized() -> Value {
+        let advices = json!([
+            {
+                "log": [
+                    "warn",
+                    [
+                        {
+                            "elements": [],
+                            "content": "log"
+                        }
+                    ]
+                ]
+            }
+        ]);
 
-    // #[test]
-    // fn test_serialize() {
-    //     let diag = TestDiagnostic::default();
-    //     let diag = super::Diagnostic::new(diag);
-    //     let json = to_value(&diag).unwrap();
-    //
-    //     let expected = serialized();
-    //     assert_eq!(json, expected);
-    // }
-    //
-    // #[test]
-    // fn test_deserialize() {
-    //     let json = serialized();
-    //     let diag: super::Diagnostic = from_value(json).unwrap();
-    //
-    //     let expected = TestDiagnostic::default();
-    //     let expected = super::Diagnostic::new(expected);
-    //
-    //     assert_eq!(diag, expected);
-    // }
+        json!({
+            "category": "internalError/io",
+            "severity": "warning",
+            "description": "text description",
+            "message": [
+                {
+                    "elements": [
+                        "Emphasis"
+                    ],
+                    "content": "markup message"
+                }
+            ],
+            "advices": {
+                "advices": advices
+            },
+            "verboseAdvices": {
+                "advices": advices
+            },
+            "location": {
+                "path": {
+                    "file": "path"
+                },
+                "sourceCode": "source_code",
+                "span": [
+                    0,
+                    6
+                ]
+            },
+            "tags": [
+                "internal",
+                "verbose"
+            ],
+            "source": null
+        })
+    }
+
+    #[test]
+    fn test_serialize() {
+        let diag = TestDiagnostic::default();
+        let diag = super::Diagnostic::new(diag);
+        let json = to_value(&diag).unwrap();
+
+        let expected = serialized();
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_deserialize() {
+        let json = serialized();
+        let diag: super::Diagnostic = from_value(json).unwrap();
+
+        let expected = TestDiagnostic::default();
+        let expected = super::Diagnostic::new(expected);
+
+        assert_eq!(diag, expected);
+        assert_eq!(
+            diag.tags,
+            DiagnosticTags::INTERNAL | DiagnosticTags::VERBOSE
+        );
+    }
 }
