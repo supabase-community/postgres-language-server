@@ -369,11 +369,13 @@ impl<'a> TreesitterContext<'a> {
          */
         let current_node = cursor.node();
 
-        let mut chars = self.text.chars();
-
-        if chars
-            .nth(self.position)
-            .is_some_and(|c| c.is_ascii_whitespace() || [';', ')', ',', '('].contains(&c))
+        // The position is a byte offset. The characters we look for are ASCII, and no byte of a
+        // multibyte character is ASCII, so comparing the byte is enough.
+        if self
+            .text
+            .as_bytes()
+            .get(self.position)
+            .is_some_and(|b| b.is_ascii_whitespace() || b";),(".contains(b))
         {
             self.position = cmp::min(
                 self.position.saturating_sub(1),
