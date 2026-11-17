@@ -702,8 +702,7 @@ mod tests {
         let statement = |start: u32, end: u32| crate::StatementAnalysis {
             range: TextRange::new(start.into(), end.into()),
             database_only: false,
-            has_typecheck_findings: false,
-            has_duplicate_assignments: false,
+            reported_database_error: false,
             search_path: Vec::new(),
         };
         // `select 1;`, a SQL function with two statements in its body, `select 2;`.
