@@ -57,8 +57,8 @@ Results:
 id - private.audio_books.id (Column)
 narrator_id - private.audio_books.narrator_id (Column)
 id - public.audio_books.id (Column)
+id - public.users.id (Column)
 name - public.users.name (Column)
-narrator - public.audio_books.narrator (Column)
 
 --------------
 
@@ -72,8 +72,8 @@ Results:
 id - private.audio_books.id (Column)
 narrator_id - private.audio_books.narrator_id (Column)
 id - public.audio_books.id (Column)
+id - public.users.id (Column)
 ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
 
 --------------
 
@@ -105,7 +105,7 @@ narrator_id - private.audio_books.narrator_id (Column)
 name - public.users.name (Column)
 narrator - public.audio_books.narrator (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
 
 --------------
 
