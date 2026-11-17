@@ -1,9 +1,15 @@
 // Generated file, do not edit by hand, see `xtask/codegen`
 import type { Transport } from "./transport";
-export interface IsPathIgnoredParams {
-  pgls_path: PgLSPath;
+export interface PullFileDiagnosticsParams {
+  categories: RuleCategories;
+  max_diagnostics: number;
+  only: RuleCode[];
+  path: PgLSPath;
   project_key: ProjectKey;
+  skip: RuleCode[];
 }
+export type RuleCategories = RuleCategory[];
+export type RuleCode = string;
 export interface PgLSPath {
   /**
    * Determines the kind of the file inside Postgres Language Server. Some files are considered as configuration files, others as manifest files, and others as files to handle
@@ -22,36 +28,12 @@ export interface ProjectKey {
   idx: number;
   version: number;
 }
+export type RuleCategory = "Lint";
 export type FileKind = FileKind2[];
 /**
  * The priority of the file
  */
 export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
-export interface RegisterProjectFolderParams {
-  /**
-   * The folder of the project. A project without a folder contains every path.
-   */
-  path?: string;
-  /**
-   * The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened through a symlink. The paths below it belong to the project too.
-   */
-  realPath?: string;
-}
-export interface GetFileContentParams {
-  path: PgLSPath;
-  project_key: ProjectKey;
-}
-export interface PullFileDiagnosticsParams {
-  categories: RuleCategories;
-  max_diagnostics: number;
-  only: RuleCode[];
-  path: PgLSPath;
-  project_key: ProjectKey;
-  skip: RuleCode[];
-}
-export type RuleCategories = RuleCategory[];
-export type RuleCode = string;
-export type RuleCategory = "Lint";
 export interface PullDiagnosticsResult {
   diagnostics: Diagnostic[];
   skipped_diagnostics: number;
@@ -326,6 +308,44 @@ export interface BacktraceSymbol {
   lineno?: number;
   name?: string;
 }
+export interface PullFileFormattingParams {
+  path: PgLSPath;
+  project_key: ProjectKey;
+  /**
+   * Optional range to format. If None, format the entire file.
+   */
+  range?: TextRange;
+}
+export interface PullFormattingResult {
+  diagnostics: Diagnostic[];
+  formatted: string;
+  original: string;
+  statements: StatementFormatResult[];
+}
+export interface StatementFormatResult {
+  formatted: string;
+  original: string;
+  range: TextRange;
+}
+export interface PullDatabaseDiagnosticsParams {
+  categories: RuleCategories;
+  max_diagnostics: number;
+  only: RuleCode[];
+  project_key: ProjectKey;
+  skip: RuleCode[];
+}
+export interface CheckDatabaseConnectionParams {
+  /**
+   * The project whose databases are checked: the one of its root settings and of every nested configuration file.
+   */
+  project_key: ProjectKey;
+}
+export interface CheckDatabaseConnectionResult {
+  /**
+   * Why the configured databases cannot be used, one message per database that can't.
+   */
+  errors: string[];
+}
 export interface CodeActionsParams {
   cursor_position: TextSize;
   only: RuleCode[];
@@ -469,6 +489,91 @@ export type CompletionItemKind =
   | "policy"
   | "role"
   | "keyword";
+export interface OnHoverParams {
+  path: PgLSPath;
+  position: TextSize;
+  project_key: ProjectKey;
+}
+export interface OnHoverResult {
+  /**
+   * Can contain multiple blocks of markdown if the hovered-on item is ambiguous.
+   */
+  markdown_blocks: string[];
+}
+export interface PullInlayHintsParams {
+  path: PgLSPath;
+  project_key: ProjectKey;
+  /**
+   * The hints of the statements that overlap this range are returned.
+   */
+  range: TextRange;
+}
+export interface PullInlayHintsResult {
+  hints: InlayHint[];
+}
+export interface InlayHint {
+  kind: InlayHintKind;
+  label: string;
+  /**
+   * The offset in the file that the hint is shown before.
+   */
+  offset: TextSize;
+}
+export type InlayHintKind = "parameter";
+export interface PullSemanticTokensParams {
+  path: PgLSPath;
+  project_key: ProjectKey;
+  /**
+   * The tokens of the statements that overlap this range are returned. `None` for the whole file.
+   */
+  range?: TextRange;
+}
+export interface PullSemanticTokensResult {
+  /**
+   * The tokens, ordered by their start. Tokens don't overlap, and each is on a single line.
+   */
+  tokens: SemanticToken[];
+}
+export interface SemanticToken {
+  /**
+   * Whether the object is built into Postgres: it is in `pg_catalog` or `information_schema`.
+   */
+  defaultLibrary: boolean;
+  kind: SemanticTokenKind;
+  /**
+   * The range in the file.
+   */
+  range: TextRange;
+}
+/**
+ * What a token refers to.
+ */
+export type SemanticTokenKind =
+  | "function"
+  | "type"
+  | "namespace"
+  | "class"
+  | "property"
+  | "parameter"
+  | "enumMember"
+  | "variable";
+export interface RegisterProjectFolderParams {
+  /**
+   * The folder of the project. A project without a folder contains every path.
+   */
+  path?: string;
+  /**
+   * The folder with symlinks resolved, if that differs from `path`, e.g. for a folder opened through a symlink. The paths below it belong to the project too.
+   */
+  realPath?: string;
+}
+export interface FindProjectParams {
+  path: PgLSPath;
+}
+export type Nullable_ProjectKey = ProjectKey | null;
+export interface UnregisterProjectFolderParams {
+  path: PgLSPath;
+}
 export interface UpdateSettingsParams {
   configuration: PartialConfiguration;
   gitignore_matches: string[];
@@ -1691,25 +1796,40 @@ Each pattern should be in the format `schema.object_name`, for example: - `"publ
 	 */
   ignore?: string[];
 }
-export interface CheckDatabaseConnectionParams {
+export interface UpdateNestedSettingsParams {
   /**
-   * The project whose databases are checked: the one of its root settings and of every nested configuration file.
+   * Every configuration file below the root of the project. They replace the previous ones.
    */
-  project_key: ProjectKey;
+  nested: NestedSettingsParams[];
+  projectKey: ProjectKey;
 }
-export interface CheckDatabaseConnectionResult {
+/**
+ * The configuration file of a folder below the root of a project.
+ */
+export interface NestedSettingsParams {
+  configuration: PartialConfiguration;
   /**
-   * Why the configured databases cannot be used, one message per database that can't.
+   * The folder of the configuration file. Its settings apply to the files below it.
    */
-  errors: string[];
+  directory: string;
+  gitignoreMatches: string[];
+  vcsBasePath?: string;
+}
+export interface UpdateNestedSettingsResult {
+  /**
+   * The folders whose settings now apply. The others are ignored by the settings above them, or are not below the root of the project.
+   */
+  applied: string[];
+  /**
+   * The folders whose configuration could not be applied, with the reason. Their files use the default settings, never the ones of the configuration above them.
+   */
+  errors: NestedSettingsError[];
+}
+export interface NestedSettingsError {
+  directory: string;
+  message: string;
 }
 export interface OpenFileParams {
-  content: string;
-  path: PgLSPath;
-  project_key: ProjectKey;
-  version: number;
-}
-export interface ChangeFileParams {
   content: string;
   path: PgLSPath;
   project_key: ProjectKey;
@@ -1719,37 +1839,132 @@ export interface CloseFileParams {
   path: PgLSPath;
   project_key: ProjectKey;
 }
+export interface ChangeFileParams {
+  content: string;
+  path: PgLSPath;
+  project_key: ProjectKey;
+  version: number;
+}
+export interface GetFileContentParams {
+  path: PgLSPath;
+  project_key: ProjectKey;
+}
+export interface IsPathIgnoredParams {
+  pgls_path: PgLSPath;
+  project_key: ProjectKey;
+}
+export interface ExecuteStatementParams {
+  path: PgLSPath;
+  project_key: ProjectKey;
+  statement_id: StatementId;
+}
+/**
+ * The outcome of executing a statement.
+
+A statement that returns rows (`select`, `values`, `returning`, `show`, `explain`, ...) fills `columns` and `rows`. Any other statement sets `rows_affected` instead.
+ */
+export interface ExecuteStatementResult {
+  /**
+   * The names of the returned columns.
+   */
+  columns?: string[];
+  /**
+   * Why Postgres rejected the statement, if it did.
+   */
+  error?: ExecuteStatementError;
+  /**
+   * A short summary for the user.
+   */
+  message: string;
+  /**
+   * The notices and warnings Postgres sent, e.g. for `raise notice`, as `NOTICE: message`. `message` ends with them as well.
+   */
+  notices: string[];
+  /**
+   * The returned rows, at most [`EXECUTE_STATEMENT_MAX_ROWS`]. Each value is in its Postgres text representation, as `psql` shows it, and `null` for SQL `NULL`.
+   */
+  rows?: (string | null)[][];
+  /**
+   * The number of rows affected, for a statement that returns no rows.
+   */
+  rowsAffected?: number;
+  /**
+   * Whether the statement returned more rows than `rows` holds.
+   */
+  truncated?: boolean;
+  /**
+   * Whether a value in `rows` was cut to [`EXECUTE_STATEMENT_MAX_VALUE_SIZE`] bytes.
+   */
+  truncatedValues: boolean;
+}
+/**
+ * An error that Postgres raised while executing a statement.
+ */
+export interface ExecuteStatementError {
+  /**
+   * The SQLSTATE error code, e.g. `22012`.
+   */
+  code: string;
+  detail?: string;
+  hint?: string;
+  /**
+   * The primary error message, e.g. `division by zero`.
+   */
+  message: string;
+  /**
+   * The offset of the error in the document, if Postgres reported a position.
+   */
+  position?: TextSize;
+}
+export interface InvalidateSchemaCacheParams {
+  scope: SchemaCacheScope;
+}
+/**
+ * The schemas that `invalidate_schema_cache` clears.
+ */
+export type SchemaCacheScope = "connections" | "all";
 export type Configuration = PartialConfiguration;
 export interface Workspace {
-  isPathIgnored(params: IsPathIgnoredParams): Promise<boolean>;
-  registerProjectFolder(params: RegisterProjectFolderParams): Promise<ProjectKey>;
-  getFileContent(params: GetFileContentParams): Promise<string>;
   pullFileDiagnostics(params: PullFileDiagnosticsParams): Promise<PullDiagnosticsResult>;
-  pullCodeActions(params: CodeActionsParams): Promise<CodeActionsResult>;
-  fixFile(params: FixFileParams): Promise<FixFileResult>;
-  getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
-  updateSettings(params: UpdateSettingsParams): Promise<void>;
+  pullFileFormatting(params: PullFileFormattingParams): Promise<PullFormattingResult>;
+  pullDbDiagnostics(params: PullDatabaseDiagnosticsParams): Promise<PullDiagnosticsResult>;
   checkDatabaseConnection(
     params: CheckDatabaseConnectionParams,
   ): Promise<CheckDatabaseConnectionResult>;
+  pullCodeActions(params: CodeActionsParams): Promise<CodeActionsResult>;
+  fixFile(params: FixFileParams): Promise<FixFileResult>;
+  getCompletions(params: GetCompletionsParams): Promise<CompletionsResult>;
+  onHover(params: OnHoverParams): Promise<OnHoverResult>;
+  pullInlayHints(params: PullInlayHintsParams): Promise<PullInlayHintsResult>;
+  pullSemanticTokens(params: PullSemanticTokensParams): Promise<PullSemanticTokensResult>;
+  registerProjectFolder(params: RegisterProjectFolderParams): Promise<ProjectKey>;
+  findProject(params: FindProjectParams): Promise<Nullable_ProjectKey>;
+  unregisterProjectFolder(params: UnregisterProjectFolderParams): Promise<void>;
+  updateSettings(params: UpdateSettingsParams): Promise<void>;
+  updateNestedSettings(params: UpdateNestedSettingsParams): Promise<UpdateNestedSettingsResult>;
   openFile(params: OpenFileParams): Promise<void>;
-  changeFile(params: ChangeFileParams): Promise<void>;
   closeFile(params: CloseFileParams): Promise<void>;
+  changeFile(params: ChangeFileParams): Promise<void>;
+  getFileContent(params: GetFileContentParams): Promise<string>;
+  isPathIgnored(params: IsPathIgnoredParams): Promise<boolean>;
+  executeStatement(params: ExecuteStatementParams): Promise<ExecuteStatementResult>;
+  cancelStatementExecution(params: ExecuteStatementParams): Promise<void>;
+  invalidateSchemaCache(params: InvalidateSchemaCacheParams): Promise<void>;
   destroy(): void;
 }
 export function createWorkspace(transport: Transport): Workspace {
   return {
-    isPathIgnored(params) {
-      return transport.request("pgls/is_path_ignored", params);
-    },
-    registerProjectFolder(params) {
-      return transport.request("pgls/register_project_folder", params);
-    },
-    getFileContent(params) {
-      return transport.request("pgls/get_file_content", params);
-    },
     pullFileDiagnostics(params) {
       return transport.request("pgls/pull_file_diagnostics", params);
+    },
+    pullFileFormatting(params) {
+      return transport.request("pgls/pull_file_formatting", params);
+    },
+    pullDbDiagnostics(params) {
+      return transport.request("pgls/pull_db_diagnostics", params);
+    },
+    checkDatabaseConnection(params) {
+      return transport.request("pgls/check_database_connection", params);
     },
     pullCodeActions(params) {
       return transport.request("pgls/pull_code_actions", params);
@@ -1760,20 +1975,53 @@ export function createWorkspace(transport: Transport): Workspace {
     getCompletions(params) {
       return transport.request("pgls/get_completions", params);
     },
+    onHover(params) {
+      return transport.request("pgls/on_hover", params);
+    },
+    pullInlayHints(params) {
+      return transport.request("pgls/pull_inlay_hints", params);
+    },
+    pullSemanticTokens(params) {
+      return transport.request("pgls/pull_semantic_tokens", params);
+    },
+    registerProjectFolder(params) {
+      return transport.request("pgls/register_project_folder", params);
+    },
+    findProject(params) {
+      return transport.request("pgls/find_project", params);
+    },
+    unregisterProjectFolder(params) {
+      return transport.request("pgls/unregister_project_folder", params);
+    },
     updateSettings(params) {
       return transport.request("pgls/update_settings", params);
     },
-    checkDatabaseConnection(params) {
-      return transport.request("pgls/check_database_connection", params);
+    updateNestedSettings(params) {
+      return transport.request("pgls/update_nested_settings", params);
     },
     openFile(params) {
       return transport.request("pgls/open_file", params);
     },
+    closeFile(params) {
+      return transport.request("pgls/close_file", params);
+    },
     changeFile(params) {
       return transport.request("pgls/change_file", params);
     },
-    closeFile(params) {
-      return transport.request("pgls/close_file", params);
+    getFileContent(params) {
+      return transport.request("pgls/get_file_content", params);
+    },
+    isPathIgnored(params) {
+      return transport.request("pgls/is_path_ignored", params);
+    },
+    executeStatement(params) {
+      return transport.request("pgls/execute_statement", params);
+    },
+    cancelStatementExecution(params) {
+      return transport.request("pgls/cancel_statement_execution", params);
+    },
+    invalidateSchemaCache(params) {
+      return transport.request("pgls/invalidate_schema_cache", params);
     },
     destroy() {
       transport.destroy();

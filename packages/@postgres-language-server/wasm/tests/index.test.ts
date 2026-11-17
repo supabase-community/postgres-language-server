@@ -27,7 +27,8 @@ describe("Workspace API", () => {
   test("version returns a string", () => {
     const version = workspace.version();
     expect(typeof version).toBe("string");
-    expect(version).toBe("0.0.0");
+    // The release build inlines its version; other builds report 0.0.0.
+    expect(version).toBe(process.env.PGLS_VERSION ?? "0.0.0");
   });
 
   test("parse valid SQL returns empty array", () => {
