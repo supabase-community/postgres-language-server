@@ -454,11 +454,7 @@ impl WorkspaceServer {
                 .iter(TypecheckDiagnosticsMapper)
                 .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
-                    let statement = analysis
-                        .statements()
-                        .iter()
-                        .find(|statement| statement.range == range)
-                        .cloned();
+                    let statement = analysis.statement(range).cloned();
                     (id, range, ast, cst, statement)
                 })
                 .collect::<Vec<_>>();
