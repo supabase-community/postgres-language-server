@@ -5,7 +5,7 @@ use pgls_configuration_macros::{Merge, Partial};
 pub use pgls_migrations::MigrationTool;
 use serde::{Deserialize, Serialize};
 
-/// The configuration of the filesystem
+/// The configuration of the migration files
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
 #[partial(derive(Bpaf, Clone, Eq, PartialEq, Merge))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
