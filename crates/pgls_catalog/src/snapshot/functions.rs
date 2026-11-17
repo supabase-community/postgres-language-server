@@ -66,7 +66,7 @@ impl From<Option<String>> for Behavior {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FunctionArg {
-    /// `in`, `out`, or `inout`.
+    /// `in`, `out`, `inout`, `variadic` or `table`.
     pub mode: String,
 
     pub name: String,
@@ -148,6 +148,19 @@ pub struct Function {
 
     /// Is the function's security set to `Definer` (true) or `Invoker` (false)?
     pub security_definer: bool,
+}
+
+impl Function {
+    /// The arguments a call passes: the input arguments, and for a procedure its output
+    /// arguments too, which `CALL` passes (`FuncnameGetCandidates` with `include_out_arguments`):
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1272
+    pub fn call_arguments(&self) -> impl Iterator<Item = &FunctionArg> {
+        let is_procedure = self.kind == ProcKind::Procedure;
+        self.args.args.iter().filter(move |arg| {
+            matches!(arg.mode.as_str(), "in" | "inout" | "variadic")
+                || (is_procedure && arg.mode == "out")
+        })
+    }
 }
 
 #[cfg(feature = "db")]

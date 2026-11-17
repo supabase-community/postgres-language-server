@@ -872,7 +872,7 @@ async fn correctly_ignores_files() {
     assert!(close_file_result.is_ok());
 
     let execute_statement_result =
-        workspace.execute_statement(crate::workspace::ExecuteStatementParams {
+        workspace.execute_statement(crate::features::code_actions::ExecuteStatementParams {
             project_key,
             path: path.clone(),
             statement_id: StatementId::Root {
@@ -2248,7 +2248,7 @@ select * from auth.users;
         .expect("Unable to open test file");
 
     let completions = workspace
-        .get_completions(crate::workspace::GetCompletionsParams {
+        .get_completions(crate::features::completions::GetCompletionsParams {
             project_key,
             path: path.clone(),
             position,
@@ -2305,7 +2305,7 @@ async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool)
         .expect("Unable to open test file");
 
     let completions = workspace
-        .get_completions(crate::workspace::GetCompletionsParams {
+        .get_completions(crate::features::completions::GetCompletionsParams {
             project_key,
             path: path.clone(),
             position: TextSize::of(content),
@@ -2361,7 +2361,7 @@ async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
             })
             .expect("Unable to open test file");
         let completions = workspace
-            .get_completions(crate::workspace::GetCompletionsParams {
+            .get_completions(crate::features::completions::GetCompletionsParams {
                 project_key,
                 path: path.clone(),
                 position,
@@ -6038,7 +6038,7 @@ async fn lint_hover_and_completions_see_the_same_catalog(test_db: PgPool) {
             })
             .collect();
         let completions: Vec<_> = workspace
-            .get_completions(crate::workspace::GetCompletionsParams {
+            .get_completions(crate::features::completions::GetCompletionsParams {
                 project_key,
                 path: path.clone(),
                 position: u32::try_from(cursor).unwrap().into(),
@@ -6188,7 +6188,7 @@ async fn walks_resume_from_checkpoints_before_the_edit(test_db: PgPool) {
     let complete = |content: &str, needle: &str| {
         let offset = content.rfind(needle).expect("needle in content") + needle.len();
         workspace
-            .get_completions(crate::workspace::GetCompletionsParams {
+            .get_completions(crate::features::completions::GetCompletionsParams {
                 project_key,
                 path: path.clone(),
                 position: u32::try_from(offset).unwrap().into(),

@@ -1,25 +1,25 @@
-1:1 accepted
-6:1 accepted
-15:1 accepted
-22:1 accepted
-31:1 accepted
-35:1 accepted
-40:1 accepted
-45:1 accepted
-50:1 accepted
-55:1 rejected 22023
-56:1 rejected 22023
-57:1 rejected 22023
-58:1 rejected 22003
-59:1 rejected 22003
-60:1 rejected 22003
-61:1 rejected 22023
-62:1 rejected 22023
-64:1 rejected 22023
-65:1 rejected 22023
-66:1 rejected 22023
-67:1 rejected 22023
-68:1 rejected 22023
-70:1 rejected 22023
-71:1 rejected 22023
-72:1 rejected 22023
+0..234 accepted
+236..654 accepted
+686..1050 accepted
+1052..1504 accepted
+1583..1691 accepted
+1718..1907 accepted
+1949..2127 accepted
+2163..2353 accepted
+2394..2554 accepted
+2574..2603 rejected 22023
+2604..2635 rejected 22023
+2636..2671 rejected 22023
+2672..2718 rejected 22003
+2719..2749 rejected 22003
+2750..2796 rejected 22003
+2797..2828 rejected 22023
+2870..2895 rejected 22023
+2897..2924 rejected 22023
+2925..2952 rejected 22023
+2953..2980 rejected 22023
+2981..3010 rejected 22023
+3011..3041 rejected 22023
+3043..3073 rejected 22023
+3074..3107 rejected 22023
+3108..3141 rejected 22023

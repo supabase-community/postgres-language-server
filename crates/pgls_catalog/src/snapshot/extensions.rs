@@ -16,8 +16,8 @@ pub struct Extension {
 }
 
 impl Extension {
-    /// Whether the extension is installed in the database. The snapshot also lists the
-    /// extensions that are only available on the server, without an installed version.
+    /// Whether the extension is installed in the database. The snapshot lists every extension
+    /// that the server has available, installed or not.
     pub fn is_installed(&self) -> bool {
         self.installed_version.is_some()
     }

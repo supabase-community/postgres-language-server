@@ -392,24 +392,23 @@ impl CatalogFunctions {
     /// has a SQL body, or fails. Procedures only run with `CALL`, which taints the catalog
     /// anyway.
     fn record_function(&mut self, stmt: &AnalysableStatement) {
-        use pgls_query_ext::utils::{find_option_value, string_value};
+        use pgls_query_ext::{function_body::Language, utils::string_value};
         let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = &*stmt.root else {
             return;
         };
-        let Some(language) = find_option_value(create_fn, "language") else {
+        let Some(language) = Language::of(create_fn) else {
             return;
         };
         let Some(name) = create_fn.funcname.last().and_then(string_value) else {
             return;
         };
         if create_fn.is_procedure
-            || language.eq_ignore_ascii_case("sql")
-            || language.eq_ignore_ascii_case("internal")
+            || matches!(language, Language::Sql | Language::Internal)
             || self.0.contains(name)
         {
             return;
         }
-        let may_change_catalog = !language.eq_ignore_ascii_case("plpgsql")
+        let may_change_catalog = language != Language::PlPgSql
             || stmt.sql.as_deref().is_none_or(|sql| {
                 crate::plpgsql::may_change_catalog(
                     sql,
