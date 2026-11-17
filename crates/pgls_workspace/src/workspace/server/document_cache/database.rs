@@ -141,9 +141,7 @@ mod tests {
         /// A statement that plpgsql_check checked, with a diagnostic at `span` of the statement.
         fn checked_with_diagnostic(span: TextRange) -> Self {
             Self {
-                diagnostics: vec![SDiagnostic::new(
-                    Error::from(NotFound).with_file_span(span),
-                )],
+                diagnostics: vec![SDiagnostic::new(Error::from(NotFound).with_file_span(span))],
                 plpgsql_checked: true,
             }
         }
@@ -158,8 +156,22 @@ mod tests {
                 TextRange::new(0.into(), 9.into()),
                 StatementDatabaseResult::default(),
             ),
-            (StatementId::new("select a;"), TextRange::new(10.into(), 19.into()), StatementDatabaseResult::checked_with_diagnostic(TextRange::new(7.into(), 8.into()))),
-            (StatementId::new("select b;"), TextRange::new(20.into(), 29.into()), StatementDatabaseResult::checked_with_diagnostic(TextRange::new(7.into(), 8.into()))),
+            (
+                StatementId::new("select a;"),
+                TextRange::new(10.into(), 19.into()),
+                StatementDatabaseResult::checked_with_diagnostic(TextRange::new(
+                    7.into(),
+                    8.into(),
+                )),
+            ),
+            (
+                StatementId::new("select b;"),
+                TextRange::new(20.into(), 29.into()),
+                StatementDatabaseResult::checked_with_diagnostic(TextRange::new(
+                    7.into(),
+                    8.into(),
+                )),
+            ),
         ]);
 
         // A statement was added before them, and `select b;` changed.
@@ -170,7 +182,10 @@ mod tests {
             ("select c;", TextRange::new(30.into(), 39.into())),
         ]);
 
-        assert_eq!(reused.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(), [Some(TextRange::new(27.into(), 28.into()))]);
+        assert_eq!(
+            reused.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(),
+            [Some(TextRange::new(27.into(), 28.into()))]
+        );
         assert_eq!(reused.1, [TextRange::new(20.into(), 29.into())]);
     }
 
@@ -184,14 +199,30 @@ mod tests {
                 TextRange::new(0.into(), 9.into()),
                 StatementDatabaseResult::default(),
             ),
-            (StatementId::new("select a;"), TextRange::new(10.into(), 19.into()), StatementDatabaseResult::checked_with_diagnostic(TextRange::new(7.into(), 8.into()))),
+            (
+                StatementId::new("select a;"),
+                TextRange::new(10.into(), 19.into()),
+                StatementDatabaseResult::checked_with_diagnostic(TextRange::new(
+                    7.into(),
+                    8.into(),
+                )),
+            ),
         ]);
 
-        let moved = results.reuse([("select a;", TextRange::new(5.into(), 14.into())), ("select a;", TextRange::new(20.into(), 29.into()))]);
-        assert_eq!(moved.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(), [Some(TextRange::new(27.into(), 28.into()))]);
+        let moved = results.reuse([
+            ("select a;", TextRange::new(5.into(), 14.into())),
+            ("select a;", TextRange::new(20.into(), 29.into())),
+        ]);
+        assert_eq!(
+            moved.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(),
+            [Some(TextRange::new(27.into(), 28.into()))]
+        );
 
         let removed = results.reuse([("select a;", TextRange::new(0.into(), 9.into()))]);
-        assert_eq!(removed.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(), []);
+        assert_eq!(
+            removed.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(),
+            []
+        );
         assert!(removed.1.is_empty());
     }
 }
