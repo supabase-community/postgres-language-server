@@ -28,12 +28,12 @@ pub(super) fn emit_range_table_func(e: &mut EventEmitter, n: &RangeTableFunc) {
                     emitter.token(TokenKind::DEFAULT_KW);
                     emitter.space();
                     if let Some(ref val) = rt.val {
-                        emit_node(emitter, val);
+                        emit_b_expr(emitter, val);
                     }
                 } else {
                     // Named namespace: 'uri' AS prefix
                     if let Some(ref val) = rt.val {
-                        emit_node(emitter, val);
+                        emit_b_expr(emitter, val);
                     }
                     emitter.space();
                     emitter.token(TokenKind::AS_KW);

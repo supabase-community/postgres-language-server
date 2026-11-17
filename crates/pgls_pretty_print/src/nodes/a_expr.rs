@@ -501,13 +501,24 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     }
 }
 
-/// The lower bound is a `b_expr`, which has no `AND`, and the upper bound ends at an operator that
-/// binds less tightly than `BETWEEN`, so both are operands on the right.
+/// The lower bound is a `b_expr`, which has no keyword operators such as `AND` or `LIKE ANY`, and
+/// the upper bound ends at an operator that binds less tightly than `BETWEEN`, so both are operands
+/// on the right.
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15241
 fn emit_between_bounds(e: &mut EventEmitter, n: &AExpr, bounds: &[Node]) {
     let parent_info = OperatorInfo::of_aexpr(n);
     if let Some(lower) = bounds.first() {
-        emit_operand_with_parens(e, lower, parent_info, OperandSide::Right);
+        let position = Position::Operand {
+            parent: parent_info,
+            side: OperandSide::Right,
+        };
+        if needs_parentheses(lower, position) || needs_parentheses(lower, Position::BExpr) {
+            e.token(TokenKind::L_PAREN);
+            emit_node(e, lower);
+            e.token(TokenKind::R_PAREN);
+        } else {
+            emit_node(e, lower);
+        }
     }
     if let Some(upper) = bounds.get(1) {
         e.line(LineType::SoftOrSpace);

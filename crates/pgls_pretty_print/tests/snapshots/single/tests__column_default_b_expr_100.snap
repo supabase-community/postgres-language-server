@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/column_default_b_expr.sql
+---
+create table t (
+  b bool default (null is null),
+  c text default ('a' collate "C"),
+  e int default -1
+);

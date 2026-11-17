@@ -1,0 +1,1 @@
+CREATE TABLE t (b bool DEFAULT (NULL IS NULL), c text DEFAULT ('a' COLLATE "C"), e int DEFAULT -1);

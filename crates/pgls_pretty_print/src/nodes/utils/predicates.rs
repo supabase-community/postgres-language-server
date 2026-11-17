@@ -89,6 +89,13 @@ pub(crate) enum Position {
     BoolOperand(BoolExprType),
     /// The operand of `::type` or of other high-precedence syntax such as `AT TIME ZONE`.
     Postfix,
+    /// Where the grammar takes a `b_expr`: the lower bound of `BETWEEN`, a column's `DEFAULT`,
+    /// the options of an `XMLTABLE` column. It has the arithmetic, comparison and generic
+    /// operators and `IS [NOT] DISTINCT FROM`, but none of the keyword operators: no `AND`,
+    /// `IS NULL`, `LIKE`, `IN`, `BETWEEN`, `op ANY`, `COLLATE` or `AT TIME ZONE` outside
+    /// parentheses, at the top or in an operand.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15456
+    BExpr,
 }
 
 /// Whether `node` needs parentheses at `position` to keep its meaning, or, for nested AND and OR,
@@ -98,6 +105,65 @@ pub(crate) fn needs_parentheses(node: &Node, position: Position) -> bool {
         Position::Operand { parent, side } => operand_needs_parentheses(node, parent, side),
         Position::BoolOperand(parent_kind) => bool_operand_needs_parentheses(node, parent_kind),
         Position::Postfix => postfix_operand_needs_parentheses(node),
+        Position::BExpr => {
+            // The walk follows the operands printed without parentheses, so the parser bounds it
+            // like the depth of the AST.
+            let mut pending = vec![node];
+            while let Some(node) = pending.pop() {
+                match node.node.as_ref() {
+                    Some(NodeEnum::AExpr(expr))
+                        if matches!(
+                            expr.kind(),
+                            AExprKind::AexprOp
+                                | AExprKind::AexprDistinct
+                                | AExprKind::AexprNotDistinct
+                        ) =>
+                    {
+                        let parent = OperatorInfo::of_aexpr(expr);
+                        let right_side = if expr.lexpr.is_some() {
+                            OperandSide::Right
+                        } else {
+                            OperandSide::Unary
+                        };
+                        let operands = [
+                            (expr.lexpr.as_deref(), OperandSide::Left),
+                            (expr.rexpr.as_deref(), right_side),
+                        ];
+                        for (operand, side) in operands {
+                            if let Some(operand) = operand
+                                && !operand_needs_parentheses(operand, parent, side)
+                            {
+                                pending.push(operand);
+                            }
+                        }
+                    }
+                    // A negative number is `'-' b_expr`. The others are `c_expr`s the `::`
+                    // whitelist below leaves out, written like function calls.
+                    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L15812
+                    Some(
+                        NodeEnum::AConst(_)
+                        | NodeEnum::SqlvalueFunction(_)
+                        | NodeEnum::JsonFuncExpr(_)
+                        | NodeEnum::JsonParseExpr(_)
+                        | NodeEnum::JsonScalarExpr(_)
+                        | NodeEnum::JsonSerializeExpr(_)
+                        | NodeEnum::JsonObjectConstructor(_)
+                        | NodeEnum::JsonArrayConstructor(_)
+                        | NodeEnum::JsonArrayQueryConstructor(_)
+                        | NodeEnum::JsonObjectAgg(_)
+                        | NodeEnum::JsonArrayAgg(_)
+                        | NodeEnum::XmlExpr(_)
+                        | NodeEnum::GroupingFunc(_)
+                        | NodeEnum::MergeSupportFunc(_),
+                    ) => {}
+                    Some(NodeEnum::AExpr(expr)) if expr.kind() == AExprKind::AexprNullif => {}
+                    // A self-contained term, a `c_expr` or `b_expr::type`.
+                    _ if !postfix_operand_needs_parentheses(node) => {}
+                    _ => return true,
+                }
+            }
+            false
+        }
     }
 }
 
