@@ -89,8 +89,8 @@ Results:
 name - public.coos.name (Column)
 information_schema - information_schema (Schema)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 
 --------------
 
@@ -129,8 +129,8 @@ Results:
 id - public.coos.id (Column)
 name - public.coos.name (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -158,8 +158,8 @@ Results:
 name - public.coos.name (Column)
 id - public.coos.id (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 

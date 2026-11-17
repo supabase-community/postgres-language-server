@@ -1,49 +1,49 @@
-3:1 accepted
-6:1 accepted
-9:1 accepted
-12:1 accepted
-14:1 accepted
-16:1 accepted
-18:1 accepted
-21:1 accepted
-23:1 accepted
-26:1 accepted
-28:1 accepted
-31:1 accepted
-33:1 accepted
-36:1 accepted
-39:1 accepted
-43:1 accepted
-44:1 accepted
-47:1 accepted
-49:1 accepted
-52:1 accepted
-54:1 accepted
-57:1 skipped
-58:1 rejected 25P01
-60:1 rejected 34000
-61:1 rejected 34000
-62:1 rejected 34000
-63:1 skipped
-66:1 skipped
-67:1 rejected 25P01
-68:1 rejected 34000
-69:1 rejected 34000
-71:1 rejected 34000
-73:1 rejected 34000
-75:1 rejected 34000
-77:1 accepted
-79:1 rejected 34000
-81:1 rejected 34000
-83:1 skipped
-88:1 rejected 42P01
-90:1 rejected 42P01
-91:1 accepted
-92:1 rejected 42P01
-94:1 rejected 42P01
-95:1 accepted
-98:1 skipped
-99:1 accepted
-101:1 accepted
-102:1 skipped
-104:1 accepted
+23..56 accepted
+133..174 accepted
+190..218 accepted
+262..331 accepted
+332..381 accepted
+383..452 accepted
+453..502 accepted
+520..607 accepted
+608..675 accepted
+726..823 accepted
+824..901 accepted
+962..1060 accepted
+1061..1139 accepted
+1188..1313 accepted
+1314..1419 accepted
+1465..1492 accepted
+1527..1652 accepted
+1653..1758 accepted
+1759..1889 accepted
+1890..2000 accepted
+2001..2023 accepted
+2062..2068 skipped
+2069..2167 rejected 25P01
+2168..2185 rejected 34000
+2186..2210 rejected 34000
+2211..2230 rejected 34000
+2231..2240 skipped
+2268..2274 skipped
+2275..2324 rejected 25P01
+2325..2343 rejected 34000
+2360..2378 rejected 34000
+2397..2523 rejected 34000
+2524..2542 rejected 34000
+2561..2687 rejected 34000
+2688..2710 accepted
+2744..2762 rejected 34000
+2783..2909 rejected 34000
+2910..2919 skipped
+3047..3132 rejected 42P01
+3133..3198 rejected 42P01
+3199..3226 accepted
+3227..3312 rejected 42P01
+3313..3378 rejected 42P01
+3379..3401 accepted
+3435..3470 skipped
+3471..3514 accepted
+3545..3634 accepted
+3635..3644 skipped
+3646..3665 accepted

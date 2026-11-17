@@ -1,67 +1,67 @@
-7:1 accepted
-34:1 accepted
-35:1 accepted
-37:1 rejected 42P01
-43:1 rejected 42P01
-48:1 rejected 42P01
-55:1 rejected 42P01
-60:1 accepted
-63:1 accepted
-64:1 accepted
-70:1 accepted
-72:1 accepted
-73:1 accepted
-76:1 accepted
-80:1 accepted
-83:1 accepted
-84:1 accepted
-88:1 rejected 42P01
-93:1 accepted
-94:1 accepted
-95:1 accepted
-96:1 accepted
-98:1 accepted
-101:1 accepted
-105:1 accepted
-108:1 accepted
-112:1 accepted
-113:1 accepted
-114:1 accepted
-115:1 rejected 42883
-117:1 accepted
-118:1 accepted
-121:1 accepted
-125:1 accepted
-128:1 accepted
-131:1 accepted
-133:1 accepted
-134:1 accepted
-135:1 accepted
-136:1 accepted
-137:1 accepted
-138:1 accepted
-139:1 accepted
-140:1 accepted
-142:1 accepted
-146:1 accepted
-148:1 accepted
-153:1 accepted
-155:1 accepted
-161:1 rejected 42P01
-170:1 rejected 42P01
-177:1 accepted
-178:1 accepted
-179:1 accepted
-180:1 accepted
-181:1 accepted
-182:1 accepted
-185:1 accepted
-186:1 accepted
-187:1 accepted
-188:1 accepted
-191:1 rejected 42P01
-197:1 rejected 42P01
-201:1 accepted
-202:1 accepted
-203:1 accepted
-204:1 accepted
+326..1284 accepted
+1355..1382 accepted
+1383..1412 accepted
+1414..1565 rejected 42P01
+1609..1725 rejected 42P01
+1753..1951 rejected 42P01
+1995..2158 rejected 42P01
+2160..2188 accepted
+2240..2282 accepted
+2283..2431 accepted
+2477..2521 accepted
+2523..2572 accepted
+2573..2597 accepted
+2679..2812 accepted
+2814..2834 accepted
+2915..2938 accepted
+2939..2970 accepted
+3154..3306 rejected 42P01
+3308..3335 accepted
+3336..3370 accepted
+3371..3425 accepted
+3426..3438 accepted
+3440..3466 accepted
+3511..3600 accepted
+3644..3734 accepted
+3736..3751 accepted
+3841..3879 accepted
+3880..3922 accepted
+3923..3965 accepted
+3966..4060 rejected 42883
+4105..4147 accepted
+4148..4164 accepted
+4203..4301 accepted
+4340..4438 accepted
+4440..4459 accepted
+4509..4545 accepted
+4547..4594 accepted
+4595..4660 accepted
+4661..4727 accepted
+4728..4770 accepted
+4771..4817 accepted
+4818..4855 accepted
+4856..4893 accepted
+4894..4906 accepted
+4908..4997 accepted
+5064..5101 accepted
+5103..5245 accepted
+5247..5262 accepted
+5264..5296 accepted
+5443..5655 rejected 42P01
+5710..5902 rejected 42P01
+5904..5925 accepted
+5926..5949 accepted
+5950..5965 accepted
+5966..5992 accepted
+5993..6017 accepted
+6018..6040 accepted
+6078..6116 accepted
+6117..6146 accepted
+6147..6176 accepted
+6177..6218 accepted
+6254..6419 rejected 42P01
+6483..6628 rejected 42P01
+6630..6668 accepted
+6669..6695 accepted
+6696..6722 accepted
+6723..6758 accepted

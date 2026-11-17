@@ -1,113 +1,113 @@
-7:1 accepted
-9:1 accepted
-10:1 accepted
-11:1 accepted
-12:1 accepted
-13:1 accepted
-14:1 accepted
-15:1 accepted
-16:1 accepted
-17:1 accepted
-18:1 accepted
-19:1 accepted
-20:1 accepted
-21:1 accepted
-22:1 accepted
-23:1 accepted
-24:1 accepted
-25:1 accepted
-26:1 accepted
-27:1 accepted
-28:1 accepted
-29:1 accepted
-32:1 accepted
-33:1 accepted
-34:1 accepted
-35:1 accepted
-36:1 accepted
-37:1 accepted
-40:1 accepted
-41:1 accepted
-42:1 accepted
-43:1 accepted
-44:1 accepted
-45:1 accepted
-47:1 accepted
-48:1 accepted
-49:1 accepted
-50:1 accepted
-52:1 accepted
-53:1 accepted
-54:1 accepted
-56:1 accepted
-57:1 accepted
-58:1 accepted
-60:1 accepted
-61:1 accepted
-62:1 accepted
-64:1 accepted
-65:1 accepted
-66:1 accepted
-68:1 accepted
-69:1 accepted
-70:1 accepted
-72:1 accepted
-73:1 accepted
-74:1 accepted
-77:1 accepted
-78:1 accepted
-79:1 rejected 22003
-80:1 rejected 22003
-81:1 accepted
-82:1 accepted
-83:1 accepted
-84:1 rejected 22003
-85:1 rejected 22003
-88:1 accepted
-89:1 accepted
-92:1 accepted
-93:1 accepted
-94:1 accepted
-95:1 accepted
-98:1 accepted
-99:1 accepted
-101:1 rejected 22003
-102:1 rejected 22003
-105:1 rejected 22003
-106:1 rejected 22003
-109:1 accepted
-110:1 accepted
-111:1 accepted
-112:1 accepted
-113:1 accepted
-116:1 accepted
-117:1 accepted
-118:1 accepted
-121:1 accepted
-122:1 accepted
-123:1 accepted
-124:1 accepted
-125:1 accepted
-126:1 accepted
-127:1 accepted
-128:1 accepted
-129:1 accepted
-130:1 accepted
-131:1 accepted
-134:1 accepted
-135:1 accepted
-136:1 accepted
-137:1 accepted
-140:1 rejected 22003
-141:1 rejected 22003
-142:1 rejected 22003
-143:1 rejected 22003
-144:1 rejected 22003
-145:1 rejected 22003
-146:1 rejected 22003
-147:1 rejected 22003
-148:1 rejected 22003
-149:1 rejected 22012
-150:1 rejected 22003
-151:1 rejected 22003
-152:1 rejected 22003
+73..107 accepted
+109..147 accepted
+148..173 accepted
+174..207 accepted
+208..244 accepted
+245..281 accepted
+282..320 accepted
+321..350 accepted
+351..380 accepted
+381..410 accepted
+411..446 accepted
+447..482 accepted
+483..518 accepted
+519..554 accepted
+555..590 accepted
+591..626 accepted
+627..664 accepted
+665..702 accepted
+703..740 accepted
+741..778 accepted
+779..816 accepted
+817..854 accepted
+868..905 accepted
+906..944 accepted
+945..983 accepted
+984..1022 accepted
+1023..1060 accepted
+1061..1098 accepted
+1113..1150 accepted
+1151..1189 accepted
+1190..1228 accepted
+1229..1267 accepted
+1268..1305 accepted
+1306..1343 accepted
+1345..1393 accepted
+1394..1443 accepted
+1444..1481 accepted
+1482..1528 accepted
+1530..1553 accepted
+1554..1596 accepted
+1597..1622 accepted
+1624..1647 accepted
+1648..1691 accepted
+1692..1717 accepted
+1719..1742 accepted
+1743..1786 accepted
+1787..1812 accepted
+1814..1837 accepted
+1838..1881 accepted
+1882..1907 accepted
+1909..1932 accepted
+1933..1976 accepted
+1977..2002 accepted
+2004..2027 accepted
+2028..2071 accepted
+2072..2097 accepted
+2115..2142 accepted
+2143..2177 accepted
+2178..2213 rejected 22003
+2214..2250 rejected 22003
+2251..2274 accepted
+2275..2303 accepted
+2304..2339 accepted
+2340..2376 rejected 22003
+2377..2414 rejected 22003
+2438..2458 accepted
+2459..2489 accepted
+2522..2566 accepted
+2567..2620 accepted
+2621..2680 accepted
+2681..2749 accepted
+2787..2825 accepted
+2826..2863 accepted
+2865..2903 rejected 22003
+2904..2941 rejected 22003
+2955..2994 rejected 22003
+2995..3033 rejected 22003
+3074..3110 accepted
+3111..3147 accepted
+3148..3184 accepted
+3185..3218 accepted
+3219..3257 accepted
+3299..3349 accepted
+3350..3397 accepted
+3398..3450 accepted
+3487..3512 accepted
+3513..3545 accepted
+3546..3569 accepted
+3570..3598 accepted
+3599..3634 accepted
+3635..3666 accepted
+3667..3705 accepted
+3706..3747 accepted
+3748..3782 accepted
+3783..3824 accepted
+3825..3869 accepted
+3901..3944 accepted
+3945..3989 accepted
+3990..4036 accepted
+4037..4084 accepted
+4105..4158 rejected 22003
+4159..4213 rejected 22003
+4214..4263 rejected 22003
+4264..4306 rejected 22003
+4307..4354 rejected 22003
+4355..4404 rejected 22003
+4405..4454 rejected 22003
+4455..4504 rejected 22003
+4505..4554 rejected 22003
+4555..4583 rejected 22012
+4584..4619 rejected 22003
+4620..4656 rejected 22003
+4657..4692 rejected 22003
