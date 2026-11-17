@@ -188,9 +188,7 @@ impl RuleFix {
         let mut previous_end = start;
         self.edits.iter().all(|edit| {
             let fits = edit.range.start() >= previous_end
-                && text
-                    .get(Range::<usize>::from(edit.range - start))
-                    .is_some();
+                && text.get(Range::<usize>::from(edit.range - start)).is_some();
             previous_end = edit.range.end();
             fits
         })
