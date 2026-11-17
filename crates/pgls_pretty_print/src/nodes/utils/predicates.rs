@@ -216,15 +216,23 @@ pub(crate) fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
     }
 }
 
+/// The precedence of an operator by its name. A qualified name is written `OPERATOR(schema.op)`,
+/// which has the precedence of any other `Op` whatever its symbol, and so do prefix operators other
+/// than `+` and `-`.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L14972
 pub(crate) fn operator_info(name: &[Node], arity: OperatorArity) -> Option<OperatorInfo> {
     let symbol = operator_symbol(name)?.to_ascii_lowercase();
+    if name.len() > 1 {
+        return Some(OperatorInfo {
+            precedence: PREC_OTHER,
+            associativity: OperatorAssociativity::Left,
+        });
+    }
 
     let (precedence, associativity) = match symbol.as_str() {
         "+" | "-" if matches!(arity, OperatorArity::Unary) => {
             (PREC_UNARY, OperatorAssociativity::Right)
         }
-        "~" if matches!(arity, OperatorArity::Unary) => (PREC_UNARY, OperatorAssociativity::Right),
-        "!" if matches!(arity, OperatorArity::Unary) => (PREC_UNARY, OperatorAssociativity::Left),
         "^" => (PREC_POWER, OperatorAssociativity::Left),
         "*" | "/" | "%" => (PREC_MULTIPLICATIVE, OperatorAssociativity::Left),
         "+" | "-" => (PREC_ADDITIVE, OperatorAssociativity::Left),
