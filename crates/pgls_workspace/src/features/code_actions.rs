@@ -92,8 +92,7 @@ pub const SUPPRESSION_ACTION_CATEGORY: &str = "quickfix.suppressRule";
 /// [CodeActionKind] type in the Language Server Protocol specification
 ///
 /// [CodeActionKind]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ActionCategory {
     /// Base kind for quickfix actions: 'quickfix'.
@@ -159,8 +158,7 @@ impl ActionCategory {
 /// The sub-category of a refactor code action.
 ///
 /// [Check the LSP spec](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind) for more information:
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum RefactorKind {
     /// This action describes a refactor with no particular sub-category
@@ -197,8 +195,7 @@ pub enum RefactorKind {
 }
 
 /// The sub-category of a source code action
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum SourceActionKind {
     /// This action describes a source action with no particular sub-category

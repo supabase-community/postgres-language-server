@@ -148,14 +148,16 @@ fn assert_lint(
     // Typecheck rules need a database. Examples run against one with empty `public` and
     // `pg_catalog` schemas and create everything else themselves.
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
-    let diagnostics = analyser.analyse(pgls_analyser::AnalyserParams {
-        stmts,
-        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
-        search_path: vec!["public".into()],
-        typecheck: is_typecheck,
-        ..Default::default()
-    })
-    .diagnostics;
+    let diagnostics = analyser
+        .analyse(pgls_analyser::AnalyserParams {
+            stmts,
+            catalog_base: is_typecheck
+                .then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+            search_path: vec!["public".into()],
+            typecheck: is_typecheck,
+            ..Default::default()
+        })
+        .diagnostics;
     for rule_diag in diagnostics {
         let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 

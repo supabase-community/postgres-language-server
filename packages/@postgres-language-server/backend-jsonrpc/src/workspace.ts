@@ -51,7 +51,7 @@ export interface PullFileDiagnosticsParams {
 }
 export type RuleCategories = RuleCategory[];
 export type RuleCode = string;
-export type RuleCategory = "Lint" | "Action" | "Transformation";
+export type RuleCategory = "Lint";
 export interface PullDiagnosticsResult {
   diagnostics: Diagnostic[];
   skipped_diagnostics: number;
