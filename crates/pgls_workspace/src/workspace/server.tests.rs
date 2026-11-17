@@ -12,6 +12,8 @@ use pgls_configuration::{
     database::PartialDatabaseConfiguration,
     files::PartialFilesConfiguration,
     migrations::{MigrationTool, PartialMigrationsConfiguration},
+    pglinter::PartialPglinterConfiguration,
+    splinter::PartialSplinterConfiguration,
 };
 
 use pgls_configuration::ConfigurationPathHint;
@@ -36,6 +38,7 @@ use crate::{
         EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
         ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
+    features::diagnostics::PullDatabaseDiagnosticsParams,
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     features::on_hover::OnHoverParams,
@@ -6977,4 +6980,101 @@ async fn test_cancelled_formatting_stops() {
     assert_eq!(result.formatted, result.original);
     assert!(result.statements.is_empty());
     assert_eq!(format().formatted, "select 1;\n".repeat(200));
+}
+
+/// A configuration for `test_db` that runs pglinter, but not splinter, in the database linting.
+fn pglinter_configuration(test_db: &PgPool) -> PartialConfiguration {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        splinter: Some(PartialSplinterConfiguration {
+            enabled: Some(false),
+            ..Default::default()
+        }),
+        pglinter: Some(PartialPglinterConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    conf
+}
+
+/// The categories of the database diagnostics of the test database.
+fn pull_db_diagnostic_categories(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+) -> Vec<String> {
+    workspace
+        .pull_db_diagnostics(PullDatabaseDiagnosticsParams {
+            project_key,
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+        })
+        .expect("Unable to pull database diagnostics")
+        .diagnostics
+        .iter()
+        .filter_map(|diagnostic| diagnostic.category())
+        .map(|category| category.name().to_string())
+        .collect()
+}
+
+/// With `pglinter.enabled`, the database linting reports pglinter's violations. The test database
+/// server has the extension, except on Windows.
+#[cfg(not(target_os = "windows"))]
+#[pgls_test_utils::db_test]
+async fn test_pull_db_diagnostics_runs_pglinter(test_db: PgPool) {
+    test_db
+        .execute(
+            "create extension if not exists pglinter;
+            create table public.no_primary_key (name text);",
+        )
+        .await
+        .expect("Unable to set up the database");
+    let (workspace, project_key) = get_test_workspace(Some(pglinter_configuration(&test_db)))
+        .expect("Unable to create test workspace");
+
+    let categories = pull_db_diagnostic_categories(&workspace, project_key);
+
+    assert!(
+        categories
+            .iter()
+            .any(|category| category == "pglinter/base/howManyTableWithoutPrimaryKey"),
+        "{categories:?}"
+    );
+    assert!(
+        categories
+            .iter()
+            .all(|category| category.starts_with("pglinter/")),
+        "{categories:?}"
+    );
+}
+
+/// With `pglinter.enabled` and a database without the extension, the database linting reports
+/// that it is missing. The snapshot lists the extensions that the server has available, so the
+/// extension being available must not count as installed.
+#[pgls_test_utils::db_test]
+async fn test_pull_db_diagnostics_pglinter_not_installed(test_db: PgPool) {
+    test_db
+        .execute("drop extension if exists pglinter;")
+        .await
+        .expect("Unable to drop pglinter");
+    let (workspace, project_key) = get_test_workspace(Some(pglinter_configuration(&test_db)))
+        .expect("Unable to create test workspace");
+
+    assert_eq!(
+        pull_db_diagnostic_categories(&workspace, project_key),
+        ["pglinter/extensionNotInstalled"]
+    );
 }

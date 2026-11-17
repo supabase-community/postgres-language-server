@@ -87,13 +87,9 @@ pub async fn run_pglinter(
     let mut results = vec![];
 
     // Check extension installed
-    let extension_installed = cache.map(|c| c.extension_installed).unwrap_or_else(|| {
-        params
-            .snapshot
-            .extensions
-            .iter()
-            .any(|e| e.name == "pglinter")
-    });
+    let extension_installed = cache
+        .map(|c| c.extension_installed)
+        .unwrap_or_else(|| cache::is_installed(params.snapshot));
 
     // Collect enabled rules from config
     let enabled_rules = collect_enabled_rules(filter);

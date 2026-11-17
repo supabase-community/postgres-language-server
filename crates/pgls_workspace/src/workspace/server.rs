@@ -1315,55 +1315,93 @@ impl Workspace for WorkspaceServer {
             return Ok(PullDiagnosticsResult::default());
         };
 
-        if !settings.splinter.enabled {
-            debug!("Splinter is disabled. Skipping database linting.");
+        let splinter_enabled = settings.splinter.enabled;
+        let pglinter_enabled = settings.pglinter.enabled;
+        if !splinter_enabled && !pglinter_enabled {
+            debug!("Splinter and pglinter are disabled. Skipping database linting.");
             return Ok(PullDiagnosticsResult::default());
         }
 
-        let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_splinter_rules(&params.only, &params.skip)
-            .finish();
+        // A filter per tool, each from its own registry and configuration.
+        let (splinter_enabled_rules, splinter_disabled_rules) =
+            AnalyserVisitorBuilder::new(settings)
+                .with_splinter_rules(&params.only, &params.skip)
+                .finish();
+        let (pglinter_enabled_rules, pglinter_disabled_rules) =
+            AnalyserVisitorBuilder::new(settings)
+                .with_pglinter_rules(&params.only, &params.skip)
+                .finish();
 
         let categories = params.categories;
         let splinter_config = settings.splinter.to_configuration();
-        let Some(splinter_diagnostics) = self.connection.with_pool(&settings.db, |pool| {
+        let Some(database_diagnostics) = self.connection.with_pool(&settings.db, |pool| {
             let snapshot = match self.snapshot.load(pool) {
                 Ok(snapshot) => Some(snapshot),
                 Err(err @ WorkspaceError::DatabaseConnectionError(_)) => return Err(err),
                 Err(err) => {
-                    debug!("Unable to load the database snapshot for splinter: {err}");
+                    debug!("Unable to load the database snapshot for database linting: {err}");
                     None
                 }
             };
 
             let pool = pool.clone();
-            let splinter_result = run_async(async move {
-                let filter = AnalysisFilter {
-                    categories,
-                    enabled_rules: Some(enabled_rules.as_slice()),
-                    disabled_rules: &disabled_rules,
-                };
-                let splinter_params = pgls_splinter::SplinterParams {
-                    conn: &pool,
-                    snapshot: snapshot.as_deref(),
-                    config: Some(&splinter_config),
-                };
-                pgls_splinter::run_splinter(splinter_params, &filter).await
+            let result = run_async(async move {
+                let mut splinter_diagnostics = Vec::new();
+                if splinter_enabled {
+                    let filter = AnalysisFilter {
+                        categories,
+                        enabled_rules: Some(splinter_enabled_rules.as_slice()),
+                        disabled_rules: &splinter_disabled_rules,
+                    };
+                    let splinter_params = pgls_splinter::SplinterParams {
+                        conn: &pool,
+                        snapshot: snapshot.as_deref(),
+                        config: Some(&splinter_config),
+                    };
+                    splinter_diagnostics =
+                        pgls_splinter::run_splinter(splinter_params, &filter).await?;
+                }
+
+                let mut pglinter_diagnostics = Vec::new();
+                match snapshot.as_deref() {
+                    Some(snapshot) if pglinter_enabled => {
+                        let filter = AnalysisFilter {
+                            categories,
+                            enabled_rules: Some(pglinter_enabled_rules.as_slice()),
+                            disabled_rules: &pglinter_disabled_rules,
+                        };
+                        let pglinter_params = pgls_pglinter::PglinterParams {
+                            conn: &pool,
+                            snapshot,
+                        };
+                        // Without a cache, each run reads the rules and the messages of the
+                        // extension again, so that changes to them show on the next run.
+                        pglinter_diagnostics =
+                            pgls_pglinter::run_pglinter(pglinter_params, &filter, None).await?;
+                    }
+                    None if pglinter_enabled => {
+                        debug!("pglinter needs the database snapshot. Skipping pglinter checks.");
+                    }
+                    _ => {}
+                }
+
+                Ok::<_, sqlx::Error>((splinter_diagnostics, pglinter_diagnostics))
             })?;
 
-            splinter_result.map_err(WorkspaceError::from)
+            result.map_err(WorkspaceError::from)
         }) else {
-            debug!("No database connection available. Skipping splinter checks.");
+            debug!("No database connection available. Skipping database linting.");
             return Ok(PullDiagnosticsResult::default());
         };
-        let splinter_diagnostics = splinter_diagnostics?;
+        let (splinter_diagnostics, pglinter_diagnostics) = database_diagnostics?;
 
-        let total = splinter_diagnostics.len();
+        let total = splinter_diagnostics.len() + pglinter_diagnostics.len();
         let max = params.max_diagnostics as usize;
         let diagnostics: Vec<SDiagnostic> = splinter_diagnostics
             .into_iter()
-            .take(max)
             .map(SDiagnostic::new)
+            .chain(pglinter_diagnostics.into_iter().map(SDiagnostic::new))
+            .take(max)
             .collect();
         let skipped = total.saturating_sub(max) as u32;
 

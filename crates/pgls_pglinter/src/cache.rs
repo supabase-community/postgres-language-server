@@ -40,7 +40,7 @@ pub struct PglinterCache {
 impl PglinterCache {
     /// Load pglinter extension state from database using official API
     pub async fn load(conn: &PgPool, snapshot: &Snapshot) -> Result<Self, sqlx::Error> {
-        let extension_installed = snapshot.extensions.iter().any(|e| e.name == "pglinter");
+        let extension_installed = is_installed(snapshot);
 
         if !extension_installed {
             return Ok(Self {
@@ -70,11 +70,20 @@ impl PglinterCache {
     /// Create initial cache from the database snapshot only (disabled rules will need API call later)
     pub fn from_snapshot(snapshot: &Snapshot) -> Self {
         Self {
-            extension_installed: snapshot.extensions.iter().any(|e| e.name == "pglinter"),
+            extension_installed: is_installed(snapshot),
             disabled_rules: FxHashSet::default(),
             rule_messages: FxHashMap::default(),
         }
     }
+}
+
+/// Whether the pglinter extension is installed in the database. The snapshot lists every
+/// extension that is available on the server, installed or not.
+pub(crate) fn is_installed(snapshot: &Snapshot) -> bool {
+    snapshot
+        .extensions
+        .iter()
+        .any(|e| e.name == "pglinter" && e.installed_version.is_some())
 }
 
 /// Get disabled rules by querying the pglinter.rules table
