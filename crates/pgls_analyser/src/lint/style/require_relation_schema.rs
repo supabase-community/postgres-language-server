@@ -2,7 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_resolve::{LookupKind, SearchPathLookup};
+use pgls_resolve::LookupKind;
 
 declare_lint_rule! {
     /// Relations in queries should be schema-qualified.
@@ -56,14 +56,9 @@ impl LinterRule for RequireRelationSchema {
     const READS_LOOKUPS: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        let mut relations: Vec<&SearchPathLookup> = ctx
-            .lookups()
+        ctx.lookups()
             .iter()
             .filter(|lookup| lookup.kind == LookupKind::Relation)
-            .collect();
-        relations.sort_by_key(|relation| relation.location);
-        relations
-            .into_iter()
             .map(|relation| {
                 let name = &relation.name;
                 LinterDiagnostic::new(

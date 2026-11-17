@@ -5,7 +5,7 @@ use pgls_query::{
 use pgls_query_ext::utils::type_name;
 
 use crate::catalog::{Catalog, key, overlay::column_info};
-use crate::lookup::{CatalogView, ColumnInfo, Origin, RelationInfo, RelationKind};
+use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
 use crate::{Generated, Identity};
 
 /// The bit of `INCLUDING GENERATED` in `TableLikeClause.options`. The protobuf enum numbers the

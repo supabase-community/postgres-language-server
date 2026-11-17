@@ -63,6 +63,8 @@ pub struct RegistryLinterRule {
     pub name: &'static str,
     /// Whether the rule reads the names looked up through the search path.
     pub reads_lookups: bool,
+    /// See [`LinterRule::REPORTS_DATABASE_ERROR`].
+    pub reports_database_error: bool,
 }
 
 impl LinterRuleRegistry {
@@ -125,6 +127,7 @@ impl RegistryLinterRule {
             group: <R::Group as RuleGroup>::NAME,
             name: R::METADATA.name,
             reads_lookups: R::READS_LOOKUPS,
+            reports_database_error: R::REPORTS_DATABASE_ERROR,
         }
     }
 }

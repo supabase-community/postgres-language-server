@@ -13,20 +13,26 @@ use crate::features::code_actions::execute_statement::{
     execution,
     running::{RUNNING_STATEMENTS_MAX, RunningStatements},
 };
+#[cfg(feature = "db")]
+use crate::features::diagnostics::DatabaseChecks;
+#[cfg(feature = "db")]
 use analyser::AnalyserVisitorBuilder;
 use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
 use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
+use document::Document;
 #[cfg(feature = "db")]
-use document::TypecheckDiagnosticsMapper;
-use document::{Document, ExecuteStatementMapper};
+use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
+use document_cache::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
+#[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use parking_lot::{Mutex, RwLock};
+#[cfg(feature = "db")]
 use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
@@ -41,6 +47,8 @@ use pgls_diagnostics::{
 };
 use pgls_fs::{ConfigName, PgLSPath};
 use pgls_migrations::MigrationTool;
+#[cfg(not(feature = "db"))]
+use pgls_suppressions::PendingDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -69,11 +77,13 @@ use crate::{
     workspace::WithCSTMapper,
 };
 
+#[cfg(feature = "db")]
+use super::SchemaCacheScope;
 use super::{
     FindProjectParams, GetFileContentParams, InvalidateSchemaCacheParams, IsPathIgnoredParams,
-    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, SchemaCacheScope,
-    ServerInfo, UnregisterProjectFolderParams, UpdateNestedSettingsParams,
-    UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
+    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
+    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
+    UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
@@ -451,31 +461,52 @@ impl WorkspaceServer {
     }
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
-    /// unchanged database objects, and plpgsql_check.
+    /// unchanged database objects, and plpgsql_check. With [`DatabaseChecks::Run`] it checks the
+    /// statements and keeps the results of each one in the document, with
+    /// [`DatabaseChecks::Reuse`] it returns what the last run found for the statements that are
+    /// unchanged since.
     ///
     /// `None` if `should_stop` stopped it: no new check starts then, and the ones that run
     /// finish, since a query can't be stopped half way through.
     #[cfg(feature = "db")]
     fn database_diagnostics(
         &self,
-        settings: &Settings,
+        settings: &DatabaseCheckSettings,
         path: &PgLSPath,
         doc: &Document,
         analysis: &DocumentAnalysis,
+        checks: DatabaseChecks,
         should_stop: &dyn Fn() -> bool,
     ) -> Result<Option<DatabaseDiagnostics>, WorkspaceError> {
-        let typecheck_enabled = settings.typecheck.enabled;
+        // The statements that a run checks: the top-level ones outside the migration sections
+        // that aren't linted. A reuse reads the results of the same ones, so that the occurrences
+        // of a statement match and the current sections apply.
+        let checked_statements = || {
+            doc.top_level_statements()
+                .filter(|(_, range)| !analysis.is_skipped(range.start()))
+        };
+        if checks == DatabaseChecks::Reuse {
+            return Ok(Some(
+                doc.cache().database_results().reuse(checked_statements()),
+            ));
+        }
+
+        let typecheck_enabled = settings.typecheck;
         let plpgsql_check = settings.plpgsql_check.clone();
         if !typecheck_enabled && !plpgsql_check.enabled {
+            doc.cache()
+                .set_database_results(DatabaseResults::default(), doc.generation());
             return Ok(Some(DatabaseDiagnostics::default()));
         }
 
         let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
             let snapshot = self.snapshot.load(pool)?;
+            // Only top-level statements are checked: the static typecheck rules cover the
+            // statements of SQL function bodies, whose parameters they resolve.
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
-                .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
+                .filter(|(id, range, ..)| !id.is_child() && !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
                     let statement = analysis.statement(range).cloned();
                     (id, range, ast, cst, statement)
@@ -499,18 +530,19 @@ impl WorkspaceServer {
                                 let plpgsql_check = plpgsql_check.clone();
 
                                 async move {
-                                    let mut diagnostics = Vec::new();
-                                    let mut plpgsql_checked = None;
+                                    let mut result = StatementDatabaseResult::default();
+                                    // The spans are relative to the statement, see `DatabaseResults`.
+                                    let relative = |span: TextRange| {
+                                        span.checked_sub(range.start())
+                                            .unwrap_or(TextRange::up_to(range.len()))
+                                    };
+                                    let path = path.as_path().display().to_string();
                                     let Some(ast) = ast else {
-                                        return Ok((diagnostics, plpgsql_checked));
+                                        return Ok((id, range, result));
                                     };
 
-                                    // The static typecheck rules cover everything else, including the
-                                    // statements of SQL function bodies, whose parameters they resolve.
                                     let statement = statement.filter(|statement| {
-                                        typecheck_enabled
-                                            && statement.database_only
-                                            && !id.is_child()
+                                        typecheck_enabled && statement.database_only
                                     });
                                     if let Some(statement) = statement {
                                         let conversion = convert_to_positional_params_with_metadata(
@@ -518,7 +550,7 @@ impl WorkspaceServer {
                                         );
 
                                         if !conversion.has_identifier_parameters {
-                                            let result =
+                                            let typecheck =
                                                 pgls_typecheck::check_sql(TypecheckParams {
                                                     conn: &pool,
                                                     sql: conversion.sql.as_str(),
@@ -528,23 +560,21 @@ impl WorkspaceServer {
                                                     search_path: &statement.search_path,
                                                     identifiers: Vec::new(),
                                                     duplicate_assignments_reported: statement
-                                                        .has_duplicate_assignments,
+                                                        .reported_database_error,
                                                 })
                                                 .await?;
 
-                                            if let Some(diagnostic) = result {
+                                            if let Some(diagnostic) = typecheck {
                                                 let span = database_span(
                                                     diagnostic.location().span,
                                                     id.content(),
                                                     range,
                                                 );
-                                                diagnostics.push(
+                                                result.diagnostics.push(SDiagnostic::new(
                                                     diagnostic
-                                                        .with_file_path(
-                                                            path.as_path().display().to_string(),
-                                                        )
-                                                        .with_file_span(span),
-                                                );
+                                                        .with_file_path(path.clone())
+                                                        .with_file_span(relative(span)),
+                                                ));
                                             }
                                         }
                                     }
@@ -577,27 +607,24 @@ impl WorkspaceServer {
                                         .ok()
                                         .flatten();
 
-                                        if results.is_some() {
-                                            plpgsql_checked = Some(range);
-                                        }
+                                        result.plpgsql_checked = results.is_some();
 
                                         for diagnostic in results.unwrap_or_default() {
                                             let span =
                                                 database_span(diagnostic.span, id.content(), range);
-                                            diagnostics.push(
+                                            result.diagnostics.push(SDiagnostic::new(
                                                 diagnostic
-                                                    .with_file_path(
-                                                        path.as_path().display().to_string(),
-                                                    )
-                                                    .with_file_span(span),
-                                            );
+                                                    .with_file_path(path.clone())
+                                                    .with_file_span(relative(span)),
+                                            ));
                                         }
                                     }
 
-                                    Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
+                                    Ok::<_, sqlx::Error>((id, range, result))
                                 }
                             })
-                            .buffer_unordered(10)
+                            // In document order, for `DatabaseResults`.
+                            .buffered(10)
                             .try_collect::<Vec<_>>()
                             .await
                     },
@@ -611,24 +638,26 @@ impl WorkspaceServer {
         }
 
         match db_diagnostics {
-            None => Ok(Some(DatabaseDiagnostics::default())),
-            Some(Ok(batches)) => {
-                let mut diagnostics = Vec::new();
-                let mut plpgsql_checked = Vec::new();
-                for (batch, checked) in batches {
-                    diagnostics.extend(batch.into_iter().map(SDiagnostic::new));
-                    plpgsql_checked.extend(checked);
-                }
-                Ok(Some(DatabaseDiagnostics {
-                    diagnostics,
-                    plpgsql_checked,
-                }))
+            None => {
+                doc.cache()
+                    .set_database_results(DatabaseResults::default(), doc.generation());
+                Ok(Some(DatabaseDiagnostics::default()))
+            }
+            Some(Ok(checked)) => {
+                // The diagnostics of this pull are the results it keeps, at the statements'
+                // places.
+                let results = DatabaseResults::new(checked);
+                let diagnostics = results.reuse(checked_statements());
+                doc.cache().set_database_results(results, doc.generation());
+                Ok(Some(diagnostics))
             }
             Some(Err(err @ WorkspaceError::DatabaseConnectionError(_))) => {
                 // Database-backed diagnostics are best-effort. If the connection is
                 // unreachable, keep publishing parser/static diagnostics instead of
                 // failing the whole edit-triggered diagnostics request.
                 debug!("Skipping database-backed diagnostics: {err}");
+                doc.cache()
+                    .set_database_results(DatabaseResults::default(), doc.generation());
                 Ok(Some(DatabaseDiagnostics::default()))
             }
             Some(Err(err)) => Err(err),
@@ -643,13 +672,26 @@ impl WorkspaceServer {
     }
 }
 
-/// See [`WorkspaceServer::database_diagnostics`].
+/// What the checks against the database need from the settings, see
+/// [`WorkspaceServer::database_diagnostics`]. A pull copies it and releases the settings before it
+/// checks: the lock of the settings is task-fair, so a settings update that waits for a pull
+/// would hold up every request after it, edits included, until the database answers.
 #[cfg(feature = "db")]
-#[derive(Default)]
-struct DatabaseDiagnostics {
-    diagnostics: Vec<SDiagnostic>,
-    /// The ranges of the statements that plpgsql_check checked.
-    plpgsql_checked: Vec<TextRange>,
+struct DatabaseCheckSettings {
+    db: crate::settings::DatabaseSettings,
+    typecheck: bool,
+    plpgsql_check: crate::settings::PlPgSqlCheckSettings,
+}
+
+#[cfg(feature = "db")]
+impl DatabaseCheckSettings {
+    fn new(settings: &Settings) -> Self {
+        Self {
+            db: settings.db.clone(),
+            typecheck: settings.typecheck.enabled,
+            plpgsql_check: settings.plpgsql_check.clone(),
+        }
+    }
 }
 
 /// Check whether a file is a migration up to `migrations.after`. Both versions are read in the
@@ -1192,9 +1234,9 @@ impl Workspace for WorkspaceServer {
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
-        let settings = self.workspaces();
+        let workspaces = self.workspaces();
 
-        let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
+        let settings = match workspaces.settings_for(params.project_key, params.path.as_path()) {
             Some(settings) => settings,
             None => {
                 // return an empty result if no settings are available
@@ -1242,24 +1284,62 @@ impl Workspace for WorkspaceServer {
             return Ok(PullDiagnosticsResult::default());
         };
 
+        let lint_diagnostics: Vec<SDiagnostic> = analysis
+            .lint_diagnostics()
+            .iter()
+            .cloned()
+            .map(Error::from)
+            .map(|d| {
+                let severity = d
+                    .category()
+                    .and_then(|category| settings.get_severity_from_rule_code(category))
+                    .unwrap_or(Severity::Warning);
+
+                let span = d.location().span;
+                SDiagnostic::new(
+                    d.with_file_path(path.clone())
+                        .with_file_span(span)
+                        .with_severity(severity),
+                )
+            })
+            .collect();
+
+        // The checks against the database wait for it, seconds on long files, so they don't hold
+        // the settings, see `DatabaseCheckSettings`.
+        #[cfg(feature = "db")]
+        let database_settings = DatabaseCheckSettings::new(settings);
+        drop(workspaces);
+
         /*
          * Checks against the database: statements that reference only objects that exist
          * unchanged in the database are typechecked with EXPLAIN, and PL/pgSQL functions with
          * plpgsql_check.
          */
         #[cfg(feature = "db")]
-        let plpgsql_checked = {
-            let Some(database) =
-                self.database_diagnostics(settings, &params.path, doc, &analysis, &should_stop)?
+        let (plpgsql_checked, pending_diagnostics) = {
+            let Some(database) = self.database_diagnostics(
+                &database_settings,
+                &params.path,
+                doc,
+                &analysis,
+                params.database_checks,
+                &should_stop,
+            )?
             else {
                 // The document changed or the request was cancelled.
                 return Ok(PullDiagnosticsResult::default());
             };
+            // A statement that the checks haven't checked since an edit may still need its
+            // suppressions of them.
+            let pending = database.pending();
             diagnostics.extend(database.diagnostics);
-            database.plpgsql_checked
+            (database.plpgsql_checked, pending)
         };
         #[cfg(not(feature = "db"))]
-        let plpgsql_checked: Vec<TextRange> = Vec::new();
+        let (plpgsql_checked, pending_diagnostics): (
+            Vec<TextRange>,
+            Vec<PendingDiagnostic>,
+        ) = (Vec::new(), Vec::new());
 
         for diagnostic in analysis.syntax_diagnostics() {
             // Ignore the syntax error if we already have more specialized diagnostics for the
@@ -1289,26 +1369,7 @@ impl Workspace for WorkspaceServer {
             }
         }
 
-        diagnostics.extend(
-            analysis
-                .lint_diagnostics()
-                .iter()
-                .cloned()
-                .map(Error::from)
-                .map(|d| {
-                    let severity = d
-                        .category()
-                        .and_then(|category| settings.get_severity_from_rule_code(category))
-                        .unwrap_or(Severity::Warning);
-
-                    let span = d.location().span;
-                    SDiagnostic::new(
-                        d.with_file_path(path.clone())
-                            .with_file_span(span)
-                            .with_severity(severity),
-                    )
-                }),
-        );
+        diagnostics.extend(lint_diagnostics);
 
         let suppressions = doc.suppressions();
 
@@ -1316,7 +1377,7 @@ impl Workspace for WorkspaceServer {
             suppressions.get_disabled_diagnostic_suppressions_as_errors(analysis.disabled_rules());
 
         let mut unused_suppression_errors =
-            suppressions.get_unused_suppressions_as_errors(&diagnostics);
+            suppressions.get_unused_suppressions_as_errors(&diagnostics, &pending_diagnostics);
         unused_suppression_errors.retain(|error| !analysis.is_skipped(error.span.start()));
 
         let suppression_errors: Vec<Error> = suppressions

@@ -215,6 +215,7 @@ impl<'a> WorkspaceSettingsHandle<'a> {
     }
 
     /// The root settings of a project.
+    #[cfg(feature = "db")]
     pub(crate) fn settings(&self, key: ProjectKey) -> Option<&Settings> {
         self.inner.get_settings(key)
     }

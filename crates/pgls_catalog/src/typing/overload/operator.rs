@@ -5,10 +5,11 @@
 
 use super::candidates::visible_operators;
 use super::{Candidate, match_argtypes, resolve_result, select_candidate};
+use crate::Catalog;
 use crate::typing::pseudo::PolymorphicIds;
 use crate::typing::types::base_type;
 use crate::typing::{Decision, ResolvedOperator, Selection, Type, TypeId};
-use crate::{CatalogView, OperatorInfo, OperatorKind};
+use crate::{OperatorInfo, OperatorKind};
 
 /// Selects the operator for an operator expression. `left` is `None` for prefix operators.
 ///
@@ -19,7 +20,7 @@ use crate::{CatalogView, OperatorInfo, OperatorKind};
 /// [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
 /// [`oper_select_candidate`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L312
 pub fn select_operator(
-    c: &dyn CatalogView,
+    c: &Catalog,
     schema: Option<&str>,
     name: &str,
     kind: OperatorKind,
@@ -83,7 +84,7 @@ pub fn select_operator(
 /// [`binary_oper_exact`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L262
 /// [`left_oper`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_oper.c#L518
 pub(super) fn exact_operator(
-    c: &dyn CatalogView,
+    c: &Catalog,
     visible: &[Candidate<OperatorInfo>],
     inputs: &[Type],
 ) -> Option<Decision<Candidate<OperatorInfo>>> {
@@ -122,7 +123,7 @@ pub(super) fn exact_operator(
 }
 
 pub(super) fn resolve_operator(
-    c: &dyn CatalogView,
+    c: &Catalog,
     pseudo: &PolymorphicIds,
     candidate: Candidate<OperatorInfo>,
     inputs: &[Type],

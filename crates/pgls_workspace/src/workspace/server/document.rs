@@ -143,6 +143,22 @@ impl Document {
             },
             self.generation,
         );
+        // The statements around the change are new to the checks against the database, which
+        // only run on save, see `DatabaseResults`.
+        #[cfg(feature = "db")]
+        {
+            let after = old_split.ranges.len().saturating_sub(changed.end);
+            let added = changed.start..self.split.ranges.len().saturating_sub(after);
+            let text = self.text();
+            self.cache.statements_edited(
+                self.split
+                    .ranges
+                    .get(added)
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|range| text.get(std::ops::Range::<usize>::from(*range))),
+            );
+        }
         // The statements around the change that are no longer in the document drop what was
         // cached for them, with the statements of their function bodies. The other statements
         // have the same text as before.
@@ -281,6 +297,16 @@ impl Document {
         &self.split.ranges
     }
 
+    /// The text and the range of each top-level statement, in file order.
+    #[cfg(feature = "db")]
+    pub(crate) fn top_level_statements(&self) -> impl Iterator<Item = (&str, TextRange)> {
+        let text = self.text();
+        self.split
+            .ranges
+            .iter()
+            .filter_map(|range| Some((text.get(std::ops::Range::<usize>::from(*range))?, *range)))
+    }
+
     pub fn get_document_content(&self) -> &str {
         &self.content
     }
@@ -313,6 +339,7 @@ impl Document {
         &self.diagnostics
     }
 
+    #[cfg(feature = "db")]
     pub fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
     where
         M: StatementMapper<'a>,
@@ -522,7 +549,9 @@ impl<'a> StatementMapper<'a> for DefaultMapper {
     }
 }
 
+#[cfg(feature = "db")]
 pub struct ExecuteStatementMapper;
+#[cfg(feature = "db")]
 impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
     type Output = (
         StatementId,
@@ -564,7 +593,9 @@ impl<'a> StatementMapper<'a> for FormatStatementMapper {
     }
 }
 
+#[cfg(feature = "db")]
 pub struct TypecheckDiagnosticsMapper;
+#[cfg(feature = "db")]
 impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
     type Output = (
         StatementId,
@@ -709,16 +740,19 @@ impl StatementFilter<'_> for CursorPositionFilter {
     }
 }
 
+#[cfg(feature = "db")]
 pub struct IdFilter {
     id: StatementId,
 }
 
+#[cfg(feature = "db")]
 impl IdFilter {
     pub fn new(id: StatementId) -> Self {
         Self { id }
     }
 }
 
+#[cfg(feature = "db")]
 impl StatementFilter<'_> for IdFilter {
     fn predicate(&self, stmt: &DocumentStatement) -> bool {
         stmt.id == self.id
@@ -1081,6 +1115,7 @@ $$;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_execute_statement_mapper() {
         let input = "SELECT 1; INVALID SYNTAX HERE;";
         let d = Document::new(input.to_string(), 1);
@@ -1098,6 +1133,7 @@ $$;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_async_diagnostics_mapper() {
         let input = "
 CREATE FUNCTION test_fn() RETURNS integer AS $$
@@ -1118,6 +1154,7 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_async_diagnostics_mapper_with_sql_function_body() {
         let input =
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
@@ -1254,6 +1291,7 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_id_filter() {
         let input = "SELECT 1; SELECT 2;";
         let d = Document::new(input.to_string(), 1);
@@ -1283,6 +1321,7 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
+    #[cfg(feature = "db")]
     fn test_find_method() {
         let input = "SELECT 1; SELECT 2;";
         let d = Document::new(input.to_string(), 1);

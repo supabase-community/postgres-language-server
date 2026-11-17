@@ -222,7 +222,7 @@ fn analyse(
 
     // Like the workspace, the fixes that don't keep the SQL valid are not used.
     analyser
-        .run(AnalyserParams {
+        .analyse(AnalyserParams {
             stmts,
             unparsable,
             catalog_base: catalog,
@@ -231,6 +231,7 @@ fn analyse(
             sections: migration_sections(query),
             ..Default::default()
         })
+        .diagnostics
         .into_iter()
         .map(|diagnostic| {
             let fix = diagnostic
