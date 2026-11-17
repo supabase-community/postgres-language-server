@@ -25,7 +25,7 @@ pub(crate) struct SuppressionsParser<'a> {
 }
 
 impl<'a> SuppressionsParser<'a> {
-    pub fn new(doc: &'a str) -> Self {
+    pub(crate) fn new(doc: &'a str) -> Self {
         let lines = doc.lines().enumerate().peekable();
 
         Self {
@@ -39,7 +39,7 @@ impl<'a> SuppressionsParser<'a> {
         }
     }
 
-    pub fn parse(doc: &str) -> Suppressions {
+    pub(crate) fn parse(doc: &str) -> Suppressions {
         // Every suppression comment contains `-ignore`. Most documents have none, and finding
         // that out is much faster than looking at each line. Without line suppressions, the
         // line index isn't needed either.
@@ -83,7 +83,9 @@ impl<'a> SuppressionsParser<'a> {
                 return;
             }
 
-            let (idx, line) = self.lines.next().unwrap();
+            let Some((idx, line)) = self.lines.next() else {
+                return;
+            };
 
             let offset = line_start(&self.line_index, idx);
 
@@ -188,10 +190,11 @@ impl<'a> SuppressionsParser<'a> {
 /// The offset of line `idx` of `str::lines`. Like the line index, `str::lines` ends lines at `\n`
 /// only, so the line exists.
 fn line_start(line_index: &LineIndex, idx: usize) -> TextSize {
-    u32::try_from(idx)
+    let start = u32::try_from(idx)
         .ok()
-        .and_then(|line| line_index.offset(LineCol { line, col: 0 }))
-        .unwrap()
+        .and_then(|line| line_index.offset(LineCol { line, col: 0 }));
+    debug_assert!(start.is_some(), "line {idx} is past the end of the text");
+    start.unwrap_or(line_index.len())
 }
 
 #[cfg(test)]

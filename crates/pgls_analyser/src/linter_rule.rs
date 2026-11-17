@@ -154,7 +154,7 @@ pub struct RuleAdvice {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct SuggestionList {
+pub(crate) struct SuggestionList {
     pub(crate) message: MarkupBuf,
     pub(crate) list: Vec<MarkupBuf>,
 }
@@ -196,7 +196,7 @@ impl Advices for RuleAdvice {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Detail {
+pub(crate) struct Detail {
     pub log_category: LogCategory,
     pub message: MarkupBuf,
     pub range: Option<TextRange>,

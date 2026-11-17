@@ -38,13 +38,6 @@ struct TypecheckAdvices {
     detail: Option<String>,
     where_: Option<String>,
     hint: Option<String>,
-
-    #[allow(unused)]
-    line: Option<usize>,
-    #[allow(unused)]
-    file: Option<String>,
-    #[allow(unused)]
-    routine: Option<String>,
 }
 
 impl Advices for TypecheckAdvices {
@@ -269,21 +262,6 @@ pub(crate) fn create_type_error(
                 }
             }),
             constraint: pg_err.constraint().and_then(|s| {
-                if !s.is_empty() {
-                    Some(s.to_string())
-                } else {
-                    None
-                }
-            }),
-            line: pg_err.line(),
-            file: pg_err.file().and_then(|s| {
-                if !s.is_empty() {
-                    Some(s.to_string())
-                } else {
-                    None
-                }
-            }),
-            routine: pg_err.routine().and_then(|s| {
                 if !s.is_empty() {
                     Some(s.to_string())
                 } else {

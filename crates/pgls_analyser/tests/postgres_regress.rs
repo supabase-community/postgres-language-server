@@ -10,6 +10,13 @@
 //! `CREATE FUNCTION`, with the function's parameters in scope. A finding in the body of a function
 //! Postgres accepted is a false positive too.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use std::{collections::BTreeMap, sync::Arc};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};

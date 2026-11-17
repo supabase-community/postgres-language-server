@@ -32,22 +32,6 @@ impl ToolConfig {
         self.name
     }
 
-    /// Derived: Crate name that contains the rules
-    #[allow(dead_code)]
-    fn crate_name(&self) -> String {
-        format!("pgls_{}", self.name)
-    }
-
-    /// Derived: The main struct name (Rules, Actions, or Transformations)
-    #[allow(dead_code)]
-    fn struct_name(&self) -> &str {
-        match self.category {
-            RuleCategory::Lint => "Rules",
-            RuleCategory::Action => "Actions",
-            RuleCategory::Transformation => "Transformations",
-        }
-    }
-
     /// Derived: The generated file name (rules.rs, actions.rs, or transformations.rs)
     fn generated_file(&self) -> &str {
         match self.category {
@@ -167,13 +151,13 @@ fn generate_lint_config(
     tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<(String, String)> {
-    let mod_file = generate_lint_mod_file(tool);
+    let mod_file = generate_lint_mod_file(tool)?;
     let rules_file = generate_lint_rules_file(tool, groups)?;
     Ok((mod_file, rules_file))
 }
 
 /// Generate the mod.rs file for a Lint tool
-fn generate_lint_mod_file(tool: &ToolConfig) -> String {
+fn generate_lint_mod_file(tool: &ToolConfig) -> Result<String> {
     let config_struct = Ident::new(&tool.config_struct_name(), Span::call_site());
     let partial_config_struct = Ident::new(&tool.partial_config_struct_name(), Span::call_site());
     let generated_file = tool.generated_file().trim_end_matches(".rs");
@@ -343,7 +327,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         }
     };
 
-    crate::reformat(content.to_string()).unwrap()
+    crate::reformat(content.to_string())
 }
 
 /// The linter groups, including groups that have no rules yet.
@@ -498,21 +482,23 @@ fn generate_flat_linter_rules_file(
                 severity: #severity,
             }
         });
-        level_arms.push(quote! {
+        let level_arm = quote! {
             #name_literal => self.#ident.as_ref().map(RuleConfiguration::level)
-        });
-        options_arms.push(quote! {
+        };
+        let options_arm = quote! {
             #name_literal => self.#ident.as_ref().and_then(RuleConfiguration::get_options)
-        });
+        };
         if LEGACY_SAFETY_RULES.contains(name) {
             legacy_fields.push(quote! {
                 #[serde(skip_serializing_if = "Option::is_none")]
                 pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
             });
-            legacy_level_arms.push(level_arms.last().unwrap().clone());
-            legacy_options_arms.push(options_arms.last().unwrap().clone());
+            legacy_level_arms.push(level_arm.clone());
+            legacy_options_arms.push(options_arm.clone());
             legacy_names.push((name.to_string(), ident));
         }
+        level_arms.push(level_arm);
+        options_arms.push(options_arm);
     }
 
     for name in REMOVED_LINTER_RULES {
@@ -974,20 +960,19 @@ fn generate_lint_group_struct(
     // For splinter, generate code to build matchers from ignore patterns
     let mut splinter_ignore_matcher_lines = Vec::new();
 
-    for (index, (rule, metadata)) in rules.iter().enumerate() {
+    for (rule, metadata) in rules {
         let summary = extract_summary_from_docs(metadata.docs);
-        let rule_position = Literal::u8_unsuffixed(index as u8);
         let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
         if metadata.recommended {
             lines_recommended_rule_as_filter.push(quote! {
-                RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
+                RuleFilter::Rule(Self::GROUP_NAME, #rule)
             });
         }
 
         lines_all_rule_as_filter.push(quote! {
-            RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
+            RuleFilter::Rule(Self::GROUP_NAME, #rule)
         });
 
         lines_rule.push(quote! {
@@ -1035,7 +1020,7 @@ fn generate_lint_group_struct(
             {
                 index_set.insert(RuleFilter::Rule(
                     Self::GROUP_NAME,
-                    Self::GROUP_RULES[#rule_position],
+                    #rule,
                 ));
             }
         });
@@ -1046,7 +1031,7 @@ fn generate_lint_group_struct(
             {
                 index_set.insert(RuleFilter::Rule(
                     Self::GROUP_NAME,
-                    Self::GROUP_RULES[#rule_position],
+                    #rule,
                 ));
             }
         });
@@ -1146,7 +1131,10 @@ fn generate_lint_group_struct(
 
             /// Checks if, given a rule name, matches one of the rules contained in this category
             pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-                Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+                Self::GROUP_RULES
+                    .binary_search(&rule_name)
+                    .ok()
+                    .and_then(|index| Self::GROUP_RULES.get(index).copied())
             }
 
             pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
@@ -1249,13 +1237,13 @@ fn generate_action_config(
     tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<(String, String)> {
-    let mod_file = generate_action_mod_file(tool);
+    let mod_file = generate_action_mod_file(tool)?;
     let actions_file = generate_action_actions_file(tool, groups)?;
     Ok((mod_file, actions_file))
 }
 
 /// Generate the mod.rs file for an Action tool
-fn generate_action_mod_file(tool: &ToolConfig) -> String {
+fn generate_action_mod_file(tool: &ToolConfig) -> Result<String> {
     let config_struct = Ident::new(&tool.config_struct_name(), Span::call_site());
     let partial_config_struct = Ident::new(&tool.partial_config_struct_name(), Span::call_site());
     let generated_file = tool.generated_file().trim_end_matches(".rs");
@@ -1318,7 +1306,7 @@ fn generate_action_mod_file(tool: &ToolConfig) -> String {
         }
     };
 
-    crate::reformat(content.to_string()).unwrap()
+    crate::reformat(content.to_string())
 }
 
 /// Generate the actions.rs file for an Action tool
@@ -1484,9 +1472,8 @@ fn generate_action_group_struct(
     let mut rule_enabled_check_line = Vec::new();
     let mut get_rule_configuration_line = Vec::new();
 
-    for (index, (rule, metadata)) in rules.iter().enumerate() {
+    for (rule, metadata) in rules {
         let summary = extract_summary_from_docs(metadata.docs);
-        let rule_position = Literal::u8_unsuffixed(index as u8);
         let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
@@ -1511,7 +1498,7 @@ fn generate_action_group_struct(
             {
                 index_set.insert(RuleFilter::Rule(
                     Self::GROUP_NAME,
-                    Self::GROUP_RULES[#rule_position],
+                    #rule,
                 ));
             }
         });
@@ -1546,7 +1533,10 @@ fn generate_action_group_struct(
 
             /// Checks if, given a rule name, matches one of the rules contained in this category
             pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-                Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+                Self::GROUP_RULES
+                    .binary_search(&rule_name)
+                    .ok()
+                    .and_then(|index| Self::GROUP_RULES.get(index).copied())
             }
 
             pub(crate) fn get_rule_configuration(

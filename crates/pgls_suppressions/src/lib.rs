@@ -194,7 +194,7 @@ impl Suppressions {
             .statements
             .partition_point(|statement| statement.start() <= start)
             .checked_sub(1)?;
-        let statement = self.statements[index];
+        let statement = *self.statements.get(index)?;
         if !statement.contains_inclusive(start) {
             return None;
         }
@@ -239,7 +239,7 @@ mod tests {
 
     #[derive(Clone, Debug, Diagnostic)]
     #[diagnostic(category = "lint", severity = Error)]
-    pub struct TestDiagnostic {
+    pub(crate) struct TestDiagnostic {
         #[location(span)]
         pub span: TextRange,
     }

@@ -18,11 +18,11 @@ pub use rule::PglinterRule;
 
 /// PostgreSQL catalog OIDs for different object types
 mod pg_catalog {
-    pub const PG_CLASS: i64 = 1259; // tables, views, indexes, sequences
-    pub const PG_PROC: i64 = 1255; // functions, procedures
-    pub const PG_TYPE: i64 = 1247; // types
-    pub const PG_NAMESPACE: i64 = 2615; // schemas
-    pub const PG_ATTRIBUTE: i64 = 1249; // columns (objid=table oid, objsubid=column number)
+    pub(crate) const PG_CLASS: i64 = 1259; // tables, views, indexes, sequences
+    pub(crate) const PG_PROC: i64 = 1255; // functions, procedures
+    pub(crate) const PG_TYPE: i64 = 1247; // types
+    pub(crate) const PG_NAMESPACE: i64 = 2615; // schemas
+    pub(crate) const PG_ATTRIBUTE: i64 = 1249; // columns (objid=table oid, objsubid=column number)
 }
 
 /// A violation row returned by pglinter.get_violations()

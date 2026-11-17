@@ -184,14 +184,18 @@ pub fn walk_statements(
                 (unit_catalog, session)
             }
         };
-        let stmts = &params.stmts[unit.stmts.clone()];
+        // The units split the statements, so their ranges lie inside them.
+        let stmts = params.stmts.get(unit.stmts.clone()).unwrap_or_default();
         let unit_unparsable = {
             let starts = |end: TextSize| {
                 params
                     .unparsable
                     .partition_point(|skipped| skipped.range.start() < end)
             };
-            &params.unparsable[starts(unit.start)..starts(unit.end)]
+            params
+                .unparsable
+                .get(starts(unit.start)..starts(unit.end))
+                .unwrap_or_default()
         };
         // The last statement of the unit, including those that don't parse. The statements of a
         // function body end within their `CREATE FUNCTION`.
@@ -222,15 +226,18 @@ pub fn walk_statements(
             .into_iter()
             .flat_map(|section| section.implicit_blocks(params.statement_ranges))
             .peekable();
-        let mut file_context =
-            AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
-                .with_resolve_options(params.resolve)
-                .with_positions(
-                    stmts.iter().map(|stmt| stmt.range.start()).collect(),
-                    last_end,
-                    terminated,
-                )
-                .with_stmt_count(statements_before(unit.end) - statements_before(unit.start));
+        let mut file_context = AnalysedFileContext::new(
+            roots.get(unit.stmts.clone()).unwrap_or_default(),
+            unit_catalog,
+            session,
+        )
+        .with_resolve_options(params.resolve)
+        .with_positions(
+            stmts.iter().map(|stmt| stmt.range.start()).collect(),
+            last_end,
+            terminated,
+        )
+        .with_stmt_count(statements_before(unit.end) - statements_before(unit.start));
         let state = |at: TextSize,
                      file_context: &AnalysedFileContext,
                      catalog: &Catalog,
@@ -482,7 +489,11 @@ fn migration_units<'a>(
     let mut first = 0;
     units
         .map(|(section, start, end)| {
-            let last = first + stmts[first..].partition_point(|stmt| stmt.range.start() < end);
+            let last = first
+                + stmts
+                    .get(first..)
+                    .unwrap_or_default()
+                    .partition_point(|stmt| stmt.range.start() < end);
             let unit = MigrationUnit {
                 section,
                 stmts: first..last,

@@ -37,7 +37,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
         [qualifier, name] => resolve_qualified_column(r, qualifier, name, n.location),
         [schema, relation, name] => {
             // `schema.table.column`, if `schema.table` is an unaliased item.
-            let item = find_qualified_item(&r.levels, &names[..2]);
+            let item = find_qualified_item(&r.levels, names.get(..2).unwrap_or_default());
             let reference = column_reference(r, item, name, n.location);
             let missing = item.is_some_and(|item| item.has_column(name) == Some(false));
             record(r, reference);

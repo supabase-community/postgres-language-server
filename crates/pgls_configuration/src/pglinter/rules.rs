@@ -260,32 +260,32 @@ impl Base {
         "severalTableOwnerInSchema",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
+        RuleFilter::Rule(Self::GROUP_NAME, "compositePrimaryKeyTooManyColumns"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyObjectsWithUppercase"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyRedudantIndex"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTableWithoutIndexOnFk"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTableWithoutPrimaryKey"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesNeverSelected"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithFkMismatch"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithFkOutsideSchema"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithReservedKeywords"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithSameTrigger"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyUnusedIndex"),
+        RuleFilter::Rule(Self::GROUP_NAME, "severalTableOwnerInSchema"),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
+        RuleFilter::Rule(Self::GROUP_NAME, "compositePrimaryKeyTooManyColumns"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyObjectsWithUppercase"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyRedudantIndex"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTableWithoutIndexOnFk"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTableWithoutPrimaryKey"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesNeverSelected"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithFkMismatch"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithFkOutsideSchema"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithReservedKeywords"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyTablesWithSameTrigger"),
+        RuleFilter::Rule(Self::GROUP_NAME, "howManyUnusedIndex"),
+        RuleFilter::Rule(Self::GROUP_NAME, "severalTableOwnerInSchema"),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -305,62 +305,92 @@ impl Base {
         if let Some(rule) = self.composite_primary_key_too_many_columns.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "compositePrimaryKeyTooManyColumns",
+            ));
         }
         if let Some(rule) = self.how_many_objects_with_uppercase.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyObjectsWithUppercase",
+            ));
         }
         if let Some(rule) = self.how_many_redudant_index.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "howManyRedudantIndex"));
         }
         if let Some(rule) = self.how_many_table_without_index_on_fk.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTableWithoutIndexOnFk",
+            ));
         }
         if let Some(rule) = self.how_many_table_without_primary_key.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTableWithoutPrimaryKey",
+            ));
         }
         if let Some(rule) = self.how_many_tables_never_selected.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesNeverSelected",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_fk_mismatch.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithFkMismatch",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_fk_outside_schema.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithFkOutsideSchema",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_reserved_keywords.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithReservedKeywords",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_same_trigger.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithSameTrigger",
+            ));
         }
         if let Some(rule) = self.how_many_unused_index.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "howManyUnusedIndex"));
         }
         if let Some(rule) = self.several_table_owner_in_schema.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "severalTableOwnerInSchema",
+            ));
         }
         index_set
     }
@@ -369,68 +399,101 @@ impl Base {
         if let Some(rule) = self.composite_primary_key_too_many_columns.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "compositePrimaryKeyTooManyColumns",
+            ));
         }
         if let Some(rule) = self.how_many_objects_with_uppercase.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyObjectsWithUppercase",
+            ));
         }
         if let Some(rule) = self.how_many_redudant_index.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "howManyRedudantIndex"));
         }
         if let Some(rule) = self.how_many_table_without_index_on_fk.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTableWithoutIndexOnFk",
+            ));
         }
         if let Some(rule) = self.how_many_table_without_primary_key.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTableWithoutPrimaryKey",
+            ));
         }
         if let Some(rule) = self.how_many_tables_never_selected.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesNeverSelected",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_fk_mismatch.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithFkMismatch",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_fk_outside_schema.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithFkOutsideSchema",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_reserved_keywords.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithReservedKeywords",
+            ));
         }
         if let Some(rule) = self.how_many_tables_with_same_trigger.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "howManyTablesWithSameTrigger",
+            ));
         }
         if let Some(rule) = self.how_many_unused_index.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "howManyUnusedIndex"));
         }
         if let Some(rule) = self.several_table_owner_in_schema.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "severalTableOwnerInSchema",
+            ));
         }
         index_set
     }
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-        Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+        Self::GROUP_RULES
+            .binary_search(&rule_name)
+            .ok()
+            .and_then(|index| Self::GROUP_RULES.get(index).copied())
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS
@@ -557,14 +620,26 @@ impl Cluster {
         "pgHbaEntriesWithMethodTrustShouldNotExists",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
+        RuleFilter::Rule(Self::GROUP_NAME, "passwordEncryptionIsMd5"),
+        RuleFilter::Rule(
+            Self::GROUP_NAME,
+            "pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists",
+        ),
+        RuleFilter::Rule(
+            Self::GROUP_NAME,
+            "pgHbaEntriesWithMethodTrustShouldNotExists",
+        ),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
+        RuleFilter::Rule(Self::GROUP_NAME, "passwordEncryptionIsMd5"),
+        RuleFilter::Rule(
+            Self::GROUP_NAME,
+            "pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists",
+        ),
+        RuleFilter::Rule(
+            Self::GROUP_NAME,
+            "pgHbaEntriesWithMethodTrustShouldNotExists",
+        ),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -584,21 +659,30 @@ impl Cluster {
         if let Some(rule) = self.password_encryption_is_md5.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "passwordEncryptionIsMd5",
+            ));
         }
         if let Some(rule) = self
             .pg_hba_entries_with_method_trust_or_password_should_not_exists
             .as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists",
+            ));
         }
         if let Some(rule) = self
             .pg_hba_entries_with_method_trust_should_not_exists
             .as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "pgHbaEntriesWithMethodTrustShouldNotExists",
+            ));
         }
         index_set
     }
@@ -607,27 +691,39 @@ impl Cluster {
         if let Some(rule) = self.password_encryption_is_md5.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "passwordEncryptionIsMd5",
+            ));
         }
         if let Some(rule) = self
             .pg_hba_entries_with_method_trust_or_password_should_not_exists
             .as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "pgHbaEntriesWithMethodTrustOrPasswordShouldNotExists",
+            ));
         }
         if let Some(rule) = self
             .pg_hba_entries_with_method_trust_should_not_exists
             .as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "pgHbaEntriesWithMethodTrustShouldNotExists",
+            ));
         }
         index_set
     }
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-        Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+        Self::GROUP_RULES
+            .binary_search(&rule_name)
+            .ok()
+            .and_then(|index| Self::GROUP_RULES.get(index).copied())
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS
@@ -716,18 +812,18 @@ impl Schema {
         "unsecuredPublicSchema",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
+        RuleFilter::Rule(Self::GROUP_NAME, "ownerSchemaIsInternalRole"),
+        RuleFilter::Rule(Self::GROUP_NAME, "schemaOwnerDoNotMatchTableOwner"),
+        RuleFilter::Rule(Self::GROUP_NAME, "schemaPrefixedOrSuffixedWithEnvt"),
+        RuleFilter::Rule(Self::GROUP_NAME, "schemaWithDefaultRoleNotGranted"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unsecuredPublicSchema"),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
+        RuleFilter::Rule(Self::GROUP_NAME, "ownerSchemaIsInternalRole"),
+        RuleFilter::Rule(Self::GROUP_NAME, "schemaOwnerDoNotMatchTableOwner"),
+        RuleFilter::Rule(Self::GROUP_NAME, "schemaPrefixedOrSuffixedWithEnvt"),
+        RuleFilter::Rule(Self::GROUP_NAME, "schemaWithDefaultRoleNotGranted"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unsecuredPublicSchema"),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -747,27 +843,39 @@ impl Schema {
         if let Some(rule) = self.owner_schema_is_internal_role.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "ownerSchemaIsInternalRole",
+            ));
         }
         if let Some(rule) = self.schema_owner_do_not_match_table_owner.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "schemaOwnerDoNotMatchTableOwner",
+            ));
         }
         if let Some(rule) = self.schema_prefixed_or_suffixed_with_envt.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "schemaPrefixedOrSuffixedWithEnvt",
+            ));
         }
         if let Some(rule) = self.schema_with_default_role_not_granted.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "schemaWithDefaultRoleNotGranted",
+            ));
         }
         if let Some(rule) = self.unsecured_public_schema.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unsecuredPublicSchema"));
         }
         index_set
     }
@@ -776,33 +884,48 @@ impl Schema {
         if let Some(rule) = self.owner_schema_is_internal_role.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "ownerSchemaIsInternalRole",
+            ));
         }
         if let Some(rule) = self.schema_owner_do_not_match_table_owner.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "schemaOwnerDoNotMatchTableOwner",
+            ));
         }
         if let Some(rule) = self.schema_prefixed_or_suffixed_with_envt.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "schemaPrefixedOrSuffixedWithEnvt",
+            ));
         }
         if let Some(rule) = self.schema_with_default_role_not_granted.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "schemaWithDefaultRoleNotGranted",
+            ));
         }
         if let Some(rule) = self.unsecured_public_schema.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unsecuredPublicSchema"));
         }
         index_set
     }
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-        Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+        Self::GROUP_RULES
+            .binary_search(&rule_name)
+            .ok()
+            .and_then(|index| Self::GROUP_RULES.get(index).copied())
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS
