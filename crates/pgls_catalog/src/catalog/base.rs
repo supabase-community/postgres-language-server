@@ -220,17 +220,8 @@ impl CatalogBase {
         let mut functions: FxHashMap<Key, Vec<FunctionInfo>> = FxHashMap::default();
         for function in &snapshot.functions {
             let args = &function.args.args;
-            // `CALL` passes the output arguments of procedures too (`FuncnameGetCandidates`
-            // with `include_out_arguments`):
-            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1272
             let is_procedure = function.kind == ProcKind::Procedure;
-            let is_call_argument = |mode: &str| {
-                matches!(mode, "in" | "inout" | "variadic") || (is_procedure && mode == "out")
-            };
-            let inputs = args
-                .iter()
-                .filter(|arg| is_call_argument(&arg.mode))
-                .count();
+            let inputs = function.call_arguments().count();
             // Defaults belong to the last input arguments. The snapshot doesn't attach them to
             // the right arguments when there are output arguments, but their number is correct.
             let defaults = usize::try_from(function.input_defaults)

@@ -17,7 +17,7 @@ use pgls_configuration::{
     ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration, TypecheckConfiguration,
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
-    files::FilesConfiguration,
+    files::{DEFAULT_FILE_SIZE_LIMIT, FilesConfiguration},
     format::{
         CastStyle, ClauseBodyStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase,
         Layout, LogicalOperatorPlacement,
@@ -1161,11 +1161,6 @@ fn to_migration_settings(
         lint_down: conf.lint_down,
     }
 }
-
-/// Limit the size of files to 1.0 MiB by default
-pub(crate) const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
-    // SAFETY: This constant is initialized with a non-zero value
-    NonZeroU64::new(1024 * 1024).unwrap();
 
 impl FilesSettings {
     /// The files settings of a configuration, without applying the rest of it.

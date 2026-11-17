@@ -45,7 +45,12 @@ jobs:
 
   wasm:
     name: Build & Test WASM
+    needs: extract_version
     runs-on: ubuntu-22.04
+    env:
+      # Inline the version, like in the CLI binary: `pgls_version()` and the language server's
+      # `serverInfo` report it, and the tests check it.
+      PGLS_VERSION: ${{ needs.extract_version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:

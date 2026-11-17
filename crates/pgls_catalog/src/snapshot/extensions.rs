@@ -15,6 +15,14 @@ pub struct Extension {
     pub comment: Option<String>,
 }
 
+impl Extension {
+    /// Whether the extension is installed in the database. The snapshot lists every extension
+    /// that the server has available, installed or not.
+    pub fn is_installed(&self) -> bool {
+        self.installed_version.is_some()
+    }
+}
+
 #[cfg(feature = "db")]
 impl SnapshotItem for Extension {
     type Item = Extension;

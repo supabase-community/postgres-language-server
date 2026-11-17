@@ -46,6 +46,11 @@ impl<'a> Cursor<'a> {
         self.chars.as_str().is_empty()
     }
 
+    /// Returns the input that is not consumed yet.
+    pub(crate) fn as_str(&self) -> &'a str {
+        self.chars.as_str()
+    }
+
     /// Returns amount of already consumed symbols.
     pub(crate) fn pos_within_token(&self) -> u32 {
         (self.len_remaining - self.chars.as_str().len()) as u32

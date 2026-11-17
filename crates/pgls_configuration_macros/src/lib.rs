@@ -3,7 +3,7 @@ mod partial_derive;
 mod util;
 
 use proc_macro::TokenStream;
-use proc_macro_error::*;
+use proc_macro_error3::*;
 use syn::{DeriveInput, parse_macro_input};
 
 /// Derives the `pgls_configuration::Merge` trait for a custom enum or struct.

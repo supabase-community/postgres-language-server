@@ -5,10 +5,10 @@ use bpaf::Bpaf;
 use pgls_configuration_macros::{Merge, Partial};
 use serde::{Deserialize, Serialize};
 
-/// Limit the size of files to 1.0 MiB by default
+/// Limit the size of files to 10 MiB by default
 pub const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
     // SAFETY: This constant is initialized with a non-zero value
-    NonZeroU64::new(1024 * 1024).unwrap();
+    NonZeroU64::new(10 * 1024 * 1024).unwrap();
 
 /// The configuration of the filesystem
 #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
@@ -18,7 +18,7 @@ pub const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
 pub struct FilesConfiguration {
     /// The maximum allowed size for source code files in bytes. Files above
     /// this limit are not checked for performance reasons, and get a warning
-    /// that says so. Defaults to 1 MiB
+    /// that says so. Defaults to 10 MiB
     #[partial(bpaf(long("files-max-size"), argument("NUMBER")))]
     pub max_size: NonZeroU64,
 
