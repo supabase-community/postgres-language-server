@@ -471,7 +471,7 @@ impl WorkspaceServer {
     #[cfg(feature = "db")]
     fn database_diagnostics(
         &self,
-        settings: &Settings,
+        settings: &DatabaseCheckSettings,
         path: &PgLSPath,
         doc: &Document,
         analysis: &DocumentAnalysis,
@@ -491,7 +491,7 @@ impl WorkspaceServer {
             ));
         }
 
-        let typecheck_enabled = settings.typecheck.enabled;
+        let typecheck_enabled = settings.typecheck;
         let plpgsql_check = settings.plpgsql_check.clone();
         if !typecheck_enabled && !plpgsql_check.enabled {
             doc.cache()
@@ -669,6 +669,28 @@ impl WorkspaceServer {
         path.file_name()
             .and_then(|s| s.to_str())
             .is_some_and(|file_name| ConfigName::file_names().contains(&file_name))
+    }
+}
+
+/// What the checks against the database need from the settings, see
+/// [`WorkspaceServer::database_diagnostics`]. A pull copies it and releases the settings before it
+/// checks: the lock of the settings is task-fair, so a settings update that waits for a pull
+/// would hold up every request after it, edits included, until the database answers.
+#[cfg(feature = "db")]
+struct DatabaseCheckSettings {
+    db: crate::settings::DatabaseSettings,
+    typecheck: bool,
+    plpgsql_check: crate::settings::PlPgSqlCheckSettings,
+}
+
+#[cfg(feature = "db")]
+impl DatabaseCheckSettings {
+    fn new(settings: &Settings) -> Self {
+        Self {
+            db: settings.db.clone(),
+            typecheck: settings.typecheck.enabled,
+            plpgsql_check: settings.plpgsql_check.clone(),
+        }
     }
 }
 
@@ -1212,9 +1234,9 @@ impl Workspace for WorkspaceServer {
         params: PullFileDiagnosticsParams,
     ) -> Result<PullDiagnosticsResult, WorkspaceError> {
         self.refresh_migration_tool(params.project_key, &params.path);
-        let settings = self.workspaces();
+        let workspaces = self.workspaces();
 
-        let settings = match settings.settings_for(params.project_key, params.path.as_path()) {
+        let settings = match workspaces.settings_for(params.project_key, params.path.as_path()) {
             Some(settings) => settings,
             None => {
                 // return an empty result if no settings are available
@@ -1262,6 +1284,32 @@ impl Workspace for WorkspaceServer {
             return Ok(PullDiagnosticsResult::default());
         };
 
+        let lint_diagnostics: Vec<SDiagnostic> = analysis
+            .lint_diagnostics()
+            .iter()
+            .cloned()
+            .map(Error::from)
+            .map(|d| {
+                let severity = d
+                    .category()
+                    .and_then(|category| settings.get_severity_from_rule_code(category))
+                    .unwrap_or(Severity::Warning);
+
+                let span = d.location().span;
+                SDiagnostic::new(
+                    d.with_file_path(path.clone())
+                        .with_file_span(span)
+                        .with_severity(severity),
+                )
+            })
+            .collect();
+
+        // The checks against the database wait for it, seconds on long files, so they don't hold
+        // the settings, see `DatabaseCheckSettings`.
+        #[cfg(feature = "db")]
+        let database_settings = DatabaseCheckSettings::new(settings);
+        drop(workspaces);
+
         /*
          * Checks against the database: statements that reference only objects that exist
          * unchanged in the database are typechecked with EXPLAIN, and PL/pgSQL functions with
@@ -1270,7 +1318,7 @@ impl Workspace for WorkspaceServer {
         #[cfg(feature = "db")]
         let (plpgsql_checked, pending_diagnostics) = {
             let Some(database) = self.database_diagnostics(
-                settings,
+                &database_settings,
                 &params.path,
                 doc,
                 &analysis,
@@ -1321,26 +1369,7 @@ impl Workspace for WorkspaceServer {
             }
         }
 
-        diagnostics.extend(
-            analysis
-                .lint_diagnostics()
-                .iter()
-                .cloned()
-                .map(Error::from)
-                .map(|d| {
-                    let severity = d
-                        .category()
-                        .and_then(|category| settings.get_severity_from_rule_code(category))
-                        .unwrap_or(Severity::Warning);
-
-                    let span = d.location().span;
-                    SDiagnostic::new(
-                        d.with_file_path(path.clone())
-                            .with_file_span(span)
-                            .with_severity(severity),
-                    )
-                }),
-        );
+        diagnostics.extend(lint_diagnostics);
 
         let suppressions = doc.suppressions();
 
