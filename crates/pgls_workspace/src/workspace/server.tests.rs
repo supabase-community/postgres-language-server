@@ -7407,6 +7407,7 @@ fn diagnostic_categories(
             max_diagnostics: 100,
             only: vec!["safety/banDropColumn".parse().unwrap()],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .unwrap()
         .diagnostics
@@ -7491,6 +7492,7 @@ fn files_larger_than_max_size_are_not_checked() {
                 max_diagnostics: 100,
                 only: vec!["safety/banDropColumn".parse().unwrap()],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .unwrap()
             .diagnostics
@@ -7596,6 +7598,7 @@ fn max_diagnostics_keeps_the_most_severe_diagnostics() {
                 max_diagnostics,
                 only: vec!["safety/banDropColumn".parse().unwrap()],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .unwrap()
     };
