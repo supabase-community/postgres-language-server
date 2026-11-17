@@ -210,7 +210,7 @@ pub fn sql_function_body(stmt: &pgls_query::NodeEnum, sql: &str) -> Vec<Embedded
     let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = stmt else {
         return Vec::new();
     };
-    if !is_sql_function(create_fn) {
+    if Language::of(create_fn) != Some(Language::Sql) {
         return Vec::new();
     }
     let Some(tokens) = tokens(sql) else {
@@ -244,12 +244,35 @@ pub fn function_body_location(
     Some((body.range, body.offsets))
 }
 
-/// Whether the function is written in SQL: `LANGUAGE sql`, or a `BEGIN ATOMIC` or `RETURN` body,
-/// which only SQL functions have.
-pub fn is_sql_function(create_fn: &CreateFunctionStmt) -> bool {
-    create_fn.sql_body.is_some()
-        || find_option_value(create_fn, "language")
-            .is_some_and(|language| language.eq_ignore_ascii_case("sql"))
+/// The language of a function, as far as the walk, the checks and the formatter tell them apart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Language {
+    Sql,
+    PlPgSql,
+    Internal,
+    /// Any other language, like `c` or `plpython3u`, or a name that isn't a language.
+    Other,
+}
+
+impl Language {
+    /// The language of the function that `create_fn` creates. Like Postgres in
+    /// [`CreateFunction`], it takes the name as the grammar left it, which downcases unquoted
+    /// names but not `'SQL'` or `"SQL"`, and looks it up case-sensitively. Without `LANGUAGE`, a
+    /// function with a `BEGIN ATOMIC` or `RETURN` body is a SQL function, and any other is
+    /// `None`, which Postgres rejects.
+    ///
+    /// [`CreateFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1100-L1111
+    pub fn of(create_fn: &CreateFunctionStmt) -> Option<Self> {
+        let Some(language) = find_option_value(create_fn, "language") else {
+            return create_fn.sql_body.is_some().then_some(Self::Sql);
+        };
+        Some(match language {
+            "sql" => Self::Sql,
+            "plpgsql" => Self::PlPgSql,
+            "internal" => Self::Internal,
+            _ => Self::Other,
+        })
+    }
 }
 
 /// The tokens of `sql` without comments.
@@ -735,7 +758,7 @@ fn selects(body: &EmbeddedStatement, expression: &pgls_query::protobuf::Node) ->
 mod tests {
     use pgls_text_size::{TextRange, TextSize};
 
-    use super::{OffsetMap, Quoting, sql_function_body, unescape};
+    use super::{Language, OffsetMap, Quoting, sql_function_body, unescape};
 
     /// The statements of the body: their text in `input`, and the text that is parsed.
     fn bodies(input: &str) -> Vec<(&str, String)> {
@@ -1123,5 +1146,39 @@ mod tests {
         assert_eq!(offsets.to_statement(7.into()), 3.into());
         assert_eq!(offsets.to_statement(4.into()), 1.into());
         assert_eq!(offsets.to_statement(0.into()), 0.into());
+    }
+
+    fn language(input: &str) -> Option<Language> {
+        let Some(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) =
+            pgls_query::parse(input).unwrap().into_root()
+        else {
+            panic!("not a CREATE FUNCTION: {input}");
+        };
+        Language::of(&create_fn)
+    }
+
+    #[test]
+    fn language_is_looked_up_as_the_grammar_leaves_it() {
+        let cases = [
+            ("create function f() returns int language SQL as 'select 1'", Some(Language::Sql)),
+            ("create function f() returns int language 'sql' as 'select 1'", Some(Language::Sql)),
+            ("create function f() returns int language 'SQL' as 'select 1'", Some(Language::Other)),
+            ("create function f() returns int language \"SQL\" as 'select 1'", Some(Language::Other)),
+            ("create function f() returns int language PLpgSQL as 'begin end'", Some(Language::PlPgSql)),
+            ("create function f() returns int language internal as 'int4in'", Some(Language::Internal)),
+            ("create function f() returns int language c as 'lib', 'f'", Some(Language::Other)),
+            ("create function f() returns int return 1", Some(Language::Sql)),
+            ("create function f() returns int begin atomic select 1; end", Some(Language::Sql)),
+            ("create function f() returns int as 'select 1'", None),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(language(input), expected, "{input}");
+        }
+    }
+
+    #[test]
+    fn a_quoted_upper_case_sql_is_not_a_sql_function() {
+        assert!(bodies("create function f() returns int language 'SQL' as 'select 1'").is_empty());
+        assert_eq!(bodies("create function f() returns int language 'sql' as 'select 1'").len(), 1);
     }
 }
