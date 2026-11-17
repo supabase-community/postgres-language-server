@@ -24,6 +24,9 @@ pgls_text_size.workspace = true
 schemars                 = { workspace = true, optional = true }
 serde                    = { workspace = true, features = ["derive"], optional = true }
 
+[dev-dependencies]
+serde_json = { workspace = true }
+
 [features]
 schema = ["dep:schemars", "pgls_diagnostics/schema"]
 serde  = ["dep:serde"]

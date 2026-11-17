@@ -172,3 +172,17 @@ impl RuleCategoriesBuilder {
         RuleCategories(self.flags)
     }
 }
+
+#[cfg(all(test, feature = "serde"))]
+mod tests {
+    use super::RuleCategories;
+
+    #[test]
+    fn categories_without_rules_are_still_accepted() {
+        let all: RuleCategories =
+            serde_json::from_str(r#"["Lint", "Action", "Transformation"]"#).unwrap();
+        assert_eq!(all, RuleCategories::all());
+        assert_eq!(serde_json::to_string(&all).unwrap(), r#"["Lint"]"#);
+        assert!(serde_json::from_str::<RuleCategories>(r#"["Refactor"]"#).is_err());
+    }
+}
