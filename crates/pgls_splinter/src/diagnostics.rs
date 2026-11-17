@@ -49,14 +49,22 @@ impl Advices for SplinterAdvices {
         // Show rule description
         visitor.record_log(LogCategory::None, &self.description)?;
 
-        // Show affected database object
-        if let (Some(schema), Some(name)) = (&self.schema, &self.object_name) {
+        // Show affected database object, also when it has no schema (e.g. an extension)
+        if let Some(name) = &self.object_name {
             let type_str = self
                 .object_type
                 .as_ref()
                 .map(|t| format!("{t}: "))
                 .unwrap_or_default();
-            visitor.record_log(LogCategory::Info, &format!("{type_str}{schema}.{name}"))?;
+            let schema_str = self
+                .schema
+                .as_ref()
+                .map(|schema| format!("{schema}."))
+                .unwrap_or_default();
+            visitor.record_log(
+                LogCategory::Info,
+                &format!("{type_str}{schema_str}{name}"),
+            )?;
         }
 
         // Show additional metadata if present
@@ -73,5 +81,41 @@ impl Advices for SplinterAdvices {
         )?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pgls_diagnostics::{Error, Severity, print_diagnostic_to_string};
+
+    use super::{SplinterAdvices, SplinterDiagnostic};
+
+    fn printed(schema: Option<&str>) -> String {
+        let diagnostic = SplinterDiagnostic {
+            category: pgls_diagnostics::category!("splinter"),
+            message: "Extension `pg_net` is installed in the public schema".into(),
+            severity: Severity::Warning,
+            advices: SplinterAdvices {
+                description: "Detects extensions installed in the public schema.".into(),
+                schema: schema.map(String::from),
+                object_name: Some("pg_net".into()),
+                object_type: Some("extension".into()),
+                remediation: "https://supabase.com/docs".into(),
+                additional_metadata: None,
+            },
+        };
+        print_diagnostic_to_string(&Error::from(diagnostic))
+    }
+
+    #[test]
+    fn object_with_schema() {
+        let printed = printed(Some("public"));
+        assert!(printed.contains("extension: public.pg_net"), "{printed}");
+    }
+
+    #[test]
+    fn object_without_schema() {
+        let printed = printed(None);
+        assert!(printed.contains("extension: pg_net"), "{printed}");
     }
 }
