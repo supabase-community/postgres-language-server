@@ -84,8 +84,8 @@ Shows the version information and quit.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
@@ -211,8 +211,8 @@ Lints your database schema.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
@@ -338,8 +338,8 @@ Runs everything to the requested files.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
@@ -491,8 +491,8 @@ Formats the requested files.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    

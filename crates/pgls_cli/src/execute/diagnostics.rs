@@ -10,6 +10,15 @@ pub(crate) struct PanicDiagnostic {
     pub(crate) message: String,
 }
 
+/// A file that `--skip-errors` skipped.
+#[derive(Debug, Diagnostic)]
+#[diagnostic(
+    category = "syntax",
+    message = "Skipped file with syntax errors",
+    severity = Information
+)]
+pub(crate) struct SkippedDiagnostic;
+
 /// Extension trait for turning [Display]-able error types into [TraversalError]
 pub(crate) trait ResultExt {
     type Result;
