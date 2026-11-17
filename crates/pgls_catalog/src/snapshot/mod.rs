@@ -132,6 +132,12 @@ impl Snapshot {
         self.schemas.iter().find(|s| s.name == name)
     }
 
+    /// The extension `name`, if the server has it available or installed. See
+    /// [`Extension::is_installed`].
+    pub fn extension(&self, name: &str) -> Option<&Extension> {
+        self.extensions.iter().find(|e| e.name == name)
+    }
+
     pub fn find_tables(&self, name: &str, schema: Option<&str>) -> Vec<&Table> {
         self.tables
             .iter()
