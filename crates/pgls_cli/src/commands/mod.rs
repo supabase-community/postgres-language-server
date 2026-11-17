@@ -510,7 +510,7 @@ pub(crate) fn read_stdin_payload(
     console: &mut dyn Console,
     subcommand: &str,
 ) -> Result<StdinPayload, CliDiagnostic> {
-    match console.read() {
+    match console.read()? {
         Some(content) => Ok(StdinPayload {
             path: path.into(),
             content,
