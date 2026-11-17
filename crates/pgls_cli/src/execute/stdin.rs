@@ -5,7 +5,7 @@ use crate::{CliDiagnostic, CliSession};
 use pgls_analyse::RuleCategoriesBuilder;
 use pgls_configuration::RuleSelector;
 use pgls_console::{Console, ConsoleExt, markup};
-use pgls_diagnostics::{DiagnosticExt, Error, PrintDiagnostic};
+use pgls_diagnostics::{DiagnosticExt, Error, PrintDiagnostic, SharedSourceCode};
 use pgls_fs::PgLSPath;
 use pgls_workspace::features::code_actions::{FixFileMode, FixFileParams};
 use pgls_workspace::features::format::PullFileFormattingParams;
@@ -141,13 +141,14 @@ fn print_diagnostics(
     file_name: &str,
     content: &str,
 ) -> Vec<Error> {
+    let source_code = SharedSourceCode::new(content);
     diagnostics
         .into_iter()
         .map(|diagnostic| {
             let diagnostic = diagnostic
                 .into()
                 .with_file_path(file_name)
-                .with_file_source_code(content);
+                .with_file_source_code(&source_code);
             console.error(markup! {{PrintDiagnostic::simple(&diagnostic)}});
             diagnostic
         })

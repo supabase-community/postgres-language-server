@@ -4,7 +4,9 @@ use crate::execute::diagnostics::PanicDiagnostic;
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgls_diagnostics::{DiagnosticExt, DiagnosticTags, Error, Resource, Severity};
+use pgls_diagnostics::{
+    DiagnosticExt, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
+};
 use pgls_fs::{FileSystem, PathInterner, PgLSPath};
 use pgls_fs::{TraversalContext, TraversalScope};
 use pgls_workspace::dome::Dome;
@@ -293,13 +295,17 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.not_printed_diagnostics
                         .fetch_add(skipped_diagnostics, Ordering::Relaxed);
 
+                    // One copy of the file and one line index for all its diagnostics.
+                    let source_code = SharedSourceCode::new(content);
                     for diag in diag_list {
                         self.count_severity(diag.severity());
                         if diag.tags().contains(DiagnosticTags::FIXABLE) {
                             self.fixable_diagnostics.fetch_add(1, Ordering::Relaxed);
                         }
                         if self.should_store() {
-                            let diag = diag.with_file_path(&name).with_file_source_code(&content);
+                            let diag = diag
+                                .with_file_path(&name)
+                                .with_file_source_code(&source_code);
                             diagnostics.push(diag);
                         }
                     }
