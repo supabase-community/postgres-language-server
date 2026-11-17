@@ -1257,6 +1257,243 @@ async fn test_database_checks_reuse_the_results_of_unchanged_statements(test_db:
     );
 }
 
+/// A database-check suppression of a statement that changed since the last run of the checks
+/// isn't reported as unused while the statement has no result: whether it's used is only known
+/// at the next run. A lint suppression is still reported.
+#[pgls_test_utils::db_test]
+async fn test_reuse_defers_unused_database_suppressions(test_db: PgPool) {
+    test_db
+        .execute("create table public.review_items (id int primary key);")
+        .await
+        .expect("setup sql failed");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let content = |value: &str, number: u32| {
+        format!(
+            "-- pgls-ignore typecheck: known invalid value\nselect id from public.review_items where id = '{value}';\n-- pgls-ignore banDropColumn\nselect {number};\n"
+        )
+    };
+    // The suppressions that are reported as unused, by the rule they name, and the other
+    // diagnostics.
+    let pull = |content: &str, database_checks| {
+        let diagnostics = workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks,
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics;
+        diagnostics
+            .iter()
+            .map(|d| {
+                let span = d.location().span.expect("a span");
+                let text = &content[std::ops::Range::<usize>::from(span)];
+                if d.description_text() == "This suppression has no effect." {
+                    let rule = text
+                        .split_whitespace()
+                        .skip_while(|word| *word != "pgls-ignore")
+                        .nth(1)
+                        .unwrap_or(text);
+                    format!("unused {}", rule.trim_end_matches(':'))
+                } else {
+                    format!("{d:?}")
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+
+    let first = content("bad_value", 1);
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: first.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    assert_eq!(pull(&first, DatabaseChecks::Run), ["unused banDropColumn"]);
+
+    // Both statements changed. The database checks haven't seen the first one yet.
+    let second = content("other_bad_value", 2);
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: second.clone(),
+        })
+        .expect("Unable to change the file");
+    assert_eq!(
+        pull(&second, DatabaseChecks::Reuse),
+        ["unused banDropColumn"]
+    );
+    assert_eq!(pull(&second, DatabaseChecks::Run), ["unused banDropColumn"]);
+}
+
+/// With `lintDown: false`, the Down section isn't checked against the database. The same
+/// invalid function in the Up section is still reported, also when the Down section repeats it.
+#[cfg(all(test, not(target_os = "windows")))]
+#[pgls_test_utils::db_test]
+async fn test_database_checks_report_up_when_down_repeats_the_statement(test_db: PgPool) {
+    test_db
+        .execute("CREATE EXTENSION IF NOT EXISTS plpgsql_check;")
+        .await
+        .expect("setup sql failed");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            tool: Some(MigrationTool::Goose),
+            lint_down: Some(false),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    let function = "create function public.f1() returns int language plpgsql as $$\nbegin\n    return missing_one;\nend;\n$$;\n";
+    let content = format!("-- +goose Up\n{function}\n-- +goose Down\n{function}");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    for database_checks in [DatabaseChecks::Run, DatabaseChecks::Reuse] {
+        let spans: Vec<_> = workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks,
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
+            .map(|d| d.location().span.expect("a span"))
+            .collect();
+        assert_eq!(spans.len(), 1, "{database_checks:?}: {spans:?}");
+        // In the Up section.
+        assert!(
+            usize::from(spans[0].end()) < content.find("-- +goose Down").unwrap(),
+            "{database_checks:?}: {spans:?}"
+        );
+    }
+}
+
+/// A statement that an edit moved into a Down section without `lintDown` isn't reported from the
+/// last run, and its syntax error is reported again, as in a run.
+#[cfg(all(test, not(target_os = "windows")))]
+#[pgls_test_utils::db_test]
+async fn test_reuse_applies_the_current_migration_sections(test_db: PgPool) {
+    test_db
+        .execute("CREATE EXTENSION IF NOT EXISTS plpgsql_check;")
+        .await
+        .expect("setup sql failed");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        migrations: Some(PartialMigrationsConfiguration {
+            tool: Some(MigrationTool::Goose),
+            lint_down: Some(false),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("20250301120000_migration.sql");
+    // plpgsql_check locates the syntax error, which hides the parser's error over the body.
+    let function = "create function public.f2() returns int language plpgsql as $$\nbegin\n    retrun 1;\nend;\n$$;\n";
+    let categories = |database_checks| {
+        let mut categories: Vec<String> = workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks,
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .filter_map(|d| d.category().map(|c| c.name().to_string()))
+            .collect();
+        categories.sort();
+        categories
+    };
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: format!("-- +goose Up\nselect 1;\n{function}"),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    assert_eq!(categories(DatabaseChecks::Run), ["plpgsql_check"]);
+
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            version: 2,
+            content: format!("-- +goose Up\nselect 1;\n-- +goose Down\n{function}"),
+        })
+        .expect("Unable to change the file");
+    let reused = categories(DatabaseChecks::Reuse);
+    assert_eq!(reused, categories(DatabaseChecks::Run));
+    assert_eq!(reused, ["syntax"]);
+}
+
 #[cfg(all(test, not(target_os = "windows")))]
 #[pgls_test_utils::db_test]
 async fn test_disable_plpgsql_check(test_db: PgPool) {

@@ -5,7 +5,8 @@
 //! for the statements whose text is unchanged. The statement table (plan item P16) replaces this
 //! storage with a column of the statement.
 
-use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_diagnostics::{DiagnosticExt, category, serde::Diagnostic as SDiagnostic};
+use pgls_suppressions::PendingDiagnostic;
 use pgls_text_size::TextRange;
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -33,11 +34,38 @@ impl StatementDatabaseResult {
 #[derive(Default)]
 pub(crate) struct DatabaseResults {
     statements: FxHashMap<StatementId, Vec<StatementDatabaseResult>>,
+    /// The statements that edits added since the last run, which it didn't check. At most the
+    /// statements of the document: an edit drops the ones it removed.
+    unchecked: FxHashSet<StatementId>,
 }
 
-/// The diagnostics of [`DatabaseResults::reuse`], and the ranges of the statements that
-/// plpgsql_check checked.
-pub(crate) type ReusedDatabaseResults = (Vec<SDiagnostic>, Vec<TextRange>);
+/// What [`DatabaseResults::reuse`] finds for the statements of a document.
+#[derive(Default)]
+pub(crate) struct DatabaseDiagnostics {
+    pub(crate) diagnostics: Vec<SDiagnostic>,
+    /// The ranges of the statements that plpgsql_check checked.
+    pub(crate) plpgsql_checked: Vec<TextRange>,
+    /// The ranges of the statements that the last run didn't check, because an edit added them
+    /// since. Their database diagnostics aren't known.
+    pub(crate) unchecked: Vec<TextRange>,
+}
+
+impl DatabaseDiagnostics {
+    /// The diagnostics that the database checks may report for the statements they haven't
+    /// checked yet, so that a suppression of one isn't reported as unused before they do.
+    pub(crate) fn pending(&self) -> Vec<PendingDiagnostic> {
+        let categories = [category!("typecheck"), category!("plpgsql_check")];
+        self.unchecked
+            .iter()
+            .flat_map(|span| {
+                categories.map(|category| PendingDiagnostic {
+                    span: *span,
+                    category,
+                })
+            })
+            .collect()
+    }
+}
 
 impl DatabaseResults {
     /// The results of the checked top-level statements, `(statement, range, result)` in document
@@ -67,20 +95,23 @@ impl DatabaseResults {
             );
             statements.entry(id).or_default().push(result);
         }
-        Self { statements }
+        Self {
+            statements,
+            unchecked: FxHashSet::default(),
+        }
     }
 
     /// The results for the top-level statements `statements`, `(text, range)` in document order,
-    /// with the spans moved to where each statement is now. A text whose number of occurrences
-    /// changed has none, since its occurrences can't be told apart.
+    /// with the spans moved to where each statement is now. They must be the statements that a
+    /// run checks, as in [`Self::new`], so that the occurrences of a text match. A text whose
+    /// number of occurrences changed has none, since its occurrences can't be told apart.
     pub(crate) fn reuse<'a>(
         &self,
         statements: impl IntoIterator<Item = (&'a str, TextRange)>,
-    ) -> ReusedDatabaseResults {
-        let mut diagnostics = Vec::new();
-        let mut plpgsql_checked = Vec::new();
-        if self.statements.is_empty() {
-            return (diagnostics, plpgsql_checked);
+    ) -> DatabaseDiagnostics {
+        let mut reused = DatabaseDiagnostics::default();
+        if self.statements.is_empty() && self.unchecked.is_empty() {
+            return reused;
         }
 
         // The statements with results, and how often each text occurs in the document.
@@ -88,7 +119,11 @@ impl DatabaseResults {
             Vec::new();
         let mut occurrences: FxHashMap<&StatementId, usize> = FxHashMap::default();
         for (text, range) in statements {
-            if let Some((id, results)) = self.statements.get_key_value(&StatementId::new(text)) {
+            let statement = StatementId::new(text);
+            if self.unchecked.contains(&statement) {
+                reused.unchecked.push(range);
+            }
+            if let Some((id, results)) = self.statements.get_key_value(&statement) {
                 let occurrence = occurrences.entry(id).or_default();
                 found.push((id, results.as_slice(), *occurrence, range));
                 *occurrence += 1;
@@ -103,25 +138,34 @@ impl DatabaseResults {
                 continue;
             };
             if result.plpgsql_checked {
-                plpgsql_checked.push(range);
+                reused.plpgsql_checked.push(range);
             }
-            diagnostics.extend(result.diagnostics.iter().map(|diagnostic| {
-                let span = diagnostic.span().map(|span| span + range.start());
-                debug_assert!(span.is_none_or(|span| range.contains_range(span)));
-                SDiagnostic::new(diagnostic.clone().with_file_span(span))
-            }));
+            reused
+                .diagnostics
+                .extend(result.diagnostics.iter().map(|diagnostic| {
+                    let span = diagnostic.span().map(|span| span + range.start());
+                    debug_assert!(span.is_none_or(|span| range.contains_range(span)));
+                    SDiagnostic::new(diagnostic.clone().with_file_span(span))
+                }));
         }
-        (diagnostics, plpgsql_checked)
+        reused
+    }
+
+    /// An edit added the statement with the text `text`, which the last run didn't check.
+    pub(crate) fn edited(&mut self, text: StatementId) {
+        self.unchecked.insert(text);
     }
 
     /// Drops the results of the statements with the text `text`, which the document no longer
     /// has.
     pub(crate) fn remove(&mut self, text: &StatementId) {
         self.statements.remove(text);
+        self.unchecked.remove(text);
     }
 
     pub(crate) fn shrink(&mut self) {
         self.statements.shrink_to_fit();
+        self.unchecked.shrink_to_fit();
     }
 }
 
@@ -183,10 +227,17 @@ mod tests {
         ]);
 
         assert_eq!(
-            reused.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(),
+            reused
+                .diagnostics
+                .iter()
+                .map(SDiagnostic::span)
+                .collect::<Vec<_>>(),
             [Some(TextRange::new(27.into(), 28.into()))]
         );
-        assert_eq!(reused.1, [TextRange::new(20.into(), 29.into())]);
+        assert_eq!(
+            reused.plpgsql_checked,
+            [TextRange::new(20.into(), 29.into())]
+        );
     }
 
     /// Each occurrence of a repeated statement keeps its own results, as long as the number of
@@ -214,15 +265,42 @@ mod tests {
             ("select a;", TextRange::new(20.into(), 29.into())),
         ]);
         assert_eq!(
-            moved.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(),
+            moved
+                .diagnostics
+                .iter()
+                .map(SDiagnostic::span)
+                .collect::<Vec<_>>(),
             [Some(TextRange::new(27.into(), 28.into()))]
         );
 
         let removed = results.reuse([("select a;", TextRange::new(0.into(), 9.into()))]);
         assert_eq!(
-            removed.0.iter().map(SDiagnostic::span).collect::<Vec<_>>(),
+            removed
+                .diagnostics
+                .iter()
+                .map(SDiagnostic::span)
+                .collect::<Vec<_>>(),
             []
         );
-        assert!(removed.1.is_empty());
+        assert!(removed.plpgsql_checked.is_empty());
+    }
+
+    /// A statement that an edit added since the last run is unchecked until it's removed or the
+    /// next run.
+    #[test]
+    fn reports_the_statements_edited_since_the_last_run() {
+        let mut results = DatabaseResults::new([]);
+        results.edited(StatementId::new("select 2;"));
+        let statements = [
+            ("select 1;", TextRange::new(0.into(), 9.into())),
+            ("select 2;", TextRange::new(10.into(), 19.into())),
+        ];
+
+        let reused = results.reuse(statements);
+        assert_eq!(reused.unchecked, [TextRange::new(10.into(), 19.into())]);
+        assert_eq!(reused.pending().len(), 2);
+
+        results.remove(&StatementId::new("select 2;"));
+        assert!(results.reuse(statements).unchecked.is_empty());
     }
 }
