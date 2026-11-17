@@ -58,12 +58,14 @@ fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionTe
 
         text.push('(');
 
-        let num_args = func.args.args.len();
-        for (idx, arg) in func.args.args.iter().enumerate() {
-            text.push_str(format!(r#"${{{}:{}}}"#, idx + 1, arg.name).as_str());
-            if idx < num_args - 1 {
+        // Only the arguments a call passes; `OUT` and `TABLE` parameters are output columns.
+        let mut num_args = 0;
+        for (idx, arg) in func.call_arguments().enumerate() {
+            if idx > 0 {
                 text.push_str(", ");
             }
+            text.push_str(format!(r#"${{{}:{}}}"#, idx + 1, arg.name).as_str());
+            num_args += 1;
         }
 
         text.push(')');
@@ -370,5 +372,49 @@ mod tests {
             &pool,
         )
         .await;
+    }
+
+    /// The placeholders are the arguments a call passes, not the `OUT` or `TABLE` parameters.
+    #[pgls_test_utils::db_test]
+    async fn inserts_placeholders_for_call_arguments(pool: PgPool) {
+        let setup = r#"
+          create function out_fn(a int, out b int, inout c int, out d int)
+          language sql as $$ select a, c, a $$;
+
+          create function table_fn(a int, b text default '')
+          returns table (x int, y text)
+          language sql as $$ select a, b $$;
+
+          create function variadic_fn(a int, variadic rest int[], out total int)
+          language sql as $$ select a $$;
+
+          create function only_out_fn(out x int, out y int)
+          language sql as $$ select 1, 2 $$;
+        "#;
+        pool.execute(setup).await.unwrap();
+
+        for (query, label, expected) in [
+            ("select out_f{c}", "out_fn", "out_fn(${1:a}, ${2:c})"),
+            ("select table_f{c}", "table_fn", "table_fn(${1:a}, ${2:b})"),
+            (
+                "select variadic_f{c}",
+                "variadic_fn",
+                "variadic_fn(${1:a}, ${2:rest})",
+            ),
+            ("select only_out_f{c}", "only_out_fn", "only_out_fn()"),
+        ] {
+            let query = query.replace("{c}", &QueryWithCursorPosition::cursor_marker().to_string());
+            let (tree, cache) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let params = get_test_params(&tree, &cache, query.as_str().into());
+            let results = complete(params);
+
+            let text = results
+                .iter()
+                .find(|item| item.label == label && item.kind == CompletionItemKind::Function)
+                .and_then(|item| item.completion_text.as_ref())
+                .unwrap_or_else(|| panic!("no completion for {label} in {query}"));
+            assert_eq!(text.text, expected, "{query}");
+            assert_eq!(text.is_snippet, expected.contains('$'), "{query}");
+        }
     }
 }

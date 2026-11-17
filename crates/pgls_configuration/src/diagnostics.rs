@@ -3,8 +3,11 @@ use pgls_console::{MarkupBuf, markup};
 use pgls_diagnostics::adapters::ResolveError;
 
 use pgls_diagnostics::{Advices, Diagnostic, Error, LogCategory, MessageAndDescription, Visit};
+use pgls_line_index::{LineCol, LineIndex};
+use pgls_text_size::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
+use std::path::Path;
 
 /// Series of errors that can be thrown while computing the configuration.
 #[derive(Deserialize, Diagnostic, Serialize)]
@@ -32,9 +35,14 @@ pub enum ConfigurationDiagnostic {
 }
 
 impl ConfigurationDiagnostic {
-    pub fn new_deserialization_error(error: serde_json::Error) -> Self {
+    /// The `error` of parsing `source`, the text of the configuration file at `path`. The span
+    /// is where `error` says the parser stopped, so the diagnostic shows a code frame.
+    pub fn deserialization(path: Option<&Path>, source: &str, error: &serde_json::Error) -> Self {
         Self::DeserializationError(DeserializationError {
             message: error.to_string(),
+            path: path.map(|path| path.display().to_string()),
+            span: DeserializationError::span(source, error),
+            source_code: Some(source.to_string()),
         })
     }
 
@@ -131,6 +139,31 @@ pub struct DeserializationError {
     #[message]
     #[description]
     pub message: String,
+
+    #[location(resource)]
+    pub path: Option<String>,
+
+    #[location(span)]
+    pub span: Option<TextRange>,
+
+    #[location(source_code)]
+    pub source_code: Option<String>,
+}
+
+impl DeserializationError {
+    /// The character of `source` at the 1-based line and column of `error`. serde_json counts
+    /// the column in bytes from the last `\n`. `None` if the error has no position, which
+    /// serde_json reports as line 0.
+    fn span(source: &str, error: &serde_json::Error) -> Option<TextRange> {
+        let line = u32::try_from(error.line().checked_sub(1)?).ok()?;
+        let col = u32::try_from(error.column().saturating_sub(1)).ok()?;
+        let offset = LineIndex::new(source).offset_clamped(LineCol { line, col });
+        let len = source
+            .get(usize::from(offset)..)
+            .and_then(|rest| rest.chars().next())
+            .map_or(TextSize::from(0), TextSize::of);
+        Some(TextRange::at(offset, len))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Diagnostic)]

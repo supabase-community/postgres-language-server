@@ -17,9 +17,11 @@ use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfigurati
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_configuration::{PartialLinterConfiguration, PartialTypecheckConfiguration};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
+use pgls_lsp::Blocking;
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
 use pgls_workspace::DynRef;
+use pgls_workspace::workspace::server::WorkspaceServer;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -670,6 +672,67 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     .is_ok();
 
     assert!(notification, "expected diagnostics for unknown column");
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The workspace runs its async work on the test's runtime, whose clock is paused, and the work
+/// that blocks runs inline on the runtime's thread. So the debounce of the diagnostics takes
+/// exactly its time on the paused clock, however long the analysis takes.
+#[tokio::test(start_paused = true)]
+async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
+    let workspace = WorkspaceServer::with_runtime(tokio::runtime::Handle::current());
+    let factory = ServerFactory::default()
+        .with_workspace(Arc::new(workspace))
+        .with_blocking(Blocking::Inline);
+    let mut fs = MemoryFileSystem::default();
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+    server.open_document("select 1;\n").await?;
+    wait_for_diagnostics(&mut receiver, 0).await?;
+
+    // The second change comes within the debounce of the first, which it replaces.
+    let start = tokio::time::Instant::now();
+    server.replace_document(1, "select 2;\n").await?;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    server.replace_document(2, "select 3;\n").await?;
+    let published = loop {
+        match receiver.next().await {
+            Some(ServerNotification::PublishDiagnostics(params)) => break params,
+            Some(_) => {}
+            None => bail!("the server closed the connection"),
+        }
+    };
+    assert_eq!(published.version, Some(2));
+    assert_eq!(start.elapsed(), Duration::from_millis(500));
 
     server.shutdown().await?;
     reader.abort();
@@ -2659,9 +2722,13 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
         .await
         .expect("Failed to add column to table");
 
-    // Invalidate the schema cache (all = false for current connection only)
+    // Invalidate the schemas loaded from database connections
     server
-        .request::<bool, ()>("pgls/invalidate_schema_cache", "_invalidate_cache", false)
+        .request::<_, ()>(
+            "pgls/invalidate_schema_cache",
+            "_invalidate_cache",
+            serde_json::json!({ "scope": "connections" }),
+        )
         .await?;
 
     // Get completions after invalidating cache - 'name' should NOW be present

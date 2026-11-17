@@ -1,100 +1,100 @@
-5:1 accepted
-7:1 accepted
-8:1 accepted
-9:1 accepted
-10:1 accepted
-11:1 accepted
-14:1 rejected 22003
-15:1 rejected 22003
-16:1 rejected 22003
-17:1 rejected 22003
-19:1 rejected 22003
-20:1 rejected 22003
-21:1 rejected 22003
-22:1 rejected 22003
-24:1 rejected 22003
-25:1 rejected 22003
-26:1 rejected 22003
-27:1 rejected 22003
-30:1 rejected 22P02
-31:1 rejected 22P02
-32:1 rejected 22P02
-33:1 rejected 22P02
-34:1 rejected 22P02
-35:1 rejected 22P02
-36:1 rejected 22P02
-37:1 rejected 22P02
-40:1 accepted
-41:1 accepted
-42:1 accepted
-43:1 accepted
-46:1 accepted
-47:1 accepted
-48:1 accepted
-49:1 accepted
-50:1 accepted
-52:1 rejected 22P02
-53:1 rejected 22P02
-54:1 rejected 22P02
-56:1 accepted
-57:1 accepted
-58:1 accepted
-59:1 accepted
-60:1 accepted
-61:1 accepted
-63:1 accepted
-65:1 accepted
-67:1 accepted
-69:1 accepted
-71:1 accepted
-73:1 accepted
-75:1 accepted
-77:1 accepted
-80:1 accepted
-83:1 accepted
-86:1 accepted
-90:1 rejected 22012
-92:1 accepted
-95:1 accepted
-97:1 accepted
-101:1 accepted
-104:1 accepted
-105:1 rejected 22003
-106:1 accepted
-107:1 rejected 22003
-108:1 accepted
-109:1 rejected 22003
-110:1 accepted
-111:1 rejected 22003
-112:1 accepted
-113:1 rejected 22003
-114:1 accepted
-115:1 rejected 22003
-121:1 accepted
-122:1 accepted
-123:1 accepted
-124:1 accepted
-125:1 accepted
-126:1 accepted
-128:1 accepted
-129:1 accepted
-130:1 accepted
-131:1 accepted
-132:1 accepted
-133:1 accepted
-134:1 accepted
-135:1 accepted
-136:1 accepted
-146:1 accepted
-147:1 accepted
-154:1 accepted
-155:1 accepted
-157:1 accepted
-159:1 accepted
-160:1 accepted
-161:1 accepted
-162:1 accepted
-163:1 accepted
-171:1 accepted
-193:1 accepted
-360:1 accepted
+17..54 accepted
+56..102 accepted
+103..152 accepted
+153..207 accepted
+208..266 accepted
+267..325 accepted
+359..403 rejected 22003
+404..449 rejected 22003
+450..495 rejected 22003
+496..542 rejected 22003
+544..596 rejected 22003
+597..650 rejected 22003
+651..704 rejected 22003
+705..759 rejected 22003
+761..806 rejected 22003
+807..853 rejected 22003
+854..900 rejected 22003
+901..948 rejected 22003
+963..1002 rejected 22P02
+1003..1049 rejected 22P02
+1050..1092 rejected 22P02
+1093..1137 rejected 22P02
+1138..1182 rejected 22P02
+1183..1228 rejected 22P02
+1229..1278 rejected 22P02
+1279..1334 rejected 22P02
+1379..1422 accepted
+1423..1465 accepted
+1466..1510 accepted
+1511..1564 accepted
+1584..1605 accepted
+1606..1627 accepted
+1628..1654 accepted
+1655..1681 accepted
+1682..1722 accepted
+1745..1768 rejected 22P02
+1769..1792 rejected 22P02
+1793..1825 rejected 22P02
+1827..1861 accepted
+1862..1909 accepted
+1910..1951 accepted
+1952..1989 accepted
+1990..2025 accepted
+2026..2056 accepted
+2058..2083 accepted
+2085..2137 accepted
+2139..2190 accepted
+2192..2243 accepted
+2245..2297 accepted
+2299..2351 accepted
+2353..2406 accepted
+2408..2479 accepted
+2481..2552 accepted
+2554..2625 accepted
+2627..2698 accepted
+2723..2761 rejected 22012
+2763..2788 accepted
+2827..2874 accepted
+2876..2958 accepted
+2960..2985 accepted
+3026..3057 accepted
+3058..3089 rejected 22003
+3090..3122 accepted
+3123..3155 rejected 22003
+3156..3190 accepted
+3191..3225 rejected 22003
+3226..3263 accepted
+3264..3299 rejected 22003
+3300..3343 accepted
+3344..3387 rejected 22003
+3388..3434 accepted
+3435..3479 rejected 22003
+3627..3662 accepted
+3663..3698 accepted
+3699..3735 accepted
+3736..3775 accepted
+3776..3817 accepted
+3818..3861 accepted
+3863..3898 accepted
+3899..3934 accepted
+3935..3972 accepted
+3973..4011 accepted
+4012..4050 accepted
+4051..4091 accepted
+4092..4133 accepted
+4134..4176 accepted
+4177..4220 accepted
+4495..4539 accepted
+4540..4583 accepted
+4828..4848 accepted
+4849..4949 accepted
+4950..5052 accepted
+5053..5129 accepted
+5130..5179 accepted
+5180..5229 accepted
+5230..5280 accepted
+5281..5331 accepted
+5576..6263 accepted
+6265..11512 accepted
+11552..11578 accepted

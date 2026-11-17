@@ -22,30 +22,33 @@ pub fn setup_cli_subscriber(level: LoggingLevel, kind: LoggingKind) {
         LoggingKind::Pretty => {
             let format = format.pretty();
             registry()
-                .with(format.with_filter(LoggingFilter { level }))
+                .with(format.with_filter(LoggingFilter::new(level)))
                 .init()
         }
         LoggingKind::Compact => {
             let format = format.compact();
             registry()
-                .with(format.with_filter(LoggingFilter { level }))
+                .with(format.with_filter(LoggingFilter::new(level)))
                 .init()
         }
         LoggingKind::Json => {
             let format = format.json().flatten_event(true);
 
             registry()
-                .with(format.with_filter(LoggingFilter { level }))
+                .with(format.with_filter(LoggingFilter::new(level)))
                 .init()
         }
     };
 }
 
+/// The level of the logs, for the CLI (`--log-level`) and the language server (`__run_server
+/// --log-level`). Both read `PGLS_LOG_LEVEL`, so they must accept the same values.
 #[derive(Copy, Debug, Default, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum LoggingLevel {
     /// No logs should be shown
     #[default]
     None,
+    Trace,
     Debug,
     Info,
     Warn,
@@ -56,10 +59,11 @@ impl LoggingLevel {
     fn to_filter_level(self) -> Option<LevelFilter> {
         match self {
             LoggingLevel::None => None,
+            LoggingLevel::Trace => Some(LevelFilter::TRACE),
+            LoggingLevel::Debug => Some(LevelFilter::DEBUG),
             LoggingLevel::Info => Some(LevelFilter::INFO),
             LoggingLevel::Warn => Some(LevelFilter::WARN),
             LoggingLevel::Error => Some(LevelFilter::ERROR),
-            LoggingLevel::Debug => Some(LevelFilter::DEBUG),
         }
     }
 }
@@ -68,12 +72,16 @@ impl FromStr for LoggingLevel {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "none" => Ok(Self::None),
+            // The server used to take `off`.
+            "none" | "off" => Ok(Self::None),
+            "trace" => Ok(Self::Trace),
+            "debug" => Ok(Self::Debug),
             "info" => Ok(Self::Info),
             "warn" => Ok(Self::Warn),
             "error" => Ok(Self::Error),
-            "debug" => Ok(Self::Debug),
-            _ => Err("Unexpected value".to_string()),
+            _ => Err(format!(
+                "value {s:?} is not a log level: use none, trace, debug, info, warn or error"
+            )),
         }
     }
 }
@@ -82,6 +90,7 @@ impl Display for LoggingLevel {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             LoggingLevel::None => write!(f, "none"),
+            LoggingLevel::Trace => write!(f, "trace"),
             LoggingLevel::Debug => write!(f, "debug"),
             LoggingLevel::Info => write!(f, "info"),
             LoggingLevel::Warn => write!(f, "warn"),
@@ -90,28 +99,25 @@ impl Display for LoggingLevel {
     }
 }
 
-/// Tracing filter enabling:
-/// - All spans and events at level info or higher
-/// - All spans and events at level debug in crates whose name starts with `pgls`
-struct LoggingFilter {
+/// Tracing filter of the CLI and the language server:
+/// - spans and events of crates whose name starts with `pgls` at `level`
+/// - spans and events of all other crates at level info or higher
+/// - nothing at level `none`
+pub(crate) struct LoggingFilter {
     level: LoggingLevel,
 }
 
-/// Tracing filter used for spans emitted by `pgls*` crates
-const SELF_FILTER: LevelFilter = if cfg!(debug_assertions) {
-    LevelFilter::TRACE
-} else {
-    LevelFilter::DEBUG
-};
-
 impl LoggingFilter {
+    pub(crate) fn new(level: LoggingLevel) -> Self {
+        Self { level }
+    }
+
     fn is_enabled(&self, meta: &Metadata<'_>) -> bool {
+        let Some(level) = self.level.to_filter_level() else {
+            return false;
+        };
         let filter = if meta.target().starts_with("pgls") {
-            if let Some(level) = self.level.to_filter_level() {
-                level
-            } else {
-                return false;
-            }
+            level
         } else {
             LevelFilter::INFO
         };
@@ -134,7 +140,11 @@ impl<S> Filter<S> for LoggingFilter {
     }
 
     fn max_level_hint(&self) -> Option<LevelFilter> {
-        Some(SELF_FILTER)
+        Some(
+            self.level
+                .to_filter_level()
+                .map_or(LevelFilter::OFF, |level| level.max(LevelFilter::INFO)),
+        )
     }
 }
 

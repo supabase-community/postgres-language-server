@@ -20,6 +20,8 @@
 //! const errors = workspace.parse("SELECT * FROM users;");
 //! ```
 
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
 use std::path::PathBuf;
 
 use pgls_analyse::RuleCategories;
@@ -252,7 +254,7 @@ impl Workspace {
         let configuration = if json.trim().is_empty() {
             PartialConfiguration::default()
         } else {
-            pgls_workspace::configuration::parse_configuration(json)
+            pgls_workspace::configuration::parse_configuration(json, None)
                 .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?
         };
         self.set_configuration(configuration)
@@ -624,10 +626,12 @@ impl Workspace {
         self.inner
             .split_statements(sql)
             .into_iter()
-            .map(|range| Statement {
-                sql: sql[range].to_string(),
-                start: u32::from(range.start()),
-                end: u32::from(range.end()),
+            .filter_map(|range| {
+                Some(Statement {
+                    sql: sql.get(std::ops::Range::<usize>::from(range))?.to_string(),
+                    start: u32::from(range.start()),
+                    end: u32::from(range.end()),
+                })
             })
             .collect()
     }

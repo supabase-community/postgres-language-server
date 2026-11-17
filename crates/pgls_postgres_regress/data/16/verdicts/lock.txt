@@ -1,131 +1,131 @@
-12:1 accepted
-13:1 accepted
-14:1 accepted
-15:1 accepted
-16:1 accepted
-17:1 accepted
-18:1 accepted
-19:1 accepted
-20:1 accepted
-21:1 accepted
-22:1 accepted
-23:1 accepted
-24:1 accepted
-27:1 skipped
-28:1 rejected 25P01
-29:1 rejected 25P01
-30:1 rejected 25P01
-31:1 rejected 25P01
-32:1 rejected 25P01
-33:1 rejected 25P01
-34:1 rejected 25P01
-35:1 rejected 25P01
-36:1 skipped
-39:1 skipped
-40:1 rejected 25P01
-41:1 rejected 25P01
-42:1 rejected 25P01
-43:1 rejected 25P01
-44:1 rejected 25P01
-45:1 rejected 25P01
-46:1 rejected 25P01
-47:1 rejected 25P01
-48:1 skipped
-51:1 skipped
-52:1 rejected 25P01
-54:1 accepted
-57:1 skipped
-58:1 skipped
-59:1 rejected 25P01
-61:1 accepted
-64:1 skipped
-65:1 skipped
-66:1 rejected 25P01
-68:1 accepted
-71:1 skipped
-72:1 skipped
-73:1 rejected 25P01
-75:1 accepted
-78:1 skipped
-79:1 skipped
-80:1 rejected 25P01
-82:1 accepted
-85:1 skipped
-86:1 skipped
-87:1 rejected 25P01
-89:1 accepted
-92:1 skipped
-94:1 accepted
-95:1 skipped
-96:1 rejected 25P01
-97:1 skipped
-98:1 accepted
-99:1 skipped
-100:1 rejected 25P01
-101:1 skipped
-104:1 accepted
-105:1 accepted
-106:1 skipped
-107:1 rejected 25P01
-108:1 skipped
-112:1 accepted
-113:1 accepted
-115:1 skipped
-116:1 rejected 25P01
-117:1 skipped
-118:1 skipped
-119:1 rejected 25P01
-120:1 skipped
-121:1 skipped
-122:1 rejected 25P01
-123:1 skipped
-124:1 accepted
-125:1 accepted
-129:1 accepted
-131:1 skipped
-132:1 rejected 25P01
-133:1 skipped
-134:1 accepted
-135:1 accepted
-136:1 accepted
-137:1 skipped
-138:1 rejected 25P01
-140:1 accepted
-143:1 skipped
-144:1 accepted
-145:1 accepted
-149:1 accepted
-150:1 accepted
-152:1 skipped
-153:1 rejected 25P01
-154:1 skipped
-155:1 accepted
-156:1 accepted
-157:1 accepted
-159:1 skipped
-160:1 rejected 25P01
-161:1 skipped
-162:1 accepted
-163:1 accepted
-164:1 skipped
-165:1 rejected 25P01
-167:1 accepted
-170:1 skipped
-171:1 accepted
-172:1 accepted
-177:1 accepted
-178:1 accepted
-179:1 accepted
-180:1 accepted
-181:1 accepted
-182:1 accepted
-183:1 accepted
-184:1 accepted
-185:1 accepted
-186:1 accepted
-187:1 accepted
-188:1 accepted
-189:1 accepted
-193:1 accepted
-195:1 rejected 42601
-200:1 rejected 42883
+122..149 accepted
+150..181 accepted
+182..216 accepted
+217..252 accepted
+253..303 accepted
+304..371 accepted
+372..423 accepted
+424..507 accepted
+508..596 accepted
+597..667 accepted
+668..698 accepted
+699..759 accepted
+760..816 accepted
+895..913 skipped
+914..956 rejected 25P01
+957..990 rejected 25P01
+991..1034 rejected 25P01
+1035..1087 rejected 25P01
+1088..1123 rejected 25P01
+1124..1167 rejected 25P01
+1168..1207 rejected 25P01
+1208..1254 rejected 25P01
+1255..1264 skipped
+1312..1330 skipped
+1331..1380 rejected 25P01
+1381..1427 rejected 25P01
+1428..1478 rejected 25P01
+1479..1538 rejected 25P01
+1539..1581 rejected 25P01
+1582..1638 rejected 25P01
+1639..1685 rejected 25P01
+1686..1739 rejected 25P01
+1740..1749 skipped
+1785..1803 skipped
+1804..1844 rejected 25P01
+1885..2026 accepted
+2027..2036 skipped
+2037..2055 skipped
+2056..2096 rejected 25P01
+2150..2291 accepted
+2292..2301 skipped
+2302..2320 skipped
+2321..2361 rejected 25P01
+2439..2580 accepted
+2581..2590 skipped
+2591..2609 skipped
+2610..2650 rejected 25P01
+2704..2845 accepted
+2846..2855 skipped
+2856..2874 skipped
+2875..2915 rejected 25P01
+2969..3110 accepted
+3111..3120 skipped
+3121..3139 skipped
+3140..3180 rejected 25P01
+3220..3361 accepted
+3362..3371 skipped
+3440..3502 accepted
+3503..3521 skipped
+3522..3562 rejected 25P01
+3563..3572 skipped
+3573..3624 accepted
+3625..3643 skipped
+3644..3684 rejected 25P01
+3685..3694 skipped
+3758..3813 accepted
+3814..3861 accepted
+3862..3880 skipped
+3881..3929 rejected 25P01
+3930..3939 skipped
+4067..4120 accepted
+4121..4148 accepted
+4184..4190 skipped
+4191..4212 rejected 25P01
+4213..4222 skipped
+4223..4229 skipped
+4230..4278 rejected 25P01
+4279..4288 skipped
+4289..4295 skipped
+4296..4322 rejected 25P01
+4323..4332 skipped
+4333..4344 accepted
+4345..4401 accepted
+4540..4567 accepted
+4608..4614 skipped
+4615..4637 rejected 25P01
+4638..4647 skipped
+4648..4659 accepted
+4660..4714 accepted
+4715..4742 accepted
+4743..4749 skipped
+4750..4797 rejected 25P01
+4878..5025 accepted
+5026..5035 skipped
+5036..5047 accepted
+5048..5105 accepted
+5200..5274 accepted
+5275..5302 accepted
+5343..5349 skipped
+5350..5372 rejected 25P01
+5373..5382 skipped
+5383..5394 accepted
+5395..5449 accepted
+5450..5477 accepted
+5542..5548 skipped
+5549..5571 rejected 25P01
+5572..5581 skipped
+5582..5593 accepted
+5594..5647 accepted
+5648..5654 skipped
+5655..5702 rejected 25P01
+5783..5930 accepted
+5931..5940 skipped
+5941..5952 accepted
+5953..6010 accepted
+6030..6051 accepted
+6052..6073 accepted
+6074..6095 accepted
+6096..6117 accepted
+6118..6139 accepted
+6140..6169 accepted
+6170..6191 accepted
+6192..6213 accepted
+6214..6235 accepted
+6236..6257 accepted
+6258..6280 accepted
+6281..6314 accepted
+6315..6343 accepted
+6366..6384 accepted
+6386..6473 rejected 42601
+6475..6500 rejected 42883

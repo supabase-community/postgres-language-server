@@ -1,32 +1,32 @@
-5:1 accepted
-7:1 accepted
-8:1 accepted
-10:1 accepted
-13:1 rejected 42P05
-16:1 accepted
-17:1 accepted
-18:1 accepted
-20:1 accepted
-21:1 accepted
-24:1 accepted
-26:1 accepted
-28:1 accepted
-30:1 accepted
-33:1 accepted
-37:1 accepted
-39:1 rejected 42P01
-44:1 rejected 26000
-47:1 rejected 26000
-50:1 rejected 26000
-53:1 rejected 26000
-56:1 rejected 42704
-59:1 rejected 42P01
-62:1 rejected 26000
-63:1 rejected 42P01
-64:1 rejected 26000
-66:1 rejected 42P01
-69:1 rejected 42P01
-71:1 rejected 42P01
-74:1 accepted
-78:1 accepted
-79:1 accepted
+159..227 accepted
+229..257 accepted
+258..269 accepted
+271..339 accepted
+356..379 rejected 42P05
+399..413 accepted
+414..437 accepted
+438..449 accepted
+451..479 accepted
+480..548 accepted
+566..588 accepted
+590..658 accepted
+660..682 accepted
+729..797 accepted
+824..926 accepted
+928..951 accepted
+953..1129 rejected 42P01
+1131..1196 rejected 26000
+1216..1235 rejected 26000
+1256..1326 rejected 26000
+1349..1413 rejected 26000
+1431..1472 rejected 42704
+1501..1601 rejected 42P01
+1602..1670 rejected 26000
+1671..1701 rejected 42P01
+1702..1786 rejected 26000
+1787..1816 rejected 42P01
+1876..1951 rejected 42P01
+1952..2017 rejected 42P01
+2019..2105 accepted
+2131..2146 accepted
+2147..2233 accepted

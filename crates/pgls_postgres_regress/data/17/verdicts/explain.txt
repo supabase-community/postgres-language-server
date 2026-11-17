@@ -1,51 +1,51 @@
-13:1 accepted
-37:1 accepted
-56:1 accepted
-60:1 accepted
-64:1 rejected 42P01
-65:1 rejected 42P01
-66:1 rejected 42P01
-67:1 rejected 42P01
-68:1 rejected 42P01
-69:1 rejected 42P01
-70:1 rejected 42P01
-71:1 rejected 42P01
-75:1 accepted
-76:1 rejected 42P01
-77:1 accepted
-83:1 skipped
-84:1 accepted
-85:1 rejected 42P01
-88:1 rejected 42P01
-89:1 skipped
-93:1 rejected 42P01
-95:1 rejected 42P01
-98:1 rejected 42P01
-99:1 rejected 42P01
-100:1 rejected 42P01
-101:1 rejected 42P01
-102:1 rejected 42P01
-103:1 rejected 26000
-108:1 accepted
-112:1 accepted
-115:1 accepted
-117:1 accepted
-119:1 accepted
-122:1 accepted
-123:1 accepted
-133:1 skipped
-135:1 accepted
-136:1 accepted
-137:1 accepted
-138:1 accepted
-140:1 rejected 42P01
-152:1 skipped
-155:1 accepted
-157:1 accepted
-160:1 accepted
-163:1 accepted
-164:1 rejected 42P01
-167:1 rejected 42P01
-168:1 rejected 42P01
-169:1 rejected 42P01
-171:1 rejected 42P01
+421..1154 accepted
+1231..1574 accepted
+1665..1679 accepted
+1765..1791 accepted
+1810..1869 rejected 42P01
+1870..1939 rejected 42P01
+1940..2018 rejected 42P01
+2019..2110 rejected 42P01
+2111..2201 rejected 42P01
+2202..2304 rejected 42P01
+2305..2387 rejected 42P01
+2388..2470 rejected 42P01
+2608..2633 accepted
+2634..2725 rejected 42P01
+2726..2752 accepted
+2916..2922 skipped
+2923..2970 accepted
+2971..3135 rejected 42P01
+3136..3261 rejected 42P01
+3262..3271 skipped
+3297..3391 rejected 42P01
+3407..3510 rejected 42P01
+3529..3597 rejected 42P01
+3598..3675 rejected 42P01
+3676..3766 rejected 42P01
+3767..3857 rejected 42P01
+3858..3906 rejected 42P01
+3907..3968 rejected 26000
+4155..4255 accepted
+4256..4350 accepted
+4351..4430 accepted
+4431..4510 accepted
+4511..4577 accepted
+4643..4752 accepted
+4753..4773 accepted
+5083..5089 skipped
+5125..5151 accepted
+5152..5178 accepted
+5179..5214 accepted
+5215..5253 accepted
+5255..5735 rejected 42P01
+5737..5746 skipped
+5785..5817 accepted
+5819..5920 accepted
+5922..6012 accepted
+6039..6065 accepted
+6066..6135 rejected 42P01
+6162..6241 rejected 42P01
+6242..6345 rejected 42P01
+6346..6447 rejected 42P01
+6507..6620 rejected 42P01
