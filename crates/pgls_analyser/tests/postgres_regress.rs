@@ -208,14 +208,16 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
             }),
         }
     }
-    let diagnostics = analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: Some(catalog.clone()),
-        search_path: vec!["public".into()],
-        typecheck: true,
-        ..Default::default()
-    });
+    let diagnostics = analyser
+        .analyse(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: Some(catalog.clone()),
+            search_path: vec!["public".into()],
+            typecheck: true,
+            ..Default::default()
+        })
+        .diagnostics;
     let findings = diagnostics
         .iter()
         .map(|diagnostic| {

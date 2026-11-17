@@ -21,6 +21,11 @@ pub trait LinterRule: RuleMeta + Sized {
     /// name resolution of each statement, only when an enabled rule reads them.
     const READS_LOOKUPS: bool = false;
 
+    /// Whether the rule reports an error that Postgres also raises when it prepares the
+    /// statement, without a position. The database check doesn't report Postgres' error again
+    /// for a statement the rule reported, see [`crate::StatementAnalysis`].
+    const REPORTS_DATABASE_ERROR: bool = false;
+
     /// Execute the rule on the given AST context
     fn run(rule_context: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic>;
 }

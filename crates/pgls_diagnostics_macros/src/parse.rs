@@ -433,7 +433,6 @@ pub(crate) enum LocationField {
     Resource(Ident),
     Span(Ident),
     SourceCode(Ident),
-    DatabaseObject(Ident),
 }
 
 impl Parse for LocationAttr {
@@ -446,8 +445,6 @@ impl Parse for LocationAttr {
             LocationField::Span(ident)
         } else if ident == "source_code" {
             LocationField::SourceCode(ident)
-        } else if ident == "database_object" {
-            LocationField::DatabaseObject(ident)
         } else {
             return Err(Error::new_spanned(ident, "unknown location field"));
         };
@@ -462,7 +459,6 @@ impl ToTokens for LocationField {
             LocationField::Resource(ident) => ident.to_tokens(tokens),
             LocationField::Span(ident) => ident.to_tokens(tokens),
             LocationField::SourceCode(ident) => ident.to_tokens(tokens),
-            LocationField::DatabaseObject(ident) => ident.to_tokens(tokens),
         }
     }
 }
