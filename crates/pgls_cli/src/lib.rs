@@ -192,7 +192,7 @@ impl<'app> CliSession<'app> {
                 config_path,
                 Some(log_path),
                 Some(log_prefix_name),
-                Some(log_level),
+                log_level,
                 Some(log_kind),
             ),
             PgLSCommand::PrintSocket => commands::daemon::print_socket(),

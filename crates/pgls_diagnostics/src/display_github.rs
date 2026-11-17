@@ -1,7 +1,6 @@
 use crate::display::frame::SourceFile;
 use crate::{Diagnostic, Resource, Severity, diagnostic::internal::AsDiagnostic};
 use pgls_console::{MarkupBuf, fmt, markup};
-use pgls_text_size::{TextRange, TextSize};
 use std::io;
 
 /// Helper struct for printing a diagnostic as markup into any formatter
@@ -46,16 +45,12 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintGitHubDiagnostic<'_, D> {
         };
         let file = escape_property(file_name_unescaped);
 
-        // Without the source we can't compute a line, so the annotation applies to the file.
-        let Some(source_code) = location.source_code else {
+        // Without a span or the source we can't compute a line, so the annotation applies to the
+        // file.
+        let (Some(source_code), Some(span)) = (location.source_code, location.span) else {
             return fmt
                 .write_str(format!("::{command} title={title},file={file}::{message}").as_str());
         };
-
-        let span = location
-            .span
-            // We fall back to 1:1. This usually covers diagnostics that belong to the formatter or organize imports
-            .unwrap_or(TextRange::new(TextSize::from(1), TextSize::from(1)));
 
         let source = SourceFile::new(source_code);
         let start = source.location(span.start())?;
@@ -203,6 +198,19 @@ mod tests {
             path: Some(String::from("migrations/1.sql")),
             span: None,
             source_code: None,
+        };
+        assert_eq!(
+            print(&diagnostic),
+            "::error title=internalError/io,file=migrations/1.sql::something failed"
+        );
+    }
+
+    #[test]
+    fn diagnostic_without_span_annotates_the_file() {
+        let diagnostic = TestDiagnostic {
+            path: Some(String::from("migrations/1.sql")),
+            span: None,
+            source_code: Some(String::from("select 1;\nselect 2;")),
         };
         assert_eq!(
             print(&diagnostic),

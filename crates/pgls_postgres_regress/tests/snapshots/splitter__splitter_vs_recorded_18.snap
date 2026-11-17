@@ -1,0 +1,5 @@
+---
+source: crates/pgls_postgres_regress/tests/splitter.rs
+expression: report
+---
+REL_18_6: 49577 recorded statements, 0 differences

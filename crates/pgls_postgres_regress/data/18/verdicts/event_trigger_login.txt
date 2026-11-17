@@ -1,11 +1,11 @@
-2:1 accepted
-3:1 accepted
-4:1 accepted
-10:1 accepted
-11:1 accepted
-13:1 accepted
-15:1 accepted
-18:1 rejected 42601
-21:1 accepted
-22:1 accepted
-23:1 accepted
+24..70 accepted
+71..109 accepted
+110..291 accepted
+292..373 accepted
+374..425 accepted
+427..460 accepted
+462..495 accepted
+539..603 rejected 42601
+616..639 accepted
+640..676 accepted
+677..707 accepted

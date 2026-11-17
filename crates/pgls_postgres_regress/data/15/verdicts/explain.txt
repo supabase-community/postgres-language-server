@@ -1,32 +1,32 @@
-13:1 accepted
-37:1 accepted
-56:1 accepted
-60:1 accepted
-64:1 rejected 42P01
-65:1 rejected 42P01
-66:1 rejected 42P01
-67:1 rejected 42P01
-68:1 rejected 42P01
-69:1 rejected 42P01
-70:1 rejected 42P01
-71:1 rejected 42P01
-75:1 accepted
-76:1 rejected 42P01
-77:1 accepted
-83:1 skipped
-84:1 accepted
-85:1 rejected 42P01
-88:1 rejected 42P01
-89:1 skipped
-99:1 skipped
-101:1 accepted
-102:1 accepted
-103:1 accepted
-104:1 accepted
-106:1 rejected 42P01
-118:1 skipped
-121:1 accepted
-123:1 accepted
-126:1 accepted
-129:1 accepted
-130:1 rejected 42P01
+421..1154 accepted
+1231..1574 accepted
+1665..1679 accepted
+1765..1791 accepted
+1810..1869 rejected 42P01
+1870..1939 rejected 42P01
+1940..2018 rejected 42P01
+2019..2110 rejected 42P01
+2111..2201 rejected 42P01
+2202..2293 rejected 42P01
+2294..2376 rejected 42P01
+2377..2459 rejected 42P01
+2597..2622 accepted
+2623..2714 rejected 42P01
+2715..2741 accepted
+2905..2911 skipped
+2912..2959 accepted
+2960..3124 rejected 42P01
+3125..3250 rejected 42P01
+3251..3260 skipped
+3570..3576 skipped
+3612..3638 accepted
+3639..3665 accepted
+3666..3701 accepted
+3702..3740 accepted
+3742..4222 rejected 42P01
+4224..4233 skipped
+4272..4304 accepted
+4306..4407 accepted
+4409..4499 accepted
+4526..4552 accepted
+4553..4622 rejected 42P01

@@ -294,7 +294,7 @@ export interface Enums {
 export interface FunctionArg {
   has_default?: boolean;
   /**
-   * `in`, `out`, or `inout`.
+   * `in`, `out`, `inout`, `variadic` or `table`.
    */
   mode: string;
   name: string;

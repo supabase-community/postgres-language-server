@@ -7,11 +7,6 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use super::{
-    CloseFileParams, FindProjectParams, GetFileContentParams, IsPathIgnoredParams, OpenFileParams,
-    ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams,
-};
-
 pub struct WorkspaceClient<T> {
     transport: T,
     request_id: AtomicU64,
@@ -88,151 +83,23 @@ where
     }
 }
 
-impl<T> Workspace for WorkspaceClient<T>
-where
-    T: WorkspaceTransport + RefUnwindSafe + Send + Sync,
-{
-    fn pull_code_actions(
-        &self,
-        params: crate::features::code_actions::CodeActionsParams,
-    ) -> Result<crate::features::code_actions::CodeActionsResult, WorkspaceError> {
-        self.request("pgls/pull_code_actions", params)
-    }
+macro_rules! workspace_client {
+    ($($(#[$attr:meta])* fn $name:ident($params:ty) -> $result:ty;)*) => {
+        impl<T> Workspace for WorkspaceClient<T>
+        where
+            T: WorkspaceTransport + RefUnwindSafe + Send + Sync,
+        {
+            $(
+                fn $name(&self, params: $params) -> Result<$result, WorkspaceError> {
+                    self.request(concat!("pgls/", stringify!($name)), params)
+                }
+            )*
 
-    fn fix_file(
-        &self,
-        params: crate::features::code_actions::FixFileParams,
-    ) -> Result<crate::features::code_actions::FixFileResult, WorkspaceError> {
-        self.request("pgls/fix_file", params)
-    }
-
-    fn execute_statement(
-        &self,
-        params: crate::features::code_actions::ExecuteStatementParams,
-    ) -> Result<crate::features::code_actions::ExecuteStatementResult, WorkspaceError> {
-        self.request("pgls/execute_statement", params)
-    }
-
-    fn cancel_statement_execution(
-        &self,
-        params: crate::features::code_actions::ExecuteStatementParams,
-    ) -> Result<(), WorkspaceError> {
-        self.request("pgls/cancel_statement_execution", params)
-    }
-
-    fn register_project_folder(
-        &self,
-        params: RegisterProjectFolderParams,
-    ) -> Result<ProjectKey, WorkspaceError> {
-        self.request("pgls/register_project_folder", params)
-    }
-
-    fn find_project(
-        &self,
-        params: FindProjectParams,
-    ) -> Result<Option<ProjectKey>, WorkspaceError> {
-        self.request("pgls/find_project", params)
-    }
-
-    fn unregister_project_folder(
-        &self,
-        params: UnregisterProjectFolderParams,
-    ) -> Result<(), WorkspaceError> {
-        self.request("pgls/unregister_project_folder", params)
-    }
-
-    fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        self.request("pgls/open_file", params)
-    }
-
-    fn close_file(&self, params: CloseFileParams) -> Result<(), WorkspaceError> {
-        self.request("pgls/close_file", params)
-    }
-
-    fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
-        self.request("pgls/change_file", params)
-    }
-
-    fn update_settings(&self, params: super::UpdateSettingsParams) -> Result<(), WorkspaceError> {
-        self.request("pgls/update_settings", params)
-    }
-
-    fn update_nested_settings(
-        &self,
-        params: super::UpdateNestedSettingsParams,
-    ) -> Result<super::UpdateNestedSettingsResult, WorkspaceError> {
-        self.request("pgls/update_nested_settings", params)
-    }
-
-    fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError> {
-        self.request("pgls/is_path_ignored", params)
-    }
-
-    fn server_info(&self) -> Option<&ServerInfo> {
-        self.server_info.as_ref()
-    }
-
-    fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError> {
-        self.request("pgls/get_file_content", params)
-    }
-
-    fn pull_file_diagnostics(
-        &self,
-        params: crate::features::diagnostics::PullFileDiagnosticsParams,
-    ) -> Result<crate::features::diagnostics::PullDiagnosticsResult, WorkspaceError> {
-        self.request("pgls/pull_diagnostics", params)
-    }
-
-    fn pull_file_formatting(
-        &self,
-        params: crate::features::format::PullFileFormattingParams,
-    ) -> Result<crate::features::format::PullFormattingResult, WorkspaceError> {
-        self.request("pgls/pull_formatting", params)
-    }
-
-    fn pull_db_diagnostics(
-        &self,
-        params: crate::features::diagnostics::PullDatabaseDiagnosticsParams,
-    ) -> Result<crate::features::diagnostics::PullDiagnosticsResult, WorkspaceError> {
-        self.request("pgls/pull_db_diagnostics", params)
-    }
-
-    fn check_database_connection(
-        &self,
-        params: crate::features::diagnostics::CheckDatabaseConnectionParams,
-    ) -> Result<crate::features::diagnostics::CheckDatabaseConnectionResult, WorkspaceError> {
-        self.request("pgls/check_database_connection", params)
-    }
-
-    fn get_completions(
-        &self,
-        params: super::GetCompletionsParams,
-    ) -> Result<crate::features::completions::CompletionsResult, WorkspaceError> {
-        self.request("pgls/get_completions", params)
-    }
-
-    fn on_hover(
-        &self,
-        params: crate::features::on_hover::OnHoverParams,
-    ) -> Result<crate::features::on_hover::OnHoverResult, WorkspaceError> {
-        self.request("pgls/on_hover", params)
-    }
-
-    fn pull_inlay_hints(
-        &self,
-        params: crate::features::inlay_hints::PullInlayHintsParams,
-    ) -> Result<crate::features::inlay_hints::PullInlayHintsResult, WorkspaceError> {
-        self.request("pgls/pull_inlay_hints", params)
-    }
-
-    fn pull_semantic_tokens(
-        &self,
-        params: crate::features::semantic_tokens::PullSemanticTokensParams,
-    ) -> Result<crate::features::semantic_tokens::PullSemanticTokensResult, WorkspaceError> {
-        self.request("pgls/pull_semantic_tokens", params)
-    }
-
-    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
-        self.request("pgls/invalidate_schema_cache", all)
-    }
+            fn server_info(&self) -> Option<&ServerInfo> {
+                self.server_info.as_ref()
+            }
+        }
+    };
 }
+
+crate::for_each_workspace_method!(workspace_client);

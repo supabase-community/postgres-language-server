@@ -1,75 +1,75 @@
-2:1 rejected 42601
-12:1 rejected 42601
-14:1 rejected 42601
-16:1 rejected 42601
-18:1 rejected 42601
-20:1 rejected 42601
-22:1 rejected 42601
-26:1 accepted
-27:1 rejected 42883
-33:1 accepted
-35:1 accepted
-36:1 accepted
-37:1 accepted
-38:1 accepted
-39:1 accepted
-42:1 accepted
-43:1 accepted
-44:1 accepted
-45:1 accepted
-47:1 accepted
-54:1 accepted
-55:1 accepted
-56:1 accepted
-57:1 accepted
-58:1 accepted
-59:1 accepted
-61:1 accepted
-68:1 accepted
-69:1 accepted
-70:1 accepted
-71:1 accepted
-72:1 accepted
-73:1 rejected 42883
-74:1 accepted
-77:1 rejected 42883
-81:1 rejected 42883
-83:1 rejected 42883
-88:1 rejected 42883
-90:1 rejected 42883
-94:1 rejected 42883
-97:1 accepted
-100:1 accepted
-132:1 accepted
-133:1 accepted
-213:1 rejected 42883
-218:1 accepted
-219:1 accepted
-220:1 accepted
-221:1 accepted
-223:1 rejected 42883
-224:1 accepted
-225:1 accepted
-227:1 accepted
-228:1 accepted
-229:1 accepted
-232:1 rejected 42883
-233:1 rejected 42883
-234:1 rejected 42883
-235:1 rejected 42883
-236:1 rejected 42883
-237:1 rejected 42883
-239:1 rejected 42883
-241:1 rejected 42883
-243:1 accepted
-244:1 accepted
-245:1 accepted
-246:1 rejected 42883
-247:1 rejected 42883
-248:1 rejected 42883
-249:1 rejected 42883
-250:1 rejected 42883
-251:1 rejected 42883
-255:1 accepted
-257:1 rejected 42703
-259:1 rejected 22P02
+44..101 rejected 42601
+111..205 rejected 42601
+206..300 rejected 42601
+301..407 rejected 42601
+408..509 rejected 42601
+510..611 rejected 42601
+612..716 rejected 42601
+719..816 accepted
+817..1022 rejected 42883
+1024..1079 accepted
+1081..1123 accepted
+1124..1175 accepted
+1176..1227 accepted
+1228..1296 accepted
+1297..1340 accepted
+1380..1427 accepted
+1428..1484 accepted
+1485..1541 accepted
+1542..1590 accepted
+1640..1713 accepted
+1969..2015 accepted
+2016..2071 accepted
+2072..2127 accepted
+2128..2183 accepted
+2184..2259 accepted
+2260..2332 accepted
+2352..2437 accepted
+2696..2752 accepted
+2753..2818 accepted
+2819..2884 accepted
+2885..2970 accepted
+2971..3036 accepted
+3037..3154 rejected 42883
+3155..3212 accepted
+3263..3352 rejected 42883
+3413..3501 rejected 42883
+3502..3587 rejected 42883
+3685..3783 rejected 42883
+3784..3884 rejected 42883
+3937..4030 rejected 42883
+4032..4060 accepted
+4088..4963 accepted
+5163..5238 accepted
+5239..8367 accepted
+8369..8451 rejected 42883
+8566..8602 accepted
+8603..8662 accepted
+8663..8715 accepted
+8716..8771 accepted
+8825..8888 rejected 42883
+8889..8944 accepted
+8945..9000 accepted
+9050..9100 accepted
+9101..9157 accepted
+9158..9213 accepted
+9251..9292 rejected 42883
+9293..9334 rejected 42883
+9335..9378 rejected 42883
+9379..9420 rejected 42883
+9421..9464 rejected 42883
+9465..9510 rejected 42883
+9540..9583 rejected 42883
+9608..9649 rejected 42883
+9651..9677 accepted
+9678..9703 accepted
+9704..9732 accepted
+9733..9767 rejected 42883
+9768..9802 rejected 42883
+9803..9844 rejected 42883
+9845..9875 rejected 42883
+9876..9909 rejected 42883
+9910..9943 rejected 42883
+10022..10079 accepted
+10145..10203 rejected 42703
+10244..10279 rejected 22P02
