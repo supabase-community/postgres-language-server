@@ -487,8 +487,10 @@ fn load_config(
     if let ConfigurationPathHint::FromUser(ref config_file_path) = base_path
         && file_system.path_is_file(config_file_path)
     {
-        let deserialized =
-            parse_configuration(&file_system.read_file_from_path(config_file_path)?)?;
+        let deserialized = parse_configuration(
+            &file_system.read_file_from_path(config_file_path)?,
+            Some(config_file_path.as_path()),
+        )?;
 
         return Ok(Some(ConfigurationPayload {
             deserialized,
@@ -515,7 +517,7 @@ fn load_config(
     )? {
         let AutoSearchResult { content, file_path } = auto_search_result;
 
-        let deserialized = parse_configuration(&content)?;
+        let deserialized = parse_configuration(&content, Some(file_path.as_path()))?;
 
         Ok(Some(ConfigurationPayload {
             deserialized,
@@ -538,7 +540,10 @@ fn load_user_config(
             continue;
         }
 
-        let deserialized = parse_configuration(&file_system.read_file_from_path(&file_path)?)?;
+        let deserialized = parse_configuration(
+            &file_system.read_file_from_path(&file_path)?,
+            Some(file_path.as_path()),
+        )?;
 
         return Ok(Some(ConfigurationPayload {
             deserialized,
@@ -626,22 +631,31 @@ pub fn to_analyser_rules(settings: &Settings) -> LinterRules {
     analyser_rules
 }
 
-/// Parses the content of a configuration file, which may have comments and trailing commas.
-pub fn parse_configuration(content: &str) -> Result<PartialConfiguration, ConfigurationDiagnostic> {
-    serde_json::from_str(&strip_jsonc(content)?)
-        .map_err(ConfigurationDiagnostic::new_deserialization_error)
+/// Parses the content of the configuration file at `path`, which may have comments and trailing
+/// commas. An error points at its position in `content`.
+pub fn parse_configuration(
+    content: &str,
+    path: Option<&Path>,
+) -> Result<PartialConfiguration, ConfigurationDiagnostic> {
+    serde_json::from_str(&strip_jsonc(content, path)?)
+        .map_err(|error| ConfigurationDiagnostic::deserialization(path, content, &error))
 }
 
-/// Strips JSONC comments and trailing commas from input, returning valid JSON.
-fn strip_jsonc(content: &str) -> Result<String, ConfigurationDiagnostic> {
+/// Strips JSONC comments and trailing commas from input, returning valid JSON. They are replaced
+/// with spaces, so offsets into the result are offsets into `content`.
+fn strip_jsonc(content: &str, path: Option<&Path>) -> Result<String, ConfigurationDiagnostic> {
     let mut data = content.to_string();
     json_strip_comments::strip(&mut data).map_err(|e| {
         ConfigurationDiagnostic::DeserializationError(
             pgls_configuration::diagnostics::DeserializationError {
                 message: format!("Failed to strip JSONC comments: {e}"),
+                path: path.map(|path| path.display().to_string()),
+                span: None,
+                source_code: None,
             },
         )
     })?;
+    debug_assert_eq!(data.len(), content.len(), "stripping must keep the offsets");
     Ok(data)
 }
 
@@ -757,7 +771,8 @@ impl PartialConfigurationExt for PartialConfiguration {
 
             })?;
 
-            let deserialized = parse_configuration(&content)?;
+            let deserialized =
+                parse_configuration(&content, Some(extend_configuration_file_path.as_path()))?;
             deserialized_configurations.push((extend_configuration_file_path, deserialized))
         }
         Ok(deserialized_configurations)
@@ -1325,6 +1340,23 @@ mod tests {
                 PathBuf::from(r"z:\workspace\postgres-language-server.jsonc")
             );
         }
+    }
+
+    #[test]
+    fn deserialization_error_points_at_its_position() {
+        // A comment on an earlier line and a multibyte character earlier on the line must not
+        // move the span.
+        let content = "{\n  // a comment\n  \"$schema\": \"ä\", \"files\": }\n";
+        let path = Path::new("/project/postgres-language-server.jsonc");
+        let Err(ConfigurationDiagnostic::DeserializationError(error)) =
+            parse_configuration(content, Some(path))
+        else {
+            panic!("the configuration should not parse");
+        };
+        assert_eq!(error.path, Some(path.display().to_string()));
+        assert_eq!(error.source_code.as_deref(), Some(content));
+        let span = error.span.expect("a syntax error has a position");
+        assert_eq!(&content[span], "}", "{}", error.message);
     }
 
     #[test]

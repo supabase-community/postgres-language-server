@@ -1,27 +1,27 @@
-5:1 accepted
-7:1 accepted
-8:1 accepted
-9:1 accepted
-10:1 accepted
-11:1 accepted
-12:1 accepted
-13:1 accepted
-15:1 accepted
-18:1 rejected 22P02
-19:1 rejected 22P02
-20:1 rejected 22P02
-21:1 rejected 22P02
-22:1 rejected 22P02
-23:1 rejected 22P02
-24:1 rejected 22P02
-25:1 rejected 22P02
-26:1 rejected 22003
-27:1 rejected 22003
-29:1 accepted
-31:1 accepted
-33:1 accepted
-35:1 accepted
-37:1 accepted
-39:1 accepted
-41:1 accepted
-43:1 accepted
+14..43 accepted
+45..85 accepted
+86..126 accepted
+127..166 accepted
+167..208 accepted
+209..253 accepted
+254..296 accepted
+297..340 accepted
+386..431 accepted
+447..483 rejected 22P02
+484..524 rejected 22P02
+525..568 rejected 22P02
+569..614 rejected 22P02
+615..657 rejected 22P02
+658..700 rejected 22P02
+701..743 rejected 22P02
+744..786 rejected 22P02
+787..843 rejected 22003
+844..901 rejected 22003
+903..925 accepted
+927..971 accepted
+973..1020 accepted
+1022..1069 accepted
+1071..1117 accepted
+1119..1166 accepted
+1168..1214 accepted
+1216..1235 accepted
