@@ -1,18 +1,21 @@
-//! Checks the statement boundaries of the splitter against libpg_query's parser, on every file of
-//! Postgres' regression suite of every supported version.
+//! Checks the statement boundaries of the splitter on every file of Postgres' regression suite of
+//! every supported version: against the statements the fixtures were recorded with, and against
+//! libpg_query's parser. The differences are snapshotted per version, so a new one fails the test
+//! and a fixed one shows up as a diff.
+//!
+//! The fixtures key each verdict by the range of the statement Postgres was sent, so a fix of the
+//! splitter shows up in the first check until the fixtures are re-recorded with
+//! `just record-regress <major>`; the verdicts stay valid in the meantime.
 //!
 //! The parser can't take a whole file, since the files hold statements Postgres rejects. So the
-//! check starts at each statement of the splitter and looks for the statement psql sends from
-//! there: psql ends a statement at a `;` outside of parentheses and `BEGIN ... END`, so it's the
-//! shortest text up to a `;` that the parser reads as one statement. If that isn't one statement
-//! of the splitter, the splitter cut it in pieces, ran past its end, or both.
+//! second check starts at each statement of the splitter and looks for the statement psql sends
+//! from there: psql ends a statement at a `;` outside of parentheses and `BEGIN ... END`, so it's
+//! the shortest text up to a `;` that the parser reads as one statement. If that isn't one
+//! statement of the splitter, the splitter cut it in pieces, ran past its end, or both.
 //!
 //! Where no text up to a `;` parses, e.g. at a statement with a syntax error, the check moves on
 //! to the next statement of the splitter. Such a statement is tried with the statements after it
 //! too, since the splitter may have cut at a `;` inside it, e.g. in a `BEGIN ATOMIC` body.
-//!
-//! The mismatches are snapshotted per version, so a new one fails the test and a fixed one shows
-//! up as a diff.
 
 use pgls_postgres_regress::{File, Version};
 use pgls_query::protobuf::Token;
@@ -29,6 +32,114 @@ const TRIED_SEMICOLONS_MAX: usize = 64;
 
 /// How many characters of a statement the report shows.
 const REPORTED_CHARS_MAX: usize = 80;
+
+#[test]
+fn splitter_agrees_with_recordings() {
+    for version in pgls_postgres_regress::versions() {
+        let mut statements = 0;
+        let mut entries = Vec::new();
+        for file in version.files() {
+            statements += file.statements.len();
+            for difference in Difference::all(&file) {
+                entries.push(difference.entry(&file));
+            }
+        }
+        let mut report = format!(
+            "{}: {statements} recorded statements, {} differences\n",
+            version.tag,
+            entries.len()
+        );
+        for entry in entries {
+            report.push('\n');
+            report.push_str(&entry);
+        }
+        insta::assert_snapshot!(format!("splitter_vs_recorded_{}", version.major), report);
+    }
+}
+
+/// Overlapping statements of the recording and the splitter that differ. Either side is empty
+/// where the other has a statement that overlaps none of its own.
+struct Difference {
+    recorded: Vec<TextRange>,
+    splitter: Vec<TextRange>,
+}
+
+impl Difference {
+    fn all(file: &File) -> Vec<Difference> {
+        let recorded = file
+            .statements
+            .iter()
+            .map(|statement| statement.range)
+            .collect::<Vec<_>>();
+        let splitter = pgls_postgres_regress::split(&file.source);
+        let (mut r, mut s) = (0, 0);
+        let mut differences = Vec::new();
+        loop {
+            let (next_recorded, next_splitter) = (recorded.get(r), splitter.get(s));
+            if next_recorded.is_some() && next_recorded == next_splitter {
+                r += 1;
+                s += 1;
+                continue;
+            }
+            // The statement that starts first opens the difference, and every statement that
+            // overlaps it joins. Statements aren't empty, so every round takes at least the first
+            // one, and the loop ends after both lists.
+            let Some(mut end) = [next_recorded, next_splitter]
+                .into_iter()
+                .flatten()
+                .min_by_key(|range| range.start())
+                .map(|range| range.end())
+            else {
+                break;
+            };
+            let mut difference = Difference {
+                recorded: Vec::new(),
+                splitter: Vec::new(),
+            };
+            loop {
+                let mut grew = false;
+                for (ranges, index, taken) in [
+                    (&recorded, &mut r, &mut difference.recorded),
+                    (&splitter, &mut s, &mut difference.splitter),
+                ] {
+                    while let Some(&range) = ranges.get(*index).filter(|x| x.start() < end) {
+                        end = end.max(range.end());
+                        taken.push(range);
+                        *index += 1;
+                        grew = true;
+                    }
+                }
+                if !grew {
+                    break;
+                }
+            }
+            differences.push(difference);
+        }
+        differences
+    }
+
+    fn entry(&self, file: &File) -> String {
+        let start = self
+            .recorded
+            .iter()
+            .chain(&self.splitter)
+            .map(|range| range.start())
+            .min()
+            .unwrap_or_default();
+        let mut entry = format!("{}.sql:{}:\n", file.name, location(file, start));
+        for (side, ranges) in [("recorded", &self.recorded), ("splitter", &self.splitter)] {
+            for &range in ranges {
+                entry.push_str(&format!(
+                    "  {side} {}-{} {}\n",
+                    location(file, range.start()),
+                    location(file, range.end()),
+                    excerpt(&file.source[range])
+                ));
+            }
+        }
+        entry
+    }
+}
 
 #[test]
 fn splitter_agrees_with_parser() {
@@ -88,11 +199,7 @@ fn report(version: &Version) -> String {
 }
 
 fn mismatches(file: &File, counts: &mut Counts) -> Vec<Mismatch> {
-    let ranges = file
-        .statements
-        .iter()
-        .map(|statement| statement.range)
-        .collect::<Vec<_>>();
+    let ranges = pgls_postgres_regress::split(&file.source);
     counts.statements += ranges.len();
     let mut mismatches = Vec::new();
     let mut index = 0;

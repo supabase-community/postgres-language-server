@@ -1,40 +1,40 @@
-1:1 accepted
-26:1 rejected 42P01
-52:1 rejected 42P01
-59:1 rejected 22023
-63:1 rejected 22023
-66:1 rejected 22023
-70:1 accepted
-96:1 accepted
-101:1 accepted
-211:1 accepted
-292:1 accepted
-293:1 accepted
-295:1 rejected 42P01
-320:1 accepted
-321:1 accepted
-323:1 accepted
-324:1 accepted
-327:1 rejected 42809
-328:1 rejected 42P01
-329:1 accepted
-332:1 rejected 22003
-333:1 accepted
-334:1 accepted
-335:1 accepted
-338:1 accepted
-341:1 accepted
-343:1 accepted
-354:1 accepted
-356:1 accepted
-358:1 accepted
-360:1 accepted
-362:1 rejected 22003
-363:1 rejected 22003
-367:1 accepted
-368:1 accepted
-369:1 accepted
-370:1 accepted
-371:1 accepted
-374:1 accepted
-376:1 accepted
+0..540 accepted
+542..1731 rejected 42P01
+1778..1968 rejected 42P01
+2036..2151 rejected 22023
+2207..2324 rejected 22023
+2325..2439 rejected 22023
+2441..3163 accepted
+3165..3356 accepted
+3358..5206 accepted
+5208..7638 accepted
+7640..7661 accepted
+7662..7686 accepted
+7688..8880 rejected 42P01
+8882..8932 accepted
+8933..8955 accepted
+9000..9054 accepted
+9055..9120 accepted
+9161..9212 rejected 42809
+9236..9286 rejected 42P01
+9314..9364 accepted
+9428..9479 rejected 22003
+9504..9554 accepted
+9555..9605 accepted
+9606..9664 accepted
+9695..9794 accepted
+9795..9901 accepted
+9922..10094 accepted
+10119..10178 accepted
+10210..10269 accepted
+10293..10352 accepted
+10393..10461 accepted
+10493..10553 rejected 22003
+10554..10622 rejected 22003
+10698..10742 accepted
+10743..10825 accepted
+10826..10922 accepted
+10923..11019 accepted
+11020..11051 accepted
+11120..11182 accepted
+11247..11309 accepted

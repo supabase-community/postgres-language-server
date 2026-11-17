@@ -14,9 +14,7 @@ use std::{
     time::Duration,
 };
 
-use pgls_postgres_regress::{
-    CATALOG_FILE, Statement, Verdict, data_dir, preprocess, split, verdicts_file,
-};
+use pgls_postgres_regress::{CATALOG_FILE, Statement, Verdict, data_dir, preprocess, split};
 use sqlx::{Connection, Executor, PgConnection};
 
 const PASSWORD: &str = "postgres";
@@ -106,7 +104,10 @@ async fn main() {
         totals.add(&counts);
         fs::write(
             verdicts_dir.join(format!("{name}.txt")),
-            verdicts_file(&source, &statements),
+            statements
+                .iter()
+                .map(|statement| format!("{statement}\n"))
+                .collect::<String>(),
         )
         .expect("write verdict file");
     }

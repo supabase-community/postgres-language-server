@@ -2,7 +2,7 @@
 //! constants and aliases. The parse tree only has the location where each starts, so the end is
 //! found in the tokens of Postgres' scanner, scanned once per statement.
 
-use pgls_query::protobuf::{KeywordKind, Token as Kind};
+use pgls_query::protobuf::{KeywordKind, ScanToken, Token as Kind};
 
 /// The most tokens of a SQL construct that uses an operator, like `IS NOT DISTINCT FROM`.
 const CONSTRUCT_TOKENS_MAX: usize = 4;
@@ -18,7 +18,7 @@ pub(super) struct Token {
 }
 
 /// The tokens of a statement.
-pub(super) struct Tokens<'a> {
+pub struct Tokens<'a> {
     sql: &'a str,
     tokens: Vec<Token>,
 }
@@ -26,10 +26,14 @@ pub(super) struct Tokens<'a> {
 impl<'a> Tokens<'a> {
     /// Scans `sql` with Postgres' scanner. `None` if the scanner rejects it, which the parser
     /// would have done too.
-    pub fn scan(sql: &'a str) -> Option<Self> {
-        let scanned = pgls_query::scan(sql).ok()?;
-        let tokens = scanned
-            .tokens
+    pub(crate) fn scan(sql: &'a str) -> Option<Self> {
+        Some(Self::from_scan(sql, &pgls_query::scan(sql).ok()?.tokens))
+    }
+
+    /// The tokens of `sql` that Postgres' scanner returned, like [`Self::scan`] for a statement
+    /// that is already scanned.
+    pub fn from_scan(sql: &'a str, tokens: &[ScanToken]) -> Self {
+        let tokens = tokens
             .iter()
             .filter(|token| !matches!(token.token(), Kind::SqlComment | Kind::CComment))
             .filter_map(|token| {
@@ -42,16 +46,16 @@ impl<'a> Tokens<'a> {
             })
             .filter(|token| sql.get(token.start..token.end).is_some())
             .collect();
-        Some(Self { sql, tokens })
+        Self { sql, tokens }
     }
 
     /// The tokens of the statement, in order.
-    pub fn tokens(&self) -> &[Token] {
+    pub(crate) fn tokens(&self) -> &[Token] {
         &self.tokens
     }
 
     /// The text of `token`.
-    pub fn text(&self, token: &Token) -> &'a str {
+    pub(crate) fn text(&self, token: &Token) -> &'a str {
         self.sql.get(token.start..token.end).unwrap_or_default()
     }
 
@@ -128,7 +132,7 @@ impl<'a> Tokens<'a> {
     }
 
     /// The end of the (possibly qualified) name starting at `start`, like `public.users`.
-    pub fn name_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn name_end(&self, start: usize) -> Option<usize> {
         self.end(self.name_last(self.at(start)?)?)
     }
 
@@ -136,25 +140,11 @@ impl<'a> Tokens<'a> {
     /// multi-word types like `double precision`, `character varying`, or `timestamp with time
     /// zone`. Modifiers are left out, except the precision of `time` and `timestamp`, which can
     /// come before `with time zone`.
-    pub fn type_name_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn type_name_end(&self, start: usize) -> Option<usize> {
         let first = self.at(start)?;
-        let last = self.name_last(first)?;
-        // The index of the last of `words`, if they follow `index`.
-        let words = |index: usize, words: &[&str]| {
-            words.iter().try_fold(index, |index, word| {
-                self.is_word(index + 1, word).then_some(index + 1)
-            })
-        };
-        let word = |word: &str| words(last, &[word]);
+        let last = self.type_words_last(first)?;
         let is = |word: &str| first == last && self.is_word(first, word);
-        let last = if is("double") {
-            word("precision").unwrap_or(last)
-        } else if ["character", "char", "nchar", "bit"].into_iter().any(is) {
-            word("varying").unwrap_or(last)
-        } else if is("national") {
-            let last = word("character").or_else(|| word("char")).unwrap_or(last);
-            words(last, &["varying"]).unwrap_or(last)
-        } else if is("time") || is("timestamp") {
+        let last = if is("time") || is("timestamp") {
             let precision = if self.kind(last + 1) == Some(Kind::Ascii40) {
                 (last + 1..self.tokens.len())
                     .find(|&index| self.kind(index) == Some(Kind::Ascii41))
@@ -162,8 +152,8 @@ impl<'a> Tokens<'a> {
             } else {
                 last
             };
-            words(precision, &["with", "time", "zone"])
-                .or_else(|| words(precision, &["without", "time", "zone"]))
+            self.words(precision, &["with", "time", "zone"])
+                .or_else(|| self.words(precision, &["without", "time", "zone"]))
                 .unwrap_or(last)
         } else {
             last
@@ -171,8 +161,41 @@ impl<'a> Tokens<'a> {
         self.end(last)
     }
 
+    /// The end of the words of the type name starting at `start`, before its modifiers: like
+    /// [`Self::type_name_end`], but without the precision and time zone of `time` and
+    /// `timestamp`. Fixes that replace a type name replace these words.
+    pub fn type_words_end(&self, start: usize) -> Option<usize> {
+        self.end(self.type_words_last(self.at(start)?)?)
+    }
+
+    /// The index of the last word of the type name whose first token is at `first`: the last
+    /// part of a qualified name, or of a multi-word type like `double precision`, `character
+    /// varying` or `national char varying`. Only unqualified names have more than one word.
+    fn type_words_last(&self, first: usize) -> Option<usize> {
+        let last = self.name_last(first)?;
+        let word = |word: &str| self.words(last, &[word]);
+        let is = |word: &str| first == last && self.is_word(first, word);
+        Some(if is("double") {
+            word("precision").unwrap_or(last)
+        } else if ["character", "char", "nchar", "bit"].into_iter().any(is) {
+            word("varying").unwrap_or(last)
+        } else if is("national") {
+            let last = word("character").or_else(|| word("char")).unwrap_or(last);
+            self.words(last, &["varying"]).unwrap_or(last)
+        } else {
+            last
+        })
+    }
+
+    /// The index of the last of `words`, if they follow the token at `index`.
+    fn words(&self, index: usize, words: &[&str]) -> Option<usize> {
+        words.iter().try_fold(index, |index, word| {
+            self.is_word(index + 1, word).then_some(index + 1)
+        })
+    }
+
     /// The end of `*`, or of a qualified `t.*` or `"s"."t".*`, starting at `start`.
-    pub fn star_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn star_end(&self, start: usize) -> Option<usize> {
         let mut index = self.at(start)?;
         loop {
             match self.kind(index)? {
@@ -188,7 +211,7 @@ impl<'a> Tokens<'a> {
     /// The span of the alias after the (possibly qualified) name that starts at `start`, with or
     /// without `AS`, like `u` in `users as u` or `"U"` in `public.users "U"`. `None` if no
     /// identifier follows.
-    pub fn alias_span(&self, start: usize) -> Option<(usize, usize)> {
+    pub(crate) fn alias_span(&self, start: usize) -> Option<(usize, usize)> {
         let mut index = self.at(start)?;
         loop {
             if !self.is_identifier(index) {
@@ -211,7 +234,7 @@ impl<'a> Tokens<'a> {
     }
 
     /// The end of the token starting at `start`. `None` for parentheses, commas and semicolons.
-    pub fn token_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn token_end(&self, start: usize) -> Option<usize> {
         let token = self.tokens.get(self.at(start)?)?;
         if matches!(
             token.kind,
@@ -224,7 +247,7 @@ impl<'a> Tokens<'a> {
 
     /// The end of the select list entry starting at `start`, with its alias: before the next `,`
     /// outside parentheses, the `)` around the list, or the keyword after the select list.
-    pub fn target_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn target_end(&self, start: usize) -> Option<usize> {
         let first = self.at(start)?;
         let mut depth = 0usize;
         let mut last = None;
@@ -262,14 +285,14 @@ impl<'a> Tokens<'a> {
 
     /// The end of the first token of the expression starting at `start`, or of the whole name if
     /// it starts with one.
-    pub fn expression_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn expression_end(&self, start: usize) -> Option<usize> {
         self.name_end(start).or_else(|| self.token_end(start))
     }
 
     /// The end of the SQL construct starting at `start` whose keywords end with `last`, like
     /// `IS NOT DISTINCT FROM`, or `BETWEEN SYMMETRIC` when `last` is `BETWEEN`. The first token
     /// if `last` doesn't follow within [`CONSTRUCT_TOKENS_MAX`] tokens.
-    pub fn construct_end(&self, start: usize, last: Kind) -> Option<usize> {
+    pub(crate) fn construct_end(&self, start: usize, last: Kind) -> Option<usize> {
         let first = self.at(start)?;
         let mut end = (first..first + CONSTRUCT_TOKENS_MAX)
             .find(|&index| self.kind(index) == Some(last))
@@ -283,7 +306,7 @@ impl<'a> Tokens<'a> {
     }
 
     /// The end of the operator starting at `start`: a single token, or `OPERATOR(schema.op)`.
-    pub fn operator_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn operator_end(&self, start: usize) -> Option<usize> {
         let index = self.at(start)?;
         if self.kind(index) == Some(Kind::Operator) && self.kind(index + 1) == Some(Kind::Ascii40) {
             let close = (index + 2..self.tokens.len())
@@ -296,7 +319,7 @@ impl<'a> Tokens<'a> {
     /// The end of the cast starting at `start`: `CAST(x AS t)`, `::t` with the modifiers of `t`,
     /// or a typed constant like `date 'today'`. The type name of `::t` and `t '...'` ends after
     /// its first word.
-    pub fn cast_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn cast_end(&self, start: usize) -> Option<usize> {
         let mut index = self.at(start)?;
         if self.kind(index) == Some(Kind::Cast) && self.kind(index + 1) == Some(Kind::Ascii40) {
             return self.end(self.closing_paren(index + 1)?);
@@ -322,7 +345,7 @@ impl<'a> Tokens<'a> {
     /// The end of the string constant starting at `start`: `'...'`, with an `E`, `B`, `X`, `N`,
     /// or `U&` prefix, or `$tag$...$tag$`. Constants continued on a new line (`'a'\n'b'`) end
     /// after their last part.
-    pub fn literal_end(&self, start: usize) -> Option<usize> {
+    pub(crate) fn literal_end(&self, start: usize) -> Option<usize> {
         let index = self.at(start)?;
         let token = self.tokens.get(index)?;
         match token.kind {

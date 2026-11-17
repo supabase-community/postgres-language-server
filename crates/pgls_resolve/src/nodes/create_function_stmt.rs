@@ -8,7 +8,7 @@ use pgls_query::{
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
 use pgls_query_ext::{
-    function_body::is_sql_function,
+    function_body::Language,
     utils::{QualifiedName, find_option_value, qualified_name},
 };
 
@@ -65,7 +65,7 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
     // Statements of the file never come unchanged from the database.
     r.depends_on_file();
 
-    if n.is_procedure || !is_sql_function(n) {
+    if n.is_procedure || Language::of(n) != Some(Language::Sql) {
         return;
     }
     let params: Vec<&FunctionParameter> = n

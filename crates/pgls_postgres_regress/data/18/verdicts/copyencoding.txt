@@ -1,17 +1,17 @@
-6:1 rejected 42601
-17:1 accepted
-23:1 rejected 42601
-25:1 rejected 42601
-28:1 accepted
-30:1 rejected 42601
-32:1 accepted
-33:1 rejected 42601
-34:1 accepted
-40:1 rejected 42601
-42:1 rejected 42601
-45:1 accepted
-47:1 rejected 42601
-49:1 accepted
-50:1 rejected 42601
-51:1 accepted
-53:1 accepted
+94..158 rejected 42601
+228..268 accepted
+337..411 rejected 42601
+450..527 rejected 42601
+552..580 accepted
+609..666 rejected 42601
+705..735 accepted
+736..794 rejected 42601
+795..817 accepted
+892..966 rejected 42601
+1005..1082 rejected 42601
+1107..1135 accepted
+1164..1221 rejected 42601
+1260..1290 accepted
+1291..1349 rejected 42601
+1350..1372 accepted
+1374..1403 accepted
