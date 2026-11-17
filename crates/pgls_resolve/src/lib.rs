@@ -30,6 +30,7 @@ mod resolver;
 mod roles_and_schemas;
 mod scope;
 mod span;
+pub use span::Tokens;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

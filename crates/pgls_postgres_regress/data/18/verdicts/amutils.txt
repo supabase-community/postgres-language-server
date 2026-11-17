@@ -1,10 +1,10 @@
-5:1 rejected 42P01
-22:1 rejected 42P01
-39:1 rejected 42P01
-54:1 rejected 42P01
-67:1 accepted
-78:1 accepted
-80:1 accepted
-82:1 accepted
-90:1 accepted
-92:1 accepted
+53..809 rejected 42P01
+811..1562 rejected 42P01
+1564..2421 rejected 42P01
+2423..3044 rejected 42P01
+3046..3339 accepted
+3401..3456 accepted
+3458..3536 accepted
+3538..3843 accepted
+3845..3895 accepted
+3897..4260 accepted

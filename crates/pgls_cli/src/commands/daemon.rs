@@ -1,5 +1,7 @@
 use crate::{
-    CliDiagnostic, CliSession, open_transport,
+    CliDiagnostic, CliSession, LoggingLevel,
+    logging::LoggingFilter,
+    open_transport,
     service::{self, ensure_daemon, open_socket, run_daemon},
 };
 use pgls_console::{ConsoleExt, markup};
@@ -8,15 +10,10 @@ use pgls_workspace::{TransportError, WorkspaceError, workspace::WorkspaceClient}
 use std::path::PathBuf;
 use tokio::io;
 use tokio::runtime::Runtime;
-use tracing::subscriber::Interest;
-use tracing::{Instrument, Metadata, debug_span, metadata::LevelFilter};
+use tracing::{Instrument, debug_span};
 use tracing_appender::rolling::Rotation;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
-use tracing_subscriber::{
-    layer::{Context, Filter},
-    prelude::*,
-    registry,
-};
+use tracing_subscriber::{prelude::*, registry};
 use tracing_tree::{HierarchicalLayer, time::UtcDateTime};
 
 pub(crate) fn start(
@@ -78,7 +75,7 @@ pub(crate) fn run_server(
     config_path: Option<PathBuf>,
     log_path: Option<PathBuf>,
     log_file_name_prefix: Option<String>,
-    log_level: Option<String>,
+    log_level: LoggingLevel,
     log_kind: Option<String>,
 ) -> Result<(), CliDiagnostic> {
     setup_tracing_subscriber(log_path, log_file_name_prefix, log_level, log_kind);
@@ -186,9 +183,13 @@ async fn start_lsp_proxy(
 fn setup_tracing_subscriber(
     log_path: Option<PathBuf>,
     log_file_name_prefix: Option<String>,
-    log_level: Option<String>,
+    log_level: LoggingLevel,
     log_kind: Option<String>,
 ) {
+    if log_level == LoggingLevel::None {
+        return;
+    }
+
     let pgls_log_path = log_path.unwrap_or(pgls_fs::ensure_cache_dir().join("pgls-logs"));
 
     let appender_builder = tracing_appender::rolling::RollingFileAppender::builder();
@@ -200,7 +201,7 @@ fn setup_tracing_subscriber(
         .build(pgls_log_path)
         .expect("Failed to start the logger for the daemon.");
 
-    let filter = PgLSLoggingFilter::from(log_level);
+    let filter = LoggingFilter::new(log_level);
 
     let log_kind = log_kind.unwrap_or("hierarchical".into());
 
@@ -242,59 +243,5 @@ pub fn default_pgls_log_path() -> PathBuf {
     {
         Some(directory) => PathBuf::from(directory),
         None => pgls_fs::ensure_cache_dir().join("pgls-logs"),
-    }
-}
-
-/// Tracing Filter with two rules:
-/// For all crates starting with pgls*, use `PGLS_LOG_LEVEL` or CLI option or "info" as default
-/// For all other crates, use "info"
-struct PgLSLoggingFilter(LevelFilter);
-
-impl From<Option<String>> for PgLSLoggingFilter {
-    fn from(value: Option<String>) -> Self {
-        Self(
-            value
-                .map(|lv_filter| match lv_filter.as_str() {
-                    "trace" => LevelFilter::TRACE,
-                    "debug" => LevelFilter::DEBUG,
-                    "info" => LevelFilter::INFO,
-                    "warn" => LevelFilter::WARN,
-                    "error" => LevelFilter::ERROR,
-                    "off" => LevelFilter::OFF,
-
-                    _ => LevelFilter::INFO,
-                })
-                .unwrap_or(LevelFilter::INFO),
-        )
-    }
-}
-
-impl PgLSLoggingFilter {
-    fn is_enabled(&self, meta: &Metadata<'_>) -> bool {
-        let filter = if meta.target().starts_with("pgls") {
-            self.0
-        } else {
-            LevelFilter::INFO
-        };
-
-        meta.level() <= &filter
-    }
-}
-
-impl<S> Filter<S> for PgLSLoggingFilter {
-    fn enabled(&self, meta: &Metadata<'_>, _cx: &Context<'_, S>) -> bool {
-        self.is_enabled(meta)
-    }
-
-    fn callsite_enabled(&self, meta: &'static Metadata<'static>) -> Interest {
-        if self.is_enabled(meta) {
-            Interest::always()
-        } else {
-            Interest::never()
-        }
-    }
-
-    fn max_level_hint(&self) -> Option<LevelFilter> {
-        Some(self.0)
     }
 }

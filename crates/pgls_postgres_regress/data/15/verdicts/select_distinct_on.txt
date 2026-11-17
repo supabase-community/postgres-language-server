@@ -1,4 +1,4 @@
-5:1 rejected 42P01
-10:1 rejected 42P01
-14:1 rejected 42P01
-19:1 rejected 42P01
+29..143 rejected 42P01
+204..323 rejected 42P01
+325..444 rejected 42P01
+511..586 rejected 42P01
