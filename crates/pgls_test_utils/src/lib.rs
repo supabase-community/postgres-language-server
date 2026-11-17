@@ -35,13 +35,16 @@ impl From<String> for QueryWithCursorPosition {
 
 impl From<&str> for QueryWithCursorPosition {
     fn from(value: &str) -> Self {
-        let position = value
+        let marker = value
             .find(CURSOR_POS)
             .expect("Use `QueryWithCursorPosition::cursor_marker()` to insert cursor position into your Query.");
 
+        // The cursor is an offset into the trimmed text.
+        let sql = value.replace(CURSOR_POS, "");
+        let leading_whitespace = sql.len() - sql.trim_start().len();
         QueryWithCursorPosition {
-            sql: value.replace(CURSOR_POS, "").trim().to_string(),
-            position,
+            position: marker.saturating_sub(leading_whitespace),
+            sql: sql.trim().to_string(),
         }
     }
 }
@@ -126,6 +129,20 @@ mod tests {
                 query: format!("select {} from", QueryWithCursorPosition::cursor_marker()),
                 expected_pos: 7,
                 expected_sql_len: 12,
+            },
+            // The cursor is an offset into the trimmed text.
+            TestCase {
+                query: format!(
+                    "\n    select * from{}\n",
+                    QueryWithCursorPosition::cursor_marker()
+                ),
+                expected_pos: 13,
+                expected_sql_len: 13,
+            },
+            TestCase {
+                query: format!("  {}  select * from", QueryWithCursorPosition::cursor_marker()),
+                expected_pos: 0,
+                expected_sql_len: 13,
             },
         ];
 
