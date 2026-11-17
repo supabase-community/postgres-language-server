@@ -3,14 +3,14 @@ mod data;
 mod ddl;
 mod dml;
 
-pub use common::source;
+pub(crate) use common::source;
 
 use pgls_lexer::{KeywordCategory, Lexed, SyntaxKind};
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::splitter::common::{ReachedEOFException, SplitterResult};
 
-pub struct SplitResult {
+pub(crate) struct SplitResult {
     pub ranges: Vec<TextRange>,
     pub errors: Vec<SplitError>,
     /// The statement keywords after a token that needs an operand, see [`Splitter::hold_back`].
@@ -20,11 +20,11 @@ pub struct SplitResult {
 /// The offsets of the statement keywords after a token that needs an operand, in order, see
 /// [`Splitter::hold_back`].
 #[derive(Debug, Default)]
-pub struct OperandKeywords(Vec<TextSize>);
+pub(crate) struct OperandKeywords(Vec<TextSize>);
 
 impl OperandKeywords {
     /// Whether one of the keywords is in `range`.
-    pub fn any_in(&self, range: TextRange) -> bool {
+    pub(crate) fn any_in(&self, range: TextRange) -> bool {
         let first = self.0.partition_point(|&offset| offset < range.start());
         self.0
             .get(first)
@@ -32,12 +32,12 @@ impl OperandKeywords {
     }
 
     /// Whether `range` starts at one of the keywords.
-    pub fn start(&self, range: TextRange) -> bool {
+    pub(crate) fn start(&self, range: TextRange) -> bool {
         self.0.binary_search(&range.start()).is_ok()
     }
 }
 
-pub static TRIVIA_TOKENS: &[SyntaxKind] = &[
+pub(crate) static TRIVIA_TOKENS: &[SyntaxKind] = &[
     SyntaxKind::SPACE,
     SyntaxKind::TAB,
     SyntaxKind::VERTICAL_TAB,
@@ -120,7 +120,7 @@ pub struct SplitError {
 }
 
 #[derive(Debug)]
-pub struct Splitter<'a> {
+pub(crate) struct Splitter<'a> {
     lexed: &'a Lexed<'a>,
     current_pos: usize,
     stmt_ranges: Vec<(usize, usize)>,
@@ -140,7 +140,7 @@ impl<'a> Splitter<'a> {
     /// where there is no better signal to resynchronize on. If `hold_back_statement_starts`, a
     /// statement keyword after a token that needs an operand doesn't start a statement, see
     /// [`Splitter::hold_back`].
-    pub fn new(
+    pub(crate) fn new(
         lexed: &'a Lexed<'a>,
         blank_line_is_boundary: bool,
         hold_back_statement_starts: bool,
@@ -157,7 +157,7 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    pub fn finish(self) -> SplitResult {
+    pub(crate) fn finish(self) -> SplitResult {
         let ranges = self
             .stmt_ranges
             .iter()
@@ -197,7 +197,7 @@ impl<'a> Splitter<'a> {
         self.hold_back_statement_starts
     }
 
-    pub fn start_stmt(&mut self) {
+    pub(crate) fn start_stmt(&mut self) {
         assert!(
             self.current_stmt_start.is_none(),
             "cannot start statement within statement",
@@ -205,7 +205,7 @@ impl<'a> Splitter<'a> {
         self.current_stmt_start = Some(self.current_pos);
     }
 
-    pub fn close_stmt(&mut self) {
+    pub(crate) fn close_stmt(&mut self) {
         assert!(
             self.current_stmt_start.is_some(),
             "Must start statement before closing it."
