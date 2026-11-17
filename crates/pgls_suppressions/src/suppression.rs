@@ -162,6 +162,16 @@ fn is_lint_group(group: &str) -> bool {
     pgls_analyser::METADATA.groups().contains(&group) || matches!(group, "typecheck" | "nursery")
 }
 
+/// The suppression comment on `line`: the line without its leading whitespace, if it then starts
+/// with `-- pgt-ignore` or `-- pgls-ignore`. Whitespace is any Unicode whitespace, so that a comment
+/// indented with a non-breaking space (e.g. pasted from a web page) is a suppression too. The parser
+/// and [`Suppression::from_line`] both use this, so they agree on which lines are suppressions.
+pub(crate) fn suppression_comment(line: &str) -> Option<&str> {
+    let comment = line.trim_start();
+    (comment.starts_with("-- pgt-ignore") || comment.starts_with("-- pgls-ignore"))
+        .then_some(comment)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Suppression {
     pub(crate) suppression_range: TextRange,
@@ -174,35 +184,32 @@ pub(crate) struct Suppression {
 }
 
 impl Suppression {
-    /// Creates a suppression from a suppression comment line.
-    /// The line start must match `-- pgt-ignore` or `-- pgls-ignore`, otherwise, this will panic.
-    /// Leading whitespace is ignored.
+    /// Creates a suppression from a suppression comment line, which `line` must start with after
+    /// leading whitespace (see [`suppression_comment`]). Returns an error for any other line.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
-        let start_trimmed = line.trim_ascii_start();
-        let leading_whitespace_offset = line.len() - start_trimmed.len();
-        let trimmed = start_trimmed.trim_ascii_end();
+        let Some(start_trimmed) = suppression_comment(line) else {
+            return Err(SuppressionDiagnostic {
+                span: TextRange::at(*offset, TextSize::of(line)),
+                message: MessageAndDescription::from(
+                    "This is not a suppression comment.".to_string(),
+                ),
+            });
+        };
+        let leading_whitespace_offset = TextSize::of(line) - TextSize::of(start_trimmed);
+        let trimmed = start_trimmed.trim_end();
 
-        assert!(
-            start_trimmed.starts_with("-- pgt-ignore")
-                || start_trimmed.starts_with("-- pgls-ignore"),
-            "Only try parsing suppressions from lines starting with `-- pgt-ignore` or `-- pgls-ignore`."
-        );
-
-        let full_offset = *offset + TextSize::new(leading_whitespace_offset.try_into().unwrap());
-        let span = TextRange::new(
-            full_offset,
-            pgls_text_size::TextSize::new(trimmed.len().try_into().unwrap()) + full_offset,
-        );
+        let full_offset = *offset + leading_whitespace_offset;
+        let span = TextRange::at(full_offset, TextSize::of(trimmed));
 
         let (line, explanation) = match trimmed.split_once(':') {
             Some((suppr, explanation)) => (suppr, Some(explanation.trim())),
             None => (trimmed, None),
         };
 
-        let mut parts = line.split_ascii_whitespace();
+        let mut parts = line.split_whitespace();
 
         let _ = parts.next();
-        let kind = match parts.next().unwrap() {
+        let kind = match parts.next().unwrap_or_default() {
             "pgt-ignore-all" | "pgls-ignore-all" => SuppressionKind::File,
             "pgt-ignore-start" | "pgls-ignore-start" => SuppressionKind::Start,
             "pgt-ignore-end" | "pgls-ignore-end" => SuppressionKind::End,
@@ -428,6 +435,25 @@ mod tests {
             )
         );
         assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_non_ascii_whitespace() {
+        let line = "\u{00A0}-- pgls-ignore\u{00A0}banDropColumn";
+        let suppression = Suppression::from_line(line, &TextSize::new(10)).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(suppression.rule_specifier.rule(), Some("banDropColumn"));
+        assert_eq!(
+            suppression.suppression_range,
+            TextRange::new(TextSize::new(12), TextSize::new(10) + TextSize::of(line))
+        );
+
+        // Any other line is an error, not a panic.
+        assert!(
+            Suppression::from_line("select 1; -- pgls-ignore lint", &TextSize::new(0)).is_err()
+        );
+        assert!(Suppression::from_line("", &TextSize::new(0)).is_err());
     }
 
     #[test]

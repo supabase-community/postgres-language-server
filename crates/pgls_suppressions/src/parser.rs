@@ -9,7 +9,9 @@ use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
     Suppressions,
-    suppression::{RangeSuppression, Suppression, SuppressionDiagnostic, SuppressionKind},
+    suppression::{
+        RangeSuppression, Suppression, SuppressionDiagnostic, SuppressionKind, suppression_comment,
+    },
 };
 
 #[derive(Debug)]
@@ -76,7 +78,7 @@ impl<'a> SuppressionsParser<'a> {
                 continue;
             }
 
-            let trimmed = preview.trim();
+            let trimmed = preview.trim_start();
             if !trimmed.starts_with("-- pgt-ignore-all")
                 && !trimmed.starts_with("-- pgls-ignore-all")
             {
@@ -99,8 +101,7 @@ impl<'a> SuppressionsParser<'a> {
 
     fn parse_suppressions(&mut self) {
         for (idx, line) in self.lines.by_ref() {
-            let trimmed = line.trim();
-            if !trimmed.starts_with("-- pgt-ignore") && !trimmed.starts_with("-- pgls-ignore") {
+            if suppression_comment(line).is_none() {
                 continue;
             }
 
