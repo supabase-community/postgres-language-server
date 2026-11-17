@@ -66,6 +66,31 @@ fn format_option_errors_list_the_valid_values() {
     assert!(!stderr.contains("Layout"), "{stderr}");
 }
 
+/// Input that can't be read, like text that isn't UTF-8, fails with the read error, not as if
+/// nothing was piped.
+#[test]
+fn format_reports_a_stdin_read_error() {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    let output = cmd
+        .args([
+            "format",
+            "--config-path",
+            CONFIG_PATH,
+            "--log-level",
+            "none",
+            "--stdin-file-path",
+            "virtual.sql",
+        ])
+        .write_stdin(b"select '\xff';".as_slice())
+        .assert()
+        .failure()
+        .get_output()
+        .clone();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("valid UTF-8"), "{stderr}");
+    assert!(!stderr.contains("stdin"), "{stderr}");
+}
+
 #[test]
 fn format_rejects_a_zero_line_width_or_indent_size() {
     for option in ["--line-width", "--indent-size"] {

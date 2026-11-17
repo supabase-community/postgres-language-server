@@ -37,8 +37,8 @@ pub trait Console: Send + Sync + RefUnwindSafe {
     /// Prints a message (formatted using [markup!]) to the console.
     fn print(&mut self, level: LogLevel, args: Markup);
 
-    /// It reads from a source, and if this source contains something, it's converted into a [String]
-    fn read(&mut self) -> Option<String>;
+    /// Reads the whole input, or `None` if there is none to read, like a terminal.
+    fn read(&mut self) -> io::Result<Option<String>>;
 }
 
 /// Extension trait for [Console] providing convenience printing methods
@@ -186,19 +186,18 @@ impl Console for EnvConsole {
         });
     }
 
-    fn read(&mut self) -> Option<String> {
+    fn read(&mut self) -> io::Result<Option<String>> {
         // Here we check if stdin is redirected. If not, we bail.
         //
         // Doing this check allows us to pipe stdin to rome, without expecting
         // user content when we call `read_to_string`
         if io::stdin().is_terminal() {
-            return None;
+            return Ok(None);
         }
         let mut handle = self.r#in.lock();
         let mut buffer = String::new();
-        let result = handle.read_to_string(&mut buffer);
-        // Skipping the error for now
-        if result.is_ok() { Some(buffer) } else { None }
+        handle.read_to_string(&mut buffer)?;
+        Ok(Some(buffer))
     }
 }
 
@@ -238,13 +237,9 @@ impl Console for BufferConsole {
             content: args.to_owned(),
         });
     }
-    fn read(&mut self) -> Option<String> {
-        if self.in_buffer.is_empty() {
-            None
-        } else {
-            // for the time being we simple return the first message, as we don't
-            // particular use case for multiple prompts
-            Some(self.in_buffer[0].clone())
-        }
+    fn read(&mut self) -> io::Result<Option<String>> {
+        // for the time being we simple return the first message, as we don't
+        // particular use case for multiple prompts
+        Ok(self.in_buffer.first().cloned())
     }
 }
