@@ -228,9 +228,10 @@ impl Catalog {
     /// name doesn't inherit them.
     pub(super) fn forget_inheritance(&mut self, relation: &Key) {
         self.children.remove(relation);
-        for children in self.children.values_mut() {
-            children.retain(|child| child != relation);
-        }
+        self.children.update_matching(
+            |children| children.contains(relation),
+            |children| children.retain(|child| child != relation),
+        );
         self.children_with_own_columns.remove(relation);
     }
 
@@ -291,11 +292,14 @@ impl Catalog {
         if let Some(children) = self.children.remove(&old_key) {
             self.children.insert(new_key.clone(), children);
         }
-        for children in self.children.values_mut() {
-            for child in children.iter_mut().filter(|child| **child == old_key) {
-                *child = new_key.clone();
-            }
-        }
+        self.children.update_matching(
+            |children| children.contains(&old_key),
+            |children| {
+                for child in children.iter_mut().filter(|child| **child == old_key) {
+                    *child = new_key.clone();
+                }
+            },
+        );
         if self.children_with_own_columns.remove(&old_key) {
             self.children_with_own_columns.insert(new_key);
         }

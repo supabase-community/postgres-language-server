@@ -8,6 +8,7 @@
 mod base;
 mod ddl;
 mod derive;
+mod journal;
 mod materialize;
 mod overlay;
 #[cfg(test)]
@@ -19,7 +20,6 @@ use std::sync::{
 };
 
 use pgls_query_ext::utils::{qualified_name, range_var_name};
-use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
 use crate::lookup::{
@@ -29,14 +29,15 @@ use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
+use journal::{Journal, JournaledMap, JournaledSet};
 pub use overlay::rename;
 
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);
 
 /// The state of an object that the file changed. Objects are shared between clones of the
-/// catalog, like the checkpoints of the editor walk and savepoints, and copied when one of them
-/// changes.
+/// catalog, like the checkpoints of the editor walk, and with the undo log of a transaction.
+/// They are copied when one of them changes.
 #[derive(Debug, Clone)]
 enum Entry<T> {
     /// Created or altered by the file.
@@ -59,20 +60,20 @@ impl<T> Entry<T> {
 pub struct Catalog {
     base: Option<Arc<CatalogBase>>,
     /// Schemas created (`true`) or dropped (`false`) by the file.
-    schemas: FxHashMap<String, bool>,
+    schemas: JournaledMap<String, bool>,
     /// Schemas dropped at some point of the file. The database objects in them are gone, even if
     /// the schema was created again afterwards.
-    dropped_schemas: FxHashSet<String>,
-    relations: FxHashMap<Key, Entry<RelationInfo>>,
-    types: FxHashMap<Key, Entry<TypeInfo>>,
+    dropped_schemas: JournaledSet<String>,
+    relations: JournaledMap<Key, Entry<RelationInfo>>,
+    types: JournaledMap<Key, Entry<TypeInfo>>,
     /// All overloads with a given name.
-    functions: FxHashMap<Key, Entry<Vec<FunctionInfo>>>,
+    functions: JournaledMap<Key, Entry<Vec<FunctionInfo>>>,
     /// Inheritance children and partitions created or attached by the file, by parent.
-    children: FxHashMap<Key, Vec<Key>>,
+    children: JournaledMap<Key, Vec<Key>>,
     /// Inheritance children of [`Catalog::children`] whose inherited columns may also be their own,
     /// or inherited from another parent. They keep a column their parent drops.
-    children_with_own_columns: FxHashSet<Key>,
-    indexes: FxHashMap<Key, Entry<IndexInfo>>,
+    children_with_own_columns: JournaledSet<Key>,
+    indexes: JournaledMap<Key, Entry<IndexInfo>>,
     /// Set once the file may have created an index whose name we don't know: one with a
     /// generated name, or one that comes with a constraint or a partition. From then on, no
     /// index is known to be missing.
@@ -91,32 +92,48 @@ pub struct Catalog {
     best_effort: bool,
     casts_incomplete: bool,
     operators_incomplete: bool,
-    /// The catalog at the start of each open transaction and savepoint, restored on
-    /// `ROLLBACK`.
+    /// The open transaction and its savepoints, outermost first. While there is one, the maps
+    /// record an undo log, and `ROLLBACK` undoes their writes back to the savepoint.
     savepoints: Vec<Savepoint>,
-    /// Shared across savepoint snapshots so rolled-back type identities are never reused.
+    /// Shared across clones of the catalog so rolled-back type identities are never reused.
     next_file_type_id: Arc<AtomicU64>,
 }
 
-/// The catalog at `BEGIN` (`name: None`) or `SAVEPOINT`.
+/// How many maps [`Catalog::journals`] returns.
+const JOURNALS: usize = 8;
+
+/// `BEGIN` (`name: None`) or `SAVEPOINT`: the length of each map's undo log and the flags at
+/// that point.
 #[derive(Clone)]
 struct Savepoint {
     name: Option<String>,
-    catalog: Box<Catalog>,
+    undo_lens: [usize; JOURNALS],
+    flags: Flags,
+}
+
+/// The flags of [`Catalog`] that `ROLLBACK` restores.
+#[derive(Clone, Copy)]
+struct Flags {
+    indexes_incomplete: bool,
+    database_columns_changed: bool,
+    tainted: bool,
+    skipped_existing: bool,
+    casts_incomplete: bool,
+    operators_incomplete: bool,
 }
 
 impl Catalog {
     pub fn new(base: Option<Arc<CatalogBase>>) -> Self {
         Self {
             base,
-            schemas: FxHashMap::default(),
-            dropped_schemas: FxHashSet::default(),
-            relations: FxHashMap::default(),
-            types: FxHashMap::default(),
-            functions: FxHashMap::default(),
-            children: FxHashMap::default(),
-            children_with_own_columns: FxHashSet::default(),
-            indexes: FxHashMap::default(),
+            schemas: JournaledMap::default(),
+            dropped_schemas: JournaledSet::default(),
+            relations: JournaledMap::default(),
+            types: JournaledMap::default(),
+            functions: JournaledMap::default(),
+            children: JournaledMap::default(),
+            children_with_own_columns: JournaledSet::default(),
+            indexes: JournaledMap::default(),
             indexes_incomplete: false,
             database_columns_changed: false,
             tainted: false,
@@ -127,6 +144,48 @@ impl Catalog {
             savepoints: Vec::new(),
             next_file_type_id: Arc::new(AtomicU64::new(1)),
         }
+    }
+
+    /// The maps of the overlay, whose writes a transaction can undo.
+    fn journals(&mut self) -> [&mut dyn Journal; JOURNALS] {
+        [
+            &mut self.schemas,
+            &mut self.dropped_schemas,
+            &mut self.relations,
+            &mut self.types,
+            &mut self.functions,
+            &mut self.children,
+            &mut self.children_with_own_columns,
+            &mut self.indexes,
+        ]
+    }
+
+    fn flags(&self) -> Flags {
+        Flags {
+            indexes_incomplete: self.indexes_incomplete,
+            database_columns_changed: self.database_columns_changed,
+            tainted: self.tainted,
+            skipped_existing: self.skipped_existing,
+            casts_incomplete: self.casts_incomplete,
+            operators_incomplete: self.operators_incomplete,
+        }
+    }
+
+    fn restore_flags(&mut self, flags: Flags) {
+        let Flags {
+            indexes_incomplete,
+            database_columns_changed,
+            tainted,
+            skipped_existing,
+            casts_incomplete,
+            operators_incomplete,
+        } = flags;
+        self.indexes_incomplete = indexes_incomplete;
+        self.database_columns_changed = database_columns_changed;
+        self.tainted = tainted;
+        self.skipped_existing = skipped_existing;
+        self.casts_incomplete = casts_incomplete;
+        self.operators_incomplete = operators_incomplete;
     }
 
     /// Whether the catalog starts from a database snapshot. Without one, every lookup is

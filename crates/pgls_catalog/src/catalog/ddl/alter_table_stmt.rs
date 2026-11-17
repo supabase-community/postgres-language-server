@@ -189,7 +189,7 @@ fn apply_inheritance_changes(
         if attach && !relation_is_parent {
             c.children_with_own_columns.insert(child.clone());
         }
-        let children = c.children.entry(parent.clone()).or_default();
+        let children = c.children.get_or_default(parent.clone());
         if attach {
             if !children.contains(&child) {
                 children.push(child.clone());

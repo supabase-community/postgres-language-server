@@ -740,6 +740,73 @@ fn rollback_restores_the_catalog() {
 }
 
 #[test]
+fn rollback_to_nested_savepoints_undoes_their_changes() {
+    let search_path = path(&["public"]);
+    let catalog = catalog_after(
+        "begin;
+         create table a (id int);
+         savepoint s1;
+         create table b (id int);
+         savepoint s2;
+         create table c (id int);
+         alter table a rename to a2;
+         rollback to savepoint s1;
+         create table d (id int);
+         rollback to savepoint s1;
+         create table e (id int);
+         release savepoint s1;
+         commit;
+         rollback;",
+        &search_path,
+    );
+    // `ROLLBACK TO` keeps the savepoint, so the second one undoes `d`. `ROLLBACK` after `COMMIT`
+    // undoes nothing.
+    assert!(relation_exists(&catalog, "a", &search_path));
+    assert!(relation_exists(&catalog, "e", &search_path));
+    for name in ["a2", "b", "c", "d"] {
+        assert!(
+            !relation_exists(&catalog, name, &search_path),
+            "{name} survived the rollback"
+        );
+    }
+
+    // `ROLLBACK` returns to `BEGIN` through every savepoint, and restores the flags and the
+    // dropped schemas.
+    let catalog = catalog_after(
+        "begin;
+         create table x (id int);
+         savepoint s;
+         do $$ begin null; end $$;
+         drop schema public cascade;
+         rollback;",
+        &search_path,
+    );
+    assert!(!catalog.is_tainted());
+    assert!(relation_exists(&catalog, "users", &search_path));
+    assert!(!relation_exists(&catalog, "x", &search_path));
+
+    // A rename inside the transaction moves the inheritance edges, and the rollback moves them
+    // back: the child still gets the parent's new column.
+    let catalog = catalog_after(
+        "create table parent (id int);
+         create table child () inherits (parent);
+         begin;
+         alter table parent rename to renamed;
+         rollback;
+         alter table parent add column extra int;",
+        &search_path,
+    );
+    assert_eq!(
+        column_names(&catalog, None, "child", &search_path).unwrap(),
+        ["id", "extra"]
+    );
+}
+
+fn relation_exists(catalog: &Catalog, name: &str, search_path: &[String]) -> bool {
+    catalog.relation(None, name, search_path).found().is_some()
+}
+
+#[test]
 fn column_changes_make_database_children_unknown() {
     let search_path = path(&["public"]);
     let tables = ["events", "events_2024"]
