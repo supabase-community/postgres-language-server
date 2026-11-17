@@ -1,62 +1,62 @@
-5:1 accepted
-6:1 accepted
-7:1 accepted
-8:1 accepted
-10:1 accepted
-12:1 accepted
-13:1 accepted
-16:1 rejected 2BP01
-17:1 rejected 2BP01
-20:1 accepted
-21:1 accepted
-24:1 accepted
-25:1 rejected 2BP01
-28:1 accepted
-29:1 accepted
-32:1 accepted
-33:1 accepted
-39:1 accepted
-40:1 rejected 2BP01
-44:1 accepted
-45:1 accepted
-48:1 accepted
-49:1 accepted
-50:1 accepted
-51:1 accepted
-53:1 rejected 42501
-54:1 rejected 42501
-55:1 rejected 42501
-56:1 rejected 42501
-58:1 accepted
-60:1 rejected 42501
-61:1 rejected 42P01
-63:1 accepted
-64:1 rejected 42501
-65:1 rejected 42P01
-66:1 accepted
-69:1 accepted
-76:1 rejected 42P01
-77:1 rejected 3D000
-79:1 accepted
-80:1 rejected 42501
-81:1 rejected 42501
-82:1 rejected 3F000
-84:1 rejected 42501
-86:1 rejected 42501
-87:1 rejected 42501
-89:1 rejected 42501
-91:1 rejected 42501
-92:1 rejected 42P01
-93:1 rejected 42P01
-97:1 rejected 42501
-98:1 accepted
-101:1 accepted
-102:1 accepted
-105:1 accepted
-109:1 accepted
-110:1 rejected 42704
-111:1 rejected 42704
-113:1 accepted
-114:1 rejected 42704
-115:1 rejected 42704
-116:1 accepted
+23..52 accepted
+53..83 accepted
+84..114 accepted
+115..146 accepted
+148..202 accepted
+204..261 accepted
+262..328 accepted
+391..418 rejected 2BP01
+419..448 rejected 2BP01
+503..557 accepted
+558..587 accepted
+650..743 accepted
+744..771 rejected 2BP01
+802..850 accepted
+851..878 accepted
+935..980 accepted
+981..1009 accepted
+1156..1203 accepted
+1204..1232 rejected 2BP01
+1286..1305 accepted
+1306..1334 accepted
+1355..1385 accepted
+1386..1416 accepted
+1417..1447 accepted
+1448..1492 accepted
+1514..1546 rejected 42501
+1547..1598 rejected 42501
+1599..1656 rejected 42501
+1657..1714 rejected 42501
+1738..1770 accepted
+1772..1810 rejected 42501
+1811..1872 rejected 42P01
+1874..1918 accepted
+1919..1971 rejected 42501
+1972..2015 rejected 42P01
+2016..2044 accepted
+2047..2079 accepted
+2149..2192 rejected 42P01
+2193..2250 rejected 3D000
+2252..2296 accepted
+2297..2319 rejected 42501
+2320..2372 rejected 42501
+2373..2486 rejected 3F000
+2487..2570 rejected 42501
+2571..2612 rejected 42501
+2613..2665 rejected 42501
+2667..2698 rejected 42501
+2736..2756 rejected 42501
+2757..2814 rejected 42P01
+2815..2855 rejected 42P01
+2943..2976 rejected 42501
+2977..3081 accepted
+3083..3111 accepted
+3112..3169 accepted
+3172..3276 accepted
+3314..3342 accepted
+3343..3375 rejected 42704
+3376..3404 rejected 42704
+3406..3434 accepted
+3435..3486 rejected 42704
+3487..3515 rejected 42704
+3516..3544 accepted

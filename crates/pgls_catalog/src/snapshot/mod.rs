@@ -130,6 +130,11 @@ impl Snapshot {
     // The `find_*` lookups take names, not identifiers as written: convert SQL text with
     // [`crate::identifier_name`] first.
 
+    /// The extension `name`, if the server has it available. See [`Extension::is_installed`].
+    pub fn extension(&self, name: &str) -> Option<&Extension> {
+        self.extensions.iter().find(|e| e.name == name)
+    }
+
     pub fn find_schema(&self, name: &str) -> Option<&Schema> {
         self.schemas.iter().find(|s| s.name == name)
     }

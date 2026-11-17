@@ -233,13 +233,7 @@ impl CatalogBase {
             // With a kind or an argument mode we don't know, the arguments that a call passes
             // are unknown.
             let known = kind.is_some() && args.iter().all(|arg| arg.mode().is_some());
-            let inputs = args
-                .iter()
-                .filter(|arg| {
-                    arg.mode()
-                        .is_some_and(|mode| mode.is_call_argument(is_procedure))
-                })
-                .count();
+            let inputs = function.call_arguments().count();
             // Defaults belong to the last input arguments. The snapshot doesn't attach them to
             // the right arguments when there are output arguments, but their number is correct.
             let defaults = usize::try_from(function.input_defaults)

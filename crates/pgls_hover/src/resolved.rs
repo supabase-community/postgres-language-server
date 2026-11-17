@@ -107,17 +107,8 @@ fn find_function<'a>(snapshot: &'a Snapshot, function: &FunctionInfo) -> Option<
         if candidate.schema != function.schema || candidate.name != function.name {
             return false;
         }
-        let inputs: Vec<_> = candidate
-            .args
-            .args
-            .iter()
-            // The signatures of procedures include their output arguments, which `CALL` passes.
-            .filter(|arg| {
-                arg.mode().is_some_and(|mode| {
-                    mode.is_call_argument(candidate.kind == pgls_catalog::ProcKind::Procedure)
-                })
-            })
-            .collect();
+        // The signatures of procedures include their output arguments, which `CALL` passes.
+        let inputs: Vec<_> = candidate.call_arguments().collect();
         inputs.len() == signature.arguments.len()
             && inputs
                 .iter()
