@@ -5,8 +5,10 @@ use sqlx::PgPool;
 
 #[cfg(feature = "db")]
 use super::SnapshotItem;
+use super::code::Code;
+use crate::FunctionArgumentMode;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ProcKind {
     #[default]
@@ -14,23 +16,22 @@ pub enum ProcKind {
     Aggregate,
     Window,
     Procedure,
+    /// A `pg_proc.prokind` we don't know.
+    #[serde(other)]
+    #[cfg_attr(feature = "schema", schemars(skip))]
+    Unknown,
 }
 
-impl From<char> for ProcKind {
-    fn from(value: char) -> Self {
-        match value {
-            'f' => Self::Function,
-            'p' => Self::Procedure,
-            'w' => Self::Window,
-            'a' => Self::Aggregate,
-            _ => unreachable!(),
-        }
-    }
-}
-
+// `pg_proc.prokind`, a `"char"`.
 impl From<i8> for ProcKind {
-    fn from(value: i8) -> Self {
-        char::from(u8::try_from(value).unwrap()).into()
+    fn from(code: i8) -> Self {
+        match code.cast_unsigned() {
+            b'f' => Self::Function,
+            b'p' => Self::Procedure,
+            b'w' => Self::Window,
+            b'a' => Self::Aggregate,
+            _ => Self::Unknown,
+        }
     }
 }
 
@@ -50,15 +51,47 @@ pub enum Behavior {
 }
 
 impl From<Option<String>> for Behavior {
+    // `functions.sql` gives no behavior for a `provolatile` it doesn't know. Like then, a
+    // function is volatile unless it is known not to be.
     fn from(s: Option<String>) -> Self {
-        match s {
-            Some(s) => match s.as_str() {
-                "IMMUTABLE" => Behavior::Immutable,
-                "STABLE" => Behavior::Stable,
-                "VOLATILE" => Behavior::Volatile,
-                _ => panic!("Invalid behavior"),
-            },
-            None => Behavior::Volatile,
+        match s.as_deref() {
+            Some("IMMUTABLE") => Behavior::Immutable,
+            Some("STABLE") => Behavior::Stable,
+            _ => Behavior::Volatile,
+        }
+    }
+}
+
+/// The mode of a function argument, as `functions.sql` gives it for `pg_proc.proargmodes`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArgumentMode {
+    In,
+    Out,
+    InOut,
+    Variadic,
+    /// A column of `RETURNS TABLE`.
+    Table,
+}
+
+impl ArgumentMode {
+    /// The mode in the catalog: the columns of `RETURNS TABLE` are output arguments.
+    pub fn function_argument_mode(self) -> FunctionArgumentMode {
+        match self {
+            Self::In => FunctionArgumentMode::In,
+            Self::Out | Self::Table => FunctionArgumentMode::Out,
+            Self::InOut => FunctionArgumentMode::InOut,
+            Self::Variadic => FunctionArgumentMode::Variadic,
+        }
+    }
+}
+
+impl From<FunctionArgumentMode> for ArgumentMode {
+    fn from(mode: FunctionArgumentMode) -> Self {
+        match mode {
+            FunctionArgumentMode::In => Self::In,
+            FunctionArgumentMode::Out => Self::Out,
+            FunctionArgumentMode::InOut => Self::InOut,
+            FunctionArgumentMode::Variadic => Self::Variadic,
         }
     }
 }
@@ -66,8 +99,8 @@ impl From<Option<String>> for Behavior {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FunctionArg {
-    /// `in`, `out`, or `inout`.
-    pub mode: String,
+    /// `in`, `out`, `inout`, `variadic` or `table`.
+    pub mode: Code<ArgumentMode>,
 
     pub name: String,
 
@@ -77,6 +110,13 @@ pub struct FunctionArg {
     pub has_default: Option<bool>,
 }
 
+impl FunctionArg {
+    /// The argument's mode in the catalog, `None` when the snapshot's mode is unknown.
+    pub fn mode(&self) -> Option<FunctionArgumentMode> {
+        self.mode.get().map(ArgumentMode::function_argument_mode)
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FunctionArgs {
@@ -84,9 +124,17 @@ pub struct FunctionArgs {
 }
 
 impl From<Option<JsonValue>> for FunctionArgs {
+    // `functions.sql` builds the array, so it has this shape. Should it ever not, the function
+    // has no arguments rather than the server panicking.
     fn from(s: Option<JsonValue>) -> Self {
-        let args: Vec<FunctionArg> =
-            serde_json::from_value(s.unwrap_or(JsonValue::Array(vec![]))).unwrap();
+        let args = s
+            .map(serde_json::from_value::<Vec<FunctionArg>>)
+            .transpose()
+            .unwrap_or_else(|error| {
+                tracing::error!("Unexpected function arguments in the snapshot: {error}");
+                None
+            })
+            .unwrap_or_default();
         FunctionArgs { args }
     }
 }

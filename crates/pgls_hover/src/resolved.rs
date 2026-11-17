@@ -113,8 +113,9 @@ fn find_function<'a>(snapshot: &'a Snapshot, function: &FunctionInfo) -> Option<
             .iter()
             // The signatures of procedures include their output arguments, which `CALL` passes.
             .filter(|arg| {
-                matches!(arg.mode.as_str(), "in" | "inout" | "variadic")
-                    || (candidate.kind == pgls_catalog::ProcKind::Procedure && arg.mode == "out")
+                arg.mode().is_some_and(|mode| {
+                    mode.is_call_argument(candidate.kind == pgls_catalog::ProcKind::Procedure)
+                })
             })
             .collect();
         inputs.len() == signature.arguments.len()

@@ -10,11 +10,10 @@ use crate::lookup::{
     FunctionInfo, FunctionKind, IndexInfo, Origin, RelationInfo, RelationKind, TypeInfo,
 };
 use crate::snapshot::{
-    Column, ColumnClassKind, Function, Index, PostgresType, PostgresTypeAttribute, ProcKind,
-    Schema, Sequence, Snapshot, Table, TableKind, TypeAttributes,
+    ArgumentMode, Column, ColumnClassKind, Function, Index, PostgresType, PostgresTypeAttribute,
+    ProcKind, Schema, Sequence, Snapshot, Table, TableKind, TypeAttributes,
 };
 use crate::typing::{Type, TypeId};
-use crate::{FunctionArgumentMode, TypeKind};
 
 impl Catalog {
     /// The database snapshot with the changes of the file applied.
@@ -328,7 +327,7 @@ impl Builder {
                         name: column.name.clone(),
                         table_name: relation.name.clone(),
                         table_oid: table_id,
-                        class_kind: class_kind.clone(),
+                        class_kind: *class_kind,
                         number: number as i64 + 1,
                         schema_name: relation.schema.clone(),
                         type_id: column
@@ -411,11 +410,7 @@ impl Builder {
             attributes: TypeAttributes { attrs },
             ..Default::default()
         };
-        type_.typtype = info
-            .kind
-            .map(TypeKind::typtype)
-            .unwrap_or_default()
-            .to_string();
+        type_.typtype = info.kind.into();
         type_.typcategory = info.category.map(|c| c.to_string()).unwrap_or_default();
         type_.typispreferred = info.preferred.unwrap_or(false);
         type_.typelem = info
@@ -496,13 +491,7 @@ impl Builder {
                     .arguments
                     .iter()
                     .map(|argument| crate::snapshot::FunctionArg {
-                        mode: match argument.mode {
-                            FunctionArgumentMode::In => "in",
-                            FunctionArgumentMode::InOut => "inout",
-                            FunctionArgumentMode::Variadic => "variadic",
-                            FunctionArgumentMode::Out => "out",
-                        }
-                        .into(),
+                        mode: ArgumentMode::from(argument.mode).into(),
                         name: argument.name.clone().unwrap_or_default(),
                         type_id: argument
                             .ty
