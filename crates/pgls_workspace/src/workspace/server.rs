@@ -906,11 +906,18 @@ impl Workspace for WorkspaceServer {
                 doc,
                 AnalysisRequest::all(&params.only, &params.skip, &should_stop),
             ) {
+                // Only the diagnostics at the cursor, before the suppressions look at them.
                 let suppressions = doc.suppressions();
                 actions.extend(code_actions::lint::lint_actions(
                     analysis
                         .lint_diagnostics()
                         .iter()
+                        .filter(|diagnostic| {
+                            diagnostic
+                                .location()
+                                .span
+                                .is_some_and(|span| span.contains_inclusive(params.cursor_position))
+                        })
                         .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic)),
                     doc,
                     params.cursor_position,

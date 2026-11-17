@@ -1,9 +1,10 @@
 pub mod parser;
 pub mod suppression;
 
+use std::ops::Range;
+
 use pgls_analyse::RuleFilter;
 use pgls_diagnostics::{Diagnostic, MessageAndDescription};
-use pgls_line_index::LineIndex;
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
@@ -11,17 +12,30 @@ use crate::{
     suppression::{RangeSuppression, RuleSpecifier, Suppression, SuppressionDiagnostic},
 };
 
-type Line = usize;
-
+/// The suppressions of a file.
+///
+/// A diagnostic only reaches the suppressions near it: the line suppressions are sorted by the
+/// line they target, and are found by binary search on the diagnostic's span. The category of a
+/// diagnostic is only parsed when a suppression is near it.
 #[derive(Debug, Default, Clone)]
 pub struct Suppressions {
     file_suppressions: Vec<Suppression>,
-    line_suppressions: std::collections::HashMap<Line, Suppression>,
+    /// In file order, so also sorted by [`LineSuppression::target`].
+    line_suppressions: Vec<LineSuppression>,
     range_suppressions: Vec<RangeSuppression>,
     pub diagnostics: Vec<SuppressionDiagnostic>,
-    line_index: LineIndex,
     /// The ranges of the top-level statements, in file order.
     statements: Vec<TextRange>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct LineSuppression {
+    pub(crate) suppression: Suppression,
+    /// The offsets of the line the suppression targets: the next line that isn't a line
+    /// suppression, up to the start of the line after it. The last line of the file ends at
+    /// `u32::MAX`, so that it holds the offsets past the end of the file, as in
+    /// [`pgls_line_index::LineIndex::line_col`]. Empty at `u32::MAX` if the file has no such line.
+    pub(crate) target: TextRange,
 }
 
 impl From<&str> for Suppressions {
@@ -43,197 +57,160 @@ impl Suppressions {
         self
     }
 
+    fn is_empty(&self) -> bool {
+        self.file_suppressions.is_empty()
+            && self.line_suppressions.is_empty()
+            && self.range_suppressions.is_empty()
+    }
+
     /// Some diagnostics can be turned off via the configuration.
     /// This will mark suppressions that try to suppress these disabled diagnostics as errors.
     pub fn get_disabled_diagnostic_suppressions_as_errors(
         &self,
         disabled_rules: &[RuleFilter<'_>],
     ) -> Vec<SuppressionDiagnostic> {
-        let mut diagnostics = vec![];
-
-        {
-            let disabled = self
-                .file_suppressions
-                .iter()
-                .filter(|s| s.rule_specifier.is_disabled(disabled_rules));
-
-            for suppr in disabled {
-                diagnostics.push(suppr.to_disabled_diagnostic());
-            }
+        if disabled_rules.is_empty() {
+            return Vec::new();
         }
 
-        {
-            let disabled = self
-                .line_suppressions
-                .iter()
-                .filter(|(_, s)| s.rule_specifier.is_disabled(disabled_rules));
-
-            for (_, suppr) in disabled {
-                diagnostics.push(suppr.to_disabled_diagnostic());
-            }
-        }
-
-        {
-            let disabled = self.range_suppressions.iter().filter(|s| {
-                s.start_suppression
-                    .rule_specifier
-                    .is_disabled(disabled_rules)
-            });
-
-            for range_suppr in disabled {
-                diagnostics.push(range_suppr.start_suppression.to_disabled_diagnostic());
-            }
-        }
-
-        diagnostics
+        self.file_suppressions
+            .iter()
+            .chain(self.line_suppressions.iter().map(|l| &l.suppression))
+            .chain(self.range_suppressions.iter().map(|r| &r.start_suppression))
+            .filter(|s| s.rule_specifier.is_disabled(disabled_rules))
+            .map(Suppression::to_disabled_diagnostic)
+            .collect()
     }
 
+    /// The line suppressions that no diagnostic matches, in file order.
+    ///
+    /// One pass over the diagnostics marks the line suppressions that match each: O(D log L) for
+    /// D diagnostics and L line suppressions, plus the suppressions within each diagnostic's lines.
     pub fn get_unused_suppressions_as_errors<D: Diagnostic>(
         &self,
         diagnostics: &[D],
     ) -> Vec<SuppressionDiagnostic> {
-        let mut results = vec![];
-
         // Users may use many suppressions for a single diagnostic, like so:
         // ```
         // -- pgt-ignore banDropTable
         // -- pgt-ignore banDropColumn
         // <statement causing two diagnostics>
         // ```
-        // So to find a matching diagnostic for any suppression, we're moving
-        // down lines until we find a line where there's no suppression.
-        for (line, suppr) in &self.line_suppressions {
-            if diagnostics.iter().any(|d| {
-                self.line_suppression_applies(*line, d)
-                    && d.category()
-                        .is_some_and(|cat| match RuleSpecifier::try_from(cat.name()) {
-                            Ok(spec) => suppr.matches(&spec),
-                            Err(_) => false,
-                        })
-            }) {
+        // All of them target the first line that isn't a suppression.
+        if self.line_suppressions.is_empty() {
+            return Vec::new();
+        }
+
+        let mut used = vec![false; self.line_suppressions.len()];
+        for diagnostic in diagnostics {
+            let Some(span) = diagnostic.location().span else {
                 continue;
-            } else {
-                results.push(SuppressionDiagnostic {
-                    span: suppr.suppression_range,
-                    message: MessageAndDescription::from(
-                        "This suppression has no effect.".to_string(),
-                    ),
-                })
+            };
+            let mut specifier = None;
+            for index in self.line_suppressions_for(span) {
+                if used[index] {
+                    continue;
+                }
+                let Some(specifier) = specifier.get_or_insert_with(|| specifier_of(diagnostic))
+                else {
+                    break;
+                };
+                used[index] = self.line_suppressions[index].suppression.matches(specifier);
             }
         }
 
-        results
-    }
-
-    pub fn is_suppressed<D: Diagnostic>(&self, diagnostic: &D) -> bool {
-        diagnostic
-            .category()
-            .map(|c| match RuleSpecifier::try_from(c.name()) {
-                Ok(specifier) => {
-                    self.by_file_suppression(&specifier)
-                        || self.by_range_suppression(diagnostic, &specifier)
-                        || self.by_line_suppression(diagnostic, &specifier)
-                }
-                Err(_) => false,
-            })
-            .unwrap_or(false)
-    }
-
-    fn by_file_suppression(&self, specifier: &RuleSpecifier) -> bool {
-        self.file_suppressions.iter().any(|s| s.matches(specifier))
-    }
-
-    fn by_line_suppression<D: Diagnostic>(
-        &self,
-        diagnostic: &D,
-        specifier: &RuleSpecifier,
-    ) -> bool {
-        self.get_eligible_line_suppressions_for_diagnostic(diagnostic)
-            .iter()
-            .any(|s| s.matches(specifier))
-    }
-
-    fn by_range_suppression<D: Diagnostic>(
-        &self,
-        diagnostic: &D,
-        specifier: &RuleSpecifier,
-    ) -> bool {
-        self.range_suppressions.iter().any(|range_suppr| {
-            range_suppr.start_suppression.matches(specifier)
-                && diagnostic
-                    .location()
-                    .span
-                    .is_some_and(|sp| range_suppr.suppressed_range.contains_range(sp))
-        })
-    }
-
-    fn get_eligible_line_suppressions_for_diagnostic<D: Diagnostic>(
-        &self,
-        diagnostic: &D,
-    ) -> Vec<&Suppression> {
         self.line_suppressions
             .iter()
-            .filter(|(line, _)| self.line_suppression_applies(**line, diagnostic))
-            .map(|(_, suppr)| suppr)
+            .zip(used)
+            .filter(|(_, used)| !used)
+            .map(|(line, _)| SuppressionDiagnostic {
+                span: line.suppression.suppression_range,
+                message: MessageAndDescription::from("This suppression has no effect.".to_string()),
+            })
             .collect()
     }
 
-    /// Whether the line suppression on `line` targets a line of the diagnostic, or the first line
-    /// of the statement the diagnostic is in.
-    fn line_suppression_applies<D: Diagnostic>(&self, line: Line, diagnostic: &D) -> bool {
-        let target_line = self.target_line_for_line_suppression(line);
-        self.diagnostic_line_range(diagnostic)
-            .is_some_and(|(start, end)| (start..=end).contains(&target_line))
-            || self.statement_line(diagnostic) == Some(target_line)
-    }
-
-    /// The first line of the statement that contains the start of the diagnostic.
-    fn statement_line<D: Diagnostic>(&self, diagnostic: &D) -> Option<Line> {
-        let start = diagnostic.location().span?.start();
-        let index = self
-            .statements
-            .partition_point(|statement| statement.start() <= start)
-            .checked_sub(1)?;
-        let statement = self.statements[index];
-        if !statement.contains_inclusive(start) {
-            return None;
+    /// O(log L) for L line suppressions, plus the suppressions near the diagnostic and the range
+    /// suppressions. Without any suppression, it returns at once.
+    pub fn is_suppressed<D: Diagnostic>(&self, diagnostic: &D) -> bool {
+        if self.is_empty() {
+            return false;
         }
-        self.line_for_offset(statement.start())
+
+        let span = diagnostic.location().span;
+        let mut candidates = self
+            .file_suppressions
+            .iter()
+            .chain(span.into_iter().flat_map(|span| {
+                self.range_suppressions
+                    .iter()
+                    .filter(move |r| r.suppressed_range.contains_range(span))
+                    .map(|r| &r.start_suppression)
+            }))
+            .chain(span.into_iter().flat_map(|span| {
+                self.line_suppressions_for(span)
+                    .map(|index| &self.line_suppressions[index].suppression)
+            }))
+            .peekable();
+        if candidates.peek().is_none() {
+            return false;
+        }
+
+        specifier_of(diagnostic).is_some_and(|specifier| candidates.any(|s| s.matches(&specifier)))
     }
 
-    fn diagnostic_line_range<D: Diagnostic>(&self, diagnostic: &D) -> Option<(usize, usize)> {
-        let span = diagnostic.location().span?;
-
-        let start = self.line_for_offset(span.start())?;
-        let end_offset = span
+    /// The indices of the line suppressions that target a line of `span`, or the first line of
+    /// the statement that `span` starts in. These are at most two runs of the sorted
+    /// suppressions; the second may repeat indices of the first.
+    fn line_suppressions_for(&self, span: TextRange) -> impl Iterator<Item = usize> {
+        let start = span.start();
+        let end = span
             .end()
             .checked_sub(TextSize::new(1))
             .unwrap_or_else(|| span.end());
-        let end = self.line_for_offset(end_offset)?;
-
-        Some((start, end))
+        let on_lines = self.line_suppressions_targeting(start, end);
+        let on_statement = self
+            .statement_start(start)
+            .map(|statement_start| {
+                self.line_suppressions_targeting(statement_start, statement_start)
+            })
+            .unwrap_or_default();
+        on_lines.chain(on_statement)
     }
 
-    fn line_for_offset(&self, offset: TextSize) -> Option<Line> {
-        let line = self.line_index.line_col(offset)?.line;
-        Line::try_from(line).ok()
+    /// The indices of the line suppressions whose target line holds an offset in
+    /// `start..=end`. Empty if `end < start`.
+    fn line_suppressions_targeting(&self, start: TextSize, end: TextSize) -> Range<usize> {
+        let first = self
+            .line_suppressions
+            .partition_point(|line| line.target.end() <= start);
+        let count =
+            self.line_suppressions[first..].partition_point(|line| line.target.start() <= end);
+        first..first + count
     }
 
-    fn target_line_for_line_suppression(&self, line: usize) -> usize {
-        let mut target_line = line + 1;
-
-        while self.line_suppressions.contains_key(&target_line) {
-            target_line += 1;
-        }
-
-        target_line
+    /// The start of the statement that contains `offset`.
+    fn statement_start(&self, offset: TextSize) -> Option<TextSize> {
+        let index = self
+            .statements
+            .partition_point(|statement| statement.start() <= offset)
+            .checked_sub(1)?;
+        let statement = self.statements.get(index)?;
+        statement
+            .contains_inclusive(offset)
+            .then_some(statement.start())
     }
+}
+
+/// The rule specifier of a diagnostic's category, if it has one that a suppression can name.
+fn specifier_of<D: Diagnostic>(diagnostic: &D) -> Option<RuleSpecifier> {
+    RuleSpecifier::try_from(diagnostic.category()?.name()).ok()
 }
 
 #[cfg(test)]
 mod tests {
     use pgls_diagnostics::{Diagnostic, MessageAndDescription};
-    use pgls_text_size::TextRange;
+    use pgls_text_size::{TextRange, TextSize};
 
     use crate::suppression::SuppressionDiagnostic;
 
@@ -290,8 +267,12 @@ mod tests {
 
         assert!(suppressions.diagnostics.is_empty());
         assert!(suppressions.is_suppressed(&diagnostic));
-        let suppression = &suppressions.line_suppressions[&1];
-        assert_eq!(&doc[suppression.suppression_range], "-- pgls-ignore lint");
+        let line = &suppressions.line_suppressions[0];
+        assert_eq!(
+            &doc[line.suppression.suppression_range],
+            "-- pgls-ignore lint"
+        );
+        assert_eq!(line.target, TextRange::new(start.into(), u32::MAX.into()));
     }
 
     #[test]
@@ -337,6 +318,43 @@ mod tests {
                 span: TextRange::new(59.into(), 63.into()),
             })
         );
+    }
+
+    #[test]
+    fn many_line_suppressions_find_their_statements() {
+        // A suppression above every other statement, the first of each pair with one that matches
+        // nothing above it; one diagnostic per statement, on its last line.
+        let mut doc = String::new();
+        let mut statements = Vec::new();
+        for i in 0..100 {
+            if i % 2 == 0 {
+                doc.push_str("-- pgls-ignore typecheck\n-- pgls-ignore lint\n");
+            }
+            let start = u32::try_from(doc.len()).unwrap();
+            doc.push_str(&format!("select\n  {i};\n"));
+            let end = u32::try_from(doc.len() - 1).unwrap();
+            statements.push(TextRange::new(start.into(), end.into()));
+        }
+        let suppressions =
+            super::Suppressions::from(doc.as_str()).with_statements(statements.clone());
+        let diagnostics: Vec<_> = statements
+            .iter()
+            .map(|statement| TestDiagnostic {
+                span: TextRange::new(statement.start() + TextSize::new(9), statement.end()),
+            })
+            .collect();
+
+        for (i, diagnostic) in diagnostics.iter().enumerate() {
+            assert_eq!(suppressions.is_suppressed(diagnostic), i % 2 == 0, "{i}");
+        }
+        let unused = suppressions.get_unused_suppressions_as_errors(&diagnostics);
+        assert_eq!(unused.len(), 50);
+        assert!(
+            unused
+                .iter()
+                .all(|error| &doc[error.span] == "-- pgls-ignore typecheck")
+        );
+        assert!(unused.is_sorted_by_key(|error| error.span.start()));
     }
 
     #[test]

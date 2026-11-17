@@ -159,7 +159,7 @@ impl TryFrom<&str> for RuleSpecifier {
 }
 
 fn is_lint_group(group: &str) -> bool {
-    pgls_analyser::METADATA.groups().contains(&group) || matches!(group, "typecheck" | "nursery")
+    pgls_analyser::METADATA.find_group(group).is_some() || matches!(group, "typecheck" | "nursery")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
