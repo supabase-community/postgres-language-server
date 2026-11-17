@@ -170,6 +170,14 @@ pub async fn run_splinter(
                 true
             });
         }
+
+        // A configured level, e.g. `"unusedIndex": "error"`, replaces the level that the query
+        // reports. Without one, it is the rule's own level, which is the query's.
+        for diagnostic in &mut diagnostics {
+            if let Some(severity) = config.rules.get_severity_from_code(diagnostic.category) {
+                diagnostic.severity = severity;
+            }
+        }
     }
 
     Ok(diagnostics)
