@@ -401,6 +401,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
                         && !cte_query
+                        // the keyword is unreserved, e.g. a column in `where update = 1`
+                        && !p.hold_back()
                     {
                         break;
                     }
@@ -429,6 +431,10 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                         break;
                     }
                     cte_query = true;
+                    p.advance()?;
+                }
+                // ALTER is unreserved too, e.g. a column in `select id, alter from t`
+                Some(SyntaxKind::ALTER_KW) if p.hold_back() => {
                     p.advance()?;
                 }
                 Some(SyntaxKind::CREATE_KW) => {
