@@ -432,7 +432,6 @@ fn splits_into_valid_statements(fragment: &str, pieces: &[TextRange]) -> bool {
 mod tests {
     use diagnostics::SplitDiagnostic;
     use ntest::timeout;
-    use pgls_lexer::SyntaxKind;
     use pgls_text_size::TextRange;
 
     use super::*;
