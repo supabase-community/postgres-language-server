@@ -1,0 +1,6 @@
+2679..2812	pg_catalog.text
+3511..3600	pg_catalog.text
+3644..3734	pg_catalog.text
+4198..4296	pg_catalog.text
+4335..4433	pg_catalog.text
+4903..4992	pg_catalog.text

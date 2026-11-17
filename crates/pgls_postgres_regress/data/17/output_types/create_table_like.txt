@@ -1,0 +1,21 @@
+445..464	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+505..524	pg_catalog.text
+576..595	pg_catalog.text	pg_catalog.text
+615..634	pg_catalog.text
+821..840	pg_catalog.text
+1406..1425	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1632..1661	pg_catalog.int8	pg_catalog.text
+1760..1789	pg_catalog.int8	pg_catalog.text
+1935..1964	pg_catalog.int8	pg_catalog.text
+2186..2216	pg_catalog.int4	pg_catalog.int4
+2315..2345	pg_catalog.int4	pg_catalog.int4
+2464..2494	pg_catalog.int4	pg_catalog.int4
+3045..3078	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+3121..3154	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+3197..3230	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+3273..3306	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+6543..6700	pg_catalog.text
+6888..7047	pg_catalog.text
+7100..7340	pg_catalog.name	pg_catalog.int4	pg_catalog.text
+7341..7553	pg_catalog.name	pg_catalog.int4	pg_catalog.text
+9655..10092	pg_catalog.regclass	pg_catalog._name

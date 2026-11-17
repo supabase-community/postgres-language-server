@@ -1,0 +1,2 @@
+475..521	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+599..645	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4

@@ -1,0 +1,15 @@
+2905..2982	pg_catalog.name	pg_catalog.regproc	pg_catalog.char
+3157..3202	pg_catalog.int4
+3304..3349	pg_catalog.int4
+3811..3858	pg_catalog.int4
+4741..5091	pg_catalog.char	pg_catalog.name	pg_catalog.text
+5157..5387	pg_catalog.text
+5524..5623	pg_catalog.name
+5730..5991	pg_catalog.text	pg_catalog.text	pg_catalog.char
+6105..6366	pg_catalog.text	pg_catalog.text	pg_catalog.char
+6414..6513	pg_catalog.name
+6514..6573	pg_catalog.int8	pg_catalog.int8
+6690..6786	pg_catalog.name
+6843..6939	pg_catalog.name
+6940..6996	pg_catalog.int8	pg_catalog.int8
+8631..9002	pg_catalog.char	pg_catalog.name	pg_catalog.text

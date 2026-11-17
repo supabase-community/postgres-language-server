@@ -1,0 +1,17 @@
+247..278	pg_catalog.txid_snapshot
+279..315	pg_catalog.txid_snapshot
+316..352	pg_catalog.txid_snapshot
+921..964	pg_catalog.txid_snapshot
+966..1083	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8
+1085..1191	pg_catalog.int4	pg_catalog.bool
+1209..1316	pg_catalog.int4	pg_catalog.bool
+1346..1415	pg_catalog.bool
+1479..1552	pg_catalog.bool
+1573..1664	pg_catalog.txid_snapshot
+1665..1788	pg_catalog.bool
+1789..1912	pg_catalog.bool
+1937..1984	pg_catalog.txid_snapshot
+2074..2116	pg_catalog.bool
+2568..2590	pg_catalog.text
+2637..2659	pg_catalog.text
+2703..2725	pg_catalog.text

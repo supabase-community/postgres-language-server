@@ -1,0 +1,16 @@
+279..300	pg_catalog.oid
+2580..2653	pg_catalog.oid
+3824..3885	pg_catalog.int4
+5459..5507	pg_catalog.int4
+5740..5791	pg_catalog.int4
+5885..5939	pg_catalog.int4
+6034..6081	pg_catalog.bytea
+6083..6127	pg_catalog.int4
+6129..6182	pg_catalog.int4
+6184..6248	pg_catalog.int4
+6250..6304	pg_catalog.int4
+6306..6353	pg_catalog.bytea
+6355..6400	pg_catalog.int4
+6880..6928	pg_catalog.int4
+7433..7483	pg_catalog.oid
+7673..7696	pg_catalog.oid

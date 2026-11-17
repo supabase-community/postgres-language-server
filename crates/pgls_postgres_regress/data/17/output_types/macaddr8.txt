@@ -1,0 +1,32 @@
+77..119	pg_catalog.macaddr8
+120..166	pg_catalog.macaddr8
+167..208	pg_catalog.macaddr8
+209..257	pg_catalog.macaddr8
+258..310	pg_catalog.macaddr8
+311..358	pg_catalog.macaddr8
+1225..1280	pg_catalog.macaddr8
+2584..2623	pg_catalog.int4	pg_catalog.macaddr8
+2758..2813	pg_catalog.int4	pg_catalog.macaddr8	pg_catalog.macaddr8
+2815..2878	pg_catalog.bool
+2887..2956	pg_catalog.bool
+2966..3035	pg_catalog.bool
+3045..3117	pg_catalog.bool
+3126..3198	pg_catalog.bool
+3208..3277	pg_catalog.bool
+3286..3367	pg_catalog.bool
+3376..3457	pg_catalog.bool
+3468..3538	pg_catalog.bool
+3547..3617	pg_catalog.bool
+3627..3697	pg_catalog.bool
+3707..3777	pg_catalog.bool
+3786..3856	pg_catalog.bool
+3866..3936	pg_catalog.bool
+3945..4015	pg_catalog.bool
+4024..4094	pg_catalog.bool
+4105..4156	pg_catalog.macaddr8
+4157..4208	pg_catalog.macaddr8
+4209..4260	pg_catalog.macaddr8
+4340..4404	pg_catalog.bool
+4405..4478	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+4479..4541	pg_catalog.bool
+4542..4613	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

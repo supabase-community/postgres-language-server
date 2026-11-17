@@ -1,0 +1,103 @@
+17..38	pg_catalog.json
+39..74	pg_catalog.json
+75..122	pg_catalog.json
+123..159	pg_catalog.jsonb
+160..208	pg_catalog.jsonb
+209..244	pg_catalog.text
+245..292	pg_catalog.text
+429..465	pg_catalog.bytea
+466..514	pg_catalog.bytea
+515..577	pg_catalog.bytea
+821..871	pg_catalog.json
+937..988	pg_catalog.jsonb
+1085..1116	pg_catalog.json
+1117..1153	pg_catalog.json
+1197..1229	pg_catalog.json
+1230..1269	pg_catalog.json
+1354..1387	pg_catalog.json
+1388..1426	pg_catalog.json
+1472..1503	pg_catalog.json
+1504..1542	pg_catalog.json
+1704..1811	pg_catalog.jsonb
+1813..1937	pg_catalog.jsonb
+2035..2106	pg_catalog.json
+2107..2194	pg_catalog.jsonb
+2196..2256	pg_catalog.json
+2257..2329	pg_catalog.json
+2330..2391	pg_catalog.json
+2392..2465	pg_catalog.json
+2467..2515	pg_catalog.json
+2516..2577	pg_catalog.json
+2578..2641	pg_catalog.json
+3158..3232	pg_catalog.json
+3321..3411	pg_catalog.jsonb
+3412..3518	pg_catalog.jsonb
+3537..3557	pg_catalog.json
+3558..3592	pg_catalog.json
+3593..3639	pg_catalog.json
+3640..3675	pg_catalog.jsonb
+3676..3723	pg_catalog.jsonb
+3724..3758	pg_catalog.text
+3759..3805	pg_catalog.text
+3940..3975	pg_catalog.bytea
+3976..4023	pg_catalog.bytea
+4024..4085	pg_catalog.bytea
+4213..4305	pg_catalog.jsonb
+4307..4357	pg_catalog.json
+4358..4408	pg_catalog.json
+4409..4459	pg_catalog.json
+4460..4526	pg_catalog.jsonb
+4527..4593	pg_catalog.jsonb
+4594..4660	pg_catalog.jsonb
+4662..4724	pg_catalog.json
+4725..4799	pg_catalog.json
+4800..4886	pg_catalog.json
+4888..4959	pg_catalog.json
+4960..5069	pg_catalog.json
+5070..5195	pg_catalog.jsonb
+5462..5544	pg_catalog.json
+5545..5599	pg_catalog.json
+5805..5910	pg_catalog.bool	pg_catalog.bool
+5912..6001	pg_catalog.json	pg_catalog.jsonb
+6003..6072	pg_catalog.json
+6074..6139	pg_catalog.json
+6141..6240	pg_catalog.json
+6242..6335	pg_catalog.json	pg_catalog.jsonb
+6337..6456	pg_catalog.json	pg_catalog.jsonb
+6459..7189	pg_catalog.json	pg_catalog.jsonb	pg_catalog.json	pg_catalog.jsonb	pg_catalog.json	pg_catalog.jsonb	pg_catalog.json	pg_catalog.jsonb	pg_catalog.json	pg_catalog.jsonb
+7192..7369	pg_catalog.int4	pg_catalog.json
+7391..7495	pg_catalog.bool	pg_catalog.bool
+7579..7741	pg_catalog.json	pg_catalog.jsonb
+7743..8053	pg_catalog.json	pg_catalog.json	pg_catalog.json	pg_catalog.jsonb	pg_catalog.jsonb	pg_catalog.jsonb
+8264..8396	pg_catalog.json
+8771..8874	pg_catalog.text
+9044..9126	pg_catalog.text
+9277..9440	pg_catalog.text
+9442..9610	pg_catalog.text
+9849..10009	pg_catalog.text
+10011..10176	pg_catalog.text
+10417..10533	pg_catalog.text
+10724..10744	pg_catalog.bool
+10745..10769	pg_catalog.bool
+10770..10796	pg_catalog.bool
+10797..10824	pg_catalog.bool
+10825..10851	pg_catalog.bool
+10852..10879	pg_catalog.bool
+11599..11639	pg_catalog.bool
+11676..11694	pg_catalog.bool
+12086..12388	pg_catalog.text	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+12390..12740	pg_catalog.json	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+12742..13103	pg_catalog.text	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+13105..13456	pg_catalog.jsonb	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+13484..13689	pg_catalog.text
+14406..14523	pg_catalog.text
+14524..14612	pg_catalog.json
+14613..14728	pg_catalog.text
+14729..14815	pg_catalog.json
+14816..14920	pg_catalog.text
+14921..14996	pg_catalog.json
+15120..15563	pg_catalog.text
+15564..15978	pg_catalog.int4	pg_catalog.jsonb	pg_catalog.text	pg_catalog.jsonb	pg_catalog.jsonb	pg_catalog.jsonb	pg_catalog.int8
+16097..16276	pg_catalog.text
+16277..16427	pg_catalog.jsonb	pg_catalog.int8
+16556..16726	pg_catalog.text

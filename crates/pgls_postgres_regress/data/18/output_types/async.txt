@@ -1,0 +1,4 @@
+77..129	pg_catalog.void
+130..167	pg_catalog.void
+168..207	pg_catalog.void
+729..766	pg_catalog.float8

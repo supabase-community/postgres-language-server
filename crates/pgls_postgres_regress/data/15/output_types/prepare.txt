@@ -1,0 +1,10 @@
+159..227	pg_catalog.text	pg_catalog.text	pg_catalog._regtype
+258..269	pg_catalog.int4
+271..339	pg_catalog.text	pg_catalog.text	pg_catalog._regtype
+438..449	pg_catalog.int4
+480..548	pg_catalog.text	pg_catalog.text	pg_catalog._regtype
+590..658	pg_catalog.text	pg_catalog.text	pg_catalog._regtype
+729..797	pg_catalog.text	pg_catalog.text	pg_catalog._regtype
+928..951	pg_catalog.name	pg_catalog.bool	pg_catalog.bool
+2019..2105	pg_catalog.text	pg_catalog.text	pg_catalog._regtype
+2147..2233	pg_catalog.text	pg_catalog.text	pg_catalog._regtype

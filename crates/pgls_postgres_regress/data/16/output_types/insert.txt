@@ -1,0 +1,24 @@
+438..463	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+766..791	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+955..980	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+1070..1123	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+1540..1618	pg_catalog.text
+3215..3240	pg_catalog.int4	pg_catalog._int4	public.insert_test_type	public._insert_test_type
+5589..5615	pg_catalog.int4	pg_catalog._int4
+5616..5642	public.insert_test_type	public._insert_test_domain
+10413..10459	pg_catalog.regclass	pg_catalog.text	pg_catalog.int4
+11224..11271	pg_catalog.regclass	pg_catalog.text	pg_catalog.int4
+11594..11640	pg_catalog.regclass	pg_catalog.text	pg_catalog.int4
+12656..12767	pg_catalog.text	pg_catalog.text	pg_catalog.int4	pg_catalog.int4
+14150..14196	pg_catalog.regclass	pg_catalog.int4
+14707..14940	pg_catalog.regclass	pg_catalog.name	pg_catalog.int2
+15198..15241	pg_catalog.regclass	pg_catalog.int4	pg_catalog.int4
+17192..17389	pg_catalog.regclass	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+18852..18899	pg_catalog.regclass	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+20026..20089	pg_catalog.regclass	pg_catalog.int4	pg_catalog.int4	pg_catalog.text	pg_catalog.int4
+20580..20643	pg_catalog.regclass	pg_catalog.int4	pg_catalog.int4	pg_catalog.text	pg_catalog.int4
+23934..23995	pg_catalog.text	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+26414..26469	pg_catalog.regclass	pg_catalog.int4	pg_catalog.text
+27785..27843	pg_catalog.regclass	pg_catalog.text	pg_catalog.int4
+28084..28149	public.returningwrtest
+28442..28514	public.returningwrtest

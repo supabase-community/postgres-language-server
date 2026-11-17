@@ -1,0 +1,17 @@
+4622..4658	pg_catalog.int8
+4696..4731	pg_catalog.int8
+4769..4808	pg_catalog.int8
+6283..6342	pg_catalog.int8	pg_catalog.int8
+6405..6450	pg_catalog.int8
+6546..6604	pg_catalog.int8
+6805..6889	pg_catalog.int8
+6978..7065	pg_catalog.int8
+7082..7110	pg_catalog.text
+7111..7143	pg_catalog.text
+7296..7345	pg_catalog.int8
+7446..7495	pg_catalog.int8
+7596..7645	pg_catalog.int8
+7689..7925	pg_catalog.float8	pg_catalog.int8
+7971..8214	pg_catalog.numeric	pg_catalog.int8
+8230..8682	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8
+8846..9207	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8

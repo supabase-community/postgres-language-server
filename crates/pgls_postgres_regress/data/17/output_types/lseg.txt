@@ -1,0 +1,3 @@
+754..777	pg_catalog.lseg
+830..878	pg_catalog.bool
+879..936	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

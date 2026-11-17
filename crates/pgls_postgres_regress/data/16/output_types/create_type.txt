@@ -1,0 +1,9 @@
+2500..2527	public.text_w_default	public.int42
+3411..3444	public.text_w_default	public.int42
+4920..4963	pg_catalog.text
+4964..5008	pg_catalog.text
+5052..5094	pg_catalog.text
+7546..7701	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char
+7703..7859	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char
+7861..8019	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char
+8021..8180	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char

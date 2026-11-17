@@ -1,0 +1,82 @@
+426..450	pg_catalog.bit
+824..851	pg_catalog.varbit
+958..1044	pg_catalog.varbit	pg_catalog.bit	pg_catalog.varbit
+1056..1104	pg_catalog.bit	pg_catalog.int4
+1105..1156	pg_catalog.varbit	pg_catalog.int4
+1171..1331	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+1332..1495	pg_catalog.varbit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+1520..1592	pg_catalog.bit
+1593..1668	pg_catalog.bit
+1743..1815	pg_catalog.bit
+1816..1891	pg_catalog.bit
+2119..2223	pg_catalog.varbit	pg_catalog.varbit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+2224..2346	pg_catalog.varbit	pg_catalog.varbit	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+2347..2406	pg_catalog.varbit	pg_catalog.bit	pg_catalog.varbit	pg_catalog.bit
+2561..2651	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+2652..2771	pg_catalog.bit	pg_catalog.bit	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+2772..2828	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+3016..3055	pg_catalog.int4
+3063..3103	pg_catalog.int4
+3110..3150	pg_catalog.int4
+3157..3198	pg_catalog.int4
+3206..3242	pg_catalog.int4
+3249..3278	pg_catalog.int4
+3285..3313	pg_catalog.int4
+3320..3372	pg_catalog.int4
+3379..3430	pg_catalog.int4
+3437..3493	pg_catalog.int4
+3500..3558	pg_catalog.int4
+3566..3610	pg_catalog.int4
+3616..3661	pg_catalog.int4
+3667..3714	pg_catalog.int4
+3720..3769	pg_catalog.int4
+3776..3822	pg_catalog.int4
+3828..3875	pg_catalog.int4
+3881..3930	pg_catalog.int4
+3936..3987	pg_catalog.int4
+3994..4039	pg_catalog.int4
+4045..4091	pg_catalog.int4
+4097..4145	pg_catalog.int4
+4151..4201	pg_catalog.int4
+4208..4254	pg_catalog.int4
+4260..4307	pg_catalog.int4
+4313..4362	pg_catalog.int4
+4368..4419	pg_catalog.int4
+4426..4484	pg_catalog.int4
+4490..4549	pg_catalog.int4
+4555..4616	pg_catalog.int4
+4622..4685	pg_catalog.int4
+4692..4751	pg_catalog.int4
+4758..4818	pg_catalog.int4
+4825..4887	pg_catalog.int4
+4894..4958	pg_catalog.int4
+4966..5048	pg_catalog.int4
+5054..5135	pg_catalog.int4
+5141..5224	pg_catalog.int4
+5592..5693	pg_catalog.int4	pg_catalog.int4	pg_catalog.bit
+5694..5762	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+5763..5833	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+5834..5929	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+5930..6027	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+6549..6653	pg_catalog.int4	pg_catalog.int4	pg_catalog.varbit
+6654..6725	pg_catalog.varbit	pg_catalog.bit	pg_catalog.bit
+6726..6799	pg_catalog.varbit	pg_catalog.bit	pg_catalog.bit
+6876..6913	pg_catalog.int4
+6914..6957	pg_catalog.bit
+7022..7079	pg_catalog.bit
+7080..7131	pg_catalog.bit
+7132..7184	pg_catalog.bit
+7185..7237	pg_catalog.bit
+7252..7293	pg_catalog.int8
+7294..7335	pg_catalog.int8
+7612..7631	pg_catalog.bit	pg_catalog.bit	pg_catalog.varbit	pg_catalog.varbit
+7684..7732	pg_catalog.bool
+7733..7790	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+7791..7838	pg_catalog.bool
+7839..7895	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+7896..7945	pg_catalog.bool
+7946..8004	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+8006..8053	pg_catalog.bool
+8054..8110	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+8111..8159	pg_catalog.bool
+8160..8217	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

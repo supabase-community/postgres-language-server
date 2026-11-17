@@ -1,0 +1,60 @@
+155..221	pg_catalog.int8
+246..268	public.rainbow
+382..475	pg_catalog.name	pg_catalog.float4
+517..610	pg_catalog.name	pg_catalog.float4
+831..924	pg_catalog.name	pg_catalog.float4
+926..1036	pg_catalog.name	pg_catalog.float4
+1446..1478	public.planets
+1572..1604	public.planets
+3364..3530	pg_catalog.name	pg_catalog.float4
+3715..3738	public.rainbow
+3769..3813	public.rainbow
+3814..3872	public.rainbow
+3873..3930	public.rainbow
+3931..3989	public.rainbow
+3990..4046	public.rainbow
+4047..4104	public.rainbow
+4133..4174	pg_catalog.text
+4175..4220	pg_catalog.bool
+4242..4272	public.rainbow
+4273..4303	public.rainbow
+4304..4354	public.rainbow
+4577..4621	public.rainbow
+4622..4680	public.rainbow
+4681..4738	public.rainbow
+4739..4797	public.rainbow
+4798..4854	public.rainbow
+4855..4912	public.rainbow
+4913..4943	public.rainbow
+4944..4974	public.rainbow
+4975..5025	public.rainbow
+5161..5205	public.rainbow
+5406..5424	public.rainbow
+5512..5549	public._rainbow
+5550..5592	public.rainbow
+5593..5644	pg_catalog.bool
+5645..5699	pg_catalog.bool
+5700..5751	pg_catalog.bool
+5752..5796	pg_catalog.bool
+5825..5858	public.rainbow
+5859..5894	public.rainbow
+5895..5928	public._rainbow
+5929..5984	public._rainbow
+5985..6027	public._rainbow
+6028..6071	public._rainbow
+6072..6111	public._rainbow
+6306..6337	pg_catalog.text
+6502..6533	pg_catalog.text
+6687..6709	pg_catalog.text
+7341..7434	pg_catalog.name	pg_catalog.float4
+7892..7912	public.bogus
+7939..7970	public.bogus
+7980..8010	public.bogus
+8037..8068	public._bogus
+8103..8123	public.bogus
+8137..8228	pg_catalog.name	pg_catalog.float4
+8447..8467	public.bogon
+8808..8839	public._bogon
+9148..9179	public._bogon
+9350..9405	pg_catalog.int8
+9406..9501	pg_catalog.oid	pg_catalog.oid	pg_catalog.float4	pg_catalog.name

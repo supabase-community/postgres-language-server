@@ -1,0 +1,13 @@
+688..725	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+831..868	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+954..991	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+1066..1103	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+1302..1339	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+1909..1946	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+1991..2039	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+2040..2077	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+2143..2180	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+2199..2236	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+2247..2284	pg_catalog.tid	pg_catalog.cid	pg_catalog.int4
+2505..2561	pg_catalog.int4	pg_catalog.numeric
+2751..2798	pg_catalog.int4	pg_catalog.numeric

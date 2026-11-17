@@ -1,0 +1,2 @@
+6787..10129	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.bool
+10668..13292	pg_catalog.record	pg_catalog.record	pg_catalog.text

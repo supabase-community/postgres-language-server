@@ -1,0 +1,8 @@
+1914..1986	pg_catalog.text
+1987..2039	pg_catalog.int4	pg_catalog.int4
+2175..2276	pg_catalog.text
+2277..2358	pg_catalog.int4	pg_catalog.int4
+2485..2568	pg_catalog.text
+2569..2632	pg_catalog.int4	pg_catalog.int4
+2715..2839	pg_catalog.text
+2840..2944	pg_catalog.int4	pg_catalog.int4

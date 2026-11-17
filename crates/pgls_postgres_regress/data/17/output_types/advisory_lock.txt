@@ -1,0 +1,14 @@
+113..245	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+465..497	pg_catalog.void
+610..730	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+951..1083	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+1245..1357	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+1558..1792	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+1960..2072	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+2234..2366	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+2571..2603	pg_catalog.void
+2735..2993	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+3289..3507	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+3669..3903	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+4026..4244	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
+4406..4438	pg_catalog.void

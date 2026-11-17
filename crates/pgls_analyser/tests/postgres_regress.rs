@@ -9,21 +9,24 @@
 //! The body of a `LANGUAGE sql` function is analysed like the workspace does it: right after the
 //! `CREATE FUNCTION`, with the function's parameters in scope. A finding in the body of a function
 //! Postgres accepted is a false positive too.
+//!
+//! The output columns that the resolver infers for the statements that return rows are compared
+//! with the types Postgres described for them, see [`output_types_agree_with_postgres`].
 
 use std::{collections::BTreeMap, sync::Arc};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
 use pgls_analyser::{
-    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions, TYPECHECK_GROUP,
-    UnparsableStatement,
+    AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions, ResolveOptions,
+    TYPECHECK_GROUP, UnparsableStatement, WalkParams, walk_statements,
 };
-use pgls_catalog::{CatalogBase, Snapshot};
+use pgls_catalog::{Catalog, CatalogBase, CatalogView, Decision, Snapshot, Type};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, PrintDiagnostic};
 use pgls_postgres_regress::{File, Verdict, Version};
 use pgls_query::NodeEnum;
 use pgls_resolve::FunctionContext;
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 use rayon::prelude::*;
 
 /// Findings on statements Postgres accepted only because an earlier statement of the file failed.
@@ -178,29 +181,11 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
         options: &options,
         filter: AnalysisFilter::from_enabled_rules(&rules),
     });
-    let mut stmts = Vec::new();
-    let mut unparsable = Vec::new();
-    let mut bodies = Vec::new();
-    for statement in &file.statements {
-        let sql = file.sql(statement);
-        match parse(sql) {
-            Ok(Some((root, has_identifier_parameters))) => {
-                let body = sql_function_body(&root, sql, statement.range);
-                stmts.push(
-                    AnalysableStatement::new(root, statement.range)
-                        .with_sql(sql)
-                        .with_identifier_parameters(has_identifier_parameters),
-                );
-                bodies.extend(body.iter().map(|x| x.range));
-                stmts.extend(body);
-            }
-            Ok(None) => {}
-            Err(()) => unparsable.push(UnparsableStatement {
-                range: statement.range,
-                sql: sql.to_owned(),
-            }),
-        }
-    }
+    let Statements {
+        stmts,
+        unparsable,
+        bodies,
+    } = Statements::of(file, &file.statements);
     let diagnostics = analyser.run(AnalyserParams {
         stmts,
         unparsable,
@@ -240,6 +225,66 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
     Checked {
         findings,
         body_statements: bodies.len(),
+    }
+}
+
+/// The statements of a file as the workspace analyses them: statements our parser doesn't
+/// understand (newer syntax) are passed on as unparsable, and the statements of the body of a SQL
+/// function follow its `CREATE FUNCTION`.
+struct Statements {
+    stmts: Vec<AnalysableStatement>,
+    unparsable: Vec<UnparsableStatement>,
+    /// The ranges of the statements in SQL function bodies.
+    bodies: Vec<TextRange>,
+}
+
+impl Statements {
+    /// The statements of `file` among `statements`, in file order.
+    fn of<'a>(
+        file: &File,
+        statements: impl IntoIterator<Item = &'a pgls_postgres_regress::Statement>,
+    ) -> Self {
+        let mut stmts = Vec::new();
+        let mut unparsable = Vec::new();
+        let mut bodies = Vec::new();
+        for statement in statements {
+            let sql = file.sql(statement);
+            match parse(sql) {
+                Ok(Some((root, has_identifier_parameters))) => {
+                    let body = sql_function_body(&root, sql, statement.range);
+                    stmts.push(
+                        AnalysableStatement::new(root, statement.range)
+                            .with_sql(sql)
+                            .with_identifier_parameters(has_identifier_parameters),
+                    );
+                    bodies.extend(body.iter().map(|x| x.range));
+                    stmts.extend(body);
+                }
+                Ok(None) => {}
+                Err(()) => unparsable.push(UnparsableStatement {
+                    range: statement.range,
+                    sql: sql.to_owned(),
+                }),
+            }
+        }
+        Statements {
+            stmts,
+            unparsable,
+            bodies,
+        }
+    }
+
+    /// The ranges of the top-level statements, parsed or not, in order.
+    fn top_level_ranges(&self) -> Vec<TextRange> {
+        let mut ranges = self
+            .stmts
+            .iter()
+            .filter(|stmt| stmt.function.is_none())
+            .map(|stmt| stmt.range)
+            .chain(self.unparsable.iter().map(|x| x.range))
+            .collect::<Vec<_>>();
+        ranges.sort_unstable_by_key(|range| range.start());
+        ranges
     }
 }
 
@@ -346,5 +391,183 @@ fn truncate(sql: &str, max: usize) -> String {
         sql.into()
     } else {
         format!("{}…", sql.chars().take(max).collect::<String>())
+    }
+}
+
+/// Compares the output columns that the resolver infers with the types that Postgres described
+/// for each accepted statement that returns rows ([`pgls_postgres_regress::Statement::output_types`]),
+/// on every version, against the catalog of a fresh database on that version.
+///
+/// Each file is walked like lint walks it, over the statements Postgres accepted, so that each
+/// statement sees what the statements that ran before it created. A column whose type the
+/// resolver doesn't know is fine. A known type that
+/// differs, or a different number of columns, is a mismatch. The mismatches are snapshotted per
+/// version, so a new one fails the test and a fixed one shows up as a diff.
+#[test]
+fn output_types_agree_with_postgres() {
+    for version in pgls_postgres_regress::versions() {
+        let catalog = catalog(&version);
+        let files = version.files();
+        let compared = files
+            .par_iter()
+            .map(|file| OutputTypes::compare(&catalog, file))
+            .collect::<Vec<_>>();
+        let mut total = OutputTypes::default();
+        for file in compared {
+            total.add(file);
+        }
+        insta::assert_snapshot!(
+            format!("output_types_{}", version.major),
+            total.report(&version)
+        );
+    }
+}
+
+#[derive(Default)]
+struct OutputTypes {
+    /// The statements with recorded output types.
+    statements: usize,
+    /// The statements whose output columns the resolver doesn't know.
+    unresolved: usize,
+    /// The columns of the other statements whose type the resolver knows, and that have the
+    /// type Postgres described.
+    agree: usize,
+    /// The columns of the other statements whose type the resolver doesn't know.
+    unknown: usize,
+    /// One entry per statement whose columns differ from what Postgres described.
+    mismatches: Vec<String>,
+}
+
+impl OutputTypes {
+    fn compare(catalog: &Arc<CatalogBase>, file: &File) -> Self {
+        let statements = Statements::of(
+            file,
+            file.statements
+                .iter()
+                .filter(|statement| statement.verdict == Verdict::Accepted),
+        );
+        let statement_ranges = statements.top_level_ranges();
+        let search_path = ["public".to_owned()];
+        let mut compared = OutputTypes::default();
+        walk_statements(
+            WalkParams {
+                stmts: &statements.stmts,
+                unparsable: &statements.unparsable,
+                statement_ranges: &statement_ranges,
+                catalog_base: Some(catalog.clone()),
+                search_path: &search_path,
+                sections: &[],
+                end: TextSize::from(u32::MAX),
+                best_effort: false,
+                from: None,
+                checkpoints: &[],
+                resolve: ResolveOptions::default(),
+                should_stop: &|| false,
+            },
+            |stmt, file_context| {
+                if stmt.function.is_some() || stmt.has_identifier_parameters {
+                    return;
+                }
+                let Some((statement, recorded)) = file
+                    .statements
+                    .binary_search_by_key(&stmt.range.start(), |x| x.range.start())
+                    .ok()
+                    .and_then(|index| file.statements.get(index))
+                    .and_then(|x| Some((x, x.output_types.as_ref()?)))
+                else {
+                    return;
+                };
+                compared.statements += 1;
+                let Some(columns) = file_context
+                    .resolution(stmt)
+                    .output
+                    .as_ref()
+                    .and_then(|output| output.columns())
+                else {
+                    compared.unresolved += 1;
+                    return;
+                };
+                let inferred = columns
+                    .iter()
+                    .map(|column| {
+                        let ty = column.ty.as_ref()?;
+                        Self::type_name(file_context.catalog(), ty)
+                    })
+                    .collect::<Vec<_>>();
+                let differs = inferred.len() != recorded.len()
+                    || inferred.iter().zip(recorded).any(|(inferred, recorded)| {
+                        inferred.as_ref().is_some_and(|x| x != recorded)
+                    });
+                if differs {
+                    let (line, col) = file.line_col(statement);
+                    let inferred = inferred
+                        .iter()
+                        .map(|x| x.as_deref().unwrap_or("?"))
+                        .collect::<Vec<_>>();
+                    compared.mismatches.push(format!(
+                        "{}.sql:{line}:{col}: inferred {}, Postgres {}\n  {}",
+                        file.name,
+                        inferred.join(", "),
+                        recorded.join(", "),
+                        truncate(&file.sql(statement).replace('\n', " "), 200)
+                    ));
+                } else {
+                    compared.unknown += inferred.iter().filter(|x| x.is_none()).count();
+                    compared.agree += inferred.iter().filter(|x| x.is_some()).count();
+                }
+            },
+        );
+        compared
+    }
+
+    /// The type that Postgres describes a column of type `ty` by, as `schema.name`, if it is
+    /// known.
+    fn type_name(catalog: &Catalog, ty: &Type) -> Option<String> {
+        let id = match ty {
+            // An unknown literal in a select list or RETURNING list becomes `text`
+            // ([`resolveTargetListUnknowns`]).
+            //
+            // [`resolveTargetListUnknowns`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L288
+            Type::UnknownLiteral => return Some("pg_catalog.text".to_owned()),
+            Type::Record(_) => return Some("pg_catalog.record".to_owned()),
+            Type::Named(id) => id,
+        };
+        // A column of a domain is described by the domain's base type
+        // ([`SendRowDescriptionMessage`]).
+        //
+        // [`SendRowDescriptionMessage`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/printtup.c#L166
+        let Decision::Known(base) = pgls_catalog::base_type(catalog, id) else {
+            return None;
+        };
+        let info = catalog.type_by_id(&base).found()?;
+        Some(format!("{}.{}", info.schema, info.name))
+    }
+
+    fn add(&mut self, other: OutputTypes) {
+        self.statements += other.statements;
+        self.unresolved += other.unresolved;
+        self.agree += other.agree;
+        self.unknown += other.unknown;
+        self.mismatches.extend(other.mismatches);
+    }
+
+    fn report(&self, version: &Version) -> String {
+        let mut report = format!(
+            "{}: {} statements that return rows, {} without inferred output columns. Of the \
+             columns of the others, {} have the type Postgres described, {} an unknown type. {} \
+             statements differ\n",
+            version.tag,
+            self.statements,
+            self.unresolved,
+            self.agree,
+            self.unknown,
+            self.mismatches.len()
+        );
+        for mismatch in &self.mismatches {
+            report.push('\n');
+            report.push_str(mismatch);
+            report.push('\n');
+        }
+        report
     }
 }

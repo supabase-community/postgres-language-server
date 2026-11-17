@@ -4,20 +4,31 @@
 //! a tag, the one in `data/<major>/SOURCE` is used.
 //!
 //! Fetches `src/test/regress/sql` of the tag, copies the files verbatim, runs every statement
-//! against `postgres:<major>.<minor>` in Docker and writes Postgres' verdict per statement. It also
-//! writes the catalog of a fresh database. With `--catalog-only`, only the catalog is re-recorded.
+//! against `postgres:<major>.<minor>` in Docker and writes Postgres' verdict per statement, and the
+//! types of the columns of the statements that return rows. It also writes the catalog of a fresh
+//! database. With `--catalog-only`, only the catalog is re-recorded.
 
 use std::{
+    collections::HashMap,
     fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
     time::Duration,
 };
 
-use pgls_postgres_regress::{CATALOG_FILE, Statement, Verdict, data_dir, preprocess, split};
-use sqlx::{Connection, Executor, PgConnection};
+use pgls_postgres_regress::{
+    CATALOG_FILE, OUTPUT_TYPES_DIR, Statement, VERDICTS_DIR, Verdict, data_dir, preprocess, split,
+};
+use sqlx::{
+    Column, ConnectOptions, Connection, Executor, PgConnection, Row, Statement as _,
+    postgres::PgConnectOptions,
+};
 
 const PASSWORD: &str = "postgres";
+
+/// How long the client waits for an answer from the server. `statement_timeout` cancels a
+/// statement after 5 seconds, so a statement that takes longer hangs on the client side.
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[tokio::main]
 async fn main() {
@@ -84,14 +95,20 @@ async fn main() {
     }
 
     let sql_dir = dir.join("sql");
-    let verdicts_dir = dir.join("verdicts");
-    fs::create_dir_all(&verdicts_dir).expect("create verdicts directory");
+    let verdicts_dir = dir.join(VERDICTS_DIR);
+    let output_types_dir = dir.join(OUTPUT_TYPES_DIR);
+    for sub in [&verdicts_dir, &output_types_dir] {
+        fs::create_dir_all(sub).expect("create fixture directory");
+    }
+    let builtin_types = TypeNames::fetch(&mut admin, &format!("t.oid < {FIRST_NORMAL_OBJECT_ID}"))
+        .await
+        .expect("look up the built-in types");
     let files = sql_files(&sql_dir);
     let mut totals = Totals::default();
     for (file_no, path) in files.iter().enumerate() {
         let name = path.file_stem().unwrap().to_string_lossy();
         let source = preprocess(&fs::read_to_string(path).expect("read SQL file"));
-        let statements = record_file(&mut admin, &base_url, file_no, &source).await;
+        let statements = record_file(&mut admin, &base_url, file_no, &source, &builtin_types).await;
         let counts = Totals::of(&statements);
         eprintln!(
             "[{}/{}] {name}: {} accepted, {} rejected, {} skipped",
@@ -110,6 +127,15 @@ async fn main() {
                 .collect::<String>(),
         )
         .expect("write verdict file");
+        fs::write(
+            output_types_dir.join(format!("{name}.txt")),
+            statements
+                .iter()
+                .filter_map(Statement::output_types_line)
+                .map(|line| format!("{line}\n"))
+                .collect::<String>(),
+        )
+        .expect("write output types file");
     }
     eprintln!(
         "Postgres {server_version}: {} accepted, {} rejected, {} skipped",
@@ -164,7 +190,7 @@ fn copy_upstream(tag: &str, dir: &Path) {
         "src/test/regress/sql",
     ]));
 
-    for sub in ["sql", "verdicts"] {
+    for sub in ["sql", VERDICTS_DIR, OUTPUT_TYPES_DIR] {
         let _ = fs::remove_dir_all(dir.join(sub));
     }
     let sql_dir = dir.join("sql");
@@ -189,6 +215,7 @@ async fn record_file(
     base_url: &str,
     file_no: usize,
     source: &str,
+    builtin_types: &TypeNames,
 ) -> Vec<Statement> {
     let db = format!("regress_{file_no}");
     // A database left over from an interrupted run.
@@ -201,40 +228,24 @@ async fn record_file(
         .await
         .unwrap_or_else(|e| panic!("create {db}: {e}"));
     let url = format!("{base_url}/{db}");
-    let mut conn = PgConnection::connect(&url)
-        .await
-        .unwrap_or_else(|e| panic!("connect to {db}: {e}"));
-    conn.execute("SET statement_timeout = '5s'")
-        .await
-        .expect("set statement timeout");
-
+    let mut client = Client::connect(&url).await;
     let mut statements = Vec::new();
-    // Set when a statement hangs on the client side; the connection is unusable from then on.
-    let mut stuck = false;
     for range in split(source) {
         let sql = &source[range];
-        let verdict = if stuck || transaction_control(sql) || copy_with_client(sql) {
-            Verdict::Skipped
-        } else {
-            // Not a prepared statement: the sqlx statement cache masks errors.
-            let execute = sqlx::raw_sql(sql).execute(&mut conn);
-            match tokio::time::timeout(Duration::from_secs(30), execute).await {
-                Err(_) => {
-                    stuck = true;
-                    Verdict::Skipped
-                }
-                Ok(Ok(_)) => Verdict::Accepted,
-                Ok(Err(e)) => match e.as_database_error().and_then(|x| x.code()).as_deref() {
-                    // query_canceled, i.e. statement_timeout
-                    Some("57014") => Verdict::Skipped,
-                    Some(state) => Verdict::Rejected(state.to_owned()),
-                    None => Verdict::Rejected("CLIENT_ERROR".into()),
-                },
-            }
-        };
-        statements.push(Statement { range, verdict });
+        let (verdict, output_types) =
+            if client.stuck || transaction_control(sql) || copy_with_client(sql) {
+                (Verdict::Skipped, None)
+            } else {
+                let output_types = client.output_types(sql, builtin_types).await;
+                (client.verdict(sql).await, output_types)
+            };
+        statements.push(Statement {
+            range,
+            output_types: output_types.filter(|_| verdict == Verdict::Accepted),
+            verdict,
+        });
     }
-    let _ = tokio::time::timeout(Duration::from_secs(5), conn.close()).await;
+    let _ = tokio::time::timeout(Duration::from_secs(5), client.conn.close()).await;
 
     // Roles are shared by all databases.
     let roles = regress_roles(admin).await;
@@ -256,6 +267,133 @@ async fn record_file(
             .ok();
     }
     statements
+}
+
+/// The connection that runs the statements of a file.
+struct Client {
+    conn: PgConnection,
+    /// Set when a statement hangs on the client side; the connection is unusable from then on.
+    stuck: bool,
+}
+
+impl Client {
+    async fn connect(url: &str) -> Self {
+        let options = url
+            .parse::<PgConnectOptions>()
+            .unwrap_or_else(|e| panic!("parse {url}: {e}"))
+            // A cached statement would keep the columns it had before the file changed the tables
+            // it reads.
+            .statement_cache_capacity(0);
+        let mut conn = options
+            .connect()
+            .await
+            .unwrap_or_else(|e| panic!("connect to {url}: {e}"));
+        conn.execute("SET statement_timeout = '5s'")
+            .await
+            .expect("set statement timeout");
+        Client { conn, stuck: false }
+    }
+
+    /// The types of the columns of the rows that a statement returns, as Postgres describes
+    /// them to a client before the statement runs, as `schema.name`. Postgres describes a column
+    /// of a domain by the domain's base type ([`SendRowDescriptionMessage`]).
+    ///
+    /// `None` if the statement returns no rows or no columns, or Postgres can't describe it, e.g.
+    /// because it rejects it.
+    ///
+    /// Preparing a statement only parses and analyses it, and the session keeps the prepared
+    /// statement, which only shows in `pg_prepared_statements`.
+    ///
+    /// [`SendRowDescriptionMessage`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/printtup.c#L166
+    async fn output_types(&mut self, sql: &str, builtin: &TypeNames) -> Option<Vec<String>> {
+        let oids = match tokio::time::timeout(CLIENT_TIMEOUT, self.conn.prepare(sql)).await {
+            Err(_) => {
+                self.stuck = true;
+                return None;
+            }
+            Ok(prepared) => prepared
+                .ok()?
+                .columns()
+                .iter()
+                .map(|column| Some(column.type_info().oid()?.0))
+                .collect::<Option<Vec<_>>>()?,
+        };
+        if oids.is_empty() {
+            return None;
+        }
+        let created = oids
+            .iter()
+            .filter(|oid| !builtin.0.contains_key(oid))
+            .map(u32::to_string)
+            .collect::<Vec<_>>();
+        let created = if created.is_empty() {
+            TypeNames::default()
+        } else {
+            TypeNames::fetch(
+                &mut self.conn,
+                &format!("t.oid in ({})", created.join(", ")),
+            )
+            .await?
+        };
+        oids.iter()
+            .map(|oid| builtin.0.get(oid).or_else(|| created.0.get(oid)).cloned())
+            .collect()
+    }
+
+    /// Runs a statement in the simple query protocol, like psql.
+    async fn verdict(&mut self, sql: &str) -> Verdict {
+        if self.stuck {
+            return Verdict::Skipped;
+        }
+        let execute = sqlx::raw_sql(sql).execute(&mut self.conn);
+        match tokio::time::timeout(CLIENT_TIMEOUT, execute).await {
+            Err(_) => {
+                self.stuck = true;
+                Verdict::Skipped
+            }
+            Ok(Ok(_)) => Verdict::Accepted,
+            Ok(Err(e)) => match e.as_database_error().and_then(|x| x.code()).as_deref() {
+                // query_canceled, i.e. statement_timeout
+                Some("57014") => Verdict::Skipped,
+                Some(state) => Verdict::Rejected(state.to_owned()),
+                None => Verdict::Rejected("CLIENT_ERROR".into()),
+            },
+        }
+    }
+}
+
+/// The oid of the first object that isn't built in ([`FirstNormalObjectId`]).
+///
+/// [`FirstNormalObjectId`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/access/transam.h#L197
+const FIRST_NORMAL_OBJECT_ID: u32 = 16384;
+
+/// Names of types by oid, as `schema.name`, with `pg_temp` for the session's temporary schema.
+#[derive(Default)]
+struct TypeNames(HashMap<u32, String>);
+
+impl TypeNames {
+    /// The names of the types that match `filter`, a condition on `pg_type t`.
+    async fn fetch(conn: &mut PgConnection, filter: &str) -> Option<Self> {
+        let query = format!(
+            "select t.oid::int8, \
+                 case when n.oid = pg_catalog.pg_my_temp_schema() then 'pg_temp' \
+                 else n.nspname::text end || '.' || t.typname::text \
+             from pg_catalog.pg_type t \
+             join pg_catalog.pg_namespace n on n.oid = t.typnamespace \
+             where {filter}"
+        );
+        let rows = tokio::time::timeout(CLIENT_TIMEOUT, sqlx::raw_sql(&query).fetch_all(conn))
+            .await
+            .ok()?
+            .ok()?;
+        rows.iter()
+            .map(|row| {
+                let oid = u32::try_from(row.try_get::<i64, _>(0).ok()?).ok()?;
+                Some((oid, row.try_get::<String, _>(1).ok()?))
+            })
+            .collect::<Option<_>>()
+            .map(TypeNames)
+    }
 }
 
 /// The roles the regression tests create; they are all named `regress_*`.

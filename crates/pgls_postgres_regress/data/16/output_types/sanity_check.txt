@@ -1,0 +1,2 @@
+263..684	pg_catalog.name	pg_catalog.name
+749..861	pg_catalog.name	pg_catalog.char

@@ -1,0 +1,10 @@
+359..373	pg_catalog.numeric
+1050..1064	pg_catalog.numeric
+1175..1205	pg_catalog.bool	pg_catalog.bool
+1206..1254	pg_catalog.bool
+1541..1573	pg_catalog.bool
+1618..1654	pg_catalog.bool
+1655..1688	pg_catalog.bool
+1689..1722	pg_catalog.bool
+1723..1759	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+1760..1796	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool

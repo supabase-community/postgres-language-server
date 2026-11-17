@@ -1,0 +1,25 @@
+2133..2220	pg_catalog.text
+2242..2309	pg_catalog.point
+2349..2471	pg_catalog.text
+2473..2575	pg_catalog.point
+2608..2730	pg_catalog.text
+2732..2834	pg_catalog.point
+2885..3165	pg_catalog.text
+3167..3427	pg_catalog.point
+3618..3700	pg_catalog.text
+3722..3784	pg_catalog.box
+3824..3938	pg_catalog.text
+3940..4034	pg_catalog.box
+4067..4181	pg_catalog.text
+4183..4277	pg_catalog.box
+4525..4611	pg_catalog.text
+4633..4746	pg_catalog.box	pg_catalog.point
+5131..5238	pg_catalog.text
+5239..5317	pg_catalog.circle
+5415..5512	pg_catalog.text
+5513..5581	pg_catalog.point
+5652..5711	pg_catalog.text
+5712..5742	pg_catalog.int8
+5816..5912	pg_catalog.text
+6925..7114	pg_catalog.text
+7115..7284	pg_catalog.bool	pg_catalog.bool

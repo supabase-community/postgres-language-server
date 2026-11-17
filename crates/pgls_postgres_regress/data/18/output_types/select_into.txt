@@ -1,0 +1,11 @@
+718..876	pg_catalog.text
+993..1152	pg_catalog.text
+1315..1462	pg_catalog.text
+1580..1728	pg_catalog.text
+2641..2667	pg_catalog.int4	pg_catalog.int4
+2668..2696	pg_catalog.int4	pg_catalog.int4
+2697..2725	pg_catalog.int4	pg_catalog.int4
+2726..2754	pg_catalog.int4	pg_catalog.int4
+4248..4360	pg_catalog.text
+4488..4613	pg_catalog.text
+4778..4900	pg_catalog.text

@@ -1,0 +1,9 @@
+438..508	pg_catalog.text
+3842..3930	pg_catalog.name	pg_catalog.bool
+45853..45889	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text
+46059..46095	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text
+46217..46253	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text
+46444..46480	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text
+46650..46686	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text
+46808..46844	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text
+47367..47403	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog._name	pg_catalog.text

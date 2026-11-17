@@ -1,0 +1,13 @@
+271..300	pg_catalog.name
+625..653	pg_catalog.jsonpath
+734..799	pg_catalog.jsonpath
+1076..1142	pg_catalog.jsonpath
+1143..1210	pg_catalog.jsonpath
+1211..1274	pg_catalog.jsonpath
+1333..1391	pg_catalog.jsonpath
+1674..1704	pg_catalog.jsonpath
+1785..1852	pg_catalog.jsonpath
+2137..2205	pg_catalog.jsonpath
+2206..2275	pg_catalog.jsonpath
+2276..2341	pg_catalog.jsonpath
+2402..2462	pg_catalog.jsonpath

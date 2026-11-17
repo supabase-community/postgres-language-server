@@ -1,0 +1,64 @@
+3140..3217	pg_catalog.text
+3218..3273	pg_catalog.int8
+3274..3448	pg_catalog.bool	pg_catalog.bool
+3688..3765	pg_catalog.text
+3766..3821	pg_catalog.int8
+3822..3996	pg_catalog.bool	pg_catalog.bool
+4231..4308	pg_catalog.text
+4309..4364	pg_catalog.int8
+4365..4539	pg_catalog.bool	pg_catalog.bool
+4907..4984	pg_catalog.text
+4985..5040	pg_catalog.int8
+5041..5215	pg_catalog.bool	pg_catalog.bool
+5457..5534	pg_catalog.text
+5535..5590	pg_catalog.int8
+5591..5765	pg_catalog.bool	pg_catalog.bool
+6002..6079	pg_catalog.text
+6080..6135	pg_catalog.int8
+6136..6310	pg_catalog.bool	pg_catalog.bool
+6699..6790	pg_catalog.text
+6791..6860	pg_catalog.int8
+6861..7049	pg_catalog.bool	pg_catalog.bool
+7291..7382	pg_catalog.text
+7383..7452	pg_catalog.int8
+7453..7641	pg_catalog.bool	pg_catalog.bool
+7878..7969	pg_catalog.text
+7970..8039	pg_catalog.int8
+8040..8228	pg_catalog.bool	pg_catalog.bool
+8738..8825	pg_catalog.text
+8826..8891	pg_catalog.int8
+8892..9000	pg_catalog.int4	pg_catalog.int4
+9242..9329	pg_catalog.text
+9330..9395	pg_catalog.int8
+9396..9504	pg_catalog.int4	pg_catalog.int4
+9741..9828	pg_catalog.text
+9829..9894	pg_catalog.int8
+9895..10003	pg_catalog.int4	pg_catalog.int4
+10356..10454	pg_catalog.int4	pg_catalog.int4
+11264..11458	pg_catalog.text
+11459..11627	pg_catalog.int8
+11628..11867	pg_catalog.bool
+12277..12471	pg_catalog.text
+12472..12640	pg_catalog.int8
+12641..12880	pg_catalog.bool
+13285..13479	pg_catalog.text
+13480..13648	pg_catalog.int8
+13649..13888	pg_catalog.bool
+14293..14487	pg_catalog.text
+14488..14656	pg_catalog.int8
+14657..14896	pg_catalog.bool
+15056..15148	pg_catalog.text
+15149..15216	pg_catalog.int8
+15375..15467	pg_catalog.text
+15468..15535	pg_catalog.int8
+15700..15802	pg_catalog.text
+15803..15880	pg_catalog.int8
+16039..16141	pg_catalog.text
+16142..16219	pg_catalog.int8
+16692..16823	pg_catalog.text
+16824..16931	pg_catalog.int4
+16932..17108	pg_catalog.bool
+18804..19176	pg_catalog.text
+19178..19521	pg_catalog.text	pg_catalog.bool	pg_catalog.regclass	pg_catalog.regclass
+19523..19895	pg_catalog.text
+19897..20240	pg_catalog.text	pg_catalog.bool	pg_catalog.regclass	pg_catalog.regclass

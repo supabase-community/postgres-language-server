@@ -1,0 +1,12 @@
+1196..1219	pg_catalog.line
+1221..1342	pg_catalog.bool	pg_catalog.bool
+1395..1438	pg_catalog.bool
+1439..1491	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1492..1538	pg_catalog.bool
+1539..1594	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1595..1641	pg_catalog.bool
+1642..1697	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1698..1748	pg_catalog.bool
+1749..1808	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1809..1864	pg_catalog.bool
+1865..1929	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

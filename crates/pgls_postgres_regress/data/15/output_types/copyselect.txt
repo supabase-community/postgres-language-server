@@ -1,0 +1,3 @@
+1901..1910	pg_catalog.int4
+2010..2019	pg_catalog.int4
+2032..2052	pg_catalog.int4

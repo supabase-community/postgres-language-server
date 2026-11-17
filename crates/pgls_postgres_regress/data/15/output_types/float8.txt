@@ -1,0 +1,107 @@
+611..664	pg_catalog.bytea
+1064..1085	pg_catalog.float8
+1086..1107	pg_catalog.float8
+1108..1134	pg_catalog.float8
+1135..1161	pg_catalog.float8
+1162..1202	pg_catalog.float8
+1307..1341	pg_catalog.float8
+1342..1389	pg_catalog.float8
+1390..1431	pg_catalog.float8
+1432..1469	pg_catalog.float8
+1470..1505	pg_catalog.float8
+1506..1536	pg_catalog.float8
+1538..1563	pg_catalog.float8
+1565..1617	pg_catalog.float8
+1619..1670	pg_catalog.float8
+1672..1723	pg_catalog.float8
+1725..1777	pg_catalog.float8
+1779..1831	pg_catalog.float8
+1833..1886	pg_catalog.float8
+1888..1962	pg_catalog.float8	pg_catalog.float8
+1964..2038	pg_catalog.float8	pg_catalog.float8
+2040..2114	pg_catalog.float8	pg_catalog.float8
+2116..2190	pg_catalog.float8	pg_catalog.float8
+2192..2268	pg_catalog.float8
+2288..2338	pg_catalog.float8	pg_catalog.float8
+2352..2410	pg_catalog.float8	pg_catalog.float8
+2421..2479	pg_catalog.float8	pg_catalog.float8
+2499..2544	pg_catalog.float8
+2545..2596	pg_catalog.float8
+2607..2654	pg_catalog.float8
+2664..2709	pg_catalog.float8
+2827..2861	pg_catalog.float8
+2863..2894	pg_catalog.float8
+2896..2970	pg_catalog.float8	pg_catalog.float8
+2981..3022	pg_catalog.float8
+3023..3064	pg_catalog.float8
+3065..3106	pg_catalog.float8
+3107..3148	pg_catalog.float8
+3149..3189	pg_catalog.float8
+3190..3229	pg_catalog.float8
+3230..3269	pg_catalog.float8
+3270..3309	pg_catalog.float8
+3310..3350	pg_catalog.float8
+3351..3390	pg_catalog.float8
+3432..3471	pg_catalog.float8
+3472..3512	pg_catalog.float8
+3513..3553	pg_catalog.float8
+3554..3595	pg_catalog.float8
+3596..3637	pg_catalog.float8
+3638..3680	pg_catalog.float8
+3681..3722	pg_catalog.float8
+3723..3765	pg_catalog.float8
+3766..3808	pg_catalog.float8
+3809..3852	pg_catalog.float8
+3853..3895	pg_catalog.float8
+3896..3939	pg_catalog.float8
+3940..3980	pg_catalog.float8
+3981..4020	pg_catalog.float8
+4021..4062	pg_catalog.float8
+4063..4105	pg_catalog.float8
+4254..4301	pg_catalog.bool
+4302..4343	pg_catalog.float8
+4344..4384	pg_catalog.float8
+4385..4425	pg_catalog.float8
+4469..4511	pg_catalog.float8
+4512..4555	pg_catalog.float8
+4581..4664	pg_catalog.float8	pg_catalog.float8
+4694..4761	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+4776..4808	pg_catalog.float8
+4810..4860	pg_catalog.float8	pg_catalog.float8
+4863..4888	pg_catalog.float8
+5058..5099	pg_catalog.float8
+5290..5315	pg_catalog.float8
+5472..5496	pg_catalog.float8
+5497..5521	pg_catalog.float8
+5522..5546	pg_catalog.float8
+5547..5572	pg_catalog.float8
+5573..5598	pg_catalog.float8
+5599..5626	pg_catalog.float8
+5674..5705	pg_catalog.float8
+5706..5738	pg_catalog.float8
+5739..5765	pg_catalog.float8
+5766..5797	pg_catalog.float8
+5798..5830	pg_catalog.float8
+5831..5857	pg_catalog.float8
+5858..5889	pg_catalog.float8
+5890..5922	pg_catalog.float8
+5923..5949	pg_catalog.float8
+5950..5982	pg_catalog.float8
+5983..6016	pg_catalog.float8
+6017..6044	pg_catalog.float8
+6194..6221	pg_catalog.float8
+6289..6316	pg_catalog.float8
+6719..6750	pg_catalog.int2
+6783..6815	pg_catalog.int2
+6849..6885	pg_catalog.int4
+6923..6960	pg_catalog.int4
+6999..7042	pg_catalog.int8
+7087..7133	pg_catalog.int8
+7240..7402	pg_catalog.int4	pg_catalog.float8	pg_catalog.bool
+7404..7566	pg_catalog.int4	pg_catalog.float8	pg_catalog.bool
+7568..7897	pg_catalog.int4	pg_catalog.float8	pg_catalog.bool	pg_catalog.float8	pg_catalog.bool
+7899..8100	pg_catalog.numeric	pg_catalog.float8	pg_catalog.bool	pg_catalog.float8	pg_catalog.bool
+8102..8269	pg_catalog.float8	pg_catalog.float8	pg_catalog.bool
+8271..8453	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.bool
+9460..10175	pg_catalog.bytea	pg_catalog.float8
+10198..15901	pg_catalog.bytea	pg_catalog.float8	pg_catalog.float8	pg_catalog.bytea	pg_catalog.bool

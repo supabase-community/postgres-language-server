@@ -1,0 +1,52 @@
+680..769	pg_catalog.int8
+770..864	pg_catalog.int8
+865..958	pg_catalog.int8
+1200..1221	pg_catalog.void
+1272..1293	pg_catalog.void
+1336..1357	pg_catalog.void
+1358..1448	pg_catalog.int8
+1449..1521	pg_catalog.int8	pg_catalog.int8
+6199..6228	pg_catalog.timestamp
+6289..6332	pg_catalog.timestamp
+6394..6436	pg_catalog.timestamp
+6537..6621	pg_catalog.timestamp
+6623..6707	pg_catalog.timestamp
+6709..6793	pg_catalog.timestamp
+6795..6880	pg_catalog.timestamp
+6882..6967	pg_catalog.timestamp
+6969..7054	pg_catalog.timestamp
+7056..7186	pg_catalog.interval
+7188..7269	pg_catalog.timestamp
+7381..7750	pg_catalog.text	pg_catalog.text	pg_catalog.bool
+7788..8162	pg_catalog.text	pg_catalog.text	pg_catalog.bool
+8200..8569	pg_catalog.text	pg_catalog.text	pg_catalog.bool
+8607..8981	pg_catalog.text	pg_catalog.text	pg_catalog.bool
+9026..9390	pg_catalog.text	pg_catalog.timestamp	pg_catalog.timestamp	pg_catalog.timestamp
+9434..9535	pg_catalog.timestamp
+9585..9691	pg_catalog.timestamp
+10552..10742	pg_catalog.interval
+10774..11030	pg_catalog.timestamp	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+11032..11187	pg_catalog.timestamp	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+11189..11411	pg_catalog.timestamp	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+11413..11670	pg_catalog.timestamp	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+11784..12052	pg_catalog.timestamp	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+12106..12168	pg_catalog.float8
+12169..12231	pg_catalog.numeric
+12271..12331	pg_catalog.numeric
+12346..12444	pg_catalog.text
+12446..12537	pg_catalog.text
+12539..12625	pg_catalog.text
+12627..12739	pg_catalog.text
+12741..12809	pg_catalog.text
+12811..12912	pg_catalog.text
+12914..12983	pg_catalog.text
+12985..13047	pg_catalog.text
+13049..13161	pg_catalog.text
+13163..13232	pg_catalog.text
+13234..13317	pg_catalog.text
+13319..13578	pg_catalog.text
+13624..13755	pg_catalog.int4	pg_catalog.text	pg_catalog.text
+13797..13848	pg_catalog.timestamp
+13849..13895	pg_catalog.timestamp
+13990..14162	pg_catalog.timestamp
+14305..14458	pg_catalog.timestamp

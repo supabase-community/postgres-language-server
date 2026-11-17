@@ -1,0 +1,11 @@
+559..587	pg_catalog.int8
+621..642	pg_catalog.int4
+1174..1202	pg_catalog.int8
+1278..1299	pg_catalog.int4
+2642..2731	pg_catalog.float4	pg_catalog.bool
+2784..2873	pg_catalog.float4	pg_catalog.bool
+3153..3238	pg_catalog.float4	pg_catalog.bool
+3260..3345	pg_catalog.float4	pg_catalog.bool
+6944..6993	pg_catalog.bool
+7044..7093	pg_catalog.bool
+8057..8179	pg_catalog.name	pg_catalog.bool

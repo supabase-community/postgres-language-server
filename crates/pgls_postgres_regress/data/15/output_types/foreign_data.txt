@@ -1,0 +1,35 @@
+1113..1230	pg_catalog.name	pg_catalog.regproc	pg_catalog.regproc	pg_catalog._text
+1231..1281	pg_catalog.name	pg_catalog._text
+1282..1312	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog._text
+19628..19697	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar	pg_catalog.varchar
+19698..19777	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+19778..19841	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar	pg_catalog.varchar	pg_catalog.name
+19842..19915	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+19916..20010	pg_catalog.name	pg_catalog.name	pg_catalog.name
+20011..20115	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+20116..20256	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar	pg_catalog.varchar	pg_catalog.varchar
+20257..20398	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar	pg_catalog.varchar	pg_catalog.varchar
+20399..20464	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name
+20465..20540	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+20569..20643	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+20644..20784	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar	pg_catalog.varchar	pg_catalog.varchar
+20785..20926	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar	pg_catalog.varchar	pg_catalog.varchar
+21002..21076	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+21129..21268	pg_catalog.bool
+21269..21348	pg_catalog.bool
+21349..21534	pg_catalog.bool
+21535..21654	pg_catalog.bool
+21655..21780	pg_catalog.bool
+21781..21839	pg_catalog.bool
+21902..21981	pg_catalog.bool
+22007..22125	pg_catalog.bool
+22126..22190	pg_catalog.bool
+22191..22355	pg_catalog.bool
+22356..22454	pg_catalog.bool
+22455..22565	pg_catalog.bool
+22566..22609	pg_catalog.bool
+22665..22729	pg_catalog.bool
+30162..30350	pg_catalog.name	pg_catalog.name	pg_catalog.char	pg_catalog.bool	pg_catalog.int4	pg_catalog.bool
+35395..35477	pg_catalog.name	pg_catalog.oid	pg_catalog.oid	pg_catalog._text
+35478..35528	pg_catalog.name	pg_catalog._text
+35529..35559	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog._text
