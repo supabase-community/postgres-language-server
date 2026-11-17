@@ -24,11 +24,15 @@ use super::{StatementId, analysis::DocumentAnalysis};
 use crate::workspace::ProjectKey;
 
 mod budget;
+#[cfg(feature = "db")]
+mod database;
 mod parse;
 mod tree;
 mod walk;
 
 pub(crate) use budget::CacheBudget;
+#[cfg(feature = "db")]
+pub(crate) use database::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 pub(crate) use parse::ParseResult;
 use parse::PgQueryStore;
 use tree::TreeSitterStore;
@@ -165,6 +169,12 @@ pub(crate) struct DocumentCache {
     /// `keyed`: an edit takes that while it holds the documents, and an analysis checks whether
     /// the document changed, which needs the documents.
     analysing: Mutex<()>,
+    /// What the last run of the database checks found per statement. It isn't a cache: only
+    /// checking against the database again recomputes it, so [`Self::clear`] keeps it. An edit
+    /// drops the results of the statements it removed, and the next run replaces all of it. The
+    /// language server runs the checks again whenever the settings or the database schema change.
+    #[cfg(feature = "db")]
+    database: Mutex<DatabaseResults>,
 }
 
 /// The caches that are only valid for one [`CacheKey`].
@@ -184,7 +194,37 @@ impl DocumentCache {
             trees: TreeSitterStore::new(),
             keyed: Mutex::default(),
             analysing: Mutex::default(),
+            #[cfg(feature = "db")]
+            database: Mutex::default(),
         }
+    }
+
+    /// Keeps what the database checks found for the content of `generation`, unless the content
+    /// changed meanwhile.
+    #[cfg(feature = "db")]
+    pub(crate) fn set_database_results(&self, results: DatabaseResults, generation: u64) {
+        let mut database = self.database.lock();
+        // An edit changes the generation before it drops the statements it removed, which takes
+        // this lock, so the results of a previous generation never stay.
+        if self.is_current(generation) {
+            *database = results;
+        }
+    }
+
+    /// An edit added the top-level statements with the texts `texts`, which the last run of the
+    /// database checks didn't check.
+    #[cfg(feature = "db")]
+    pub(crate) fn statements_edited<'a>(&self, texts: impl IntoIterator<Item = &'a str>) {
+        let mut database = self.database.lock();
+        for text in texts {
+            database.edited(StatementId::new(text));
+        }
+    }
+
+    /// What the last run of the database checks found, see [`DatabaseResults::reuse`].
+    #[cfg(feature = "db")]
+    pub(crate) fn database_results(&self) -> MutexGuard<'_, DatabaseResults> {
+        self.database.lock()
     }
 
     /// The analysis of the content of `generation` for `key`. `analyse` computes it if it isn't
@@ -351,14 +391,20 @@ impl DocumentCache {
     /// statements of their function bodies. Called after [`Self::content_changed`], with the
     /// statements that the change removed from the document.
     pub(crate) fn remove_statements<'a>(&self, removed: impl IntoIterator<Item = &'a str>) {
+        #[cfg(feature = "db")]
+        let mut database = self.database.lock();
         for text in removed {
             let statement = StatementId::new(text);
             for embedded in self.parses.remove(&statement) {
                 self.trees.remove(&embedded);
             }
             self.trees.remove(&statement);
+            #[cfg(feature = "db")]
+            database.remove(&statement);
         }
         self.parses.shrink();
         self.trees.shrink();
+        #[cfg(feature = "db")]
+        database.shrink();
     }
 }

@@ -2,6 +2,10 @@
 import type { Transport } from "./transport";
 export interface PullFileDiagnosticsParams {
   categories: RuleCategories;
+  /**
+   * Whether to check the statements against the database. Defaults to [`DatabaseChecks::Run`].
+   */
+  database_checks?: DatabaseChecks;
   max_diagnostics: number;
   only: RuleCode[];
   path: PgLSPath;
@@ -9,6 +13,10 @@ export interface PullFileDiagnosticsParams {
   skip: RuleCode[];
 }
 export type RuleCategories = RuleCategory[];
+/**
+ * Whether a diagnostics pull checks the statements against the database: EXPLAIN for the statements whose references all come unchanged from the database, and plpgsql_check for PL/pgSQL functions. The checks take a round trip per statement, seconds on long files, so the language server runs them when a file is opened or saved, and reuses their results while the user types.
+ */
+export type DatabaseChecks = "run" | "reuse";
 export type RuleCode = string;
 export interface PgLSPath {
   /**

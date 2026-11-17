@@ -143,6 +143,22 @@ impl Document {
             },
             self.generation,
         );
+        // The statements around the change are new to the checks against the database, which
+        // only run on save, see `DatabaseResults`.
+        #[cfg(feature = "db")]
+        {
+            let after = old_split.ranges.len().saturating_sub(changed.end);
+            let added = changed.start..self.split.ranges.len().saturating_sub(after);
+            let text = self.text();
+            self.cache.statements_edited(
+                self.split
+                    .ranges
+                    .get(added)
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|range| text.get(std::ops::Range::<usize>::from(*range))),
+            );
+        }
         // The statements around the change that are no longer in the document drop what was
         // cached for them, with the statements of their function bodies. The other statements
         // have the same text as before.
@@ -279,6 +295,16 @@ impl Document {
     /// The ranges of the top-level statements, in file order.
     pub fn statement_ranges(&self) -> &[TextRange] {
         &self.split.ranges
+    }
+
+    /// The text and the range of each top-level statement, in file order.
+    #[cfg(feature = "db")]
+    pub(crate) fn top_level_statements(&self) -> impl Iterator<Item = (&str, TextRange)> {
+        let text = self.text();
+        self.split
+            .ranges
+            .iter()
+            .filter_map(|range| Some((text.get(std::ops::Range::<usize>::from(*range))?, *range)))
     }
 
     pub fn get_document_content(&self) -> &str {
