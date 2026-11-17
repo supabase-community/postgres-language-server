@@ -1250,9 +1250,9 @@ mod tests {
         let settings = |json: &str| {
             let partial: pgls_configuration::splinter::PartialSplinterConfiguration =
                 serde_json::from_str(json).unwrap();
-            SplinterSettings::try_from(
-                pgls_configuration::splinter::SplinterConfiguration::from(partial),
-            )
+            SplinterSettings::try_from(pgls_configuration::splinter::SplinterConfiguration::from(
+                partial,
+            ))
         };
 
         assert!(settings(r#"{ "ignore": ["public.my_table", "audit.*"] }"#).is_ok());
