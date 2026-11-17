@@ -19,6 +19,7 @@ use pgls_workspace::configuration::{
     configure_project, is_searched_for_configuration,
 };
 use pgls_workspace::features;
+use pgls_workspace::features::diagnostics::DatabaseChecks;
 use pgls_workspace::settings::FilesSettings;
 use pgls_workspace::workspace::{
     FindProjectParams, ProjectKey, RegisterProjectFolderParams, UnregisterProjectFolderParams,
@@ -51,6 +52,10 @@ use tracing::{debug, error, info, warn};
 /// If another change arrives within the window the previous task is cancelled
 /// and the timer resets, so only one analysis run fires per burst.
 const DIAGNOSTIC_DEBOUNCE: Duration = Duration::from_millis(300);
+
+/// Debounce delay for the checks against the database after `textDocument/didSave`, so that a
+/// burst of saves, e.g. by an editor that saves automatically, runs them once.
+const DATABASE_CHECKS_DEBOUNCE: Duration = Duration::from_millis(500);
 
 /// How long the server waits after a configuration file changed before it reloads the
 /// configuration, so that a burst of changes causes one reload.
@@ -146,17 +151,25 @@ pub(crate) struct Session {
     #[cfg(test)]
     max_running_transitions: std::sync::atomic::AtomicUsize,
 
-    /// Per-URL abort handles for pending debounced diagnostic tasks.
+    /// Per-URL pending debounced diagnostic tasks.
     ///
-    /// When `did_change` fires, any in-flight handle for the URL is aborted
+    /// When `did_change` or `did_save` fires, any pending task for the URL is aborted
     /// before a new task is spawned. This ensures that only one analysis run
     /// fires at the end of a rapid-fire burst rather than one per keystroke.
-    diagnostic_debounce: Arc<Mutex<FxHashMap<ls_types::Uri, AbortHandle>>>,
+    diagnostic_debounce: Arc<Mutex<FxHashMap<ls_types::Uri, PendingDiagnostics>>>,
 
     /// Set when inlay hints or semantic tokens were requested while the database was
     /// unreachable. The next diagnostics run that finds it reachable asks the client to request
     /// them again.
     editor_features_without_database: AtomicBool,
+}
+
+/// A debounced diagnostic task that hasn't started yet.
+struct PendingDiagnostics {
+    handle: AbortHandle,
+    /// Whether it checks against the database. A change that replaces the task keeps a pending
+    /// check, see [`Session::schedule_diagnostics`].
+    database_checks: DatabaseChecks,
 }
 
 /// The parameters provided by the client in the "initialize" request
@@ -506,8 +519,16 @@ impl Session {
     /// Computes diagnostics for the file matching the provided url and publishes
     /// them to the client. Called from [`handlers::text_document`] when a file's
     /// contents changes.
+    ///
+    /// With [`DatabaseChecks::Reuse`], the checks against the database don't run: the
+    /// diagnostics of the unchanged statements are those of the last run. They run when the file
+    /// is opened or saved, and when the settings or the database schema change.
     #[tracing::instrument(level = "trace", skip_all, fields(url = display(url.as_str()), diagnostic_count), err)]
-    pub(crate) async fn update_diagnostics(&self, url: ls_types::Uri) -> Result<(), LspError> {
+    pub(crate) async fn update_diagnostics(
+        &self,
+        url: ls_types::Uri,
+        database_checks: DatabaseChecks,
+    ) -> Result<(), LspError> {
         let pgls_path = self.file_path(&url)?;
         let doc = self.document(&url)?;
         let captured_version = doc.version;
@@ -531,6 +552,7 @@ impl Session {
                 categories: categories.build(),
                 only: Vec::new(),
                 skip: Vec::new(),
+                database_checks,
             };
             let result = spawn_blocking(move || workspace.pull_file_diagnostics(params))
                 .await
@@ -636,26 +658,48 @@ impl Session {
     /// [`DIAGNOSTIC_DEBOUNCE`] before calling [`Self::update_diagnostics`].
     /// This prevents a rapid-fire `textDocument/didChange` burst from queuing
     /// one analysis run per keystroke.
-    pub(crate) fn schedule_diagnostics(self: &Arc<Self>, url: ls_types::Uri) {
-        // Cancel any pending task for this URL.
-        if let Some(handle) = self.diagnostic_debounce.lock().remove(&url) {
-            handle.abort();
-        }
+    ///
+    /// With [`DatabaseChecks::Run`], after a save, it waits [`DATABASE_CHECKS_DEBOUNCE`]. A
+    /// change while that task is pending replaces it with one that still checks against the
+    /// database, after [`DIAGNOSTIC_DEBOUNCE`]: the checks run once the user stops typing.
+    pub(crate) fn schedule_diagnostics(
+        self: &Arc<Self>,
+        url: ls_types::Uri,
+        database_checks: DatabaseChecks,
+    ) {
+        // Cancel any pending task for this URL, and keep its checks against the database.
+        let pending = self.diagnostic_debounce.lock().remove(&url);
+        let pending_checks = pending.map(|pending| {
+            pending.handle.abort();
+            pending.database_checks
+        });
+        let delay = match database_checks {
+            DatabaseChecks::Run => DATABASE_CHECKS_DEBOUNCE,
+            DatabaseChecks::Reuse => DIAGNOSTIC_DEBOUNCE,
+        };
+        let database_checks = match pending_checks {
+            Some(DatabaseChecks::Run) => DatabaseChecks::Run,
+            _ => database_checks,
+        };
 
         let session = Arc::clone(self);
         let url_clone = url.clone();
         let join_handle = tokio::spawn(async move {
-            tokio::time::sleep(DIAGNOSTIC_DEBOUNCE).await;
+            tokio::time::sleep(delay).await;
             // Remove our own entry so stale handles don't accumulate.
             session.diagnostic_debounce.lock().remove(&url_clone);
-            if let Err(err) = session.update_diagnostics(url_clone).await {
+            if let Err(err) = session.update_diagnostics(url_clone, database_checks).await {
                 error!("Failed to update diagnostics: {}", err);
             }
         });
 
-        self.diagnostic_debounce
-            .lock()
-            .insert(url, join_handle.abort_handle());
+        self.diagnostic_debounce.lock().insert(
+            url,
+            PendingDiagnostics {
+                handle: join_handle.abort_handle(),
+                database_checks,
+            },
+        );
     }
 
     /// Cancels any pending debounced diagnostic task for `url`.
@@ -663,8 +707,8 @@ impl Session {
     /// Called from `did_close` to ensure no diagnostics are published after
     /// the document has been closed.
     pub(crate) fn cancel_pending_diagnostics(&self, url: &ls_types::Uri) {
-        if let Some(handle) = self.diagnostic_debounce.lock().remove(url) {
-            handle.abort();
+        if let Some(pending) = self.diagnostic_debounce.lock().remove(url) {
+            pending.handle.abort();
         }
     }
 
@@ -675,7 +719,7 @@ impl Session {
             .documents
             .read()
             .keys()
-            .map(|url| self.update_diagnostics(url.clone()))
+            .map(|url| self.update_diagnostics(url.clone(), DatabaseChecks::Run))
             .collect();
 
         while let Some(result) = futures.next().await {

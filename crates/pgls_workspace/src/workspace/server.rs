@@ -13,6 +13,8 @@ use crate::features::code_actions::execute_statement::{
     execution,
     running::{RUNNING_STATEMENTS_MAX, RunningStatements},
 };
+#[cfg(feature = "db")]
+use crate::features::diagnostics::DatabaseChecks;
 use analyser::AnalyserVisitorBuilder;
 use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
@@ -26,6 +28,8 @@ use document::TypecheckDiagnosticsMapper;
 use document::{Document, ExecuteStatementMapper};
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
+#[cfg(feature = "db")]
+use document_cache::{DatabaseResults, StatementDatabaseResult};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use parking_lot::{Mutex, RwLock};
@@ -428,7 +432,10 @@ impl WorkspaceServer {
     }
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
-    /// unchanged database objects, and plpgsql_check.
+    /// unchanged database objects, and plpgsql_check. With [`DatabaseChecks::Run`] it checks the
+    /// statements and keeps the results of each one in the document, with
+    /// [`DatabaseChecks::Reuse`] it returns what the last run found for the statements that are
+    /// unchanged since.
     ///
     /// `None` if `should_stop` stopped it: no new check starts then, and the ones that run
     /// finish, since a query can't be stopped half way through.
@@ -439,20 +446,33 @@ impl WorkspaceServer {
         path: &PgLSPath,
         doc: &Document,
         analysis: &DocumentAnalysis,
+        checks: DatabaseChecks,
         should_stop: &dyn Fn() -> bool,
     ) -> Result<Option<DatabaseDiagnostics>, WorkspaceError> {
+        if checks == DatabaseChecks::Reuse {
+            let (diagnostics, plpgsql_checked) = doc.reused_database_results();
+            return Ok(Some(DatabaseDiagnostics {
+                diagnostics,
+                plpgsql_checked,
+            }));
+        }
+
         let typecheck_enabled = settings.typecheck.enabled;
         let plpgsql_check = settings.plpgsql_check.clone();
         if !typecheck_enabled && !plpgsql_check.enabled {
+            doc.cache()
+                .set_database_results(DatabaseResults::default(), doc.generation());
             return Ok(Some(DatabaseDiagnostics::default()));
         }
 
         let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
             let snapshot = self.snapshot.load(pool)?;
+            // Only top-level statements are checked: the static typecheck rules cover the
+            // statements of SQL function bodies, whose parameters they resolve.
             let input = doc
                 .iter(TypecheckDiagnosticsMapper)
-                .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
+                .filter(|(id, range, ..)| !id.is_child() && !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
                     let statement = analysis
                         .statements()
@@ -477,48 +497,50 @@ impl WorkspaceServer {
                             let plpgsql_check = plpgsql_check.clone();
 
                             async move {
-                                let mut diagnostics = Vec::new();
-                                let mut plpgsql_checked = None;
+                                let mut result = StatementDatabaseResult::default();
+                                // The spans are relative to the statement, see `DatabaseResults`.
+                                let relative = |span: TextRange| {
+                                    span.checked_sub(range.start())
+                                        .unwrap_or(TextRange::up_to(range.len()))
+                                };
+                                let path = path.as_path().display().to_string();
                                 let Some(ast) = ast else {
-                                    return Ok((diagnostics, plpgsql_checked));
+                                    return Ok((id, range, result));
                                 };
 
-                                // The static typecheck rules cover everything else, including the
-                                // statements of SQL function bodies, whose parameters they resolve.
                                 let statement = statement.filter(|statement| {
-                                    typecheck_enabled && statement.database_only && !id.is_child()
+                                    typecheck_enabled && statement.database_only
                                 });
                                 if let Some(statement) = statement {
                                     let conversion =
                                         convert_to_positional_params_with_metadata(id.content());
 
                                     if !conversion.has_identifier_parameters {
-                                        let result = pgls_typecheck::check_sql(TypecheckParams {
-                                            conn: &pool,
-                                            sql: conversion.sql.as_str(),
-                                            ast: &ast,
-                                            tree: &cst,
-                                            snapshot: snapshot.as_ref(),
-                                            search_path: &statement.search_path,
-                                            identifiers: Vec::new(),
-                                            duplicate_assignments_reported: statement
-                                                .has_duplicate_assignments,
-                                        })
-                                        .await?;
+                                        let typecheck =
+                                            pgls_typecheck::check_sql(TypecheckParams {
+                                                conn: &pool,
+                                                sql: conversion.sql.as_str(),
+                                                ast: &ast,
+                                                tree: &cst,
+                                                snapshot: snapshot.as_ref(),
+                                                search_path: &statement.search_path,
+                                                identifiers: Vec::new(),
+                                                duplicate_assignments_reported: statement
+                                                    .has_duplicate_assignments,
+                                            })
+                                            .await?;
 
-                                        if let Some(diagnostic) = result {
+                                        if let Some(diagnostic) = typecheck {
                                             let span = database_span(
                                                 diagnostic.location().span,
                                                 id.content(),
                                                 range,
                                             );
-                                            diagnostics.push(
+                                            result.diagnostics.push(SDiagnostic::new(
                                                 diagnostic
-                                                    .with_file_path(
-                                                        path.as_path().display().to_string(),
-                                                    )
-                                                    .with_file_span(span),
-                                            );
+                                                    .with_file_path(path.clone())
+                                                    .with_file_span(relative(span)),
+                                            ));
                                         }
                                     }
                                 }
@@ -551,27 +573,24 @@ impl WorkspaceServer {
                                     .ok()
                                     .flatten();
 
-                                    if results.is_some() {
-                                        plpgsql_checked = Some(range);
-                                    }
+                                    result.plpgsql_checked = results.is_some();
 
                                     for diagnostic in results.unwrap_or_default() {
                                         let span =
                                             database_span(diagnostic.span, id.content(), range);
-                                        diagnostics.push(
+                                        result.diagnostics.push(SDiagnostic::new(
                                             diagnostic
-                                                .with_file_path(
-                                                    path.as_path().display().to_string(),
-                                                )
-                                                .with_file_span(span),
-                                        );
+                                                .with_file_path(path.clone())
+                                                .with_file_span(relative(span)),
+                                        ));
                                     }
                                 }
 
-                                Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
+                                Ok::<_, sqlx::Error>((id, range, result))
                             }
                         })
-                        .buffer_unordered(10)
+                        // In document order, for `DatabaseResults`.
+                        .buffered(10)
                         .try_collect::<Vec<_>>()
                         .await
                 },
@@ -585,14 +604,17 @@ impl WorkspaceServer {
         }
 
         match db_diagnostics {
-            None => Ok(Some(DatabaseDiagnostics::default())),
-            Some(Ok(batches)) => {
-                let mut diagnostics = Vec::new();
-                let mut plpgsql_checked = Vec::new();
-                for (batch, checked) in batches {
-                    diagnostics.extend(batch.into_iter().map(SDiagnostic::new));
-                    plpgsql_checked.extend(checked);
-                }
+            None => {
+                doc.cache()
+                    .set_database_results(DatabaseResults::default(), doc.generation());
+                Ok(Some(DatabaseDiagnostics::default()))
+            }
+            Some(Ok(checked)) => {
+                // The diagnostics of this pull are the results it keeps, at the statements'
+                // places.
+                let results = DatabaseResults::new(checked);
+                let (diagnostics, plpgsql_checked) = results.reuse(doc.top_level_statements());
+                doc.cache().set_database_results(results, doc.generation());
                 Ok(Some(DatabaseDiagnostics {
                     diagnostics,
                     plpgsql_checked,
@@ -603,6 +625,8 @@ impl WorkspaceServer {
                 // unreachable, keep publishing parser/static diagnostics instead of
                 // failing the whole edit-triggered diagnostics request.
                 debug!("Skipping database-backed diagnostics: {err}");
+                doc.cache()
+                    .set_database_results(DatabaseResults::default(), doc.generation());
                 Ok(Some(DatabaseDiagnostics::default()))
             }
             Some(Err(err)) => Err(err),
@@ -1214,8 +1238,14 @@ impl Workspace for WorkspaceServer {
          */
         #[cfg(feature = "db")]
         let plpgsql_checked = {
-            let Some(database) =
-                self.database_diagnostics(settings, &params.path, doc, &analysis, &should_stop)?
+            let Some(database) = self.database_diagnostics(
+                settings,
+                &params.path,
+                doc,
+                &analysis,
+                params.database_checks,
+                &should_stop,
+            )?
             else {
                 // The document changed or the request was cancelled.
                 return Ok(PullDiagnosticsResult::default());

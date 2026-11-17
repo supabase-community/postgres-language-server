@@ -36,6 +36,7 @@ use crate::{
         EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
         ExecuteStatementResult, FixFileMode, FixFileParams, TextEdit,
     },
+    features::diagnostics::DatabaseChecks,
     features::format::PullFileFormattingParams,
     features::inlay_hints::{InlayHint, InlayHintKind, PullInlayHintsParams},
     features::on_hover::OnHoverParams,
@@ -120,6 +121,7 @@ async fn test_diagnostics(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -166,6 +168,7 @@ fn test_suppresses_multiline_alter_table_drop_column() {
             max_diagnostics: 100,
             only: vec!["safety/banDropColumn".parse().unwrap()],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -204,6 +207,7 @@ fn a_panic_while_the_workspace_is_locked_does_not_break_it() {
             max_diagnostics: 100,
             only: vec!["safety/banDropColumn".parse().unwrap()],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -248,6 +252,7 @@ fn migration_diagnostics(
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -367,6 +372,7 @@ fn marker_diagnostics(
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics
@@ -542,6 +548,7 @@ ALTER TABLE users DROP COLUMN deprecated_field;"#;
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -598,6 +605,7 @@ fn test_unreachable_database_diagnostics_keep_static_results_and_back_off() {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -669,6 +677,7 @@ async fn test_syntax_error(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -709,6 +718,7 @@ async fn named_parameter_normalization_preserves_syntax_diagnostic_offsets() {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -772,6 +782,7 @@ ordinality;
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -854,6 +865,7 @@ async fn correctly_ignores_files() {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         });
 
     assert!(
@@ -935,6 +947,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1009,6 +1022,7 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1066,6 +1080,7 @@ async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1123,11 +1138,133 @@ async fn test_positional_params(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
 
     assert_eq!(diagnostics.len(), 0, "Expected no diagnostic");
+}
+
+/// The text of each plpgsql_check diagnostic of `content`, the open content of `path`.
+fn plpgsql_check_findings(
+    workspace: &WorkspaceServer,
+    project_key: ProjectKey,
+    path: &PgLSPath,
+    content: &str,
+    database_checks: DatabaseChecks,
+) -> Vec<String> {
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+            database_checks,
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics
+        .iter()
+        .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
+        .map(|d| {
+            let span = d.location().span.expect("a span");
+            content[std::ops::Range::<usize>::from(span)].to_string()
+        })
+        .collect()
+}
+
+/// A pull with `DatabaseChecks::Reuse` doesn't query the database. It reports what the last run
+/// found for the statements whose text is unchanged, where they are now, and nothing for an
+/// edited statement until the next run.
+#[cfg(all(test, not(target_os = "windows")))]
+#[pgls_test_utils::db_test]
+async fn test_database_checks_reuse_the_results_of_unchanged_statements(test_db: PgPool) {
+    test_db
+        .execute("CREATE EXTENSION IF NOT EXISTS plpgsql_check;")
+        .await
+        .expect("setup sql failed");
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let function = |variable: &str| {
+        format!(
+            "CREATE FUNCTION public.f1() RETURNS int LANGUAGE plpgsql AS $$\nBEGIN\n    RETURN {variable};\nEND;\n$$;\n"
+        )
+    };
+    let findings = |content: &str, checks| {
+        plpgsql_check_findings(&workspace, project_key, &path, content, checks)
+    };
+    let change = |content: &str, version| {
+        workspace
+            .change_file(crate::workspace::ChangeFileParams {
+                project_key,
+                path: path.clone(),
+                version,
+                content: content.to_string(),
+            })
+            .expect("Unable to change the file");
+    };
+
+    let content = function("missing_one");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    let found = findings(&content, DatabaseChecks::Run);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("missing_one"), "{found:?}");
+
+    // A statement before it moves the result.
+    let content = format!("select 1;\n{}", function("missing_one"));
+    change(&content, 2);
+    assert_eq!(findings(&content, DatabaseChecks::Reuse), found);
+
+    // The edited function has no result until the next run.
+    let content = format!("select 1;\n{}", function("missing_two"));
+    change(&content, 3);
+    assert_eq!(
+        findings(&content, DatabaseChecks::Reuse),
+        Vec::<String>::new()
+    );
+    let found = findings(&content, DatabaseChecks::Run);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].contains("missing_two"), "{found:?}");
+
+    // Without the extension, a run finds nothing, but a pull that reuses the results doesn't
+    // query the database.
+    test_db
+        .execute("DROP EXTENSION plpgsql_check;")
+        .await
+        .expect("Unable to drop plpgsql_check");
+    assert_eq!(findings(&content, DatabaseChecks::Reuse), found);
+    assert_eq!(
+        findings(&content, DatabaseChecks::Run),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        findings(&content, DatabaseChecks::Reuse),
+        Vec::<String>::new()
+    );
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
@@ -1187,6 +1324,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1223,6 +1361,7 @@ async fn test_disable_plpgsql_check(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1286,6 +1425,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1319,6 +1459,7 @@ async fn test_disable_typecheck(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1371,6 +1512,7 @@ async fn test_create_as_typecheck_diagnostic_offsets(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1455,6 +1597,7 @@ SELECT missing_column FROM named_parameter_typecheck_users;
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -1521,6 +1664,7 @@ fn typecheck_diagnostics(
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics
@@ -1711,6 +1855,7 @@ FOR NO KEY UPDATE;
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -2064,6 +2209,7 @@ async fn test_cstyle_comments(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -2126,6 +2272,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics;
@@ -2174,6 +2321,7 @@ async fn test_search_path_configuration(test_db: PgPool) {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics;
@@ -3093,6 +3241,7 @@ async fn executed_ddl_refreshes_the_snapshot(test_db: PgPool) {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -3287,6 +3436,7 @@ fn document_caches_stay_within_the_budget() {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -3348,6 +3498,7 @@ fn executing_a_statement_charges_the_document_caches() {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics");
     assert_eq!(
@@ -3428,6 +3579,7 @@ fn code_actions_reuse_the_analysis() {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics");
     let analysis = cached().expect("the analysis of the diagnostics");
@@ -4532,6 +4684,7 @@ fn suppress(content: &str, cursor: usize, rule: &str) -> (TextEdit, usize) {
             max_diagnostics: 100,
             only: vec![rule.parse().unwrap()],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics
@@ -4729,6 +4882,7 @@ impl TestProject {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -5707,6 +5861,7 @@ async fn test_sql_function_bodies(test_db: PgPool) {
             max_diagnostics: 100,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .expect("Unable to pull diagnostics")
         .diagnostics;
@@ -5786,6 +5941,7 @@ fn test_goose_envsub_follows_settings_changes() {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -6024,6 +6180,7 @@ async fn lint_hover_and_completions_see_the_same_catalog(test_db: PgPool) {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -6619,6 +6776,7 @@ async fn test_cancelled_analysis_stops() {
                 max_diagnostics: 1_000,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -6681,6 +6839,7 @@ fn test_edit_during_analysis_does_not_wait_for_it() {
                 max_diagnostics: 1_000,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
@@ -6924,6 +7083,7 @@ async fn test_cancelled_database_diagnostics_stop(test_db: PgPool) {
                 max_diagnostics: 1_000,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
             .diagnostics

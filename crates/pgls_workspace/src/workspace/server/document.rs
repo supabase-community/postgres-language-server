@@ -281,6 +281,27 @@ impl Document {
         &self.split.ranges
     }
 
+    /// The text and the range of each top-level statement, in file order.
+    #[cfg(feature = "db")]
+    pub(crate) fn top_level_statements(&self) -> impl Iterator<Item = (&str, TextRange)> {
+        let text = self.text();
+        self.split
+            .ranges
+            .iter()
+            .filter_map(|range| Some((text.get(std::ops::Range::<usize>::from(*range))?, *range)))
+    }
+
+    /// What the last run of the database checks found for the statements that are unchanged
+    /// since, at their places in this content, see [`DatabaseResults::reuse`].
+    ///
+    /// [`DatabaseResults::reuse`]: super::document_cache::DatabaseResults::reuse
+    #[cfg(feature = "db")]
+    pub(crate) fn reused_database_results(&self) -> super::document_cache::ReusedDatabaseResults {
+        self.cache
+            .database_results()
+            .reuse(self.top_level_statements())
+    }
+
     pub fn get_document_content(&self) -> &str {
         &self.content
     }

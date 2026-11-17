@@ -55,10 +55,10 @@ use tower_lsp_server::ls_types::WorkspaceFolder;
 use tower_lsp_server::ls_types::{
     ClientCapabilities, DidChangeConfigurationParams, DidChangeTextDocumentParams,
     DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, FileChangeType, FileEvent, InitializeResult, InitializedParams,
-    PublishDiagnosticsParams, ShowMessageParams, TextDocumentContentChangeEvent,
-    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
-    WorkspaceFoldersChangeEvent,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, FileChangeType, FileEvent,
+    InitializeResult, InitializedParams, PublishDiagnosticsParams, ShowMessageParams,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
+    VersionedTextDocumentIdentifier, WorkspaceFoldersChangeEvent,
 };
 use tower_lsp_server::{jsonrpc::Request, ls_types::InitializeParams};
 
@@ -378,6 +378,19 @@ impl Server {
     ) -> Result<()> {
         self.change_named_document(url!("document.sql"), version, content_changes)
             .await
+    }
+
+    async fn save_document(&mut self) -> Result<()> {
+        self.notify(
+            "textDocument/didSave",
+            DidSaveTextDocumentParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                text: None,
+            },
+        )
+        .await
     }
 
     #[allow(unused)]
@@ -1251,6 +1264,112 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
         bail!("expected semantic tokens, got {in_range:?}");
     };
     assert_eq!(in_range.data, tokens.data);
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The checks against the database run when a document is opened or saved. A change reuses what
+/// they found for the statements it didn't touch, without querying the database.
+#[cfg(not(target_os = "windows"))]
+#[pgls_test_utils::db_test]
+async fn database_checks_run_on_open_and_save(test_db: PgPool) -> Result<()> {
+    const FUNCTION: &str = "create function public.f1() returns int language plpgsql as $$
+begin
+    return missing_var;
+end;
+$$;
+";
+    let is_plpgsql_check = |diagnostic: &lsp::Diagnostic| {
+        matches!(
+            &diagnostic.code,
+            Some(lsp::NumberOrString::String(code)) if code == "plpgsql_check"
+        )
+    };
+
+    test_db
+        .execute("create extension if not exists plpgsql_check;")
+        .await
+        .expect("Failed to setup test database");
+
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    server.open_document(FUNCTION).await?;
+    assert!(
+        wait_for_diagnostics(&mut receiver, 0)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_plpgsql_check),
+        "opening the document checks it against the database"
+    );
+
+    // From now on, checking against the database finds nothing.
+    test_db
+        .execute("drop extension plpgsql_check;")
+        .await
+        .expect("Failed to drop plpgsql_check");
+
+    drain_notifications(&mut receiver);
+    server
+        .replace_document(1, format!("select 1;\n{FUNCTION}"))
+        .await?;
+    let changed = wait_for_diagnostics(&mut receiver, 1).await?;
+    let reused: Vec<_> = changed
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| is_plpgsql_check(diagnostic))
+        .collect();
+    assert_eq!(reused.len(), 1, "a change reuses the result: {changed:?}");
+    // The statement moved down by a line.
+    assert_eq!(reused[0].range.start.line, 3, "{reused:?}");
+
+    drain_notifications(&mut receiver);
+    server.save_document().await?;
+    assert!(
+        !wait_for_diagnostics(&mut receiver, 1)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_plpgsql_check),
+        "saving the document checks it against the database again"
+    );
 
     server.shutdown().await?;
     reader.abort();
