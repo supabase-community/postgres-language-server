@@ -17,6 +17,41 @@ fn check_default_reporter_snapshot() {
     assert_snapshot!(run_check(&["tests/fixtures/test.sql"]));
 }
 
+/// `check . | head` closes stdout before the CLI is done printing. The CLI drops the rest of the
+/// output instead of panicking, and exits as it would have otherwise.
+#[cfg(unix)]
+#[test]
+fn check_into_a_closed_pipe_does_not_panic() {
+    let args = [
+        "check",
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--disable-db",
+        "tests/fixtures/test.sql",
+    ];
+    let expected = cargo_bin_cmd!("postgres-language-server")
+        .args(args)
+        .output()
+        .expect("failed to run CLI");
+
+    let mut child =
+        std::process::Command::new(assert_cmd::cargo::cargo_bin!("postgres-language-server"))
+            .args(args)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("failed to run CLI");
+    // Close the read end before the CLI writes anything, like `head` after its last line.
+    drop(child.stdout.take());
+    let output = child.wait_with_output().expect("failed to run CLI");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert!(!stderr.contains("unexpected error"), "{stderr}");
+    assert_eq!(output.status.code(), expected.status.code(), "{stderr}");
+}
+
 #[test]
 #[cfg_attr(
     target_os = "windows",
