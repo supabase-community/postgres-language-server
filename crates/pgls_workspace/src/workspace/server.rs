@@ -19,8 +19,6 @@ use analysis::AnalysisRequest;
 #[cfg(feature = "db")]
 use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
-use async_helper::{run_async, run_async_until};
-#[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
 use document::Document;
 #[cfg(feature = "db")]
@@ -35,6 +33,8 @@ use pgls_analyse::AnalysisFilter;
 use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
+#[cfg(feature = "db")]
+use runtime::WorkspaceRuntime;
 
 use pgls_catalog::Snapshot;
 use pgls_configuration::inlay_hints::ParameterNameHints;
@@ -72,18 +72,16 @@ use crate::{
 };
 
 use super::{
-    FindProjectParams, GetFileContentParams, IsPathIgnoredParams, NestedSettingsError,
-    OpenFileParams, ProjectKey, RegisterProjectFolderParams, ServerInfo,
-    UnregisterProjectFolderParams, UpdateNestedSettingsParams, UpdateNestedSettingsResult,
-    UpdateSettingsParams, Workspace,
+    FindProjectParams, GetFileContentParams, InvalidateSchemaCacheParams, IsPathIgnoredParams,
+    NestedSettingsError, OpenFileParams, ProjectKey, RegisterProjectFolderParams, SchemaCacheScope,
+    ServerInfo, UnregisterProjectFolderParams, UpdateNestedSettingsParams,
+    UpdateNestedSettingsResult, UpdateSettingsParams, Workspace,
 };
 
 pub use statement_identifier::StatementId;
 
 mod analyser;
 mod analysis;
-#[cfg(feature = "db")]
-mod async_helper;
 #[cfg(feature = "db")]
 mod backoff;
 #[cfg(feature = "db")]
@@ -103,6 +101,8 @@ mod formatting;
 mod last_used;
 #[cfg(feature = "db")]
 mod pgpass;
+#[cfg(feature = "db")]
+mod runtime;
 mod snapshot_manager;
 mod sql_function;
 mod statement_identifier;
@@ -132,6 +132,10 @@ pub struct WorkspaceServer {
     #[cfg(feature = "db")]
     connection: ConnectionManager,
 
+    /// Where the database queries run, and the clock of their backoffs and idle timeouts
+    #[cfg(feature = "db")]
+    runtime: Arc<WorkspaceRuntime>,
+
     /// The statements that are being executed, to cancel them
     #[cfg(feature = "db")]
     running_statements: RunningStatements,
@@ -157,17 +161,36 @@ impl Default for WorkspaceServer {
 }
 
 impl WorkspaceServer {
-    /// Create a new [Workspace]
+    /// Create a new [Workspace]. Its database queries run on a runtime of its own, which it
+    /// creates on first use.
     #[cfg(feature = "db")]
     pub fn new() -> Self {
+        Self::on(WorkspaceRuntime::new())
+    }
+
+    /// Create a new [Workspace] whose database queries run on the runtime of `handle`, and whose
+    /// backoffs and idle timeouts read its clock, which a test can pause and move forward.
+    ///
+    /// The workspace waits for its queries on the thread that calls it. Call it from a thread
+    /// that doesn't drive a current-thread runtime of `handle`, e.g. from its `spawn_blocking`
+    /// threads, as the language server does.
+    #[cfg(feature = "db")]
+    pub fn with_runtime(handle: tokio::runtime::Handle) -> Self {
+        Self::on(WorkspaceRuntime::with_handle(handle))
+    }
+
+    #[cfg(feature = "db")]
+    fn on(runtime: WorkspaceRuntime) -> Self {
+        let runtime = Arc::new(runtime);
         Self {
             settings: RwLock::default(),
             documents: RwLock::new(HashMap::new()),
-            snapshot: SnapshotManager::new(),
+            snapshot: SnapshotManager::new(Arc::clone(&runtime)),
             catalog_base: Mutex::default(),
             settings_version: AtomicU64::default(),
             document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
-            connection: ConnectionManager::new(),
+            connection: ConnectionManager::new(Arc::clone(&runtime)),
+            runtime,
             running_statements: RunningStatements::default(),
             #[cfg(test)]
             walked_statements: Default::default(),
@@ -456,11 +479,7 @@ impl WorkspaceServer {
                 .iter(TypecheckDiagnosticsMapper)
                 .filter(|(_, range, ..)| !analysis.is_skipped(range.start()))
                 .map(|(id, range, ast, cst)| {
-                    let statement = analysis
-                        .statements()
-                        .iter()
-                        .find(|statement| statement.range == range)
-                        .cloned();
+                    let statement = analysis.statement(range).cloned();
                     (id, range, ast, cst, statement)
                 })
                 .collect::<Vec<_>>();
@@ -468,52 +487,105 @@ impl WorkspaceServer {
             let path = path.clone();
             let stopped = Arc::clone(&stop);
 
-            run_async_until(
-                async move {
-                    stream::iter(input)
-                        .take_while(move |_| std::future::ready(!stopped.load(Ordering::Relaxed)))
-                        .map(|(id, range, ast, cst, statement)| {
-                            let pool = pool.clone();
-                            let path = path.clone();
-                            let snapshot = Arc::clone(&snapshot);
-                            let plpgsql_check = plpgsql_check.clone();
+            self.runtime
+                .run_until(
+                    async move {
+                        stream::iter(input)
+                            .take_while(move |_| {
+                                std::future::ready(!stopped.load(Ordering::Relaxed))
+                            })
+                            .map(|(id, range, ast, cst, statement)| {
+                                let pool = pool.clone();
+                                let path = path.clone();
+                                let snapshot = Arc::clone(&snapshot);
+                                let plpgsql_check = plpgsql_check.clone();
 
-                            async move {
-                                let mut diagnostics = Vec::new();
-                                let mut plpgsql_checked = None;
-                                let Some(ast) = ast else {
-                                    return Ok((diagnostics, plpgsql_checked));
-                                };
+                                async move {
+                                    let mut diagnostics = Vec::new();
+                                    let mut plpgsql_checked = None;
+                                    let Some(ast) = ast else {
+                                        return Ok((diagnostics, plpgsql_checked));
+                                    };
 
-                                // The static typecheck rules cover everything else, including the
-                                // statements of SQL function bodies, whose parameters they resolve.
-                                let statement = statement.filter(|statement| {
-                                    typecheck_enabled && statement.database_only && !id.is_child()
-                                });
-                                if let Some(statement) = statement {
-                                    let conversion =
-                                        convert_to_positional_params_with_metadata(id.content());
+                                    // The static typecheck rules cover everything else, including the
+                                    // statements of SQL function bodies, whose parameters they resolve.
+                                    let statement = statement.filter(|statement| {
+                                        typecheck_enabled
+                                            && statement.database_only
+                                            && !id.is_child()
+                                    });
+                                    if let Some(statement) = statement {
+                                        let conversion = convert_to_positional_params_with_metadata(
+                                            id.content(),
+                                        );
 
-                                    if !conversion.has_identifier_parameters {
-                                        let result = pgls_typecheck::check_sql(TypecheckParams {
-                                            conn: &pool,
-                                            sql: conversion.sql.as_str(),
-                                            ast: &ast,
-                                            tree: &cst,
-                                            snapshot: snapshot.as_ref(),
-                                            search_path: &statement.search_path,
-                                            identifiers: Vec::new(),
-                                            duplicate_assignments_reported: statement
-                                                .has_duplicate_assignments,
-                                        })
-                                        .await?;
+                                        if !conversion.has_identifier_parameters {
+                                            let result =
+                                                pgls_typecheck::check_sql(TypecheckParams {
+                                                    conn: &pool,
+                                                    sql: conversion.sql.as_str(),
+                                                    ast: &ast,
+                                                    tree: &cst,
+                                                    snapshot: snapshot.as_ref(),
+                                                    search_path: &statement.search_path,
+                                                    identifiers: Vec::new(),
+                                                    duplicate_assignments_reported: statement
+                                                        .has_duplicate_assignments,
+                                                })
+                                                .await?;
 
-                                        if let Some(diagnostic) = result {
-                                            let span = database_span(
-                                                diagnostic.location().span,
-                                                id.content(),
-                                                range,
-                                            );
+                                            if let Some(diagnostic) = result {
+                                                let span = database_span(
+                                                    diagnostic.location().span,
+                                                    id.content(),
+                                                    range,
+                                                );
+                                                diagnostics.push(
+                                                    diagnostic
+                                                        .with_file_path(
+                                                            path.as_path().display().to_string(),
+                                                        )
+                                                        .with_file_span(span),
+                                                );
+                                            }
+                                        }
+                                    }
+
+                                    if plpgsql_check.enabled {
+                                        let results = pgls_plpgsql_check::check_plpgsql(
+                                            pgls_plpgsql_check::PlPgSqlCheckParams {
+                                                conn: &pool,
+                                                sql: id.content(),
+                                                ast: &ast,
+                                                snapshot: snapshot.as_ref(),
+                                                fatal_errors: plpgsql_check.fatal_errors,
+                                                other_warnings: plpgsql_check.other_warnings,
+                                                extra_warnings: plpgsql_check.extra_warnings,
+                                                performance_warnings: plpgsql_check
+                                                    .performance_warnings,
+                                                security_warnings: plpgsql_check.security_warnings,
+                                                compatibility_warnings: plpgsql_check
+                                                    .compatibility_warnings,
+                                                without_warnings: plpgsql_check.without_warnings,
+                                                all_warnings: plpgsql_check.all_warnings,
+                                                use_incomment_options: plpgsql_check
+                                                    .use_incomment_options,
+                                                incomment_options_usage_warning: plpgsql_check
+                                                    .incomment_options_usage_warning,
+                                                constant_tracing: plpgsql_check.constant_tracing,
+                                            },
+                                        )
+                                        .await
+                                        .ok()
+                                        .flatten();
+
+                                        if results.is_some() {
+                                            plpgsql_checked = Some(range);
+                                        }
+
+                                        for diagnostic in results.unwrap_or_default() {
+                                            let span =
+                                                database_span(diagnostic.span, id.content(), range);
                                             diagnostics.push(
                                                 diagnostic
                                                     .with_file_path(
@@ -523,64 +595,18 @@ impl WorkspaceServer {
                                             );
                                         }
                                     }
+
+                                    Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
                                 }
-
-                                if plpgsql_check.enabled {
-                                    let results = pgls_plpgsql_check::check_plpgsql(
-                                        pgls_plpgsql_check::PlPgSqlCheckParams {
-                                            conn: &pool,
-                                            sql: id.content(),
-                                            ast: &ast,
-                                            snapshot: snapshot.as_ref(),
-                                            fatal_errors: plpgsql_check.fatal_errors,
-                                            other_warnings: plpgsql_check.other_warnings,
-                                            extra_warnings: plpgsql_check.extra_warnings,
-                                            performance_warnings: plpgsql_check
-                                                .performance_warnings,
-                                            security_warnings: plpgsql_check.security_warnings,
-                                            compatibility_warnings: plpgsql_check
-                                                .compatibility_warnings,
-                                            without_warnings: plpgsql_check.without_warnings,
-                                            all_warnings: plpgsql_check.all_warnings,
-                                            use_incomment_options: plpgsql_check
-                                                .use_incomment_options,
-                                            incomment_options_usage_warning: plpgsql_check
-                                                .incomment_options_usage_warning,
-                                            constant_tracing: plpgsql_check.constant_tracing,
-                                        },
-                                    )
-                                    .await
-                                    .ok()
-                                    .flatten();
-
-                                    if results.is_some() {
-                                        plpgsql_checked = Some(range);
-                                    }
-
-                                    for diagnostic in results.unwrap_or_default() {
-                                        let span =
-                                            database_span(diagnostic.span, id.content(), range);
-                                        diagnostics.push(
-                                            diagnostic
-                                                .with_file_path(
-                                                    path.as_path().display().to_string(),
-                                                )
-                                                .with_file_span(span),
-                                        );
-                                    }
-                                }
-
-                                Ok::<_, sqlx::Error>((diagnostics, plpgsql_checked))
-                            }
-                        })
-                        .buffer_unordered(10)
-                        .try_collect::<Vec<_>>()
-                        .await
-                },
-                &stop,
-                should_stop,
-            )?
-            .map_err(WorkspaceError::from)
+                            })
+                            .buffer_unordered(10)
+                            .try_collect::<Vec<_>>()
+                            .await
+                    },
+                    &stop,
+                    should_stop,
+                )?
+                .map_err(WorkspaceError::from)
         });
         if stop.load(Ordering::Relaxed) {
             return Ok(None);
@@ -1075,10 +1101,13 @@ impl Workspace for WorkspaceServer {
 
         let result = self.connection.with_pools(&db, |pools| {
             let statement_pools = pools.clone();
-            let result = run_async(async move {
-                execution::execute_statement(&statement_pools, &content, options, cancelled).await
-            })?
-            .map_err(WorkspaceError::from)?;
+            let result = self
+                .runtime
+                .run(async move {
+                    execution::execute_statement(&statement_pools, &content, options, cancelled)
+                        .await
+                })?
+                .map_err(WorkspaceError::from)?;
 
             // Diagnostics, completions and hover should see the objects the statement created.
             if result.error.is_none() && execution::may_change_schema(&ast) {
@@ -1134,8 +1163,11 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(feature = "db")]
-    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError> {
-        if all {
+    fn invalidate_schema_cache(
+        &self,
+        params: InvalidateSchemaCacheParams,
+    ) -> Result<(), WorkspaceError> {
+        if params.scope == SchemaCacheScope::All {
             // Clear all schemas - both db-loaded and json-loaded
             // DB completions always take precedence when a connection is available,
             // so clearing the json schema keeps behavior consistent
@@ -1148,7 +1180,10 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(not(feature = "db"))]
-    fn invalidate_schema_cache(&self, _all: bool) -> Result<(), WorkspaceError> {
+    fn invalidate_schema_cache(
+        &self,
+        _params: InvalidateSchemaCacheParams,
+    ) -> Result<(), WorkspaceError> {
         self.snapshot.clear_all();
         Ok(())
     }
@@ -1339,7 +1374,7 @@ impl Workspace for WorkspaceServer {
             };
 
             let pool = pool.clone();
-            let splinter_result = run_async(async move {
+            let splinter_result = self.runtime.run(async move {
                 let filter = AnalysisFilter {
                     categories,
                     enabled_rules: Some(enabled_rules.as_slice()),
