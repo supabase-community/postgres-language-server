@@ -319,7 +319,7 @@ impl Settings {
 
         // splinter part
         if let Some(splinter) = configuration.splinter {
-            self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter));
+            self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter))?;
         }
 
         // formatter part
@@ -423,12 +423,17 @@ fn to_linter_settings(
     })
 }
 
-fn to_splinter_settings(conf: SplinterConfiguration) -> SplinterSettings {
-    SplinterSettings {
+/// ## Errors
+///
+/// An ignore pattern that isn't a valid glob.
+fn to_splinter_settings(conf: SplinterConfiguration) -> Result<SplinterSettings, WorkspaceError> {
+    conf.get_global_ignore_matcher()?;
+    conf.rules.get_ignore_matchers()?;
+    Ok(SplinterSettings {
         enabled: conf.enabled,
         ignore: conf.ignore,
         rules: Some(conf.rules),
-    }
+    })
 }
 
 fn to_formatter_settings(
@@ -1229,8 +1234,32 @@ mod tests {
     use pgls_configuration::StringSet;
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
-    use super::{DatabaseSettings, Settings, WorkspaceSettings, migrations_problems};
+    use super::{
+        DatabaseSettings, Settings, WorkspaceSettings, migrations_problems, to_splinter_settings,
+    };
     use crate::workspace::ProjectKey;
+
+    /// An invalid splinter ignore pattern is a configuration error, globally and per rule. It
+    /// used to be dropped without a message.
+    #[test]
+    fn reports_an_invalid_splinter_ignore_pattern() {
+        let settings = |json: &str| {
+            let partial: pgls_configuration::splinter::PartialSplinterConfiguration =
+                serde_json::from_str(json).unwrap();
+            to_splinter_settings(partial.into())
+        };
+
+        assert!(settings(r#"{ "ignore": ["public.my_table", "audit.*"] }"#).is_ok());
+        assert!(settings(r#"{ "ignore": ["public.[a"] }"#).is_err());
+        assert!(
+            settings(
+                r#"{ "rules": { "performance": { "noPrimaryKey": {
+                    "level": "warn", "options": { "ignore": ["public.***"] }
+                } } } }"#
+            )
+            .is_err()
+        );
+    }
 
     #[test]
     fn reports_an_after_that_is_not_a_version_of_the_tool() {

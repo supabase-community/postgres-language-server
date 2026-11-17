@@ -53,14 +53,15 @@ impl Matcher {
 
     /// It matches the given string against the stored patterns.
     ///
-    /// It returns [true] if there's at least a match
+    /// It returns [true] if at least one pattern matches the whole string: `public.users` doesn't
+    /// match `public.users_archive`.
     pub fn matches(&self, source: &str) -> bool {
         let mut already_ignored = self.already_checked.write().unwrap();
         if let Some(matches) = already_ignored.get(source) {
             return *matches;
         }
         for pattern in &self.patterns {
-            if pattern.matches_with(source, self.options) || source.contains(pattern.as_str()) {
+            if pattern.matches_with(source, self.options) {
                 already_ignored.insert(source.to_string(), true);
                 return true;
             }
@@ -149,6 +150,20 @@ mod test {
         let result = ignore.matches(path.to_str().unwrap());
 
         assert!(result);
+    }
+
+    /// A pattern matches the whole string, not a part of it.
+    #[test]
+    fn matches_the_whole_string() {
+        let mut ignore = Matcher::new(MatchOptions::default());
+        ignore.add_pattern("public.my_table").unwrap();
+        ignore.add_pattern("*.temp_*").unwrap();
+
+        assert!(ignore.matches("public.my_table"));
+        assert!(!ignore.matches("public.my_table_archive"));
+        assert!(!ignore.matches("xpublic.my_table"));
+        assert!(ignore.matches("public.temp_users"));
+        assert!(!ignore.matches("temp_users"));
     }
 
     #[test]
