@@ -11,13 +11,12 @@ use crate::{output::QueryOutput, scope::Level, utils::resolve_expr};
 ///
 /// [`transformDeleteStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L553
 pub(super) fn resolve_delete_stmt(r: &mut Resolver, n: &DeleteStmt) -> Option<QueryOutput> {
-    let output = r.with_ctes(|r| {
+    r.with_ctes(|r| {
         if let Some(with) = &n.with_clause {
             resolve_with_clause(r, with);
         }
         resolve_delete(r, n)
-    });
-    output
+    })
 }
 
 fn resolve_delete(r: &mut Resolver, n: &DeleteStmt) -> Option<QueryOutput> {

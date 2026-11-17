@@ -47,7 +47,7 @@ pub(super) fn resolve_insert_source(r: &mut Resolver, n: &SelectStmt) -> Option<
 fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Option<QueryOutput> {
     #[cfg(test)]
     RESOLVED_QUERIES.with(|count| count.set(count.get() + 1));
-    let output = r.with_ctes(|r| {
+    r.with_ctes(|r| {
         if let Some(with) = &n.with_clause {
             resolve_with_clause(r, with);
         }
@@ -59,8 +59,7 @@ fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Optio
         } else {
             resolve_select(r, n)
         }
-    });
-    output
+    })
 }
 
 /// Set operations take their column names from the left-most query and the common type of each

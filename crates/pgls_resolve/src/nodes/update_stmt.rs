@@ -15,13 +15,12 @@ use crate::{output::QueryOutput, scope::Level, utils::resolve_expr};
 /// [`transformUpdateStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2472
 /// [`transformUpdateTargetList`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2546
 pub(super) fn resolve_update_stmt(r: &mut Resolver, n: &UpdateStmt) -> Option<QueryOutput> {
-    let output = r.with_ctes(|r| {
+    r.with_ctes(|r| {
         if let Some(with) = &n.with_clause {
             resolve_with_clause(r, with);
         }
         resolve_update(r, n)
-    });
-    output
+    })
 }
 
 fn resolve_update(r: &mut Resolver, n: &UpdateStmt) -> Option<QueryOutput> {
