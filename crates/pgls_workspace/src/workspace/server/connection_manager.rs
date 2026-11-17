@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::RwLock;
@@ -16,6 +17,7 @@ use super::backoff::Backoff;
 use super::connection_key::ConnectionKey;
 use super::last_used::LastUsed;
 use super::pgpass::{PassfileTarget, password_from_passfile};
+use super::runtime::WorkspaceRuntime;
 
 /// How long a pool, and each of its connections, may stay unused before it is closed. An open
 /// connection holds a backend process on the server, and a project that isn't edited for a while
@@ -119,20 +121,17 @@ pub struct ConnectionManager {
     failures: RwLock<HashMap<ConnectionKey, CachedFailure>>,
     /// When the pools were last checked for idle ones.
     last_idle_sweep: LastUsed,
-}
-
-impl Default for ConnectionManager {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The clock of the backoffs and idle timeouts.
+    runtime: Arc<WorkspaceRuntime>,
 }
 
 impl ConnectionManager {
-    pub fn new() -> Self {
+    pub(crate) fn new(runtime: Arc<WorkspaceRuntime>) -> Self {
         Self {
             pools: RwLock::new(HashMap::new()),
             failures: RwLock::new(HashMap::new()),
-            last_idle_sweep: LastUsed::now(),
+            last_idle_sweep: LastUsed::now(runtime.clock()),
+            runtime,
         }
     }
 
@@ -175,20 +174,21 @@ impl ConnectionManager {
     /// Closes the pools that weren't used for [`POOL_IDLE_TIMEOUT`], looking at most once per
     /// [`IDLE_SWEEP_INTERVAL`].
     fn close_idle_pools(&self) {
-        if self.last_idle_sweep.idle_for() < IDLE_SWEEP_INTERVAL {
+        let clock = self.runtime.clock();
+        if self.last_idle_sweep.idle_for(clock) < IDLE_SWEEP_INTERVAL {
             return;
         }
-        self.last_idle_sweep.touch();
+        self.last_idle_sweep.touch(clock);
         let has_idle = self
             .pools
             .read()
             .values()
-            .any(|pool| pool.last_used.idle_for() > POOL_IDLE_TIMEOUT);
+            .any(|pool| pool.last_used.idle_for(clock) > POOL_IDLE_TIMEOUT);
         if !has_idle {
             return;
         }
         self.pools.write().retain(|key, pool| {
-            let idle_for = pool.last_used.idle_for();
+            let idle_for = pool.last_used.idle_for(clock);
             let idle = idle_for > POOL_IDLE_TIMEOUT;
             if idle {
                 pool.pools.close();
@@ -230,7 +230,7 @@ impl ConnectionManager {
             if let Some(cached_pool) = self.pools.read().get(&key)
                 && cached_pool.settings_fingerprint == settings_fingerprint
             {
-                cached_pool.last_used.touch();
+                cached_pool.last_used.touch(self.runtime.clock());
                 return Some(cached_pool.pools.clone());
             }
         }
@@ -247,7 +247,7 @@ impl ConnectionManager {
 
         // Double-check after acquiring write lock
         if let Some(cached_pool) = pools.get(&key) {
-            cached_pool.last_used.touch();
+            cached_pool.last_used.touch(self.runtime.clock());
             return Some(cached_pool.pools.clone());
         }
 
@@ -287,7 +287,7 @@ impl ConnectionManager {
         let cached_pool = CachedPool {
             pools: database_pools.clone(),
             settings_fingerprint,
-            last_used: LastUsed::now(),
+            last_used: LastUsed::now(self.runtime.clock()),
         };
 
         pools.insert(key, cached_pool);
@@ -361,7 +361,10 @@ impl ConnectionManager {
         message: &str,
     ) {
         let mut failures = self.failures.write();
-        let backoff = Backoff::after_failure(failures.get(key).map(|failure| &failure.backoff));
+        let backoff = Backoff::after_failure(
+            failures.get(key).map(|failure| &failure.backoff),
+            self.runtime.clock(),
+        );
         let delay = backoff.delay();
 
         let was_cached = failures.contains_key(key);
@@ -406,7 +409,7 @@ impl ConnectionManager {
         }
         let failure = failures.get(key)?;
 
-        if failure.backoff.is_active() {
+        if failure.backoff.is_active(self.runtime.clock()) {
             tracing::debug!(
                 "Skipping database connection retry during backoff until {:?}: {}",
                 failure.backoff.next_retry_at(),
@@ -436,7 +439,7 @@ mod tests {
 
     #[tokio::test]
     async fn same_settings_reuse_cached_pool() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let settings = settings();
         let first = manager.get_pool(&settings).unwrap();
 
@@ -449,7 +452,7 @@ mod tests {
 
     #[tokio::test]
     async fn password_change_replaces_cached_pool_with_new_settings() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let mut settings = settings();
         let first_fingerprint = settings_fingerprint(&settings);
         let first = manager.get_pool(&settings).unwrap();
@@ -473,7 +476,7 @@ mod tests {
 
     #[test]
     fn password_change_clears_failure_backoff() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let mut settings = settings();
         let key = ConnectionKey::from(&settings);
         let old_fingerprint = settings_fingerprint(&settings);
@@ -483,7 +486,7 @@ mod tests {
                 error: authentication_failed(),
                 message: "authentication failed".to_string(),
                 settings_fingerprint: old_fingerprint,
-                backoff: Backoff::after_failure(None),
+                backoff: Backoff::after_failure(None, manager.runtime.clock()),
             },
         );
 
@@ -496,7 +499,7 @@ mod tests {
 
     #[tokio::test]
     async fn unused_connections_are_dropped() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let used = settings();
         let unused = DatabaseSettings {
             database: "other".to_string(),
@@ -528,7 +531,7 @@ mod tests {
 
     #[tokio::test]
     async fn idle_pools_are_closed() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let idle = DatabaseSettings {
             database: "idle".to_string(),
             ..settings()
@@ -565,7 +568,7 @@ mod tests {
 
     #[test]
     fn try_with_pool_reports_the_failure_during_backoff() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let settings = settings();
         let key = ConnectionKey::from(&settings);
         manager.record_failure(
@@ -586,7 +589,7 @@ mod tests {
 
     #[test]
     fn only_connection_failures_start_the_backoff() {
-        let manager = ConnectionManager::new();
+        let manager = ConnectionManager::new(Arc::default());
         let settings = settings();
 
         let query_error = manager.with_pool(&settings, |_| {
