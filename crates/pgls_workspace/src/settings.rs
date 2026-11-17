@@ -319,7 +319,7 @@ impl Settings {
 
         // splinter part
         if let Some(splinter) = configuration.splinter {
-            self.splinter = to_splinter_settings(SplinterConfiguration::from(splinter))?;
+            self.splinter = SplinterSettings::try_from(SplinterConfiguration::from(splinter))?;
         }
 
         // formatter part
@@ -423,17 +423,21 @@ fn to_linter_settings(
     })
 }
 
-/// ## Errors
-///
-/// An ignore pattern that isn't a valid glob.
-fn to_splinter_settings(conf: SplinterConfiguration) -> Result<SplinterSettings, WorkspaceError> {
-    conf.get_global_ignore_matcher()?;
-    conf.rules.get_ignore_matchers()?;
-    Ok(SplinterSettings {
-        enabled: conf.enabled,
-        ignore: conf.ignore,
-        rules: Some(conf.rules),
-    })
+impl TryFrom<SplinterConfiguration> for SplinterSettings {
+    type Error = WorkspaceError;
+
+    /// ## Errors
+    ///
+    /// An ignore pattern that isn't a valid glob.
+    fn try_from(conf: SplinterConfiguration) -> Result<Self, Self::Error> {
+        conf.get_global_ignore_matcher()?;
+        conf.rules.get_ignore_matchers()?;
+        Ok(Self {
+            enabled: conf.enabled,
+            ignore: conf.ignore,
+            rules: Some(conf.rules),
+        })
+    }
 }
 
 fn to_formatter_settings(
@@ -1235,7 +1239,7 @@ mod tests {
     use pgls_configuration::database::PartialDatabaseConfiguration;
 
     use super::{
-        DatabaseSettings, Settings, WorkspaceSettings, migrations_problems, to_splinter_settings,
+        DatabaseSettings, Settings, SplinterSettings, WorkspaceSettings, migrations_problems,
     };
     use crate::workspace::ProjectKey;
 
@@ -1246,7 +1250,9 @@ mod tests {
         let settings = |json: &str| {
             let partial: pgls_configuration::splinter::PartialSplinterConfiguration =
                 serde_json::from_str(json).unwrap();
-            to_splinter_settings(partial.into())
+            SplinterSettings::try_from(
+                pgls_configuration::splinter::SplinterConfiguration::from(partial),
+            )
         };
 
         assert!(settings(r#"{ "ignore": ["public.my_table", "audit.*"] }"#).is_ok());
