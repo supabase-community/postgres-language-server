@@ -1,5 +1,6 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
+use pgls_catalog::Catalog;
 use std::{cell::OnceCell, mem::Discriminant};
 
 use pgls_text_size::{TextRange, TextSize};
@@ -21,10 +22,10 @@ use super::{
 };
 use pgls_catalog::TypeKind;
 use pgls_catalog::typing::{ResolvedFunction, Type, TypeId};
-use pgls_catalog::{CatalogView, Lookup, Origin};
+use pgls_catalog::{Lookup, Origin};
 
 pub(super) struct Resolver<'a> {
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     pub search_path: &'a [String],
     pub function: Option<&'a FunctionContext>,
     sql: Option<&'a str>,
@@ -71,7 +72,7 @@ pub(super) struct Context {
 
 impl<'a> Resolver<'a> {
     pub fn new(
-        catalog: &'a dyn CatalogView,
+        catalog: &'a Catalog,
         search_path: &'a [String],
         function: Option<&'a FunctionContext>,
         sql: Option<&'a str>,
@@ -106,12 +107,15 @@ impl<'a> Resolver<'a> {
     /// The resolution of a statement: what the resolver found, with the output columns of its
     /// query. `checks_database` is whether the database can check the statement at all.
     pub fn into_resolution(self, output: Option<QueryOutput>, checks_database: bool) -> Resolution {
+        let mut lookups = self.lookups.unwrap_or_default();
+        lookups.sort_by_key(|lookup| lookup.location);
+
         Resolution {
             // `Resolver::report_with_span` keeps each finding once.
             findings: self.findings,
             database_only: checks_database && self.database_only,
             references: self.references.unwrap_or_default(),
-            lookups: self.lookups.unwrap_or_default(),
+            lookups,
             output,
         }
     }

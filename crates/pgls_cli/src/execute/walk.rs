@@ -56,7 +56,6 @@ pub(crate) fn traverse(
     let project_key = session.project_key();
 
     let max_diagnostics = config.max_diagnostics();
-    let remaining_diagnostics = AtomicU32::new(max_diagnostics);
 
     let printer = DiagnosticsPrinter::new(config).with_max_diagnostics(max_diagnostics);
 
@@ -82,7 +81,6 @@ pub(crate) fn traverse(
                 unchanged: &unchanged,
                 skipped: &skipped,
                 messages: sender,
-                remaining_diagnostics: &remaining_diagnostics,
                 evaluated_paths: RwLock::default(),
             },
         );
@@ -179,7 +177,6 @@ struct DiagnosticsPrinter<'ctx> {
     _config: &'ctx ExecutionConfig,
     /// The maximum number of diagnostics the console thread is allowed to print
     max_diagnostics: u32,
-    remaining_diagnostics: AtomicU32,
     /// Count of diagnostics that exceeded max_diagnostics and weren't printed
     not_printed_diagnostics: AtomicU32,
     printed_diagnostics: AtomicU32,
@@ -197,7 +194,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         Self {
             _config: config,
             max_diagnostics: 20,
-            remaining_diagnostics: AtomicU32::new(0),
             not_printed_diagnostics: AtomicU32::new(0),
             printed_diagnostics: AtomicU32::new(0),
             total_skipped_suggested_fixes: AtomicU32::new(0),
@@ -235,10 +231,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         let should_print = printed_diagnostics < self.max_diagnostics;
         if should_print {
             self.printed_diagnostics.fetch_add(1, Ordering::Relaxed);
-            self.remaining_diagnostics.store(
-                self.max_diagnostics.saturating_sub(printed_diagnostics),
-                Ordering::Relaxed,
-            );
         } else {
             self.not_printed_diagnostics.fetch_add(1, Ordering::Relaxed);
         }
@@ -339,9 +331,6 @@ pub(crate) struct TraversalOptions<'ctx, 'app> {
     skipped: &'ctx AtomicUsize,
     /// Channel sending messages to the display thread
     pub(crate) messages: Sender<Message>,
-    /// The approximate number of diagnostics the console will print before
-    /// folding the rest into the "skipped diagnostics" counter
-    pub(crate) remaining_diagnostics: &'ctx AtomicU32,
 
     /// List of paths that should be processed
     pub(crate) evaluated_paths: RwLock<BTreeSet<PgLSPath>>,

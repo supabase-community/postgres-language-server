@@ -5,6 +5,8 @@ use sqlx::PgPool;
 
 #[cfg(feature = "db")]
 use super::SnapshotItem;
+use super::code::Code;
+use crate::TypeKind;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -20,10 +22,18 @@ pub struct PostgresTypeAttribute {
 }
 
 impl From<Option<JsonValue>> for TypeAttributes {
+    // `types.sql` builds the array, so it has this shape. Should it ever not, the type has no
+    // attributes rather than the server panicking.
     fn from(s: Option<JsonValue>) -> Self {
-        let values: Vec<PostgresTypeAttribute> =
-            serde_json::from_value(s.unwrap_or(JsonValue::Array(vec![]))).unwrap();
-        TypeAttributes { attrs: values }
+        let attrs = s
+            .map(serde_json::from_value::<Vec<PostgresTypeAttribute>>)
+            .transpose()
+            .unwrap_or_else(|error| {
+                tracing::error!("Unexpected type attributes in the snapshot: {error}");
+                None
+            })
+            .unwrap_or_default();
+        TypeAttributes { attrs }
     }
 }
 
@@ -34,9 +44,17 @@ pub struct Enums {
 }
 
 impl From<Option<JsonValue>> for Enums {
+    // `types.sql` builds the array, so it has this shape. Should it ever not, the enum has no
+    // labels rather than the server panicking.
     fn from(s: Option<JsonValue>) -> Self {
-        let values: Vec<String> =
-            serde_json::from_value(s.unwrap_or(JsonValue::Array(vec![]))).unwrap();
+        let values = s
+            .map(serde_json::from_value::<Vec<String>>)
+            .transpose()
+            .unwrap_or_else(|error| {
+                tracing::error!("Unexpected enum labels in the snapshot: {error}");
+                None
+            })
+            .unwrap_or_default();
         Enums { values }
     }
 }
@@ -45,8 +63,9 @@ impl From<Option<JsonValue>> for Enums {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PostgresType {
     pub id: i64,
+    /// `pg_type.typtype`.
     #[serde(default)]
-    pub typtype: String,
+    pub typtype: Code<TypeKind>,
     #[serde(default)]
     pub typcategory: String,
     #[serde(default)]
