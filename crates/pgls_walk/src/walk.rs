@@ -127,7 +127,9 @@ pub fn walk_statements(
     let roots: Vec<&pgls_query::NodeEnum> = params.stmts.iter().map(|s| &*s.root).collect();
 
     // The catalog after the up sections so far.
-    let mut catalog = Catalog::new(params.catalog_base);
+    let mut catalog = params
+        .catalog_base
+        .map_or_else(Catalog::without_database, Catalog::from_base);
     if params.best_effort {
         catalog = catalog.best_effort();
     }
@@ -174,7 +176,7 @@ pub fn walk_statements(
                 let unit_catalog = if is_down {
                     catalog.clone()
                 } else {
-                    std::mem::replace(&mut catalog, Catalog::new(None))
+                    std::mem::replace(&mut catalog, Catalog::without_database())
                 };
                 // Each section runs in a session and transaction of its own.
                 let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
@@ -392,24 +394,23 @@ impl CatalogFunctions {
     /// has a SQL body, or fails. Procedures only run with `CALL`, which taints the catalog
     /// anyway.
     fn record_function(&mut self, stmt: &AnalysableStatement) {
-        use pgls_query_ext::utils::{find_option_value, string_value};
+        use pgls_query_ext::{function_body::Language, utils::string_value};
         let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = &*stmt.root else {
             return;
         };
-        let Some(language) = find_option_value(create_fn, "language") else {
+        let Some(language) = Language::of(create_fn) else {
             return;
         };
         let Some(name) = create_fn.funcname.last().and_then(string_value) else {
             return;
         };
         if create_fn.is_procedure
-            || language.eq_ignore_ascii_case("sql")
-            || language.eq_ignore_ascii_case("internal")
+            || matches!(language, Language::Sql | Language::Internal)
             || self.0.contains(name)
         {
             return;
         }
-        let may_change_catalog = !language.eq_ignore_ascii_case("plpgsql")
+        let may_change_catalog = language != Language::PlPgSql
             || stmt.sql.as_deref().is_none_or(|sql| {
                 crate::plpgsql::may_change_catalog(
                     sql,
@@ -565,8 +566,6 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use pgls_text_size::{TextRange, TextSize};
-
-    use pgls_catalog::CatalogView;
 
     use super::{WalkParams, walk_statements};
     use crate::{AnalysableStatement, Direction, Unit, UnparsableStatement};

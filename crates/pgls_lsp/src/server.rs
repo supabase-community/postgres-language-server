@@ -1,3 +1,4 @@
+use crate::blocking::Blocking;
 use crate::capabilities::server_capabilities;
 use crate::handlers;
 use crate::session::{Session, SessionHandle, SessionKey};
@@ -15,7 +16,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Notify;
-use tokio::task::spawn_blocking;
 use tower_lsp_server::jsonrpc::{self, Result as LspResult};
 use tower_lsp_server::{ClientSocket, ls_types::*};
 use tower_lsp_server::{LanguageServer, LspService, Server};
@@ -61,11 +61,14 @@ impl LSPServer {
         let span = tracing::Span::current();
         let cancelled = Arc::new(AtomicBool::new(false));
         let _cancel_on_drop = CancelOnDrop(Arc::clone(&cancelled));
-        let result = spawn_blocking(move || {
-            let _guard = span.entered();
-            pgls_workspace::cancellation::with_cancellation(cancelled, || handler(&session))
-        })
-        .await;
+        let result = self
+            .session
+            .blocking
+            .spawn(move || {
+                let _guard = span.entered();
+                pgls_workspace::cancellation::with_cancellation(cancelled, || handler(&session))
+            })
+            .await;
         let result = match result {
             Ok(Ok(result)) => result,
             Ok(Err(err)) => return Err(into_lsp_error(err)),
@@ -202,6 +205,11 @@ impl LanguageServer for LSPServer {
         if let Err(e) = handlers::text_document::did_change(&self.session, params).await {
             error!("{}", e);
         };
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        handlers::text_document::did_save(&self.session, params);
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -377,7 +385,7 @@ macro_rules! workspace_method {
                 tracing::info!("Received request: {}", stringify!($method));
 
                 let workspace = server.session.workspace.clone();
-                let result = spawn_blocking(move || {
+                let result = server.session.blocking.spawn(move || {
                     let _guard = span.entered();
                     workspace.$method(params)
                 });
@@ -385,7 +393,7 @@ macro_rules! workspace_method {
                 result.map(move |result| {
                     // The type of `result` is `Result<Result<R, RomeError>, JoinError>`,
                     // where the inner result is the return value of `$method` while the
-                    // outer one is added by `spawn_blocking` to catch panics or
+                    // outer one is added by `Blocking::spawn` to catch panics or
                     // cancellations of the task
                     match result {
                         Ok(Ok(result)) => Ok(result),
@@ -408,10 +416,10 @@ pub struct ServerFactory {
     /// Synchronization primitive used to broadcast a shutdown signal to all
     /// active connections
     cancellation: Arc<Notify>,
-    /// Optional [Workspace] instance shared between all clients. Currently
-    /// this field is always [None] (meaning each connection will get its own
-    /// workspace) until we figure out how to handle concurrent access to the
-    /// same workspace from multiple client
+    /// Optional [Workspace] instance shared between all clients. Without one,
+    /// each connection gets its own workspace. Only tests set one, see
+    /// [ServerFactory::with_workspace], until we figure out how to handle
+    /// concurrent access to the same workspace from multiple clients
     workspace: Option<Arc<dyn Workspace>>,
 
     /// The sessions of the connected clients indexed by session key.
@@ -429,6 +437,8 @@ pub struct ServerFactory {
     /// The database settings of the environment variables (DATABASE_URL, PGHOST, etc.).
     /// Computed once at factory creation and passed to each session.
     environment: Option<PartialDatabaseConfiguration>,
+    /// Where the sessions run the work that blocks.
+    blocking: Blocking,
 }
 
 impl ServerFactory {
@@ -441,7 +451,21 @@ impl ServerFactory {
             stop_on_disconnect,
             is_initialized: Arc::default(),
             environment: PartialDatabaseConfiguration::from_env(),
+            blocking: Blocking::default(),
         }
+    }
+
+    /// Serves every connection with `workspace`, e.g. a workspace whose database queries run on
+    /// a test's runtime with a paused clock.
+    pub fn with_workspace(mut self, workspace: Arc<dyn Workspace>) -> Self {
+        self.workspace = Some(workspace);
+        self
+    }
+
+    /// Runs the work that blocks, like the workspace's methods, as [`Blocking`] says.
+    pub fn with_blocking(mut self, blocking: Blocking) -> Self {
+        self.blocking = blocking;
+        self
     }
 
     pub fn create(&self, config_path: Option<PathBuf>) -> ServerConnection {
@@ -462,6 +486,7 @@ impl ServerFactory {
         let session_key = SessionKey(self.next_session_key.fetch_add(1, Ordering::Relaxed));
 
         let environment = self.environment.clone();
+        let blocking = self.blocking;
         let mut builder = LspService::build(move |client| {
             let mut session = Session::new(
                 session_key,
@@ -470,6 +495,7 @@ impl ServerFactory {
                 self.cancellation.clone(),
                 fs,
                 environment,
+                blocking,
             );
             if let Some(path) = config_path {
                 session.set_config_path(path);
@@ -512,24 +538,13 @@ impl ServerFactory {
             },
         );
 
-        workspace_method!(builder, is_path_ignored);
-        workspace_method!(builder, update_settings);
-        workspace_method!(builder, update_nested_settings);
-        workspace_method!(builder, get_file_content);
-        workspace_method!(builder, open_file);
-        workspace_method!(builder, change_file);
-        workspace_method!(builder, close_file);
-        workspace_method!(builder, pull_file_diagnostics);
-        workspace_method!(builder, pull_code_actions);
-        workspace_method!(builder, fix_file);
-        workspace_method!(builder, check_database_connection);
-        workspace_method!(builder, get_completions);
-        workspace_method!(builder, pull_inlay_hints);
-        workspace_method!(builder, pull_semantic_tokens);
-        workspace_method!(builder, register_project_folder);
-        workspace_method!(builder, find_project);
-        workspace_method!(builder, unregister_project_folder);
-        workspace_method!(builder, invalidate_schema_cache);
+        // Every method of the workspace is a request `pgls/<name>`, which `WorkspaceClient` sends.
+        macro_rules! register_workspace_methods {
+            ([$builder:ident] $($(#[$attr:meta])* fn $name:ident($params:ty) -> $result:ty;)*) => {
+                $(workspace_method!($builder, $name);)*
+            };
+        }
+        pgls_workspace::for_each_workspace_method!(register_workspace_methods[builder]);
 
         let (service, socket) = builder.finish();
         ServerConnection { socket, service }

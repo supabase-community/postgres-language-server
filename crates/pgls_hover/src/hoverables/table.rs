@@ -20,7 +20,7 @@ impl ToHoverMarkdown for Table {
             pgls_catalog::TableKind::View => " (View)",
             pgls_catalog::TableKind::MaterializedView => " (M.View)",
             pgls_catalog::TableKind::Partitioned => " (Partitioned)",
-            pgls_catalog::TableKind::Ordinary => "",
+            pgls_catalog::TableKind::Ordinary | pgls_catalog::TableKind::Unknown => "",
         };
 
         write!(writer, "{table_kind}")?;

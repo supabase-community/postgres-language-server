@@ -4,13 +4,32 @@ pub mod suppression;
 use std::ops::Range;
 
 use pgls_analyse::RuleFilter;
-use pgls_diagnostics::{Diagnostic, MessageAndDescription};
+use pgls_diagnostics::{Category, Diagnostic, Location, MessageAndDescription};
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
     parser::SuppressionsParser,
     suppression::{RangeSuppression, RuleSpecifier, Suppression, SuppressionDiagnostic},
 };
+
+/// A diagnostic that a check may still report, e.g. a check against the database of a statement
+/// that changed since it last ran. A suppression it would match isn't reported as unused, since
+/// whether it is used isn't known yet.
+#[derive(Debug, Clone, Copy)]
+pub struct PendingDiagnostic {
+    pub span: TextRange,
+    pub category: &'static Category,
+}
+
+impl Diagnostic for PendingDiagnostic {
+    fn category(&self) -> Option<&'static Category> {
+        Some(self.category)
+    }
+
+    fn location(&self) -> Location<'_> {
+        Location::builder().span(&self.span).build()
+    }
+}
 
 /// The suppressions of a file.
 ///
@@ -86,9 +105,12 @@ impl Suppressions {
     ///
     /// One pass over the diagnostics marks the line suppressions that match each: O(D log L) for
     /// D diagnostics and L line suppressions, plus the suppressions within each diagnostic's lines.
+    ///
+    /// A suppression that one of `pending` would match isn't unused yet.
     pub fn get_unused_suppressions_as_errors<D: Diagnostic>(
         &self,
         diagnostics: &[D],
+        pending: &[PendingDiagnostic],
     ) -> Vec<SuppressionDiagnostic> {
         // Users may use many suppressions for a single diagnostic, like so:
         // ```
@@ -103,21 +125,10 @@ impl Suppressions {
 
         let mut used = vec![false; self.line_suppressions.len()];
         for diagnostic in diagnostics {
-            let Some(span) = diagnostic.location().span else {
-                continue;
-            };
-            let mut specifier = None;
-            for index in self.line_suppressions_for(span) {
-                if used[index] {
-                    continue;
-                }
-                let Some(specifier) =
-                    specifier.get_or_insert_with(|| RuleSpecifier::of(diagnostic))
-                else {
-                    break;
-                };
-                used[index] = self.line_suppressions[index].suppression.matches(specifier);
-            }
+            self.mark_line_suppressions_used(&mut used, diagnostic);
+        }
+        for diagnostic in pending {
+            self.mark_line_suppressions_used(&mut used, diagnostic);
         }
 
         self.line_suppressions
@@ -129,6 +140,24 @@ impl Suppressions {
                 message: MessageAndDescription::from("This suppression has no effect.".to_string()),
             })
             .collect()
+    }
+
+    /// Marks in `used` the line suppressions that match `diagnostic`.
+    fn mark_line_suppressions_used<D: Diagnostic>(&self, used: &mut [bool], diagnostic: &D) {
+        let Some(span) = diagnostic.location().span else {
+            return;
+        };
+        let mut specifier = None;
+        for index in self.line_suppressions_for(span) {
+            if used[index] {
+                continue;
+            }
+            let Some(specifier) = specifier.get_or_insert_with(|| RuleSpecifier::of(diagnostic))
+            else {
+                break;
+            };
+            used[index] = self.line_suppressions[index].suppression.matches(specifier);
+        }
     }
 
     /// O(log L) for L line suppressions, plus the suppressions near the diagnostic and the range
@@ -285,7 +314,7 @@ mod tests {
         assert!(suppressions.is_suppressed(&diagnostic));
         assert!(
             suppressions
-                .get_unused_suppressions_as_errors(&[diagnostic])
+                .get_unused_suppressions_as_errors(&[diagnostic], &[])
                 .is_empty()
         );
     }
@@ -304,7 +333,7 @@ mod tests {
         assert!(suppressions.is_suppressed(&on_a_later_line));
         assert!(
             suppressions
-                .get_unused_suppressions_as_errors(&[on_a_later_line])
+                .get_unused_suppressions_as_errors(&[on_a_later_line], &[])
                 .is_empty()
         );
 
@@ -344,7 +373,7 @@ mod tests {
         for (i, diagnostic) in diagnostics.iter().enumerate() {
             assert_eq!(suppressions.is_suppressed(diagnostic), i % 2 == 0, "{i}");
         }
-        let unused = suppressions.get_unused_suppressions_as_errors(&diagnostics);
+        let unused = suppressions.get_unused_suppressions_as_errors(&diagnostics, &[]);
         assert_eq!(unused.len(), 50);
         assert!(
             unused
@@ -428,7 +457,7 @@ mod tests {
 
         let suppressions = super::Suppressions::from(doc);
 
-        let unused_diagnostics = suppressions.get_unused_suppressions_as_errors(&diagnostics);
+        let unused_diagnostics = suppressions.get_unused_suppressions_as_errors(&diagnostics, &[]);
 
         assert_eq!(unused_diagnostics.len(), 1);
 

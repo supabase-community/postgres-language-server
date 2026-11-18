@@ -3,7 +3,7 @@
 use std::io;
 use std::io::{IsTerminal, Read, Write};
 use std::panic::RefUnwindSafe;
-use termcolor::{ColorChoice, StandardStream};
+use termcolor::{ColorChoice, StandardStream, StandardStreamLock};
 use write::Termcolor;
 
 pub mod fmt;
@@ -37,8 +37,8 @@ pub trait Console: Send + Sync + RefUnwindSafe {
     /// Prints a message (formatted using [markup!]) to the console.
     fn print(&mut self, level: LogLevel, args: Markup);
 
-    /// It reads from a source, and if this source contains something, it's converted into a [String]
-    fn read(&mut self) -> Option<String>;
+    /// Reads the whole input, or `None` if there is none to read, like a terminal.
+    fn read(&mut self) -> io::Result<Option<String>>;
 }
 
 /// Extension trait for [Console] providing convenience printing methods
@@ -79,6 +79,10 @@ pub struct EnvConsole {
     err: StandardStream,
     /// Channel to read arbitrary input
     r#in: io::Stdin,
+    /// Whether the reader of `out` has gone away
+    out_closed: bool,
+    /// Whether the reader of `err` has gone away
+    err_closed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -123,6 +127,8 @@ impl EnvConsole {
             out: StandardStream::stdout(out_mode),
             err: StandardStream::stderr(err_mode),
             r#in: io::stdin(),
+            out_closed: false,
+            err_closed: false,
         }
     }
 
@@ -130,6 +136,32 @@ impl EnvConsole {
         let (out_mode, err_mode) = Self::compute_color(colors);
         self.out = StandardStream::stdout(out_mode);
         self.err = StandardStream::stderr(err_mode);
+    }
+
+    /// Runs `func` with a lock on the stream for `level`.
+    ///
+    /// A broken pipe means nobody reads the stream anymore, e.g. when the output is piped into
+    /// `head`, so the stream is marked as closed and later output to it is dropped instead of
+    /// panicking. Ported from biome's `EnvConsole::write_with`.
+    fn write_with(
+        &mut self,
+        level: LogLevel,
+        func: impl FnOnce(&mut StandardStreamLock) -> io::Result<()>,
+    ) {
+        let (stream, closed) = match level {
+            LogLevel::Error => (&self.err, &mut self.err_closed),
+            LogLevel::Log => (&self.out, &mut self.out_closed),
+        };
+
+        if *closed {
+            return;
+        }
+
+        match func(&mut stream.lock()) {
+            Ok(()) => {}
+            Err(error) if error.kind() == io::ErrorKind::BrokenPipe => *closed = true,
+            Err(error) => panic!("failed to write to the console: {error}"),
+        }
     }
 }
 
@@ -141,44 +173,31 @@ impl Default for EnvConsole {
 
 impl Console for EnvConsole {
     fn println(&mut self, level: LogLevel, args: Markup) {
-        let mut out = match level {
-            LogLevel::Error => self.err.lock(),
-            LogLevel::Log => self.out.lock(),
-        };
-
-        fmt::Formatter::new(&mut Termcolor(&mut out))
-            .write_markup(args)
-            .unwrap();
-
-        writeln!(out).unwrap();
+        self.write_with(level, |out| {
+            fmt::Formatter::new(&mut Termcolor(&mut *out)).write_markup(args)?;
+            writeln!(out)
+        });
     }
 
     fn print(&mut self, level: LogLevel, args: Markup) {
-        let mut out = match level {
-            LogLevel::Error => self.err.lock(),
-            LogLevel::Log => self.out.lock(),
-        };
-
-        fmt::Formatter::new(&mut Termcolor(&mut out))
-            .write_markup(args)
-            .unwrap();
-
-        write!(out, "").unwrap();
+        self.write_with(level, |out| {
+            fmt::Formatter::new(&mut Termcolor(&mut *out)).write_markup(args)?;
+            write!(out, "")
+        });
     }
 
-    fn read(&mut self) -> Option<String> {
+    fn read(&mut self) -> io::Result<Option<String>> {
         // Here we check if stdin is redirected. If not, we bail.
         //
         // Doing this check allows us to pipe stdin to rome, without expecting
         // user content when we call `read_to_string`
         if io::stdin().is_terminal() {
-            return None;
+            return Ok(None);
         }
         let mut handle = self.r#in.lock();
         let mut buffer = String::new();
-        let result = handle.read_to_string(&mut buffer);
-        // Skipping the error for now
-        if result.is_ok() { Some(buffer) } else { None }
+        handle.read_to_string(&mut buffer)?;
+        Ok(Some(buffer))
     }
 }
 
@@ -218,13 +237,9 @@ impl Console for BufferConsole {
             content: args.to_owned(),
         });
     }
-    fn read(&mut self) -> Option<String> {
-        if self.in_buffer.is_empty() {
-            None
-        } else {
-            // for the time being we simple return the first message, as we don't
-            // particular use case for multiple prompts
-            Some(self.in_buffer[0].clone())
-        }
+    fn read(&mut self) -> io::Result<Option<String>> {
+        // for the time being we simple return the first message, as we don't
+        // particular use case for multiple prompts
+        Ok(self.in_buffer.first().cloned())
     }
 }

@@ -1,7 +1,7 @@
 use pgls_query::protobuf::CreateSeqStmt;
 
 use crate::catalog::{Catalog, base::sequence_columns};
-use crate::lookup::{CatalogView, Origin, RelationInfo, RelationKind};
+use crate::lookup::{Origin, RelationInfo, RelationKind};
 
 /// `CREATE SEQUENCE`. Models [`DefineSequence`].
 ///

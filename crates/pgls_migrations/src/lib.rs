@@ -303,12 +303,9 @@ fn numbered(
     }
 }
 
-/// A number with leading zeros, like `000201` or `20240101120000`.
+/// A number with leading zeros, like `000201`, `0000` or `20240101120000`.
 fn number(text: &str) -> Option<Version> {
-    text.trim_start_matches('0')
-        .parse()
-        .ok()
-        .map(Version::Number)
+    text.parse().ok().map(Version::Number)
 }
 
 /// Whether the path is inside the migrations directory.
@@ -408,6 +405,16 @@ mod tests {
             version_of(&path, &migrations_dir),
             Some(Version::Number(201))
         );
+    }
+
+    #[test]
+    fn test_get_migration_prefix_zero() {
+        let temp_dir = setup();
+        let migrations_dir = temp_dir.path().to_path_buf();
+        let path = migrations_dir.join("0000_init.sql");
+        fs::write(&path, "").unwrap();
+
+        assert_eq!(version_of(&path, &migrations_dir), Some(Version::Number(0)));
     }
 
     #[test]

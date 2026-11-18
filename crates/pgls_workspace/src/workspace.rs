@@ -11,21 +11,7 @@ use slotmap::{DenseSlotMap, new_key_type};
 
 use crate::{
     WorkspaceError,
-    features::{
-        code_actions::{
-            CodeActionsParams, CodeActionsResult, ExecuteStatementParams, ExecuteStatementResult,
-            FixFileParams, FixFileResult,
-        },
-        completions::{CompletionsResult, GetCompletionsParams},
-        diagnostics::{
-            CheckDatabaseConnectionParams, CheckDatabaseConnectionResult,
-            PullDatabaseDiagnosticsParams, PullDiagnosticsResult, PullFileDiagnosticsParams,
-        },
-        format::{PullFileFormattingParams, PullFormattingResult},
-        inlay_hints::{PullInlayHintsParams, PullInlayHintsResult},
-        on_hover::{OnHoverParams, OnHoverResult},
-        semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult},
-    },
+    features::diagnostics::{PullDiagnosticsResult, PullFileDiagnosticsParams},
 };
 
 mod client;
@@ -168,137 +154,152 @@ pub struct UnregisterProjectFolderParams {
     pub path: PgLSPath,
 }
 
-pub trait Workspace: Send + Sync + RefUnwindSafe {
-    /// Retrieves the list of diagnostics associated to a file
-    fn pull_file_diagnostics(
-        &self,
-        params: PullFileDiagnosticsParams,
-    ) -> Result<PullDiagnosticsResult, WorkspaceError>;
-
-    /// Formats a file and returns per-statement results
-    fn pull_file_formatting(
-        &self,
-        params: PullFileFormattingParams,
-    ) -> Result<PullFormattingResult, WorkspaceError>;
-
-    /// Retrieves the list of diagnostics associated to a database schema
-    fn pull_db_diagnostics(
-        &self,
-        params: PullDatabaseDiagnosticsParams,
-    ) -> Result<PullDiagnosticsResult, WorkspaceError>;
-
-    /// Connects to the configured database and loads its schema, which the database-backed
-    /// checks need. Reports why that failed, including for a connection that failed recently
-    /// and is waiting to be retried. Reports nothing when no database is configured or the
-    /// connection is disabled.
-    fn check_database_connection(
-        &self,
-        params: CheckDatabaseConnectionParams,
-    ) -> Result<CheckDatabaseConnectionResult, WorkspaceError>;
-
-    /// Retrieves a list of available code_actions for a file/cursor_position
-    fn pull_code_actions(
-        &self,
-        params: CodeActionsParams,
-    ) -> Result<CodeActionsResult, WorkspaceError>;
-
-    /// Applies the fixes of the lint rules to a file and returns its new content. The file in
-    /// the workspace is not changed.
-    fn fix_file(&self, params: FixFileParams) -> Result<FixFileResult, WorkspaceError>;
-
-    fn get_completions(
-        &self,
-        params: GetCompletionsParams,
-    ) -> Result<CompletionsResult, WorkspaceError>;
-
-    fn on_hover(&self, params: OnHoverParams) -> Result<OnHoverResult, WorkspaceError>;
-
-    /// The inlay hints of the statements that overlap a range, like the names of the
-    /// parameters that function arguments are passed to.
-    fn pull_inlay_hints(
-        &self,
-        params: PullInlayHintsParams,
-    ) -> Result<PullInlayHintsResult, WorkspaceError>;
-
-    /// The semantic tokens of the names that resolve to exactly one object, like tables,
-    /// columns, and functions, in the statements that overlap a range or the whole file.
-    fn pull_semantic_tokens(
-        &self,
-        params: PullSemanticTokensParams,
-    ) -> Result<PullSemanticTokensResult, WorkspaceError>;
-
-    /// Register a project folder, or return the key of the project already registered for it.
-    /// Every request about a file names the project that the file belongs to.
-    fn register_project_folder(
-        &self,
-        params: RegisterProjectFolderParams,
-    ) -> Result<ProjectKey, WorkspaceError>;
-
-    /// The project that the file at `path` belongs to: the one of the deepest folder that contains
-    /// it. A project without a folder contains every path. `None` if no project contains it.
-    fn find_project(&self, params: FindProjectParams)
-    -> Result<Option<ProjectKey>, WorkspaceError>;
-
-    /// Unregister a project folder. Its settings, including the nested ones, are deleted.
-    fn unregister_project_folder(
-        &self,
-        params: UnregisterProjectFolderParams,
-    ) -> Result<(), WorkspaceError>;
-
-    /// Update the root settings of a project
-    fn update_settings(&self, params: UpdateSettingsParams) -> Result<(), WorkspaceError>;
-
-    /// Replace the settings of the configuration files below the root of a project. A file uses
-    /// the settings of the deepest of them that contains it, or else the root settings.
-    fn update_nested_settings(
-        &self,
-        params: UpdateNestedSettingsParams,
-    ) -> Result<UpdateNestedSettingsResult, WorkspaceError>;
-
-    /// Add a new file to the workspace
-    fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError>;
-
-    /// Remove a file from the workspace
-    fn close_file(&self, params: CloseFileParams) -> Result<(), WorkspaceError>;
-
-    /// Change the content of an open file
-    fn change_file(&self, params: ChangeFileParams) -> Result<(), WorkspaceError>;
-
-    /// Returns information about the server this workspace is connected to or `None` if the workspace isn't connected to a server.
-    fn server_info(&self) -> Option<&ServerInfo>;
-
-    /// Return the content of a file
-    fn get_file_content(&self, params: GetFileContentParams) -> Result<String, WorkspaceError>;
-
-    /// Checks if the current path is ignored by the workspace.
-    ///
-    /// Takes as input the path of the file that workspace is currently processing and
-    /// a list of paths to match against.
-    ///
-    /// If the file path matches, then `true` is returned, and it should be considered ignored.
-    fn is_path_ignored(&self, params: IsPathIgnoredParams) -> Result<bool, WorkspaceError>;
-
-    fn execute_statement(
-        &self,
-        params: ExecuteStatementParams,
-    ) -> Result<ExecuteStatementResult, WorkspaceError>;
-
-    /// Cancels the execution of the statement, if it is running. The execution then returns the
-    /// error that Postgres raises for the cancelled statement.
-    fn cancel_statement_execution(
-        &self,
-        params: ExecuteStatementParams,
-    ) -> Result<(), WorkspaceError>;
-
-    /// Invalidate the schema cache.
-    ///
-    /// # Arguments
-    /// * `all` - If true, clears all cached schemas. If false, clears the schemas loaded from a
-    ///   database connection, but keeps one set from JSON.
-    ///
-    /// The schema will be reloaded lazily on the next operation that requires it.
-    fn invalidate_schema_cache(&self, all: bool) -> Result<(), WorkspaceError>;
+/// The schemas that `invalidate_schema_cache` clears.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub enum SchemaCacheScope {
+    /// The schemas loaded from database connections. A schema loaded from JSON stays.
+    Connections,
+    /// Every schema, including the one loaded from JSON.
+    All,
 }
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct InvalidateSchemaCacheParams {
+    pub scope: SchemaCacheScope,
+}
+
+/// The requests of [Workspace]: every method except [Workspace::server_info]. This list is the
+/// only one. It calls `$callback!` with one `fn name(Params) -> Result;` per method, after the
+/// tokens in brackets if any, and expands to:
+/// - the [Workspace] trait;
+/// - the [WorkspaceClient], which sends each method as the request `pgls/<name>`;
+/// - the registration of the `pgls/<name>` requests in `pgls_lsp`;
+/// - the TypeScript bindings of `backend-jsonrpc`, through `workspace_types::methods`.
+#[macro_export]
+macro_rules! for_each_workspace_method {
+    ($callback:ident $([$($args:tt)*])?) => {
+        $callback! {
+            $([$($args)*])?
+
+            /// Retrieves the list of diagnostics associated to a file
+            fn pull_file_diagnostics($crate::features::diagnostics::PullFileDiagnosticsParams)
+                -> $crate::features::diagnostics::PullDiagnosticsResult;
+
+            /// Formats a file and returns per-statement results
+            fn pull_file_formatting($crate::features::format::PullFileFormattingParams)
+                -> $crate::features::format::PullFormattingResult;
+
+            /// Retrieves the list of diagnostics associated to a database schema
+            fn pull_db_diagnostics($crate::features::diagnostics::PullDatabaseDiagnosticsParams)
+                -> $crate::features::diagnostics::PullDiagnosticsResult;
+
+            /// Connects to the configured database and loads its schema, which the database-backed
+            /// checks need. Reports why that failed, including for a connection that failed recently
+            /// and is waiting to be retried. Reports nothing when no database is configured or the
+            /// connection is disabled.
+            fn check_database_connection(
+                $crate::features::diagnostics::CheckDatabaseConnectionParams
+            ) -> $crate::features::diagnostics::CheckDatabaseConnectionResult;
+
+            /// Retrieves a list of available code_actions for a file/cursor_position
+            fn pull_code_actions($crate::features::code_actions::CodeActionsParams)
+                -> $crate::features::code_actions::CodeActionsResult;
+
+            /// Applies the fixes of the lint rules to a file and returns its new content. The file in
+            /// the workspace is not changed.
+            fn fix_file($crate::features::code_actions::FixFileParams)
+                -> $crate::features::code_actions::FixFileResult;
+
+            fn get_completions($crate::features::completions::GetCompletionsParams)
+                -> $crate::features::completions::CompletionsResult;
+
+            fn on_hover($crate::features::on_hover::OnHoverParams)
+                -> $crate::features::on_hover::OnHoverResult;
+
+            /// The inlay hints of the statements that overlap a range, like the names of the
+            /// parameters that function arguments are passed to.
+            fn pull_inlay_hints($crate::features::inlay_hints::PullInlayHintsParams)
+                -> $crate::features::inlay_hints::PullInlayHintsResult;
+
+            /// The semantic tokens of the names that resolve to exactly one object, like tables,
+            /// columns, and functions, in the statements that overlap a range or the whole file.
+            fn pull_semantic_tokens($crate::features::semantic_tokens::PullSemanticTokensParams)
+                -> $crate::features::semantic_tokens::PullSemanticTokensResult;
+
+            /// Register a project folder, or return the key of the project already registered for it.
+            /// Every request about a file names the project that the file belongs to.
+            fn register_project_folder($crate::workspace::RegisterProjectFolderParams)
+                -> $crate::workspace::ProjectKey;
+
+            /// The project that the file at `path` belongs to: the one of the deepest folder that contains
+            /// it. A project without a folder contains every path. `None` if no project contains it.
+            fn find_project($crate::workspace::FindProjectParams)
+                -> Option<$crate::workspace::ProjectKey>;
+
+            /// Unregister a project folder. Its settings, including the nested ones, are deleted.
+            fn unregister_project_folder($crate::workspace::UnregisterProjectFolderParams) -> ();
+
+            /// Update the root settings of a project
+            fn update_settings($crate::workspace::UpdateSettingsParams) -> ();
+
+            /// Replace the settings of the configuration files below the root of a project. A file uses
+            /// the settings of the deepest of them that contains it, or else the root settings.
+            fn update_nested_settings($crate::workspace::UpdateNestedSettingsParams)
+                -> $crate::workspace::UpdateNestedSettingsResult;
+
+            /// Add a new file to the workspace
+            fn open_file($crate::workspace::OpenFileParams) -> ();
+
+            /// Remove a file from the workspace
+            fn close_file($crate::workspace::CloseFileParams) -> ();
+
+            /// Change the content of an open file
+            fn change_file($crate::workspace::ChangeFileParams) -> ();
+
+            /// Return the content of a file
+            fn get_file_content($crate::workspace::GetFileContentParams) -> String;
+
+            /// Checks if the current path is ignored by the workspace.
+            ///
+            /// Takes as input the path of the file that workspace is currently processing and
+            /// a list of paths to match against.
+            ///
+            /// If the file path matches, then `true` is returned, and it should be considered ignored.
+            fn is_path_ignored($crate::workspace::IsPathIgnoredParams) -> bool;
+
+            fn execute_statement($crate::features::code_actions::ExecuteStatementParams)
+                -> $crate::features::code_actions::ExecuteStatementResult;
+
+            /// Cancels the execution of the statement, if it is running. The execution then returns the
+            /// error that Postgres raises for the cancelled statement.
+            fn cancel_statement_execution($crate::features::code_actions::ExecuteStatementParams)
+                -> ();
+
+            /// Invalidate the schema cache. The schema will be reloaded lazily on the next operation
+            /// that requires it.
+            fn invalidate_schema_cache($crate::workspace::InvalidateSchemaCacheParams) -> ();
+        }
+    };
+}
+
+macro_rules! workspace_trait {
+    ($($(#[$attr:meta])* fn $name:ident($params:ty) -> $result:ty;)*) => {
+        pub trait Workspace: Send + Sync + RefUnwindSafe {
+            $(
+                $(#[$attr])*
+                fn $name(&self, params: $params) -> Result<$result, WorkspaceError>;
+            )*
+
+            /// Returns information about the server this workspace is connected to or `None` if the workspace isn't connected to a server.
+            fn server_info(&self) -> Option<&ServerInfo>;
+        }
+    };
+}
+
+crate::for_each_workspace_method!(workspace_trait);
 
 /// Convenience function for constructing a server instance of [Workspace]
 pub fn server() -> Box<dyn Workspace> {
@@ -375,6 +376,7 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
                 max_diagnostics,
                 only,
                 skip,
+                database_checks: crate::features::diagnostics::DatabaseChecks::Run,
             })
     }
 

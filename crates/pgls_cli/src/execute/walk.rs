@@ -1,10 +1,12 @@
 use super::config::ExecutionConfig;
 use super::process_file::{FileStatus, Message, process_file};
-use crate::execute::diagnostics::PanicDiagnostic;
+use crate::execute::diagnostics::{PanicDiagnostic, SkippedDiagnostic};
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgls_diagnostics::{DiagnosticExt, DiagnosticTags, Error, Resource, Severity};
+use pgls_diagnostics::{
+    DiagnosticExt, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
+};
 use pgls_fs::{FileSystem, PathInterner, PgLSPath};
 use pgls_fs::{TraversalContext, TraversalScope};
 use pgls_workspace::dome::Dome;
@@ -18,7 +20,7 @@ use std::{
     env::current_dir,
     ffi::OsString,
     panic::catch_unwind,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Once,
         atomic::{AtomicUsize, Ordering},
@@ -54,7 +56,6 @@ pub(crate) fn traverse(
     let project_key = session.project_key();
 
     let max_diagnostics = config.max_diagnostics();
-    let remaining_diagnostics = AtomicU32::new(max_diagnostics);
 
     let printer = DiagnosticsPrinter::new(config).with_max_diagnostics(max_diagnostics);
 
@@ -80,7 +81,6 @@ pub(crate) fn traverse(
                 unchanged: &unchanged,
                 skipped: &skipped,
                 messages: sender,
-                remaining_diagnostics: &remaining_diagnostics,
                 evaluated_paths: RwLock::default(),
             },
         );
@@ -177,7 +177,6 @@ struct DiagnosticsPrinter<'ctx> {
     _config: &'ctx ExecutionConfig,
     /// The maximum number of diagnostics the console thread is allowed to print
     max_diagnostics: u32,
-    remaining_diagnostics: AtomicU32,
     /// Count of diagnostics that exceeded max_diagnostics and weren't printed
     not_printed_diagnostics: AtomicU32,
     printed_diagnostics: AtomicU32,
@@ -195,7 +194,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         Self {
             _config: config,
             max_diagnostics: 20,
-            remaining_diagnostics: AtomicU32::new(0),
             not_printed_diagnostics: AtomicU32::new(0),
             printed_diagnostics: AtomicU32::new(0),
             total_skipped_suggested_fixes: AtomicU32::new(0),
@@ -233,10 +231,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         let should_print = printed_diagnostics < self.max_diagnostics;
         if should_print {
             self.printed_diagnostics.fetch_add(1, Ordering::Relaxed);
-            self.remaining_diagnostics.store(
-                self.max_diagnostics.saturating_sub(printed_diagnostics),
-                Ordering::Relaxed,
-            );
         } else {
             self.not_printed_diagnostics.fetch_add(1, Ordering::Relaxed);
         }
@@ -293,13 +287,17 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.not_printed_diagnostics
                         .fetch_add(skipped_diagnostics, Ordering::Relaxed);
 
+                    // One copy of the file and one line index for all its diagnostics.
+                    let source_code = SharedSourceCode::new(content);
                     for diag in diag_list {
                         self.count_severity(diag.severity());
                         if diag.tags().contains(DiagnosticTags::FIXABLE) {
                             self.fixable_diagnostics.fetch_add(1, Ordering::Relaxed);
                         }
                         if self.should_store() {
-                            let diag = diag.with_file_path(&name).with_file_source_code(&content);
+                            let diag = diag
+                                .with_file_path(&name)
+                                .with_file_source_code(&source_code);
                             diagnostics.push(diag);
                         }
                     }
@@ -333,9 +331,6 @@ pub(crate) struct TraversalOptions<'ctx, 'app> {
     skipped: &'ctx AtomicUsize,
     /// Channel sending messages to the display thread
     pub(crate) messages: Sender<Message>,
-    /// The approximate number of diagnostics the console will print before
-    /// folding the rest into the "skipped diagnostics" counter
-    pub(crate) remaining_diagnostics: &'ctx AtomicU32,
 
     /// List of paths that should be processed
     pub(crate) evaluated_paths: RwLock<BTreeSet<PgLSPath>>,
@@ -360,6 +355,14 @@ impl TraversalOptions<'_, '_> {
     /// Send a message to the display thread
     pub(crate) fn push_message(&self, msg: impl Into<Message>) {
         self.messages.send(msg.into()).ok();
+    }
+
+    /// Skips the file at `path` for `--skip-errors` because of its syntax errors: reports that it
+    /// skipped the file instead of its diagnostics. The file counts as processed, so a run that
+    /// skips every file succeeds.
+    pub(crate) fn skip_file(&self, path: &Path) -> FileStatus {
+        self.push_message(SkippedDiagnostic.with_file_path(path.display().to_string()));
+        FileStatus::Unchanged
     }
 }
 

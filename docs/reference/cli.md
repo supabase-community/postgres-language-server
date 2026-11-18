@@ -84,8 +84,8 @@ Shows the version information and quit.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
@@ -128,7 +128,7 @@ Lints your database schema.
 - **`    --vcs-default-branch`**=_`BRANCH`_ &mdash; 
   The main branch of the project
 - **`    --files-max-size`**=_`NUMBER`_ &mdash; 
-  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+  The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 10 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
 - **`    --after`**=_`VERSION`_ &mdash; 
@@ -211,8 +211,8 @@ Lints your database schema.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
@@ -255,7 +255,7 @@ Runs everything to the requested files.
 - **`    --vcs-default-branch`**=_`BRANCH`_ &mdash; 
   The main branch of the project
 - **`    --files-max-size`**=_`NUMBER`_ &mdash; 
-  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+  The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 10 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
 - **`    --after`**=_`VERSION`_ &mdash; 
@@ -338,8 +338,8 @@ Runs everything to the requested files.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
@@ -408,7 +408,7 @@ Formats the requested files.
 - **`    --vcs-default-branch`**=_`BRANCH`_ &mdash; 
   The main branch of the project
 - **`    --files-max-size`**=_`NUMBER`_ &mdash; 
-  The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+  The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 10 MiB
 - **`    --migrations-dir`**=_`ARG`_ &mdash; 
   The directory where the migration files are stored
 - **`    --after`**=_`VERSION`_ &mdash; 
@@ -491,8 +491,8 @@ Formats the requested files.
   Tell Postgres Language Server to exit with an error code if some diagnostics emit warnings.
 - **`    --reporter`**=_`<json|json-pretty|github|junit|summary|gitlab>`_ &mdash; 
   Allows to change how diagnostics and summary are reported.
-- **`    --log-level`**=_`<none|debug|info|warn|error>`_ &mdash; 
-  The level of logging. In order, from the most verbose to the least verbose: debug, info, warn, error.
+- **`    --log-level`**=_`<none|trace|debug|info|warn|error>`_ &mdash; 
+  The level of logging. In order, from the most verbose to the least verbose: trace, debug, info, warn, error.
 
   The value `none` won't show any logging.
    
