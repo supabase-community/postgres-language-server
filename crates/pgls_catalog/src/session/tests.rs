@@ -7,13 +7,13 @@ use crate::Catalog;
 /// names are in the first schema of the search path.
 fn apply(s: &mut Session, q: &str) {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-    let mut catalog = Catalog::new(None);
+    let mut catalog = Catalog::without_database();
     catalog.apply(&n, s.search_path(), None);
     s.apply(&n, &catalog);
 }
 fn dangerous(s: &Session, q: &str) -> bool {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-    s.is_dangerous_lock_stmt(&n, &Catalog::new(None))
+    s.is_dangerous_lock_stmt(&n, &Catalog::without_database())
 }
 fn range_var(schema: &str, name: &str) -> RangeVar {
     RangeVar {
@@ -24,13 +24,13 @@ fn range_var(schema: &str, name: &str) -> RangeVar {
     }
 }
 fn created(s: &Session, schema: &str, name: &str) -> bool {
-    s.has_created_relation(&range_var(schema, name), &Catalog::new(None))
+    s.has_created_relation(&range_var(schema, name), &Catalog::without_database())
 }
 fn altered(s: &Session, schema: &str, name: &str) -> bool {
-    s.has_altered_table(&range_var(schema, name), &Catalog::new(None))
+    s.has_altered_table(&range_var(schema, name), &Catalog::without_database())
 }
 fn not_valid(s: &Session, table: &str, name: &str) -> bool {
-    s.has_not_valid_constraint(&range_var("", table), name, &Catalog::new(None))
+    s.has_not_valid_constraint(&range_var("", table), name, &Catalog::without_database())
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn not_valid_and_access_exclusive_are_tracked() {
     assert!(!s.is_holding_access_exclusive());
     let locks = |s: &Session, q: &str| {
         let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-        s.table_locks(&n, &Catalog::new(None))
+        s.table_locks(&n, &Catalog::without_database())
             .into_iter()
             .map(|lock| (lock.mode, lock.schema, lock.name))
             .collect::<Vec<_>>()
@@ -353,6 +353,54 @@ fn rollback_forgets_local_role() {
 }
 
 #[test]
+fn rollback_to_savepoint_restores_settings() {
+    let mut s = Session::new(vec!["public".into()]);
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SAVEPOINT a");
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "SET ROLE some_role");
+    apply(&mut s, "SAVEPOINT b");
+    apply(&mut s, "SET LOCAL check_function_bodies = off");
+    apply(&mut s, "ROLLBACK TO SAVEPOINT b");
+    assert!(s.check_function_bodies());
+    assert_eq!(s.search_path(), ["other"]);
+    // The savepoint stays after `ROLLBACK TO`, and the one rolled back to forgets later ones.
+    apply(&mut s, "SET search_path = third");
+    apply(&mut s, "ROLLBACK TO b");
+    assert_eq!(s.search_path(), ["other"]);
+    apply(&mut s, "ROLLBACK TO a");
+    assert_eq!(s.search_path(), ["public"]);
+    assert_eq!(s.role(), None);
+    apply(&mut s, "ROLLBACK TO b");
+    assert_eq!(s.search_path(), ["public"]);
+
+    // `RELEASE` keeps the settings, and a `SET LOCAL` in it still ends with the transaction.
+    apply(&mut s, "SAVEPOINT c");
+    apply(&mut s, "SET LOCAL search_path = local_schema");
+    apply(&mut s, "RELEASE SAVEPOINT c");
+    assert_eq!(s.search_path(), ["local_schema"]);
+    apply(&mut s, "ROLLBACK TO c");
+    assert_eq!(s.search_path(), ["local_schema"]);
+    apply(&mut s, "COMMIT");
+    assert_eq!(s.search_path(), ["public"]);
+
+    // `COMMIT` forgets the savepoints.
+    apply(&mut s, "BEGIN");
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "ROLLBACK TO a");
+    assert_eq!(s.search_path(), ["other"]);
+    apply(&mut s, "COMMIT");
+
+    // Postgres rejects a savepoint outside of a transaction block.
+    let mut s =
+        Session::new(vec!["public".into()]).with_transaction_mode(TransactionMode::Autocommit);
+    apply(&mut s, "SAVEPOINT a");
+    apply(&mut s, "SET search_path = other");
+    apply(&mut s, "ROLLBACK TO a");
+    assert_eq!(s.search_path(), ["other"]);
+}
+
+#[test]
 fn check_function_bodies() {
     let mut s = Session::new(vec!["public".into()]);
     assert!(s.check_function_bodies());
@@ -503,8 +551,6 @@ fn implicit_block_runs_statements_in_a_transaction_until_the_query_ends() {
 }
 /// A catalog over a snapshot with the schemas, `pg_catalog`, and the table `public.users`.
 fn catalog_with_users(schemas: &[&str]) -> Catalog {
-    use std::sync::Arc;
-
     let snapshot = crate::Snapshot {
         schemas: schemas
             .iter()
@@ -522,7 +568,7 @@ fn catalog_with_users(schemas: &[&str]) -> Catalog {
         }],
         ..Default::default()
     };
-    Catalog::new(Some(Arc::new(crate::CatalogBase::new(Arc::new(snapshot)))))
+    Catalog::from_snapshot(snapshot)
 }
 /// Applies a statement to the catalog and the session, like the analyser. Returns whether the
 /// statement was a dangerous lock statement.
@@ -603,7 +649,7 @@ fn skipped_if_not_exists_creates_nothing() {
 fn temporary_tables_dont_capture_new_tables() {
     // Without `TEMP`, Postgres creates the table in the first schema of the search path, even
     // if a temporary table of that name exists.
-    let mut catalog = Catalog::new(None);
+    let mut catalog = Catalog::without_database();
     let mut s = Session::new(vec!["public".into()]);
     run(&mut s, &mut catalog, "BEGIN");
     run(&mut s, &mut catalog, "CREATE TEMP TABLE events (id bigint)");
