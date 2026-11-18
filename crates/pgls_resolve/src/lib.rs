@@ -433,15 +433,9 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     let mut lookups = resolver.lookups.unwrap_or_default();
     lookups.sort_by_key(|lookup| lookup.location);
 
-    let mut findings: Vec<Finding> = Vec::new();
-    for finding in resolver.findings {
-        if !findings.contains(&finding) {
-            findings.push(finding);
-        }
-    }
-
     Resolution {
-        findings,
+        // `Resolver::report_with_span` keeps each finding once.
+        findings: resolver.findings,
         database_only: supports_database_check(params.stmt) && resolver.database_only,
         references: resolver.references.unwrap_or_default(),
         lookups,
