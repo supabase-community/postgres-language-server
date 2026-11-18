@@ -1,4 +1,4 @@
-use pgls_query_ext::utils::string_values;
+use pgls_query_ext::utils::NameParts;
 
 use crate::{
     resolver::Resolver,
@@ -18,7 +18,7 @@ pub(super) fn infer_column_ref(
     n: &pgls_query::protobuf::ColumnRef,
 ) -> Option<Type> {
     {
-        let names = string_values(&n.fields)?;
+        let names = NameParts::of(&n.fields)?;
         match names.as_slice() {
             // A column takes precedence over a whole-row reference to a table.
             [column] => find_column_type(&r.levels, column)

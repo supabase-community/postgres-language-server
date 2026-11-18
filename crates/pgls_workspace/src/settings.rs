@@ -17,7 +17,7 @@ use pgls_configuration::{
     ConfigurationDiagnostic, LinterConfiguration, PartialConfiguration, TypecheckConfiguration,
     database::PartialDatabaseConfiguration,
     diagnostics::InvalidIgnorePattern,
-    files::FilesConfiguration,
+    files::{DEFAULT_FILE_SIZE_LIMIT, FilesConfiguration},
     format::{
         CastStyle, ClauseBodyStyle, CommaStyle, FormatConfiguration, IndentStyle, KeywordCase,
         Layout, LogicalOperatorPlacement,
@@ -215,6 +215,7 @@ impl<'a> WorkspaceSettingsHandle<'a> {
     }
 
     /// The root settings of a project.
+    #[cfg(feature = "db")]
     pub(crate) fn settings(&self, key: ProjectKey) -> Option<&Settings> {
         self.inner.get_settings(key)
     }
@@ -418,8 +419,7 @@ fn to_linter_settings(
         enabled: conf.enabled,
         rules: Some(conf.rules),
         groups: conf.groups,
-        ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
-        included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
+        paths: PathFilter::new(working_directory, &conf.include, &conf.ignore)?,
     })
 }
 
@@ -452,8 +452,7 @@ fn to_formatter_settings(
         isolate_semicolon: conf.isolate_semicolon,
         function_argument_groups: conf.function_argument_groups,
         skip_fn_bodies: conf.skip_fn_bodies,
-        ignored_files: to_matcher(working_directory.clone(), Some(&conf.ignore))?,
-        included_files: to_matcher(working_directory.clone(), Some(&conf.include))?,
+        paths: PathFilter::new(working_directory, &conf.include, &conf.ignore)?,
     })
 }
 
@@ -513,8 +512,7 @@ fn to_file_settings(
         Some(config) => Some(FilesSettings {
             max_size: config.max_size,
             git_ignore,
-            ignored_files: to_matcher(working_directory.clone(), Some(&config.ignore))?,
-            included_files: to_matcher(working_directory, Some(&config.include))?,
+            paths: PathFilter::new(working_directory, &config.include, &config.ignore)?,
         }),
         _ => None,
     })
@@ -580,11 +578,15 @@ pub struct LinterSettings {
     /// The level of all rules of a group
     pub groups: pgls_configuration::linter::Groups,
 
-    /// List of ignored paths/files to match
-    pub ignored_files: Matcher,
+    /// The files that are linted: `linter.include` and `linter.ignore`.
+    pub paths: PathFilter,
+}
 
-    /// List of included paths/files to match
-    pub included_files: Matcher,
+impl LinterSettings {
+    /// Whether the lint rules run on the file at `path`.
+    pub fn is_linted(&self, path: &Path) -> bool {
+        self.enabled && self.paths.contains(path)
+    }
 }
 
 impl Default for LinterSettings {
@@ -593,8 +595,7 @@ impl Default for LinterSettings {
             enabled: true,
             rules: Some(pgls_configuration::linter::Rules::default()),
             groups: Default::default(),
-            ignored_files: Matcher::empty(),
-            included_files: Matcher::empty(),
+            paths: PathFilter::default(),
         }
     }
 }
@@ -685,11 +686,15 @@ pub struct FormatterSettings {
     /// If true, skip formatting of SQL function bodies (keep them verbatim). Default: false.
     pub skip_fn_bodies: bool,
 
-    /// List of ignored paths/files to match
-    pub ignored_files: Matcher,
+    /// The files that are formatted: `format.include` and `format.ignore`.
+    pub paths: PathFilter,
+}
 
-    /// List of included paths/files to match
-    pub included_files: Matcher,
+impl FormatterSettings {
+    /// Whether the file at `path` is formatted.
+    pub fn is_formatted(&self, path: &Path) -> bool {
+        self.enabled && self.paths.contains(path)
+    }
 }
 
 impl Default for FormatterSettings {
@@ -711,8 +716,7 @@ impl Default for FormatterSettings {
             isolate_semicolon: false,
             function_argument_groups: Default::default(),
             skip_fn_bodies: false,
-            ignored_files: Matcher::empty(),
-            included_files: Matcher::empty(),
+            paths: PathFilter::default(),
         }
     }
 }
@@ -1083,11 +1087,8 @@ pub struct FilesSettings {
     /// File size limit in bytes
     pub max_size: NonZeroU64,
 
-    /// List of paths/files to matcher
-    pub ignored_files: Matcher,
-
-    /// List of paths/files to matcher
-    pub included_files: Matcher,
+    /// `files.include` and `files.ignore`.
+    pub paths: PathFilter,
 
     /// gitignore file patterns
     pub git_ignore: Option<Gitignore>,
@@ -1162,11 +1163,6 @@ fn to_migration_settings(
     }
 }
 
-/// Limit the size of files to 1.0 MiB by default
-pub(crate) const DEFAULT_FILE_SIZE_LIMIT: NonZeroU64 =
-    // SAFETY: This constant is initialized with a non-zero value
-    NonZeroU64::new(1024 * 1024).unwrap();
-
 impl FilesSettings {
     /// The files settings of a configuration, without applying the rest of it.
     pub fn from_configuration(
@@ -1186,11 +1182,7 @@ impl FilesSettings {
 
     /// Whether a file is ignored by `files.ignore`/`files.include` or the VCS ignore file.
     pub fn is_ignored(&self, path: &Path) -> bool {
-        let is_included = self.included_files.is_empty()
-            || is_dir(path)
-            || self.included_files.matches_path(path);
-        !is_included
-            || self.ignored_files.matches_path(path)
+        !self.paths.contains(path)
             || self.git_ignore.as_ref().is_some_and(|ignore| {
                 // `matched_path_or_any_parents` panics if `source` is not under the gitignore root.
                 // This checks excludes absolute paths that are not a prefix of the base root.
@@ -1211,12 +1203,43 @@ fn is_dir(path: &Path) -> bool {
     path.is_dir() || (path.is_symlink() && std::fs::read_link(path).is_ok_and(|path| path.is_dir()))
 }
 
+/// The files that a section of the configuration applies to, from its `include` and `ignore`
+/// globs.
+#[derive(Debug, Default)]
+pub struct PathFilter {
+    /// The globs of `include`. Without any, every path is included.
+    pub included: Matcher,
+    /// The globs of `ignore`.
+    pub ignored: Matcher,
+}
+
+impl PathFilter {
+    /// The globs of `include` and `ignore`, relative to `working_directory`.
+    pub fn new(
+        working_directory: Option<PathBuf>,
+        include: &StringSet,
+        ignore: &StringSet,
+    ) -> Result<Self, WorkspaceError> {
+        Ok(Self {
+            included: to_matcher(working_directory.clone(), Some(include))?,
+            ignored: to_matcher(working_directory, Some(ignore))?,
+        })
+    }
+
+    /// Whether the section applies to `path`: it is included and not ignored. A directory always
+    /// counts as included, so that the files below it are matched on their own.
+    pub fn contains(&self, path: &Path) -> bool {
+        let is_included =
+            self.included.is_empty() || is_dir(path) || self.included.matches_path(path);
+        is_included && !self.ignored.matches_path(path)
+    }
+}
+
 impl Default for FilesSettings {
     fn default() -> Self {
         Self {
             max_size: DEFAULT_FILE_SIZE_LIMIT,
-            ignored_files: Matcher::empty(),
-            included_files: Matcher::empty(),
+            paths: PathFilter::default(),
             git_ignore: None,
         }
     }

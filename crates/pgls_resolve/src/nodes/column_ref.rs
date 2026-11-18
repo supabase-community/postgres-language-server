@@ -1,5 +1,5 @@
 use pgls_query::protobuf::ColumnRef;
-use pgls_query_ext::utils::{star_qualifier, string_values};
+use pgls_query_ext::utils::{NameParts, star_qualifier};
 
 use super::Resolver;
 use crate::{
@@ -28,7 +28,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
     if star_qualifier(n).is_some() {
         return;
     }
-    let Some(names) = string_values(&n.fields) else {
+    let Some(names) = NameParts::of(&n.fields) else {
         return;
     };
 
@@ -37,7 +37,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
         [qualifier, name] => resolve_qualified_column(r, qualifier, name, n.location),
         [schema, relation, name] => {
             // `schema.table.column`, if `schema.table` is an unaliased item.
-            let item = find_qualified_item(&r.levels, names.get(..2).unwrap_or_default());
+            let item = find_qualified_item(&r.levels, &[*schema, *relation]);
             let reference = column_reference(r, item, name, n.location);
             let missing = item.is_some_and(|item| item.has_column(name) == Some(false));
             record(r, reference);
@@ -45,7 +45,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
                 r.report(
                     FindingKind::UnknownColumn {
                         relation: Some(format!("{schema}.{relation}")),
-                        column: name.clone(),
+                        column: (*name).to_owned(),
                     },
                     n.location,
                 );
@@ -65,13 +65,20 @@ fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
             record(r, reference);
         }
         ColumnLookup::Unknown => {}
-        ColumnLookup::Ambiguous(candidates) => r.report(
-            FindingKind::AmbiguousColumn {
-                column: name.to_owned(),
-                candidates,
-            },
-            location,
-        ),
+        ColumnLookup::Ambiguous { level } => {
+            let candidates = r
+                .levels
+                .get(level)
+                .map(|level| level.items_with_column(name))
+                .unwrap_or_default();
+            r.report(
+                FindingKind::AmbiguousColumn {
+                    column: name.to_owned(),
+                    candidates,
+                },
+                location,
+            );
+        }
         ColumnLookup::NotFound => {
             // A whole-row reference to a FROM item, or a parameter of the SQL function.
             let is_item = find_item(&r.levels, name).is_some();
@@ -171,7 +178,7 @@ pub(crate) fn record_column_ref_lookup(r: &mut Resolver, n: &ColumnRef) {
     if !r.collects_lookups() {
         return;
     }
-    if let Some([name]) = string_values(&n.fields).as_deref() {
+    if let Some([name]) = NameParts::of(&n.fields).as_ref().map(NameParts::as_slice) {
         let lookup = find_column(&r.levels, name);
         record_column_lookup(r, name, n.location, &lookup);
     }
@@ -198,7 +205,7 @@ fn record_column_lookup(r: &mut Resolver, name: &str, location: i32, lookup: &Co
         return;
     }
     let is_column = match lookup {
-        ColumnLookup::Found | ColumnLookup::Ambiguous(_) => true,
+        ColumnLookup::Found | ColumnLookup::Ambiguous { .. } => true,
         ColumnLookup::Output => false,
         ColumnLookup::Unknown | ColumnLookup::NotFound => {
             find_item(&r.levels, name).is_none()

@@ -12,8 +12,8 @@ use rustc_hash::FxHashSet;
 
 use super::{Catalog, Entry, Key, explicit_schemas, key};
 use crate::lookup::{
-    CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
-    RelationKind, TypeInfo,
+    ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo, RelationKind,
+    TypeInfo,
 };
 
 impl Catalog {

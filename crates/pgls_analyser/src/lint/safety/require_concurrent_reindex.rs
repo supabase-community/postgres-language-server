@@ -1,6 +1,6 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix, fix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::{CatalogView, Lookup};
+use pgls_catalog::Lookup;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query_ext::options::{find_def_elem, is_reindex_concurrent};
