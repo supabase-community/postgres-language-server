@@ -1,5 +1,6 @@
 //! Helpers to compute the edits of rule fixes from the tokens of a statement.
 
+use pgls_line_index::LineBreak;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -230,25 +231,14 @@ impl<'a> StatementTokens<'a> {
                 replacement.push(' ');
                 replacement.push_str(self.sql[comment_range].trim_end());
                 if comment.token() == Token::SqlComment {
-                    replacement.push_str(line_break_after(
-                        &self.sql[usize::from(comment_range.end())..],
-                    ));
+                    // `\n` if the comment ends the input.
+                    let line_break =
+                        LineBreak::at_start_of(&self.sql[usize::from(comment_range.end())..]);
+                    replacement.push_str(line_break.unwrap_or(LineBreak::Lf).as_str());
                 }
             }
         }
         fix.replace(range, replacement)
-    }
-}
-
-/// The line break that ends a `--` comment followed by `text`: `\r\n`, `\r` or `\n`. `\n` at the
-/// end of the input.
-fn line_break_after(text: &str) -> &'static str {
-    if text.starts_with("\r\n") {
-        "\r\n"
-    } else if text.starts_with('\r') {
-        "\r"
-    } else {
-        "\n"
     }
 }
 

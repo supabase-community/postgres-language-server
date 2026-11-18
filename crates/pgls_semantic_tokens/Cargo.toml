@@ -13,6 +13,7 @@ version              = "0.0.0"
 
 [dependencies]
 pgls_catalog             = { workspace = true }
+pgls_line_index          = { workspace = true }
 pgls_query.workspace     = true
 pgls_resolve             = { workspace = true }
 pgls_text_size.workspace = true

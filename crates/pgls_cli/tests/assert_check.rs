@@ -643,14 +643,14 @@ fn check_uses_the_nearest_configuration_file() {
     );
 }
 
-/// Lines end at `\n` only, like in the LSP and in the diffs of `format`: a lone `\r` is a
-/// character of its line, in the header, the code frame and every reporter.
+/// Lines end at `\n`, `\r\n` and a lone `\r`, like in the LSP: the statement after a lone `\r`
+/// is on the next line, in the header, the code frame and every reporter.
 #[test]
 #[cfg_attr(
     target_os = "windows",
     ignore = "snapshot expectations only validated on unix-like platforms"
 )]
-fn check_lone_carriage_return_does_not_end_a_line_snapshot() {
+fn check_lone_carriage_return_ends_a_line_snapshot() {
     let root = write_tree(&[(
         "migration.sql",
         "select 1;\ralter tqjable t drop column id;\n",

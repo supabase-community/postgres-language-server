@@ -731,8 +731,8 @@ mod tests {
     use crate::SourceCode;
 
     #[test]
-    fn location_counts_lines_at_line_feeds_only() {
-        // A lone `\r` is a character of its line, the `\r` of a `\r\n` ends the line.
+    fn location_counts_lines_like_the_lsp() {
+        // A lone `\r` ends a line, and so does a `\r\n`, whose `\r` is the end of its line.
         let source = SourceFile::new(SourceCode {
             text: "a\rbé\r\nc",
             line_starts: None,
@@ -743,10 +743,11 @@ mod tests {
             column_number: OneIndexed::new(column).unwrap(),
         };
 
-        assert_eq!(location(2), at(1, 3));
-        assert_eq!(location(3), at(1, 4));
-        assert_eq!(location(5), at(1, 5));
-        assert_eq!(location(7), at(2, 1));
+        assert_eq!(location(1), at(1, 2));
+        assert_eq!(location(2), at(2, 1));
+        assert_eq!(location(3), at(2, 2));
+        assert_eq!(location(5), at(2, 3));
+        assert_eq!(location(7), at(3, 1));
     }
 
     #[test]

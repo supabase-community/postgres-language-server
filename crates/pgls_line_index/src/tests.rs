@@ -1,48 +1,112 @@
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::WideEncoding::{Utf16, Utf32};
-use crate::{LineCol, LineIndex, WideLineCol, changed_range, offset_of_char_position};
+use crate::{
+    LineBreak, LineCol, LineIndex, Lines, WideLineCol, changed_range, offset_of_char_position,
+};
 
 #[test]
 fn line_breaks_and_wide_characters() {
-    // Line 0 ends with `\r\n`, line 1 contains a lone `\r`, which doesn't end it, and line 2
-    // has a 2-byte `é` (1 UTF-16 unit) and a 4-byte `😀` (a UTF-16 surrogate pair).
+    // Line 0 ends with `\r\n`, line 1 with a lone `\r`, line 2 with `\n`, and line 3 has a
+    // 2-byte `é` (1 UTF-16 unit) and a 4-byte `😀` (a UTF-16 surrogate pair).
     let text = "ab\r\nc\rd\né😀x";
     let line_index = LineIndex::new(text);
     let line_col = |offset: u32| line_index.line_col(TextSize::from(offset)).unwrap();
     let at = |line, col| LineCol { line, col };
 
+    assert_eq!(line_index.len(), TextSize::of(text));
+    assert_eq!(
+        line_index.line_starts(),
+        [0, 4, 6, 8].map(TextSize::from).as_slice()
+    );
+
     assert_eq!(line_col(2), at(0, 2));
     // Between the `\r` and the `\n`: the end of the line.
     assert_eq!(line_col(3), at(0, 2));
     assert_eq!(line_col(4), at(1, 0));
-    assert_eq!(line_col(6), at(1, 2));
-    assert_eq!(line_col(8), at(2, 0));
-    assert_eq!(line_col(10), at(2, 2));
-    assert_eq!(line_col(14), at(2, 6));
-    assert_eq!(line_col(15), at(2, 7));
+    assert_eq!(line_col(5), at(1, 1));
+    assert_eq!(line_col(6), at(2, 0));
+    assert_eq!(line_col(8), at(3, 0));
+    assert_eq!(line_col(10), at(3, 2));
+    assert_eq!(line_col(14), at(3, 6));
+    assert_eq!(line_col(15), at(3, 7));
 
     // Past the end of a line: the start of its line break. Past the last line: the end of the
     // text.
     let clamped = |line, col| u32::from(line_index.offset_clamped(at(line, col)));
     assert_eq!(clamped(0, 100), 2);
-    assert_eq!(clamped(1, 100), 7);
-    assert_eq!(clamped(2, 100), 15);
-    assert_eq!(clamped(3, 0), 15);
+    assert_eq!(clamped(1, 100), 5);
+    assert_eq!(clamped(2, 100), 7);
+    assert_eq!(clamped(3, 100), 15);
+    assert_eq!(clamped(4, 0), 15);
     // Inside a character: the start of the character.
-    assert_eq!(clamped(2, 1), 8);
-    assert_eq!(clamped(2, 4), 10);
-    let mid_surrogate_pair = line_index.to_utf8(Utf16, WideLineCol { line: 2, col: 2 });
+    assert_eq!(clamped(3, 1), 8);
+    assert_eq!(clamped(3, 4), 10);
+    let mid_surrogate_pair = line_index.to_utf8(Utf16, WideLineCol { line: 3, col: 2 });
     assert_eq!(u32::from(line_index.offset_clamped(mid_surrogate_pair)), 10);
 
     for (offset, utf16, utf32) in [(8, 0, 0), (10, 1, 1), (14, 3, 2), (15, 4, 3)] {
         let utf8 = line_col(offset);
         for (enc, col) in [(Utf16, utf16), (Utf32, utf32)] {
             let wide = line_index.to_wide(enc, utf8).unwrap();
-            assert_eq!(wide, WideLineCol { line: 2, col }, "{offset} {enc:?}");
+            assert_eq!(wide, WideLineCol { line: 3, col }, "{offset} {enc:?}");
             assert_eq!(line_index.to_utf8(enc, wide), utf8, "{offset} {enc:?}");
         }
     }
+}
+
+#[test]
+fn lines_end_like_in_the_line_index() {
+    let collect = |text| Lines::new(text).collect::<Vec<_>>();
+    let line = |start: u32, text| (TextSize::from(start), text);
+
+    assert_eq!(collect(""), [line(0, "")]);
+    assert_eq!(collect("a"), [line(0, "a")]);
+    assert_eq!(
+        collect("a\r\nb\rc\n"),
+        [line(0, "a"), line(3, "b"), line(5, "c"), line(7, "")]
+    );
+    assert_eq!(
+        collect("\r\r\n\n"),
+        [line(0, ""), line(1, ""), line(3, ""), line(4, "")]
+    );
+}
+
+#[test]
+fn line_breaks_of_a_text() {
+    assert_eq!(LineBreak::first_in("a\rb\r\n"), Some(LineBreak::Cr));
+    assert_eq!(LineBreak::first_in("a\r\nb\n"), Some(LineBreak::CrLf));
+    assert_eq!(LineBreak::first_in("a\nb\r"), Some(LineBreak::Lf));
+    assert_eq!(LineBreak::first_in("ab"), None);
+    assert_eq!(LineBreak::at_start_of("\r\nb"), Some(LineBreak::CrLf));
+    assert_eq!(LineBreak::at_start_of("a\n"), None);
+    assert!(LineBreak::is_in("a\rb"));
+    assert!(!LineBreak::is_in("ab"));
+    for line_break in [LineBreak::Lf, LineBreak::CrLf, LineBreak::Cr] {
+        assert_eq!(
+            LineBreak::at_start_of(line_break.as_str()),
+            Some(line_break)
+        );
+    }
+}
+
+#[test]
+fn line_at_an_offset() {
+    let text = "ab\r\ncé\rd\n";
+    let line_at = |offset: u32| {
+        let range = Lines::new(text).line_at(TextSize::from(offset));
+        &text[range]
+    };
+    assert_eq!(line_at(0), "ab");
+    assert_eq!(line_at(2), "ab");
+    // Between the `\r` and the `\n`: the line it ends.
+    assert_eq!(line_at(3), "ab");
+    assert_eq!(line_at(4), "cé");
+    // Inside the `é`: its line.
+    assert_eq!(line_at(6), "cé");
+    assert_eq!(line_at(8), "d");
+    assert_eq!(line_at(10), "");
+    assert_eq!(line_at(100), "");
 }
 
 #[test]
@@ -117,6 +181,8 @@ fn changed_range_keeps_crlf_whole() {
         ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
         ("select 1;\r\n", "select 1;\r\r\n"),
         ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+        ("select 1;\rselect 2;", "select 1;\r\nselect 2;"),
+        ("select 1;\r\nselect 2;", "select 1;\rselect 2;"),
     ] {
         let (range, new_text) = changed_range(old, new).unwrap();
         let mut applied = old.to_string();
@@ -155,4 +221,152 @@ fn character_positions_are_one_based() {
     assert_eq!(offset_of_char_position(text, 0), None);
     assert_eq!(offset_of_char_position(text, chars + 2), None);
     assert_eq!(offset_of_char_position("", 1), Some(TextSize::from(0)));
+}
+
+mod properties {
+    use pgls_text_size::{TextRange, TextSize};
+    use proptest::prelude::*;
+
+    use crate::WideEncoding::{Utf16, Utf32};
+    use crate::{LineCol, LineIndex, Lines, changed_range};
+
+    /// A text of line breaks and characters of 1, 2 and 4 bytes in UTF-8, so that every line
+    /// break, `\r\n` split or not, and every width of character shows up next to each other.
+    #[derive(Debug)]
+    struct Text(String);
+
+    impl Arbitrary for Text {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with((): ()) -> Self::Strategy {
+            proptest::collection::vec(
+                proptest::sample::select(vec!['a', 'é', '😀', '\r', '\n']),
+                0..24,
+            )
+            .prop_map(|chars| Text(chars.into_iter().collect()))
+            .boxed()
+        }
+    }
+
+    proptest! {
+        /// `Lines` returns the lines of the line index, and between two lines there is exactly one
+        /// line break.
+        #[test]
+        fn lines_are_the_lines_of_the_index(Text(text) in any::<Text>()) {
+            let line_index = LineIndex::new(&text);
+            prop_assert_eq!(line_index.len(), TextSize::of(text.as_str()));
+            let lines: Vec<_> = Lines::new(&text).collect();
+            let starts: Vec<_> = lines.iter().map(|(start, _)| *start).collect();
+            prop_assert_eq!(line_index.line_starts(), starts.as_slice());
+
+            for (i, (start, line)) in lines.iter().enumerate() {
+                let start = usize::from(*start);
+                prop_assert_eq!(&text[start..start + line.len()], *line);
+                prop_assert!(!line.contains(['\r', '\n']));
+                let next = lines.get(i + 1).map_or(text.len(), |(next, _)| usize::from(*next));
+                let line_break = &text[start + line.len()..next];
+                if i + 1 < lines.len() {
+                    prop_assert!(["\n", "\r\n", "\r"].contains(&line_break), "{line_break:?}");
+                } else {
+                    prop_assert_eq!(line_break, "");
+                }
+            }
+        }
+
+        /// Every offset converts to a position and back, except one between the `\r` and the
+        /// `\n` of a line break, which is the end of its line. An offset inside a character is
+        /// no char boundary.
+        #[test]
+        fn positions_round_trip(Text(text) in any::<Text>()) {
+            let line_index = LineIndex::new(&text);
+            let starts: Vec<_> = Lines::new(&text).map(|(start, _)| usize::from(start)).collect();
+            for offset in 0..=text.len() + 1 {
+                let size = TextSize::try_from(offset).unwrap();
+                if offset > text.len() || !text.is_char_boundary(offset) {
+                    prop_assert!(!line_index.is_char_boundary(size), "{offset}");
+                    continue;
+                }
+                prop_assert!(line_index.is_char_boundary(size), "{offset}");
+                let line_col = line_index.line_col(size).unwrap();
+                let at = if Lines::splits_crlf(&text, offset) { offset - 1 } else { offset };
+                let line = starts.partition_point(|&start| start <= at) - 1;
+                prop_assert_eq!(
+                    line_col,
+                    LineCol { line: line as u32, col: (at - starts[line]) as u32 },
+                    "{}", offset
+                );
+                prop_assert_eq!(line_index.offset(line_col), Some(TextSize::try_from(at).unwrap()));
+                prop_assert_eq!(line_index.offset_clamped(line_col), TextSize::try_from(at).unwrap());
+                for enc in [Utf16, Utf32] {
+                    let wide = line_index.to_wide(enc, line_col).unwrap();
+                    prop_assert_eq!(line_index.to_utf8(enc, wide), line_col);
+                }
+            }
+        }
+
+        /// `Lines::line_at` finds the line that the line index puts an offset on.
+        #[test]
+        fn line_at_is_the_line_of_the_index(Text(text) in any::<Text>()) {
+            let line_index = LineIndex::new(&text);
+            let lines: Vec<_> = Lines::new(&text).collect();
+            for offset in (0..=text.len()).filter(|&offset| text.is_char_boundary(offset)) {
+                let size = TextSize::try_from(offset).unwrap();
+                let line = line_index.line_col(size).unwrap().line as usize;
+                let (start, content) = lines[line];
+                prop_assert_eq!(
+                    Lines::new(&text).line_at(size),
+                    TextRange::at(start, TextSize::of(content)),
+                    "{}", offset
+                );
+            }
+        }
+
+        /// A column past the end of a line is the start of its line break.
+        #[test]
+        fn columns_past_the_end_of_a_line_are_clamped(Text(text) in any::<Text>()) {
+            let line_index = LineIndex::new(&text);
+            for (line, (start, content)) in Lines::new(&text).enumerate() {
+                let end = start + TextSize::of(content);
+                let line_col = LineCol { line: line as u32, col: u32::from(TextSize::of(content)) + 3 };
+                prop_assert_eq!(line_index.offset_clamped(line_col), end);
+            }
+        }
+
+        /// The edit turns `old` into `new`, replaces no more than what changed, and neither of its
+        /// ends is between the `\r` and the `\n` of a line break.
+        #[test]
+        fn changed_range_is_the_change(Text(old) in any::<Text>(), Text(new) in any::<Text>()) {
+            let (range, new_text) = changed_range(&old, &new).unwrap();
+            let mut applied = old.clone();
+            applied.replace_range(std::ops::Range::<usize>::from(range), new_text);
+            prop_assert_eq!(&applied, &new);
+
+            let (start, end) = (usize::from(range.start()), usize::from(range.end()));
+            prop_assert!(!Lines::splits_crlf(&old, start) && !Lines::splits_crlf(&old, end));
+            let prefix = old
+                .char_indices()
+                .zip(new.chars())
+                .find(|((_, a), b)| a != b)
+                .map_or(old.len().min(new.len()), |((index, _), _)| index);
+            // Only a `\r\n` that the change would split is taken in whole.
+            prop_assert!(
+                start == prefix || (start + 1 == prefix && Lines::splits_crlf(&old, prefix)),
+                "{:?} {}", range, prefix
+            );
+            let suffix: usize = old[prefix..]
+                .chars()
+                .rev()
+                .zip(new[prefix..].chars().rev())
+                .take_while(|(a, b)| a == b)
+                .map(|(a, _)| a.len_utf8())
+                .sum();
+            let unchanged_end = old.len() - suffix;
+            prop_assert!(
+                end == unchanged_end
+                    || (end == unchanged_end + 1 && Lines::splits_crlf(&old, unchanged_end)),
+                "{:?} {}", range, unchanged_end
+            );
+        }
+    }
 }

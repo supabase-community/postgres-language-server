@@ -68,7 +68,7 @@ fn parse_with_replaced_keyword(
     tree
 }
 
-/// The row and the byte column of `byte` in `text`.
+/// The row and the byte column of `byte` in `text`. Rows end at `\n` only, as in tree-sitter.
 fn point_at(text: &str, byte: usize) -> Point {
     let before = text.as_bytes().get(..byte).unwrap_or_default();
     let line_start = before
