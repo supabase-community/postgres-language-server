@@ -1,6 +1,13 @@
 //! Statements whose parts used to run past the line width because they had no break opportunity
 //! or broke without an indent.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 mod common;
 
 use pgls_pretty_print::{FormatConfig, format_statement};

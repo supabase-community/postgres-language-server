@@ -182,9 +182,7 @@ fn emit_aggregate_args(e: &mut EventEmitter, args: &[Node]) {
     let mut first = true;
     let mut i = 0;
 
-    while i < args.len() {
-        let arg = &args[i];
-
+    while let Some(arg) = args.get(i) {
         match arg.node.as_ref() {
             Some(NodeEnum::TypeName(type_name)) => {
                 if !first {

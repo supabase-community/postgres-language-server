@@ -12,7 +12,7 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct ReachedEOFException;
+pub(crate) struct ReachedEOFException;
 
 impl std::fmt::Display for ReachedEOFException {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -24,7 +24,7 @@ impl Error for ReachedEOFException {}
 
 pub(crate) type SplitterResult = std::result::Result<(), ReachedEOFException>;
 
-pub fn source(p: &mut Splitter) -> SplitterResult {
+pub(crate) fn source(p: &mut Splitter) -> SplitterResult {
     loop {
         match p.current() {
             SyntaxKind::EOF => {

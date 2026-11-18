@@ -93,7 +93,11 @@ fn run_bindgen(
     out_bindings: &Path,
 ) -> Result<(), String> {
     let mut b = bindgen::Builder::default()
-        .header(header.to_str().unwrap())
+        .header(
+            header
+                .to_str()
+                .ok_or_else(|| format!("header path {} is not UTF-8", header.display()))?,
+        )
         // Allowlist only the functions we need
         .allowlist_function("pg_query_parse_protobuf")
         .allowlist_function("pg_query_scan")
@@ -170,7 +174,11 @@ fn run_bindgen(
         .map_err(|e| e.to_string())
 }
 
-fn maybe_generate_prost(proto_candidates: &[PathBuf], out_dir_src: &Path, out_dir_real: &Path) {
+fn maybe_generate_prost(
+    proto_candidates: &[PathBuf],
+    out_dir_src: &Path,
+    out_dir_real: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     let protoc_ok = Command::new("protoc")
         .arg("--version")
         .status()
@@ -179,7 +187,7 @@ fn maybe_generate_prost(proto_candidates: &[PathBuf], out_dir_src: &Path, out_di
         .unwrap_or(false);
     if !protoc_ok {
         println!("skipping protobuf generation (no protoc)");
-        return;
+        return Ok(());
     }
     let proto = proto_candidates.iter().find(|p| p.exists());
     if let Some(p) = proto {
@@ -187,8 +195,10 @@ fn maybe_generate_prost(proto_candidates: &[PathBuf], out_dir_src: &Path, out_di
         unsafe {
             env::set_var("OUT_DIR", out_dir_src);
         }
-        let inc = p.parent().unwrap();
-        prost_build::compile_protos(&[p], &[inc]).expect("prost_build failed");
+        let inc = p
+            .parent()
+            .ok_or("the .proto file has no parent directory")?;
+        prost_build::compile_protos(&[p], &[inc])?;
         std::fs::rename(
             out_dir_src.join("pg_query.rs"),
             out_dir_src.join("protobuf.rs"),
@@ -200,11 +210,16 @@ fn maybe_generate_prost(proto_candidates: &[PathBuf], out_dir_src: &Path, out_di
     } else {
         println!("skipping protobuf generation (no .proto found)");
     }
+    Ok(())
 }
 
-fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
+fn compile_c_if_needed(
+    layout: &Layout,
+    is_emscripten: bool,
+    target: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     if layout.lib_dir.is_some() {
-        return;
+        return Ok(());
     } // System lib, nothing to compile.
 
     let mut cc = cc::Build::new();
@@ -214,7 +229,10 @@ fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
 
     for root in &layout.c_src_roots {
         let pattern = root.join("*.c");
-        for p in glob(pattern.to_str().unwrap()).unwrap().flatten() {
+        let pattern = pattern
+            .to_str()
+            .ok_or_else(|| format!("source path {} is not UTF-8", pattern.display()))?;
+        for p in glob(pattern)?.flatten() {
             cc.file(p);
         }
     }
@@ -252,13 +270,14 @@ fn compile_c_if_needed(layout: &Layout, is_emscripten: bool, target: &str) {
 
     println!("cargo:rustc-link-lib=static={LIB_NAME}");
     cc.compile(LIB_NAME);
+    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
     let src_dir = manifest_dir.join("src");
-    let target = env::var("TARGET").unwrap();
+    let target = env::var("TARGET")?;
     let is_emscripten = target.contains("emscripten");
 
     println!("cargo:rerun-if-changed=build.rs");
@@ -279,7 +298,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rustc-link-lib={LIB_NAME}");
     }
 
-    compile_c_if_needed(&layout, is_emscripten, &target);
+    compile_c_if_needed(&layout, is_emscripten, &target)?;
 
     let mut include_dirs = vec![layout.include_dir.clone()];
     include_dirs.extend(layout.extra_includes.clone());
@@ -321,7 +340,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Protobuf generation (optional, uses pre-generated file as fallback)
     let candidates = layout.proto.into_iter().collect::<Vec<_>>();
-    maybe_generate_prost(&candidates, &src_dir, &out_dir);
+    maybe_generate_prost(&candidates, &src_dir, &out_dir)?;
 
     Ok(())
 }
