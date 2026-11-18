@@ -558,6 +558,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pglinter" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        pglinter
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#supabase-specific-rules" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1378,6 +1389,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pglinter" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        pglinter
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#supabase-specific-rules" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1431,7 +1453,7 @@
 
 <h1 id="database-linting">Database Linting<a class="headerlink" href="#database-linting" title="Permanent link">&para;</a></h1>
 <p>The database linter analyzes your live Postgres database schema to detect performance issues, security vulnerabilities, and configuration problems. Unlike the <a href=".././linting/">file-based linter</a> which checks SQL migration files, the database linter connects directly to your database and inspects the actual schema state.</p>
-<p>All database linting rules are powered by existing tools such as <a href="https://github.com/supabase/splinter">Splinter</a>.</p>
+<p>All database linting rules are powered by existing tools: <a href="https://github.com/supabase/splinter">Splinter</a> and, if you turn it on, <a href="#pglinter">pglinter</a>.</p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <p>See the <a href="../../reference/database_rules/">Database Linter Rules Reference</a> for the complete list of available rules and their descriptions.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
@@ -1519,6 +1541,28 @@
 </tr>
 </tbody>
 </table>
+<h2 id="pglinter">pglinter<a class="headerlink" href="#pglinter" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/pmpetit/pglinter">pglinter</a> is a Postgres extension that checks a database for common design problems, such as tables without a primary key, foreign keys without an index, or objects with uppercase names. With <code>pglinter.enabled</code>, <code>dblint</code> runs its rules next to Splinter's and reports their violations:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"pglinter"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"rules"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"base"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"howManyTableWithoutPrimaryKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"howManyTablesNeverSelected"</span><span class="p">:</span><span class="w"> </span><span class="s2">"off"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The rules are in the groups <code>base</code>, <code>schema</code> and <code>cluster</code>; see <a href="https://github.com/pmpetit/pglinter#implemented-rules">pglinter's rules</a>. pglinter is off by default.</p>
+<p>pglinter runs its rules inside the database, so the extension must be installed there (see <a href="https://github.com/pmpetit/pglinter#installation">pglinter's installation guide</a>), and created in the database you lint:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">pglinter</span><span class="p">;</span>
+</code></pre></div>
+<ul>
+<li>Without the extension, <code>dblint</code> reports <code>pglinter/extensionNotInstalled</code>.</li>
+<li>A rule that the configuration enables but the extension disables, with <code>pglinter.disable_rule</code>, is reported as <code>pglinter/ruleDisabledInExtension</code>.</li>
+</ul>
 <h2 id="supabase-specific-rules">Supabase-Specific Rules<a class="headerlink" href="#supabase-specific-rules" title="Permanent link">&para;</a></h2>
 <p>Some rules are specifically designed for Supabase projects and will be automatically skipped if Supabase-specific database roles are not detected. These rules check for issues related to:</p>
 <ul>

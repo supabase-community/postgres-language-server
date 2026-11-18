@@ -2156,7 +2156,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "description": "if `false`, it disables the feature and the linter won't be executed. `true` by default",
+          "description": "if `false`, it disables the feature and the linter won't be executed. `false` by default",
           "type": [
             "boolean",
             "null"
