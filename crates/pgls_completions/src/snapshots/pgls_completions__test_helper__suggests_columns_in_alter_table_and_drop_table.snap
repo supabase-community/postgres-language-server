@@ -106,9 +106,9 @@ alter table instruments drop column n|
 Results:
 name - public.instruments.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -245,9 +245,9 @@ alter table instruments drop column if exists n|
 Results:
 name - public.instruments.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -334,7 +334,7 @@ created_at - public.instruments.created_at (Column)
 column - column (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
+calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 
 --------------
 
@@ -354,9 +354,9 @@ alter table instruments alter column n|
 Results:
 name - public.instruments.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -480,8 +480,8 @@ Results:
 name - public.instruments.name (Column)
 column - column (Keyword)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 
 --------------
 
@@ -622,7 +622,7 @@ created_at - public.instruments.created_at (Column)
 column - column (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
+calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 
 --------------
 
@@ -642,9 +642,9 @@ alter table public.instruments alter column n|
 Results:
 name - public.instruments.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 
@@ -731,8 +731,8 @@ Results:
 name - public.instruments.name (Column)
 column - column (Keyword)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 
 --------------
 
@@ -819,8 +819,8 @@ Results:
 name - public.instruments.name (Column)
 column - column (Keyword)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 
 --------------
 
@@ -932,7 +932,7 @@ created_at - public.instruments.created_at (Column)
 column - column (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
+calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 
 --------------
 
@@ -952,9 +952,9 @@ alter table public.instruments rename column n|
 Results:
 name - public.instruments.name (Column)
 n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
+n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
 n_distinct - pg_catalog.pg_stats.n_distinct (Column)
-n_ins_since_vacuum - pg_catalog.pg_stat_all_tables.n_ins_since_vacuum (Column)
-n_live_tup - pg_catalog.pg_stat_all_tables.n_live_tup (Column)
 
 --------------
 

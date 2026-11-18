@@ -23,8 +23,6 @@ pub enum WorkspaceError {
     DatabaseConnectionError(DatabaseConnectionError),
     /// Diagnostics emitted when querying the file system
     FileSystem(FileSystemDiagnostic),
-    /// Thrown when we can't read a generic directory
-    CantReadDirectory(CantReadDirectory),
     /// Thrown when we can't read a generic file
     CantReadFile(CantReadFile),
     /// The file does not exist in the [crate::Workspace]
@@ -33,10 +31,6 @@ pub enum WorkspaceError {
     NoProject(NoProject),
     /// Error emitted by the underlying transport layer for a remote Workspace
     TransportError(TransportError),
-    /// Emitted when the file is ignored and should not be processed
-    FileIgnored(FileIgnored),
-    /// Emitted when a file could not be parsed because it's larger than the size limit
-    FileTooLarge(FileTooLarge),
     /// Diagnostic raised when a file is protected
     ProtectedFile(ProtectedFile),
     /// Raised when there's an issue around the VCS integration
@@ -182,8 +176,6 @@ impl Diagnostic for TransportError {
 
 #[derive(Debug, Deserialize, Diagnostic, Serialize)]
 pub enum VcsDiagnostic {
-    /// When the VCS folder couldn't be found
-    NoVcsFolderFound(NoVcsFolderFound),
     /// VCS is disabled
     DisabledVcs(DisabledVcs),
 }
@@ -226,20 +218,6 @@ impl From<JoinError> for WorkspaceError {
             message: err.to_string(),
         })
     }
-}
-
-#[derive(Debug, Diagnostic, Serialize, Deserialize)]
-#[diagnostic(
-    category = "internalError/fs",
-    severity = Error,
-    message(
-        description = "Couldn't find the VCS folder at the following path: {path}",
-        message("Couldn't find the VCS folder at the following path: "<Emphasis>{self.path}</Emphasis>),
-    )
-)]
-pub struct NoVcsFolderFound {
-    #[location(resource)]
-    pub path: String,
 }
 
 impl From<VcsDiagnostic> for WorkspaceError {
@@ -373,19 +351,6 @@ impl Advices for ProtectedFileAdvice {
 #[diagnostic(
     category = "internalError/fs",
     message(
-        message("We couldn't read the following directory, maybe for permissions reasons or it doesn't exist: "{self.path}),
-        description = "We couldn't read the following directory, maybe for permissions reasons or it doesn't exist: {path}"
-    )
-)]
-pub struct CantReadDirectory {
-    #[location(resource)]
-    path: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Diagnostic)]
-#[diagnostic(
-    category = "internalError/fs",
-    message(
         message("We couldn't read the following file, maybe for permissions reasons or it doesn't exist: "{self.path}),
         description = "We couldn't read the following file, maybe for permissions reasons or it doesn't exist: {path}"
     )
@@ -395,25 +360,11 @@ pub struct CantReadFile {
     path: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Diagnostic)]
-#[diagnostic(
-    category = "internalError/fs",
-    message(
-        message("The file "{self.path}" was ignored."),
-        description = "The file {path} was ignored."
-    ),
-    severity = Warning,
-)]
-pub struct FileIgnored {
-    #[location(resource)]
-    path: String,
-}
-
+/// The diagnostic of a file larger than `files.maxSize`, which is neither split nor parsed.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileTooLarge {
-    path: String,
-    size: usize,
-    limit: usize,
+    pub(crate) size: usize,
+    pub(crate) limit: usize,
 }
 
 impl Diagnostic for FileTooLarge {
@@ -421,12 +372,15 @@ impl Diagnostic for FileTooLarge {
         Some(category!("internalError/fs"))
     }
 
+    fn severity(&self) -> Severity {
+        Severity::Warning
+    }
+
     fn message(&self, fmt: &mut pgls_console::fmt::Formatter<'_>) -> std::io::Result<()> {
         fmt.write_markup(
             markup!{
-                "Size of "{self.path}" is "{Bytes(self.size)}" which exceeds configured maximum of "{Bytes(self.limit)}" for this project.
-                The file size limit exists to prevent us inadvertently slowing down and loading large files that we shouldn't.
-                Use the `files.maxSize` configuration to change the maximum size of files processed."
+                "The size of the file is "{Bytes(self.size)}", which exceeds the configured maximum of "{Bytes(self.limit)}" for this project. The file is not checked.
+Use the `files.maxSize` configuration to change the maximum size of files processed, or `files.ignore` to ignore the file."
             }
         )
     }
@@ -434,10 +388,8 @@ impl Diagnostic for FileTooLarge {
     fn description(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
         write!(
             fmt,
-            "Size of {} is {} which exceeds configured maximum of {} for this project.\n\
-               The file size limit exists to prevent us inadvertently slowing down and loading large files that we shouldn't.\n\
-               Use the `files.maxSize` configuration to change the maximum size of files processed.",
-            self.path,
+            "The size of the file is {}, which exceeds the configured maximum of {} for this project. The file is not checked.\n\
+             Use the `files.maxSize` configuration to change the maximum size of files processed, or `files.ignore` to ignore the file.",
             Bytes(self.size),
             Bytes(self.limit)
         )

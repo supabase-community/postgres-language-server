@@ -1,5 +1,6 @@
 //! The state of name resolution: the catalog, the names in scope, and the findings so far.
 
+use pgls_catalog::Catalog;
 use std::{cell::OnceCell, mem::Discriminant};
 
 use pgls_text_size::{TextRange, TextSize};
@@ -20,10 +21,10 @@ use super::{
 };
 use pgls_catalog::TypeKind;
 use pgls_catalog::typing::{ResolvedFunction, Type, TypeId};
-use pgls_catalog::{CatalogView, Lookup, Origin};
+use pgls_catalog::{Lookup, Origin};
 
 pub(super) struct Resolver<'a> {
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     pub search_path: &'a [String],
     pub function: Option<&'a FunctionContext>,
     sql: Option<&'a str>,
@@ -61,7 +62,7 @@ pub(super) struct Resolver<'a> {
 
 impl<'a> Resolver<'a> {
     pub fn new(
-        catalog: &'a dyn CatalogView,
+        catalog: &'a Catalog,
         search_path: &'a [String],
         function: Option<&'a FunctionContext>,
         sql: Option<&'a str>,
