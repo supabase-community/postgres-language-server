@@ -1549,6 +1549,15 @@ VALUES
             .assert_no_errors();
     }
 
+    /// A lone `\r` ends a `--` comment, as in Postgres, so the text after it is part of the
+    /// statement.
+    #[test]
+    fn line_comment_ends_at_a_lone_carriage_return() {
+        Tester::from("select 1 -- c\rfrom t;\nselect 2;")
+            .expect_statements(vec!["select 1 -- c\rfrom t;", "select 2;"])
+            .assert_no_errors();
+    }
+
     #[test]
     fn semicolon_in_comment_and_dollar_quote() {
         Tester::from("select /*;*/ 1;\nselect $$;$$;")
