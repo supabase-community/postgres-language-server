@@ -37,7 +37,7 @@ pub(crate) async fn get_test_deps(
 
 /// Careful: This will connect against the passed database.
 /// Use this only to debug issues. Do not commit to version control.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "for debugging; no committed test calls it")]
 pub(crate) async fn test_against_connection_string(
     conn_str: &str,
     input: QueryWithCursorPosition,
@@ -79,10 +79,16 @@ pub(crate) fn get_test_params<'a>(
 pub(crate) enum CompletionAssertion {
     Label(String),
     LabelAndKind(String, CompletionItemKind),
-    #[allow(unused)]
+    #[allow(
+        dead_code,
+        reason = "an assertion of the test API that no test uses yet"
+    )]
     LabelAndDesc(String, String),
     LabelNotExists(String),
-    #[allow(unused)]
+    #[allow(
+        dead_code,
+        reason = "an assertion of the test API that no test uses yet"
+    )]
     KindNotExists(CompletionItemKind),
     CompletionTextAndRange(String, TextRange),
 }
@@ -211,7 +217,10 @@ pub(crate) async fn assert_no_complete_results(query: &str, setup: Option<&str>,
 
 enum ChunkToType {
     WithCompletions(String),
-    #[allow(unused)]
+    #[allow(
+        dead_code,
+        reason = "only `type_without_completions` builds it, which no test uses yet"
+    )]
     WithoutCompletions(String),
 }
 
@@ -250,7 +259,7 @@ impl TestCompletionsCase {
         self
     }
 
-    #[allow(unused)]
+    #[allow(dead_code, reason = "a step of the test API that no test uses yet")]
     pub(crate) fn type_without_completions(mut self, it: &str) -> Self {
         self.tokens_to_type
             .push(ChunkToType::WithoutCompletions(it.trim().to_string()));

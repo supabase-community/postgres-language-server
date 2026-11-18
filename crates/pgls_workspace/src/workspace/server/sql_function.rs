@@ -1,10 +1,10 @@
-use pgls_query_ext::utils::{find_option_value, find_option_value_mut};
+use pgls_query_ext::{function_body::Language, utils::find_option_value_mut};
 
 /// Puts the formatted body into `CREATE FUNCTION ... AS '<body>'` for a `LANGUAGE sql` function.
 ///
 /// A reformatted body goes on lines of its own between the quotes. A body that formatting leaves
 /// alone keeps the layout it was written with. Returns true when the body was replaced.
-pub fn set_formatted_sql_fn_body(ast: &mut pgls_query::NodeEnum, formatted: &str) -> bool {
+pub(super) fn set_formatted_sql_fn_body(ast: &mut pgls_query::NodeEnum, formatted: &str) -> bool {
     let Some(body) = sql_fn_body_mut(ast) else {
         return false;
     };
@@ -22,7 +22,7 @@ fn sql_fn_body_mut(ast: &mut pgls_query::NodeEnum) -> Option<&mut String> {
         return None;
     };
 
-    if find_option_value(create_fn, "language") != Some("sql") {
+    if Language::of(create_fn) != Some(Language::Sql) {
         return None;
     }
 
@@ -31,6 +31,8 @@ fn sql_fn_body_mut(ast: &mut pgls_query::NodeEnum) -> Option<&mut String> {
 
 #[cfg(test)]
 mod tests {
+    use pgls_query_ext::utils::find_option_value;
+
     use super::*;
 
     #[test]

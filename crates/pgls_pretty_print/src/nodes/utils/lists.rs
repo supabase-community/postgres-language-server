@@ -190,15 +190,18 @@ pub(crate) fn emit_args_as_sequence(e: &mut EventEmitter, args: &[Node], opno: u
         return;
     }
 
-    if args.len() == 1 {
+    if let [first] = args {
         e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();
-        emit_node(e, &args[0]);
+        emit_node(e, first);
         return;
     }
 
-    emit_node(e, &args[0]);
-    for arg in &args[1..] {
+    let [first, rest @ ..] = args else {
+        return;
+    };
+    emit_node(e, first);
+    for arg in rest {
         e.space();
         e.token(TokenKind::IDENT(format!("op#{opno}")));
         e.space();

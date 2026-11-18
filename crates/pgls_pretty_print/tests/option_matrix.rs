@@ -13,6 +13,13 @@
 //! cargo test -p pgls_pretty_print --release --test option_matrix -- --ignored
 //! ```
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 mod common;
 
 use std::{

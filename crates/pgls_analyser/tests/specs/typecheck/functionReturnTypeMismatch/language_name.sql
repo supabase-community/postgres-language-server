@@ -1,0 +1,8 @@
+-- The grammar downcases an unquoted language name, so this is a SQL function.
+-- expect_lint/functionReturnTypeMismatch
+create function unquoted() returns jsonb LANGUAGE SQL as $$ select '{}' $$;
+-- expect_lint/functionReturnTypeMismatch
+create function quoted() returns jsonb language 'sql' as $$ select '{}' $$;
+-- Postgres looks the name up as written, and there is no language "SQL", so the body isn't SQL.
+create function quoted_upper_case() returns jsonb language 'SQL' as $$ select '{}' $$;
+create function quoted_identifier() returns jsonb language "SQL" as $$ select '{}' $$;

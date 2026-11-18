@@ -60,28 +60,20 @@ pub enum TriggerTiming {
     Instead,
 }
 
-impl TryFrom<i16> for TriggerTiming {
-    type Error = ();
-    fn try_from(value: i16) -> Result<Self, ()> {
-        TriggerTiming::iter()
-            .find(|variant| {
-                match variant {
-                    TriggerTiming::Instead => {
-                        let mask = 0b0100_0000;
-                        mask & value == mask
-                    }
-                    TriggerTiming::Before => {
-                        let mask = 0b0000_0010;
-                        mask & value == mask
-                    }
-                    TriggerTiming::After => {
-                        let mask = 0b1011_1101;
-                        // timing is "AFTER" if neither INSTEAD nor BEFORE bit are set.
-                        mask | value == mask
-                    }
-                }
-            })
-            .ok_or(())
+impl From<i16> for TriggerTiming {
+    /// The timing bits of `pg_trigger.tgtype`: a trigger is AFTER if neither the INSTEAD nor the
+    /// BEFORE bit is set.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/include/catalog/pg_trigger.h#L101-L106
+    fn from(value: i16) -> Self {
+        const TRIGGER_TYPE_BEFORE: i16 = 1 << 1;
+        const TRIGGER_TYPE_INSTEAD: i16 = 1 << 6;
+        if value & TRIGGER_TYPE_INSTEAD != 0 {
+            TriggerTiming::Instead
+        } else if value & TRIGGER_TYPE_BEFORE != 0 {
+            TriggerTiming::Before
+        } else {
+            TriggerTiming::After
+        }
     }
 }
 
@@ -116,7 +108,7 @@ impl From<TriggerQueried> for Trigger {
             proc_schema: value.proc_schema,
             table_schema: value.table_schema,
             affected: value.details_bitmask.into(),
-            timing: value.details_bitmask.try_into().unwrap(),
+            timing: value.details_bitmask.into(),
             events: TriggerEvents::from(value.details_bitmask).0,
         }
     }

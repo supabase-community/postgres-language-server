@@ -5,13 +5,16 @@
 //!
 //! - `SOURCE`: the pinned upstream tag, e.g. `REL_17_11`
 //! - `sql/*.sql`: the upstream regression files, verbatim
-//! - `verdicts/*.txt`: one `line:col verdict` line per statement
+//! - `verdicts/*.txt`: one `start..end verdict` line per statement, where `start..end` is the byte
+//!   range of the statement Postgres was sent, in the preprocessed source (see [`preprocess`])
 //! - `catalog.json.gz`: the catalog of a fresh database on that version, as gzipped
 //!   `pgls_catalog::Snapshot` JSON
 //!
 //! Everything is recorded by `just record-regress <major> [tag]`; reading it needs neither the
-//! network nor a database. `just record-regress <major> --catalog-only` re-records only the
-//! catalog, e.g. after the snapshot queries change.
+//! network nor a database, nor the statement splitter: a fix of the splitter doesn't change what
+//! was recorded, and `tests/splitter.rs` shows where the splitter now differs from the recorded
+//! statements. `just record-regress <major> --catalog-only` re-records only the catalog, e.g.
+//! after the snapshot queries change.
 
 use std::{
     fmt, fs,
@@ -62,6 +65,31 @@ pub struct Statement {
     pub verdict: Verdict,
 }
 
+/// The statement's line in a verdict file.
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}..{} {}",
+            u32::from(self.range.start()),
+            u32::from(self.range.end()),
+            self.verdict
+        )
+    }
+}
+
+impl Statement {
+    fn parse(line: &str) -> Option<Self> {
+        let (range, verdict) = line.split_once(' ')?;
+        let (start, end) = range.split_once("..")?;
+        let (start, end) = (start.parse::<u32>().ok()?, end.parse::<u32>().ok()?);
+        Some(Statement {
+            range: (start <= end).then(|| TextRange::new(start.into(), end.into()))?,
+            verdict: Verdict::parse(verdict)?,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct File {
     /// File name without the `.sql` extension, e.g. `join`.
@@ -83,7 +111,11 @@ impl File {
 
     /// The 1-based line and column of an offset in [`File::source`].
     pub fn line_col_at(&self, offset: TextSize) -> (usize, usize) {
-        line_cols(&self.source, std::iter::once(offset))[0]
+        // One offset, one position.
+        line_cols(&self.source, std::iter::once(offset))
+            .into_iter()
+            .next()
+            .unwrap_or((1, 1))
     }
 }
 
@@ -118,14 +150,15 @@ impl Version {
 
     /// Loads every file of this version, sorted by name.
     ///
-    /// Panics if the statements the splitter finds don't match the recorded verdicts.
+    /// Panics if a verdict file is missing or doesn't fit its SQL file.
     pub fn files(&self) -> Vec<File> {
         let sql_dir = self.dir.join("sql");
         let mut names = fs::read_dir(&sql_dir)
             .unwrap_or_else(|e| panic!("read {}: {e}", sql_dir.display()))
-            .map(|entry| entry.expect("read directory entry").path())
+            .flatten()
+            .map(|entry| entry.path())
             .filter(|path| path.extension().is_some_and(|x| x == "sql"))
-            .map(|path| path.file_stem().unwrap().to_string_lossy().into_owned())
+            .filter_map(|path| Some(path.file_stem()?.to_string_lossy().into_owned()))
             .collect::<Vec<_>>();
         names.sort();
         self.check_no_orphan_verdicts(&names);
@@ -141,31 +174,24 @@ impl Version {
         let Ok(verdicts) = fs::read_to_string(&verdicts_path) else {
             self.out_of_date(&name, "no verdict file")
         };
-        let ranges = split(&source);
-        let starts = line_cols(&source, ranges.iter().map(|range| range.start()));
-        let mut lines = verdicts.lines();
-        let mut statements = Vec::with_capacity(ranges.len());
-        for (range, (line, col)) in ranges.into_iter().zip(starts) {
-            let Some(entry) = lines.next() else {
+        let mut statements = Vec::<Statement>::new();
+        for entry in verdicts.lines() {
+            let Some(statement) = Statement::parse(entry) else {
+                self.out_of_date(&name, &format!("malformed verdict `{entry}`"))
+            };
+            let after_previous = statements
+                .last()
+                .is_none_or(|previous| previous.range.end() <= statement.range.start());
+            let fits = source
+                .get(statement.range.start().into()..statement.range.end().into())
+                .is_some_and(|sql| !sql.is_empty() && sql.trim() == sql);
+            if !after_previous || !fits {
                 self.out_of_date(
                     &name,
-                    &format!("no verdict for the statement at {line}:{col}"),
-                )
-            };
-            let verdict = entry
-                .split_once(' ')
-                .filter(|(key, _)| *key == format!("{line}:{col}"))
-                .and_then(|(_, verdict)| Verdict::parse(verdict))
-                .unwrap_or_else(|| {
-                    self.out_of_date(
-                        &name,
-                        &format!("expected a verdict for {line}:{col}, found `{entry}`"),
-                    )
-                });
-            statements.push(Statement { range, verdict });
-        }
-        if let Some(entry) = lines.next() {
-            self.out_of_date(&name, &format!("verdict `{entry}` has no statement"));
+                    &format!("verdict `{entry}` doesn't fit the statements of the SQL file"),
+                );
+            }
+            statements.push(statement);
         }
         File {
             name,
@@ -178,9 +204,11 @@ impl Version {
         let Ok(entries) = fs::read_dir(self.dir.join("verdicts")) else {
             return;
         };
-        for entry in entries {
-            let path = entry.expect("read directory entry").path();
-            let name = path.file_stem().unwrap().to_string_lossy();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_stem().map(|stem| stem.to_string_lossy()) else {
+                continue;
+            };
             if !names.iter().any(|x| *x == name) {
                 self.out_of_date(&name, "verdict file without SQL file");
             }
@@ -209,8 +237,9 @@ pub fn versions() -> Vec<Version> {
     let root = data_dir();
     let mut versions = fs::read_dir(&root)
         .unwrap_or_else(|e| panic!("read {}: {e}", root.display()))
+        .flatten()
         .filter_map(|entry| {
-            let dir = entry.expect("read directory entry").path();
+            let dir = entry.path();
             let major = dir.file_name()?.to_str()?.parse().ok()?;
             Some(version_in(dir, major))
         })
@@ -260,7 +289,9 @@ pub fn preprocess(source: &str) -> String {
     output
 }
 
-/// Splits a preprocessed source into its statements, trimmed and without empty ones.
+/// Splits a preprocessed source into its statements, trimmed and without empty ones, with today's
+/// splitter. The recorder sends these statements to Postgres; loading reads the recorded ranges
+/// instead.
 pub fn split(source: &str) -> Vec<TextRange> {
     pgls_statement_splitter::split(source)
         .ranges
@@ -291,16 +322,6 @@ fn line_cols(source: &str, offsets: impl Iterator<Item = TextSize>) -> Vec<(usiz
         .collect()
 }
 
-/// Renders the verdict file for the statements of a preprocessed source.
-pub fn verdicts_file(source: &str, statements: &[Statement]) -> String {
-    let starts = line_cols(source, statements.iter().map(|x| x.range.start()));
-    statements
-        .iter()
-        .zip(starts)
-        .map(|(statement, (line, col))| format!("{line}:{col} {}\n", statement.verdict))
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -323,6 +344,13 @@ mod tests {
             Verdict::Rejected("42P01".into()),
         ] {
             assert_eq!(Verdict::parse(&verdict.to_string()), Some(verdict));
+        }
+        for line in ["0..9 accepted", "12..40 rejected 42P01", "40..40 skipped"] {
+            let statement = Statement::parse(line).expect("a verdict line");
+            assert_eq!(statement.to_string(), line);
+        }
+        for line in ["9..0 accepted", "0..9", "0-9 accepted", "0..9 rejected"] {
+            assert!(Statement::parse(line).is_none(), "{line}");
         }
     }
 

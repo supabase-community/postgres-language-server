@@ -3,7 +3,7 @@ use pgls_workspace::WorkspaceError;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
-pub enum LspError {
+pub(crate) enum LspError {
     WorkspaceError(WorkspaceError),
     Anyhow(anyhow::Error),
     Error(pgls_diagnostics::Error),

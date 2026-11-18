@@ -12,7 +12,7 @@ pub(crate) struct WorkspaceFile<'ctx, 'app> {
     /// File handle for the underlying filesystem entry, if backed by a real file.
     /// Not present for stdin execution where content is provided as a temporary buffer.
     /// Currently unused but will be needed when autofix/write operations are implemented.
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "TEMP-CHECK")]
     file: Option<Box<dyn File>>,
     pub(crate) path: PathBuf,
 }

@@ -98,7 +98,7 @@ pub(super) struct ItemSource {
 impl ItemSource {
     /// The source of a CTE or subquery with these output columns, whose types are known if
     /// `types_known`.
-    pub fn derived(
+    pub(crate) fn derived(
         r: &Resolver,
         source: ColumnSource,
         columns: &[TypedColumn],
@@ -129,7 +129,7 @@ pub(super) enum DefaultOnly {
 }
 
 impl DefaultOnly {
-    pub fn of(column: &ColumnInfo) -> Option<Self> {
+    pub(crate) fn of(column: &ColumnInfo) -> Option<Self> {
         if column.generated.is_generated() {
             Some(DefaultOnly::Generated)
         } else if column.identity == pgls_catalog::Identity::Always {
@@ -142,7 +142,7 @@ impl DefaultOnly {
 
 impl Item {
     /// An item with these columns, whose types are known if `types_known`.
-    pub fn named(name: Option<String>, columns: Columns, types_known: bool) -> Self {
+    pub(crate) fn named(name: Option<String>, columns: Columns, types_known: bool) -> Self {
         Self {
             name,
             schema: None,
@@ -156,7 +156,7 @@ impl Item {
 
     /// Where the column with this name comes from, if the item has exactly one such column and
     /// its source is known.
-    pub fn column_source(&self, column: &str) -> Option<(ColumnSource, ColumnInfo)> {
+    pub(crate) fn column_source(&self, column: &str) -> Option<(ColumnSource, ColumnInfo)> {
         let source = self.source.as_deref()?;
         let mut positions = self
             .columns
@@ -175,7 +175,7 @@ impl Item {
 
     /// The type of the column with this name, if the item has it. `None` if its columns are not
     /// known.
-    pub fn type_of(&self, column: &str) -> Option<Option<Type>> {
+    pub(crate) fn type_of(&self, column: &str) -> Option<Option<Type>> {
         let columns = self.columns.as_ref()?;
         columns
             .iter()
@@ -184,13 +184,13 @@ impl Item {
     }
 
     /// The columns of the item, if their types are known as a whole.
-    pub fn typed_columns(&self) -> Option<&[TypedColumn]> {
+    pub(crate) fn typed_columns(&self) -> Option<&[TypedColumn]> {
         self.columns.as_deref().filter(|_| self.types_known)
     }
 
     /// Why a value for the column can only be `DEFAULT`, if it can. An INSERT with an
     /// `OVERRIDING` clause (`overriding`) can set `GENERATED ALWAYS` identity columns.
-    pub fn default_only(&self, column: &str, overriding: bool) -> Option<DefaultOnly> {
+    pub(crate) fn default_only(&self, column: &str, overriding: bool) -> Option<DefaultOnly> {
         self.default_only_columns
             .iter()
             .find(|(name, _)| name == column)
@@ -198,7 +198,7 @@ impl Item {
             .filter(|kind| !(overriding && *kind == DefaultOnly::IdentityAlways))
     }
 
-    pub fn has_column(&self, column: &str) -> Option<bool> {
+    pub(crate) fn has_column(&self, column: &str) -> Option<bool> {
         let columns = self.columns.as_ref()?;
         Some(
             columns.iter().any(|c| c.name == column)
@@ -293,14 +293,14 @@ pub(super) enum StarEntry {
 }
 
 impl Level {
-    pub fn with_item(item: Item) -> Self {
+    pub(crate) fn with_item(item: Item) -> Self {
         Self {
             items: vec![item],
             ..Default::default()
         }
     }
 
-    pub fn extend(&mut self, other: Level) {
+    pub(crate) fn extend(&mut self, other: Level) {
         self.star_order = match (&self.star_order, &other.star_order) {
             (StarOrder::Items, StarOrder::Items) => StarOrder::Items,
             _ => match (self.star(), other.star()) {
@@ -330,7 +330,7 @@ impl Level {
     ///
     /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
     /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
-    pub fn star(&self) -> Option<Vec<StarEntry>> {
+    pub(crate) fn star(&self) -> Option<Vec<StarEntry>> {
         match &self.star_order {
             StarOrder::Items => {
                 let mut columns = Vec::new();
@@ -346,7 +346,7 @@ impl Level {
     }
 
     /// The name of a column of `*`.
-    pub fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
+    pub(crate) fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
         match column {
             StarEntry::Merged(name) => Some(name),
             StarEntry::Item { item, column } => self
@@ -363,24 +363,25 @@ impl Level {
     /// that merges columns and all columns are known. A join shows its merged columns once and
     /// hides the columns of its sides, so these are the columns of `*` with that name. `None`
     /// otherwise, and for system columns, which joins don't have.
-    fn visible_columns(&self, column: &str) -> Option<Vec<StarEntry>> {
+    fn visible_columns(&self, column: &str) -> Option<VisibleColumns<'_>> {
         let StarOrder::Columns(columns) = &self.star_order else {
             return None;
         };
         if is_system_column(column) {
             return None;
         }
-        Some(
-            columns
-                .iter()
-                .filter(|entry| self.star_column_name(entry) == Some(column))
-                .cloned()
-                .collect(),
-        )
+        let mut visible = columns
+            .iter()
+            .filter(|entry| self.star_column_name(entry) == Some(column));
+        Some(match (visible.next(), visible.next()) {
+            (None, _) => VisibleColumns::None,
+            (Some(entry), None) => VisibleColumns::One(entry),
+            (Some(_), Some(_)) => VisibleColumns::Several,
+        })
     }
 
     /// The names of the items that have `column`, for the message of an ambiguous reference.
-    fn items_with_column(&self, column: &str) -> Vec<String> {
+    pub(crate) fn items_with_column(&self, column: &str) -> Vec<String> {
         self.items
             .iter()
             .filter(|item| item.has_column(column) == Some(true))
@@ -392,7 +393,7 @@ impl Level {
     /// as a whole: if they are known for every item. The columns of an item whose types are not
     /// known as a whole have no types. The type of a merged column is unknown if nested joins
     /// merge the same name again. `None` if the columns are not known.
-    pub fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
+    pub(crate) fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
         if self.items.is_empty() {
             return None;
         }
@@ -401,20 +402,10 @@ impl Level {
             .star()?
             .iter()
             .map(|column| match column {
-                StarEntry::Merged(name) => {
-                    let mut merged = self
-                        .merged_columns
-                        .iter()
-                        .filter(|merged| merged.name == *name);
-                    let ty = match (merged.next(), merged.next()) {
-                        (Some(merged), None) => merged.ty.clone(),
-                        _ => None,
-                    };
-                    Some(TypedColumn {
-                        name: name.clone(),
-                        ty,
-                    })
-                }
+                StarEntry::Merged(name) => Some(TypedColumn {
+                    name: name.clone(),
+                    ty: self.merged_column_type(name),
+                }),
                 StarEntry::Item { item, column } => {
                     let item = self.items.get(*item)?;
                     types_known &= item.types_known;
@@ -429,12 +420,46 @@ impl Level {
         Some((columns, types_known))
     }
 
-    pub fn item(&self, name: &str) -> Option<&Item> {
+    /// The type of a column that the joins of the level merge, unknown if nested joins merge
+    /// the same name again.
+    fn merged_column_type(&self, name: &str) -> Option<Type> {
+        let mut merged = self
+            .merged_columns
+            .iter()
+            .filter(|merged| merged.name == name);
+        match (merged.next(), merged.next()) {
+            (Some(merged), None) => merged.ty.clone(),
+            _ => None,
+        }
+    }
+
+    /// The type of a column of `*`, as [`Level::star_columns`] gives it, without building the
+    /// others. `None` if it is not known.
+    fn star_column_type(&self, column: &StarEntry) -> Option<Type> {
+        match column {
+            StarEntry::Merged(name) => self.merged_column_type(name),
+            StarEntry::Item { item, column } => {
+                let item = self.items.get(*item)?;
+                let column = item.columns.as_ref()?.get(*column)?;
+                column.ty.clone().filter(|_| item.types_known)
+            }
+        }
+    }
+
+    pub(crate) fn item(&self, name: &str) -> Option<&Item> {
         self.items
             .iter()
             .chain(&self.qualified_only)
             .find(|item| item.name.as_deref() == Some(name))
     }
+}
+
+/// The columns of `*` that an unqualified column reference can mean in a level with a join that
+/// merges columns.
+enum VisibleColumns<'a> {
+    None,
+    One(&'a StarEntry),
+    Several,
 }
 
 /// The result of looking up an unqualified column.
@@ -443,8 +468,11 @@ pub(super) enum ColumnLookup {
     Found,
     /// An output column of the select list, in `ORDER BY`, `GROUP BY` or `DISTINCT ON`.
     Output,
-    /// Matches columns of several items of the same query level.
-    Ambiguous(Vec<String>),
+    /// Matches columns of several items of the query level at this index of the levels.
+    /// [`Level::items_with_column`] names them.
+    Ambiguous {
+        level: usize,
+    },
     /// Can't be decided, because some columns in scope are not known.
     Unknown,
     NotFound,
@@ -457,14 +485,10 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
             return None;
         }
         if let Some(visible) = level.visible_columns(column) {
-            match visible.as_slice() {
-                [] => continue,
-                [entry] => {
-                    let position = level.star()?.iter().position(|other| other == entry)?;
-                    let (columns, _) = level.star_columns()?;
-                    return columns.get(position)?.ty.clone();
-                }
-                _ => return None,
+            match visible {
+                VisibleColumns::None => continue,
+                VisibleColumns::One(entry) => return level.star_column_type(entry),
+                VisibleColumns::Several => return None,
             }
         }
         if level.merged_columns.iter().any(|c| c.name == column) {
@@ -481,15 +505,17 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
             .collect::<Vec<_>>();
         let uncertain = level.items.iter().any(|item| item.columns.is_none());
         if !matches.is_empty() {
-            if matches.len() != 1
-                || uncertain
+            let [item] = matches.as_slice() else {
+                return None;
+            };
+            if uncertain
                 || level.merged_columns.iter().any(|c| c.name == column)
                 || level.has_natural_join
                 || is_system_column(column)
             {
                 return None;
             }
-            return matches[0].type_of(column).flatten();
+            return item.type_of(column).flatten();
         }
         if uncertain {
             return None;
@@ -508,38 +534,38 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
 /// [`scanNSItemForColumn`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L720
 /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1608
 pub(super) fn find_column(levels: &[Level], column: &str) -> ColumnLookup {
-    for (depth, level) in levels.iter().rev().enumerate() {
+    for (depth, (index, level)) in levels.iter().enumerate().rev().enumerate() {
         if is_output_name(levels, depth, column) {
             return ColumnLookup::Output;
         }
 
         if let Some(visible) = level.visible_columns(column) {
-            match visible.len() {
-                0 => continue,
-                1 => return ColumnLookup::Found,
-                _ => return ColumnLookup::Ambiguous(level.items_with_column(column)),
+            match visible {
+                VisibleColumns::None => continue,
+                VisibleColumns::One(_) => return ColumnLookup::Found,
+                VisibleColumns::Several => return ColumnLookup::Ambiguous { level: index },
             }
         }
 
-        let mut matches = Vec::new();
+        let mut matches = 0;
         let mut unknown = false;
         for item in &level.items {
             match item.has_column(column) {
-                Some(true) => matches.push(item.name.clone().unwrap_or_default()),
+                Some(true) => matches += 1,
                 Some(false) => {}
                 None => unknown = true,
             }
         }
 
         let merged = level.merged_columns.iter().any(|c| c.name == column);
-        match matches.len() {
+        match matches {
             0 if unknown => return ColumnLookup::Unknown,
             0 => {}
             1 => return ColumnLookup::Found,
             _ if unknown || merged || level.has_natural_join || is_system_column(column) => {
                 return ColumnLookup::Found;
             }
-            _ => return ColumnLookup::Ambiguous(matches),
+            _ => return ColumnLookup::Ambiguous { level: index },
         }
     }
     if is_output_name(levels, levels.len(), column) {
@@ -556,10 +582,10 @@ pub(super) fn find_column_item<'a>(levels: &'a [Level], column: &str) -> Option<
             return None;
         }
         if let Some(visible) = level.visible_columns(column) {
-            match visible.as_slice() {
-                [] => continue,
-                [StarEntry::Item { item, .. }] => return level.items.get(*item),
-                _ => return None,
+            match visible {
+                VisibleColumns::None => continue,
+                VisibleColumns::One(StarEntry::Item { item, .. }) => return level.items.get(*item),
+                VisibleColumns::One(StarEntry::Merged(_)) | VisibleColumns::Several => return None,
             }
         }
         if level.merged_columns.iter().any(|c| c.name == column) {
@@ -592,14 +618,14 @@ pub(super) fn find_item<'a>(levels: &'a [Level], name: &str) -> Option<&'a Item>
 /// [`refnameNamespaceItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L134
 pub(super) fn find_qualified_item<'a>(
     levels: &'a [Level],
-    qualifier: &[String],
+    qualifier: &[impl AsRef<str>],
 ) -> Option<&'a Item> {
     match qualifier {
-        [name] => find_item(levels, name),
+        [name] => find_item(levels, name.as_ref()),
         [schema, name] => levels.iter().rev().find_map(|level| {
             level.items.iter().find(|item| {
-                item.schema.as_deref() == Some(schema.as_str())
-                    && item.name.as_deref() == Some(name.as_str())
+                item.schema.as_deref() == Some(schema.as_ref())
+                    && item.name.as_deref() == Some(name.as_ref())
             })
         }),
         _ => None,

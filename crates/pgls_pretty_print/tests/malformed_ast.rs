@@ -1,6 +1,13 @@
 //! The printer writes whatever AST it gets without panicking. An AST the parser wouldn't build
 //! gives output with a different AST, which `format_statement` refuses.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use pgls_pretty_print::{FormatConfig, format_statement_unchecked};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{Integer, Node, String as PgString};

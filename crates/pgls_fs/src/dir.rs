@@ -26,7 +26,7 @@ pub fn ensure_cache_dir() -> PathBuf {
 }
 
 /// Returns the home directory of the current user.
-pub fn home_dir() -> Option<PathBuf> {
+pub(crate) fn home_dir() -> Option<PathBuf> {
     BaseDirs::new().map(|base_dirs| base_dirs.home_dir().to_path_buf())
 }
 
@@ -35,7 +35,7 @@ pub fn home_dir() -> Option<PathBuf> {
 /// - Linux: `$XDG_CONFIG_HOME/postgres-language-server`, or `~/.config/postgres-language-server`
 /// - macOS: the same as Linux, then `~/Library/Application Support/postgres-language-server`
 /// - Windows: `%APPDATA%\postgres-language-server`
-pub fn user_config_dirs() -> Vec<PathBuf> {
+pub(crate) fn user_config_dirs() -> Vec<PathBuf> {
     let Some(base_dirs) = BaseDirs::new() else {
         return Vec::new();
     };

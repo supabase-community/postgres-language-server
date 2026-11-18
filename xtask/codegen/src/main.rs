@@ -8,7 +8,7 @@ use xtask_codegen::{
 };
 
 fn main() -> Result<()> {
-    let _d = pushd(project_root());
+    let _d = pushd(project_root())?;
     let result = task_command().fallback_to_usage().run();
 
     match result {
@@ -24,7 +24,7 @@ fn main() -> Result<()> {
             group,
             severity,
         } => {
-            generate_new_analyser_rule(category, &name, &group, severity);
+            generate_new_analyser_rule(category, &name, &group, severity)?;
         }
         TaskCommand::Configuration => {
             generate_rules_configuration(Overwrite)?;

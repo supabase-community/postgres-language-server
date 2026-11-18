@@ -1,5 +1,5 @@
 use pgls_query::protobuf::ColumnRef;
-use pgls_query_ext::utils::{star_qualifier, string_values};
+use pgls_query_ext::utils::{NameParts, star_qualifier};
 
 use super::Resolver;
 use crate::{
@@ -28,7 +28,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
     if star_qualifier(n).is_some() {
         return;
     }
-    let Some(names) = string_values(&n.fields) else {
+    let Some(names) = NameParts::of(&n.fields) else {
         return;
     };
 
@@ -37,7 +37,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
         [qualifier, name] => resolve_qualified_column(r, qualifier, name, n.location),
         [schema, relation, name] => {
             // `schema.table.column`, if `schema.table` is an unaliased item.
-            let item = find_qualified_item(&r.levels, &names[..2]);
+            let item = find_qualified_item(r.levels(), &[*schema, *relation]);
             let reference = column_reference(r, item, name, n.location);
             let missing = item.is_some_and(|item| item.has_column(name) == Some(false));
             record(r, reference);
@@ -45,7 +45,7 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
                 r.report(
                     FindingKind::UnknownColumn {
                         relation: Some(format!("{schema}.{relation}")),
-                        column: name.clone(),
+                        column: (*name).to_owned(),
                     },
                     n.location,
                 );
@@ -56,26 +56,33 @@ pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
 }
 
 fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
-    let lookup = find_column(&r.levels, name);
+    let lookup = find_column(r.levels(), name);
     record_column_lookup(r, name, location, &lookup);
     match lookup {
         ColumnLookup::Output => {}
         ColumnLookup::Found => {
-            let reference = column_reference(r, find_column_item(&r.levels, name), name, location);
+            let reference = column_reference(r, find_column_item(r.levels(), name), name, location);
             record(r, reference);
         }
         ColumnLookup::Unknown => {}
-        ColumnLookup::Ambiguous(candidates) => r.report(
-            FindingKind::AmbiguousColumn {
-                column: name.to_owned(),
-                candidates,
-            },
-            location,
-        ),
+        ColumnLookup::Ambiguous { level } => {
+            let candidates = r
+                .levels()
+                .get(level)
+                .map(|level| level.items_with_column(name))
+                .unwrap_or_default();
+            r.report(
+                FindingKind::AmbiguousColumn {
+                    column: name.to_owned(),
+                    candidates,
+                },
+                location,
+            );
+        }
         ColumnLookup::NotFound => {
             // A whole-row reference to a FROM item, or a parameter of the SQL function.
-            let is_item = find_item(&r.levels, name).is_some();
-            let opaque = has_opaque_items(&r.levels);
+            let is_item = find_item(r.levels(), name).is_some();
+            let opaque = has_opaque_items(r.levels());
             if let Some(index) = r.function_param_index(name) {
                 // A column of an item with unknown columns would take precedence.
                 if !is_item && !opaque {
@@ -98,7 +105,7 @@ fn resolve_unqualified_column(r: &mut Resolver, name: &str, location: i32) {
 }
 
 fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, location: i32) {
-    if let Some(item) = find_item(&r.levels, qualifier) {
+    if let Some(item) = find_item(r.levels(), qualifier) {
         let reference = column_reference(r, Some(item), name, location);
         let missing = item.has_column(name) == Some(false);
         record(r, reference);
@@ -116,7 +123,8 @@ fn resolve_qualified_column(r: &mut Resolver, qualifier: &str, name: &str, locat
 
     // Postgres also reads `a.b` as field `b` of the composite column `a`, or as the function
     // call `b(a)`.
-    if find_column(&r.levels, qualifier) != ColumnLookup::NotFound || has_opaque_items(&r.levels) {
+    if find_column(r.levels(), qualifier) != ColumnLookup::NotFound || has_opaque_items(r.levels())
+    {
         return;
     }
 
@@ -171,8 +179,8 @@ pub(crate) fn record_column_ref_lookup(r: &mut Resolver, n: &ColumnRef) {
     if !r.collects_lookups() {
         return;
     }
-    if let Some([name]) = string_values(&n.fields).as_deref() {
-        let lookup = find_column(&r.levels, name);
+    if let Some([name]) = NameParts::of(&n.fields).as_ref().map(NameParts::as_slice) {
+        let lookup = find_column(r.levels(), name);
         record_column_lookup(r, name, n.location, &lookup);
     }
 }
@@ -190,20 +198,20 @@ pub(crate) fn record_column_ref_lookup(r: &mut Resolver, n: &ColumnRef) {
 /// [`sql_fn_post_column_ref`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L353
 /// [`findTargetlistEntrySQL92`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L2006
 fn record_column_lookup(r: &mut Resolver, name: &str, location: i32, lookup: &ColumnLookup) {
-    if !r.collects_lookups() || r.single_relation {
+    if !r.collects_lookups() || r.context().single_relation {
         return;
     }
     // Without relations, a name can't be a column, and Postgres raises an error.
-    if r.levels.iter().all(|level| level.items.is_empty()) {
+    if r.levels().iter().all(|level| level.items.is_empty()) {
         return;
     }
     let is_column = match lookup {
-        ColumnLookup::Found | ColumnLookup::Ambiguous(_) => true,
+        ColumnLookup::Found | ColumnLookup::Ambiguous { .. } => true,
         ColumnLookup::Output => false,
         ColumnLookup::Unknown | ColumnLookup::NotFound => {
-            find_item(&r.levels, name).is_none()
+            find_item(r.levels(), name).is_none()
                 && r.function_param_index(name).is_none()
-                && !may_be_output_name(&r.levels, name)
+                && !may_be_output_name(r.levels(), name)
         }
     };
     if is_column {

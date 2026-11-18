@@ -10,7 +10,7 @@ use pgls_diagnostics::{Error, category};
 use pgls_workspace::features::code_actions::FixFileMode;
 use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
 
-pub struct CheckArgs {
+pub(crate) struct CheckArgs {
     pub configuration: Option<PartialConfiguration>,
     pub targets: FileTargets,
     pub fix: bool,
@@ -19,7 +19,7 @@ pub struct CheckArgs {
     pub skip: Vec<RuleSelector>,
 }
 
-pub fn check(
+pub(crate) fn check(
     mut session: CliSession,
     cli_options: &CliOptions,
     args: CheckArgs,
@@ -55,7 +55,8 @@ pub fn check(
         only: args.only.clone(),
         skip: args.skip.clone(),
     };
-    let execution = ExecutionConfig::new(mode, max_diagnostics);
+    let execution =
+        ExecutionConfig::new(mode, max_diagnostics).with_skip_errors(cli_options.skip_errors);
 
     let database_errors = check_database_connection(&session)?;
     if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {

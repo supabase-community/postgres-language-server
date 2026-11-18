@@ -1,26 +1,26 @@
-1:1 rejected 42601
-6:1 accepted
-8:1 accepted
-9:1 accepted
-10:1 accepted
-11:1 accepted
-12:1 accepted
-13:1 accepted
-14:1 accepted
-16:1 rejected 22023
-18:1 accepted
-19:1 accepted
-21:1 accepted
-34:1 rejected 22023
-38:1 accepted
-39:1 accepted
-41:1 accepted
-42:1 accepted
-43:1 accepted
-45:1 accepted
-46:1 accepted
-48:1 accepted
-49:1 accepted
-52:1 accepted
-53:1 accepted
-54:1 accepted
+0..57 rejected 42601
+62..129 accepted
+131..152 accepted
+153..238 accepted
+239..325 accepted
+326..404 accepted
+405..491 accepted
+492..576 accepted
+577..661 accepted
+663..696 rejected 22023
+717..770 accepted
+771..824 accepted
+826..1165 accepted
+1167..1202 rejected 22023
+1299..1380 accepted
+1381..1461 accepted
+1489..1573 accepted
+1574..1657 accepted
+1658..1742 accepted
+1771..1857 accepted
+1858..1944 accepted
+1973..2069 accepted
+2070..2170 accepted
+2206..2285 accepted
+2286..2371 accepted
+2372..2458 accepted

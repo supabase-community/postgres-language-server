@@ -1,13 +1,12 @@
-// plpgsql_check reports on functions from the client, so a panic on unexpected output takes down
-// the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
 use diagnostics::create_diagnostics_from_check_result;
 use pgls_query::protobuf::CreateFunctionStmt;
-use pgls_query_ext::utils::{QualifiedName, find_option_value, qualified_name};
+use pgls_query_ext::{
+    function_body::Language,
+    utils::{QualifiedName, find_option_value, qualified_name},
+};
 use regex::Regex;
 use serde::Deserialize;
 pub use sqlx::postgres::PgSeverity;
@@ -73,14 +72,14 @@ fn should_check_function<'a>(
         _ => return None,
     };
 
-    if find_option_value(create_fn, "language") != Some("plpgsql") {
+    if Language::of(create_fn) != Some(Language::PlPgSql) {
         return None;
     }
 
+    // Only an installed extension has `plpgsql_check_function`.
     if !snapshot
-        .extensions
-        .iter()
-        .any(|e| e.name == "plpgsql_check")
+        .extension("plpgsql_check")
+        .is_some_and(pgls_catalog::Extension::is_installed)
     {
         return None;
     }
@@ -227,8 +226,10 @@ pub async fn check_plpgsql(
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
     let is_trigger = is_trigger_function(create_fn);
 
+    // A connection of the pool. The function only exists in the transaction, which is rolled
+    // back, and the queries that name it aren't prepared (`persistent(false)`), so the connection
+    // keeps nothing of it for the next function.
     let mut conn = params.conn.acquire().await?;
-    conn.close_on_drop();
 
     let mut tx: Transaction<'_, Postgres> = conn.begin().await?;
 
@@ -251,7 +252,10 @@ pub async fn check_plpgsql(
     };
 
     // create the function - this should always succeed
-    sqlx::query(&sql_with_replace).execute(&mut *tx).await?;
+    sqlx::query(&sql_with_replace)
+        .persistent(false)
+        .execute(&mut *tx)
+        .await?;
 
     // run plpgsql_check and collect results with their relations
     let extra = build_extra_params(&params);
@@ -269,6 +273,7 @@ pub async fn check_plpgsql(
                 let result: Option<String> = sqlx::query_scalar(&format!(
                     "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json'{extra})"
                 ))
+                .persistent(false)
                 .fetch_optional(&mut *tx)
                 .await?
                 .flatten();
@@ -284,6 +289,7 @@ pub async fn check_plpgsql(
         let result: Option<String> = sqlx::query_scalar(&format!(
             "select plpgsql_check_function('{fn_identifier}', format := 'json'{extra})"
         ))
+        .persistent(false)
         .fetch_optional(&mut *tx)
         .await?
         .flatten();
@@ -368,6 +374,61 @@ mod tests {
         Ok((diagnostics, span_texts))
     }
 
+    /// The extension is available on the test server, but this database doesn't install it, so
+    /// the function isn't checked. It used to be created and then fail on
+    /// `plpgsql_check_function`.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_available_but_not_installed(test_db: PgPool) {
+        let setup = "drop extension if exists plpgsql_check;";
+        let create_fn_sql = r#"
+            create function not_installed() returns int language plpgsql as $$
+            begin
+                return missing_var;
+            end;
+            $$;
+        "#;
+        test_db
+            .execute(setup)
+            .await
+            .expect("Unable to set up the database");
+
+        let ast = pgls_query::parse(create_fn_sql)
+            .expect("Unable to parse")
+            .into_root()
+            .expect("Missing root");
+        let snapshot = pgls_catalog::Snapshot::load(&test_db)
+            .await
+            .expect("Unable to load the snapshot");
+        assert!(
+            snapshot
+                .extension("plpgsql_check")
+                .is_some_and(|extension| !extension.is_installed()),
+            "the test server should have plpgsql_check available"
+        );
+
+        let result = super::check_plpgsql(super::PlPgSqlCheckParams {
+            conn: &test_db,
+            sql: create_fn_sql,
+            ast: &ast,
+            snapshot: &snapshot,
+            fatal_errors: true,
+            other_warnings: true,
+            extra_warnings: true,
+            performance_warnings: false,
+            security_warnings: false,
+            compatibility_warnings: false,
+            without_warnings: false,
+            all_warnings: false,
+            use_incomment_options: true,
+            incomment_options_usage_warning: false,
+            constant_tracing: true,
+        })
+        .await
+        .expect("plpgsql_check must not run");
+
+        assert!(result.is_none());
+    }
+
     #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_composite_types(test_db: PgPool) {
         let setup = r#"
@@ -438,6 +499,34 @@ mod tests {
             span_texts[0].as_deref(),
             Some("if r.c is null or\n                 true is false\n                then")
         );
+    }
+
+    /// The checks use the connections of the pool. A function checked again with another body,
+    /// on the same connection, reports the issues of the new body.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_redefined_on_one_connection(test_db: PgPool) {
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(1)
+            .connect_with((*test_db.connect_options()).clone())
+            .await
+            .expect("Failed to connect");
+        let setup = "create extension if not exists plpgsql_check;";
+
+        for variable in ["missing_one", "missing_two", "missing_one"] {
+            let create_fn_sql = format!(
+                "create function public.f1() returns int language plpgsql as $$
+                begin
+                    return {variable};
+                end;
+                $$;"
+            );
+            let (diagnostics, _) = run_plpgsql_check_test(&pool, setup, &create_fn_sql)
+                .await
+                .expect("Failed to run plpgsql_check test");
+            assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+            let message = pgls_diagnostics::PrintDescription(&diagnostics[0]).to_string();
+            assert!(message.contains(variable), "{message}");
+        }
     }
 
     #[pgls_test_utils::db_test]

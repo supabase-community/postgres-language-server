@@ -5,7 +5,7 @@ use sqlx::PgPool;
 #[cfg(feature = "db")]
 use super::SnapshotItem;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum ReplicaIdentity {
     #[default]
@@ -13,6 +13,10 @@ pub enum ReplicaIdentity {
     Index,
     Full,
     Nothing,
+    /// A `pg_class.relreplident` we don't know.
+    #[serde(other)]
+    #[cfg_attr(feature = "schema", schemars(skip))]
+    Unknown,
 }
 
 impl From<String> for ReplicaIdentity {
@@ -22,12 +26,12 @@ impl From<String> for ReplicaIdentity {
             "INDEX" => ReplicaIdentity::Index,
             "FULL" => ReplicaIdentity::Full,
             "NOTHING" => ReplicaIdentity::Nothing,
-            _ => panic!("Invalid replica identity"),
+            _ => ReplicaIdentity::Unknown,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum TableKind {
     #[default]
@@ -35,24 +39,22 @@ pub enum TableKind {
     View,
     MaterializedView,
     Partitioned,
+    /// A `pg_class.relkind` we don't know.
+    #[serde(other)]
+    #[cfg_attr(feature = "schema", schemars(skip))]
+    Unknown,
 }
 
-impl From<char> for TableKind {
-    fn from(s: char) -> Self {
-        match s {
-            'r' => Self::Ordinary,
-            'p' => Self::Partitioned,
-            'v' => Self::View,
-            'm' => Self::MaterializedView,
-            _ => panic!("Invalid table kind"),
-        }
-    }
-}
-
+// `pg_class.relkind`, a `"char"`.
 impl From<i8> for TableKind {
-    fn from(s: i8) -> Self {
-        let c = char::from(u8::try_from(s).unwrap());
-        c.into()
+    fn from(code: i8) -> Self {
+        match code.cast_unsigned() {
+            b'r' => Self::Ordinary,
+            b'p' => Self::Partitioned,
+            b'v' => Self::View,
+            b'm' => Self::MaterializedView,
+            _ => Self::Unknown,
+        }
     }
 }
 

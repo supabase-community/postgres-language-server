@@ -51,8 +51,8 @@ Welcome to the Postgres Language Server! Let's get you started...
             <Info><Emphasis>{tool}" project detected"</Emphasis></Info>" in "{directory}": "{settings}".
 "
         });
-    } else if !ambiguous.is_empty() {
-        let first = ambiguous[0].tool;
+    } else if let Some(first) = ambiguous.first() {
+        let first = first.tool;
         let projects = if ambiguous.iter().all(|project| project.tool == first) {
             let first = first.name();
             let directories: Vec<&str> = ambiguous

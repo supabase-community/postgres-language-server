@@ -423,12 +423,14 @@ fn emit_sql_syntax_call(e: &mut EventEmitter, n: &FuncCall) -> bool {
             e.token(TokenKind::R_PAREN);
         }
         ("overlaps", [_, _, _, _]) => {
+            // Four arguments, so both halves have two.
+            let (left, right) = args.split_at_checked(2).unwrap_or((args, &[]));
             e.token(TokenKind::L_PAREN);
-            emit_parenthesized_list(e, &args[..2], emit_node);
+            emit_parenthesized_list(e, left, emit_node);
             e.space();
             e.token(TokenKind::OVERLAPS_KW);
             e.space();
-            emit_parenthesized_list(e, &args[2..], emit_node);
+            emit_parenthesized_list(e, right, emit_node);
             e.token(TokenKind::R_PAREN);
         }
         ("pg_collation_for", [expr]) => {

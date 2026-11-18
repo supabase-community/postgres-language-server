@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -13,17 +14,18 @@ use rustc_hash::FxHashSet;
 
 use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
 
+use crate::diagnostics::FileTooLarge;
 use crate::workspace::ProjectKey;
 
 use super::{
-    document_cache::{ContentChange, DocumentCache, DocumentCacheStats, StaleEntries},
+    document_cache::{ContentChange, DocumentCache, DocumentCacheStats, ParseResult, StaleEntries},
     statement_identifier::StatementId,
 };
 
 /// An open document. Clones share the cache, which is keyed so that each clone only sees what
 /// was cached for its own content.
 #[derive(Clone)]
-pub struct Document {
+pub(crate) struct Document {
     content: String,
     /// Changes on every change of the content or of the migration tool, see
     /// [`Document::generation`].
@@ -45,6 +47,11 @@ pub struct Document {
     migration_script: Script,
     /// Where the last change of the content starts.
     edited_at: Option<TextSize>,
+    /// `files.maxSize` of the settings that `migration_tool` is from.
+    max_size: NonZeroU64,
+    /// Whether the content is larger than `max_size`. Then it is neither split nor parsed: the
+    /// document has no statements, and its only diagnostic is [`FileTooLarge`].
+    too_large: bool,
 }
 
 /// A generation that no document had before, see [`Document::generation`].
@@ -56,53 +63,113 @@ fn next_generation() -> u64 {
 impl Document {
     /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
-    pub fn new(content: String, version: i32) -> Document {
+    pub(crate) fn new(content: String, version: i32) -> Document {
         Self::open(
             ProjectKey::default(),
             0,
             MigrationTool::Plain,
+            NonZeroU64::MAX,
             content,
             version,
         )
     }
 
     /// A document of the project `project_key`, whose settings at `settings_version` make
-    /// `migration_tool` run the file. When the settings or the project change,
-    /// [`Document::set_migration_tool`] applies them.
+    /// `migration_tool` run the file and limit its size to `max_size`. When the settings or the
+    /// project change, [`Document::set_settings`] applies them.
     pub(crate) fn open(
         project_key: ProjectKey,
         settings_version: u64,
         migration_tool: MigrationTool,
+        max_size: NonZeroU64,
         content: String,
         version: i32,
     ) -> Document {
-        let migration_script = migration_tool.read(&content);
-        let split =
-            pgls_statement_splitter::split(text(&content, migration_script.preprocessed.as_ref()));
-        let diagnostics = split_diagnostics(&split);
-        let suppressions =
-            Suppressions::from(content.as_str()).with_statements(split.ranges.clone());
-
         let generation = next_generation();
-        Document {
-            split,
-            diagnostics,
+        let mut document = Document {
+            split: pgls_statement_splitter::split(""),
+            diagnostics: Vec::new(),
             content,
             generation,
             version,
             cache: Arc::new(DocumentCache::new(generation)),
-            suppressions,
+            suppressions: Suppressions::default(),
             project_key,
             settings_version,
             migration_tool,
-            migration_script,
+            migration_script: Script::default(),
             edited_at: None,
-        }
+            max_size,
+            too_large: false,
+        };
+        document.read();
+        document
+    }
+
+    /// Splits the whole content, unless it is larger than `max_size`. Returns the previous
+    /// migration script and statements.
+    fn read(&mut self) -> (Script, SplitResult) {
+        self.too_large = self.exceeds_max_size(&self.content);
+        let (migration_script, split) = if self.too_large {
+            let size = self.content.len();
+            let limit = usize::try_from(self.max_size.get()).unwrap_or(usize::MAX);
+            self.diagnostics = vec![SDiagnostic::new(FileTooLarge { size, limit })];
+            self.suppressions = Suppressions::default();
+            (Script::default(), pgls_statement_splitter::split(""))
+        } else {
+            let migration_script = self.migration_tool.read(&self.content);
+            let split = pgls_statement_splitter::split(text(
+                &self.content,
+                migration_script.preprocessed.as_ref(),
+            ));
+            self.diagnostics = split_diagnostics(&split);
+            self.suppressions =
+                Suppressions::from(self.content.as_str()).with_statements(split.ranges.clone());
+            (migration_script, split)
+        };
+        (
+            std::mem::replace(&mut self.migration_script, migration_script),
+            std::mem::replace(&mut self.split, split),
+        )
+    }
+
+    fn exceeds_max_size(&self, content: &str) -> bool {
+        u64::try_from(content.len()).unwrap_or(u64::MAX) > self.max_size.get()
+    }
+
+    /// Splits the whole content again after it changed from `old_content` or the settings
+    /// changed, unlike [`Document::update_content`], which splits only around the change.
+    /// Returns what is no longer current in the cache, for the caller to drop.
+    fn reread(&mut self, old_content: &str) -> StaleEntries {
+        let (old_script, old_split) = self.read();
+        self.generation = next_generation();
+        self.edited_at = Some(TextSize::from(0));
+        let stale = self.cache.content_changed(
+            ContentChange {
+                unchanged: TextSize::from(0),
+                first_changed_statement: TextSize::from(0),
+            },
+            self.generation,
+        );
+        let old_text = text(old_content, old_script.preprocessed.as_ref());
+        let removed = statements_not_in(
+            old_split.ranges.iter().map(|range| &old_text[*range]),
+            self.text(),
+            &self.split.ranges,
+        );
+        self.cache.remove_statements(removed);
+        stale
     }
 
     /// Replaces the content of the document. Returns what the change invalidated in its cache,
     /// for the caller to drop, see [`StaleEntries::drop_in_background`].
-    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+    pub(crate) fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+        // A content larger than `max_size` has no statements to split the other version from.
+        if self.too_large || self.exceeds_max_size(&content) {
+            let old_content = std::mem::replace(&mut self.content, content);
+            self.version = version;
+            return self.reread(&old_content);
+        }
         let migration_script = self.migration_tool.read(&content);
         // The text that is split is the content with the placeholders of the migration tool.
         let old_text = self.text();
@@ -143,6 +210,22 @@ impl Document {
             },
             self.generation,
         );
+        // The statements around the change are new to the checks against the database, which
+        // only run on save, see `DatabaseResults`.
+        #[cfg(feature = "db")]
+        {
+            let after = old_split.ranges.len().saturating_sub(changed.end);
+            let added = changed.start..self.split.ranges.len().saturating_sub(after);
+            let text = self.text();
+            self.cache.statements_edited(
+                self.split
+                    .ranges
+                    .get(added)
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|range| text.get(std::ops::Range::<usize>::from(*range))),
+            );
+        }
         // The statements around the change that are no longer in the document drop what was
         // cached for them, with the statements of their function bodies. The other statements
         // have the same text as before.
@@ -164,12 +247,12 @@ impl Document {
     /// Which version of the content this is. Unlike the client's version, it is unique across
     /// all documents: it changes on every change, also of the migration tool, and a document that
     /// is closed and opened again gets a new one.
-    pub fn generation(&self) -> u64 {
+    pub(crate) fn generation(&self) -> u64 {
         self.generation
     }
 
     /// Where the last change of the content starts.
-    pub fn edited_at(&self) -> Option<TextSize> {
+    pub(crate) fn edited_at(&self) -> Option<TextSize> {
         self.edited_at
     }
 
@@ -178,18 +261,27 @@ impl Document {
         &self.cache
     }
 
-    /// Applies the migration tool of the settings of `project_key` at `settings_version`.
-    /// Returns what the change invalidated in the cache, for the caller to drop, see
-    /// [`StaleEntries::drop_in_background`].
-    pub(crate) fn set_migration_tool(
+    /// Applies the migration tool and the size limit of the settings of `project_key` at
+    /// `settings_version`. Returns what the change invalidated in the cache, for the caller to
+    /// drop, see [`StaleEntries::drop_in_background`].
+    pub(crate) fn set_settings(
         &mut self,
         project_key: ProjectKey,
         settings_version: u64,
         migration_tool: MigrationTool,
+        max_size: NonZeroU64,
     ) -> StaleEntries {
         self.project_key = project_key;
         self.settings_version = settings_version;
         self.migration_tool = migration_tool;
+        let max_size_changed = max_size != self.max_size;
+        self.max_size = max_size;
+        if self.too_large || (max_size_changed && self.exceeds_max_size(&self.content)) {
+            // Settings change rarely, so the copy is cheaper than keeping the statements' texts
+            // apart from the content.
+            let content = self.content.clone();
+            return self.reread(&content);
+        }
         let migration_script = migration_tool.read(&self.content);
         let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
         let old_script = std::mem::replace(&mut self.migration_script, migration_script);
@@ -250,6 +342,11 @@ impl Document {
         self.migration_tool
     }
 
+    /// `files.maxSize` of the settings of the file.
+    pub(crate) fn max_size(&self) -> NonZeroU64 {
+        self.max_size
+    }
+
     /// How the migration tool runs the document.
     pub(crate) fn migration_script(&self) -> &Script {
         &self.migration_script
@@ -257,7 +354,7 @@ impl Document {
 
     /// The migration sections of the document, like the up and down migrations of dbmate and
     /// goose. A tool without section markers has none.
-    pub fn migration_sections(&self) -> &[Unit] {
+    pub(crate) fn migration_sections(&self) -> &[Unit] {
         &self.migration_script.units
     }
 
@@ -272,28 +369,38 @@ impl Document {
         self.cache.stats(&statements)
     }
 
-    pub fn suppressions(&self) -> &Suppressions {
+    pub(crate) fn suppressions(&self) -> &Suppressions {
         &self.suppressions
     }
 
     /// The ranges of the top-level statements, in file order.
-    pub fn statement_ranges(&self) -> &[TextRange] {
+    pub(crate) fn statement_ranges(&self) -> &[TextRange] {
         &self.split.ranges
     }
 
-    pub fn get_document_content(&self) -> &str {
+    /// The text and the range of each top-level statement, in file order.
+    #[cfg(feature = "db")]
+    pub(crate) fn top_level_statements(&self) -> impl Iterator<Item = (&str, TextRange)> {
+        let text = self.text();
+        self.split
+            .ranges
+            .iter()
+            .filter_map(|range| Some((text.get(std::ops::Range::<usize>::from(*range))?, *range)))
+    }
+
+    pub(crate) fn get_document_content(&self) -> &str {
         &self.content
     }
 
     /// The text that is split and parsed: the content, with the placeholders of the migration
     /// tool if it replaces parts of it. It has the length of the content.
-    fn text(&self) -> &str {
+    pub(crate) fn text(&self) -> &str {
         text(&self.content, self.migration_script.preprocessed.as_ref())
     }
 
     /// Whether `range` overlaps a part of the content that the migration tool replaces, like a
     /// goose `ENVSUB` expansion. Edits there would write the placeholder into the file.
-    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+    pub(crate) fn touches_placeholder(&self, range: TextRange) -> bool {
         self.migration_script
             .preprocessed
             .as_ref()
@@ -309,301 +416,130 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_unknown_value(range))
     }
 
-    pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
+    pub(crate) fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
         &self.diagnostics
     }
 
-    pub fn find<'a, M>(&'a self, id: StatementId, mapper: M) -> Option<M::Output>
-    where
-        M: StatementMapper<'a>,
-    {
-        self.iter_with_filter(mapper, IdFilter::new(id)).next()
+    /// Every statement of the document, in file order: each top-level statement, followed by
+    /// the statements embedded in it, like the statements of a SQL function body.
+    ///
+    /// Cost: finding the embedded statements parses each top-level statement on a cold cache.
+    pub(crate) fn statements(&self) -> impl Iterator<Item = DocumentStatement> + '_ {
+        self.statements_in(&self.split.ranges)
     }
 
-    pub fn iter<'a, M>(&'a self, mapper: M) -> ParseIterator<'a, M, NoFilter>
-    where
-        M: StatementMapper<'a>,
-    {
-        self.iter_with_filter(mapper, NoFilter)
-    }
-
-    pub fn iter_with_filter<'a, M, F>(&'a self, mapper: M, filter: F) -> ParseIterator<'a, M, F>
-    where
-        M: StatementMapper<'a>,
-        F: StatementFilter<'a>,
-    {
-        ParseIterator::new(self, mapper, filter)
+    /// The statements from the first top-level statement that starts at or after `offset` on.
+    pub(crate) fn statements_from(
+        &self,
+        offset: TextSize,
+    ) -> impl Iterator<Item = DocumentStatement> + '_ {
+        let first = self
+            .split
+            .ranges
+            .partition_point(|range| range.start() < offset);
+        self.statements_in(self.split.ranges.get(first..).unwrap_or_default())
     }
 
     /// The statements that contain `position`, outermost first: the top-level statement, and the
-    /// body of a SQL function if `position` is in it. Unlike filtering all statements with a
-    /// [`CursorPositionFilter`], this doesn't look at the other statements of the document.
-    pub fn iter_at<'a, M>(
-        &'a self,
-        mapper: M,
+    /// body of a SQL function if `position` is in it. Only the top-level statement at `position`
+    /// is looked at.
+    pub(crate) fn statements_at(
+        &self,
         position: TextSize,
-    ) -> ParseIterator<'a, M, CursorPositionFilter>
-    where
-        M: StatementMapper<'a>,
-    {
+    ) -> impl Iterator<Item = DocumentStatement> + '_ {
         // The ranges are ordered and don't overlap, so only the first one that ends after
         // `position` can contain it.
         let first = self
             .split
             .ranges
             .partition_point(|range| range.end() <= position);
-        let ranges = self.split.ranges.get(first..=first).unwrap_or_default();
-        ParseIterator {
-            ranges: ranges.iter(),
-            ..ParseIterator::new(self, mapper, CursorPositionFilter::new(position))
-        }
+        self.statements_in(self.split.ranges.get(first..=first).unwrap_or_default())
+            .filter(move |stmt| stmt.range.contains(position))
     }
 
-    /// The statements from the first top-level statement that starts at or after `offset` on.
-    pub fn iter_from<'a, M>(&'a self, mapper: M, offset: TextSize) -> ParseIterator<'a, M, NoFilter>
-    where
-        M: StatementMapper<'a>,
-    {
-        let first = self
-            .split
-            .ranges
-            .partition_point(|range| range.start() < offset);
-        ParseIterator {
-            ranges: self.split.ranges.get(first..).unwrap_or_default().iter(),
-            ..ParseIterator::new(self, mapper, NoFilter)
-        }
-    }
-
-    /// The statements that [`GetCompletionsFilter`] accepts for `position`, without looking at
-    /// the statements far from it.
-    pub fn iter_for_completions<'a, M>(
-        &'a self,
-        mapper: M,
+    /// The statements that a completion at `position` can be in, see
+    /// [`DocumentStatement::completes_at`]. Only the top-level statements near `position` are
+    /// looked at.
+    pub(crate) fn statements_near(
+        &self,
         position: TextSize,
-    ) -> ParseIterator<'a, M, GetCompletionsFilter>
-    where
-        M: StatementMapper<'a>,
-    {
-        // The filter accepts a statement up to two characters after its end. The bodies of SQL
-        // functions are inside their top-level statement.
+    ) -> impl Iterator<Item = DocumentStatement> + '_ {
+        // A completion can be up to two characters after the end of a statement. The bodies of
+        // SQL functions are inside their top-level statement.
         let ranges = &self.split.ranges;
         let first = ranges.partition_point(|range| range.end() + TextSize::from(2) <= position);
         let near = ranges.get(first..).unwrap_or_default();
         let near = near
             .get(..near.partition_point(|range| range.start() <= position))
             .unwrap_or_default();
-        ParseIterator {
-            ranges: near.iter(),
-            ..ParseIterator::new(
-                self,
-                mapper,
-                GetCompletionsFilter {
-                    cursor_position: position,
-                },
-            )
-        }
-    }
-}
-
-/// A statement of a document: a top-level statement, or a statement embedded in one, like a
-/// statement of a SQL function body.
-#[derive(Debug, Clone)]
-pub struct DocumentStatement {
-    pub id: StatementId,
-    /// Where the statement is in the document.
-    pub range: TextRange,
-    /// Maps offsets in the statement text, `id.content()`, to offsets in the document, relative
-    /// to the start of `range`. They only differ for embedded statements whose text isn't the
-    /// source text, like a function body with escaped quotes.
-    pub offsets: OffsetMap,
-}
-
-impl DocumentStatement {
-    fn top_level(id: StatementId, range: TextRange) -> Self {
-        Self {
-            id,
-            range,
-            offsets: OffsetMap::default(),
-        }
+        self.statements_in(near)
+            .filter(move |stmt| stmt.completes_at(position))
     }
 
-    /// The range in the document of `range` in the statement text. Like [`Self::statement_offset`],
-    /// it can end after the statement text.
-    pub fn document_range(&self, range: TextRange) -> TextRange {
-        self.offsets.range_to_source(range) + self.range.start()
+    /// The first statement with the id `id`. Only the top-level statement that it is or that it
+    /// is embedded in is parsed.
+    ///
+    /// Cost: a comparison of the text of each top-level statement of the same length as the
+    /// id's top-level statement.
+    #[cfg(feature = "db")]
+    pub(crate) fn statement(&self, id: &StatementId) -> Option<DocumentStatement> {
+        let root = id.parent_content().unwrap_or(id.content());
+        let text = self.text();
+        let range = *self
+            .split
+            .ranges
+            .iter()
+            .find(|range| usize::from(range.len()) == root.len() && &text[**range] == root)?;
+        self.statements_in(std::slice::from_ref(&range))
+            .find(|stmt| stmt.id == *id)
     }
 
-    /// The offset in the statement text of `offset` in the document, which is in the
-    /// statement's range, or up to two bytes after the end of an unterminated statement, where
-    /// [`GetCompletionsFilter`] finds the cursor of a completion.
-    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
-        debug_assert!(self.range.start() <= offset);
-        self.offsets
-            .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
-    }
-}
-
-pub trait StatementMapper<'a> {
-    type Output;
-
-    fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output;
-}
-
-pub trait StatementFilter<'a> {
-    fn predicate(&self, stmt: &DocumentStatement) -> bool;
-}
-
-pub struct ParseIterator<'a, M, F> {
-    parser: &'a Document,
-    mapper: M,
-    filter: F,
-    ranges: std::slice::Iter<'a, TextRange>,
-    /// The embedded statements of the last top-level statement, last first.
-    pending_embedded: Vec<DocumentStatement>,
-}
-
-impl<'a, M, F> ParseIterator<'a, M, F> {
-    pub fn new(parser: &'a Document, mapper: M, filter: F) -> Self {
-        Self {
-            parser,
-            mapper,
-            filter,
-            ranges: parser.split.ranges.iter(),
-            pending_embedded: Vec::new(),
-        }
-    }
-}
-
-impl<'a, M, F> Iterator for ParseIterator<'a, M, F>
-where
-    M: StatementMapper<'a>,
-    F: StatementFilter<'a>,
-{
-    type Item = M::Output;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // A loop rather than recursion: the filter can skip thousands of statements in a row.
-        loop {
-            if let Some(stmt) = self.pending_embedded.pop() {
-                if self.filter.predicate(&stmt) {
-                    return Some(self.mapper.map(self.parser, stmt));
-                }
-                continue;
-            }
-
-            let range = *self.ranges.next()?;
-            let root_id = StatementId::new(&self.parser.text()[range]);
-
-            // The statements of a SQL function body follow the function. They are pushed in
-            // reverse, so that they are popped in order.
-            let embedded = self.parser.cache.embedded(&root_id, self.parser.generation);
-            self.pending_embedded
-                .extend(embedded.iter().rev().map(|embedded| DocumentStatement {
+    /// The statements of the top-level statements at `ranges`, see [`Self::statements`].
+    fn statements_in<'a>(
+        &'a self,
+        ranges: &'a [TextRange],
+    ) -> impl Iterator<Item = DocumentStatement> + 'a {
+        ranges.iter().flat_map(|range| {
+            let root_id = StatementId::new(&self.text()[*range]);
+            let embedded: Vec<_> = self
+                .cache
+                .embedded(&root_id, self.generation)
+                .iter()
+                .map(|embedded| DocumentStatement {
                     id: root_id.create_child(&embedded.sql),
                     range: embedded.range + range.start(),
                     offsets: embedded.offsets.clone(),
-                }));
-
-            let stmt = DocumentStatement::top_level(root_id, range);
-            if self.filter.predicate(&stmt) {
-                return Some(self.mapper.map(self.parser, stmt));
-            }
-        }
+                })
+                .collect();
+            std::iter::once(DocumentStatement::top_level(root_id, *range)).chain(embedded)
+        })
     }
-}
 
-pub struct DefaultMapper;
-impl<'a> StatementMapper<'a> for DefaultMapper {
-    type Output = (StatementId, TextRange, String);
-
-    fn map(&self, _doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let sql = stmt.id.content().to_string();
-        (stmt.id, stmt.range, sql)
+    /// The text of `stmt`. For an embedded statement, it can differ from the source text, like
+    /// a function body with escaped quotes, see [`DocumentStatement::offsets`].
+    pub(crate) fn sql<'a>(&'a self, stmt: &'a DocumentStatement) -> &'a str {
+        stmt.id.content()
     }
-}
 
-pub struct ExecuteStatementMapper;
-impl<'a> StatementMapper<'a> for ExecuteStatementMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        String,
-        Option<Arc<pgls_query::NodeEnum>>,
-    );
-
-    fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
-        let ast_option = match &*ast_result {
-            Ok(node) => Some(node.clone()),
-            Err(_) => None,
-        };
-
-        let sql = stmt.id.content().to_string();
-        (stmt.id, stmt.range, sql, ast_option)
+    /// The tree of `stmt`, or why it doesn't parse.
+    pub(crate) fn parse(&self, stmt: &DocumentStatement) -> Arc<ParseResult> {
+        self.cache.parse(&stmt.id, self.generation)
     }
-}
 
-pub struct FormatStatementMapper;
-impl<'a> StatementMapper<'a> for FormatStatementMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        String,
-        Result<Arc<pgls_query::NodeEnum>, pgls_query_ext::diagnostics::SyntaxDiagnostic>,
-    );
-
-    fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
-        let result = match &*ast_result {
-            Ok(node) => Ok(node.clone()),
-            Err(diag) => Err(diag.clone().span(stmt.range)),
-        };
-
-        let sql = stmt.id.content().to_string();
-        (stmt.id, stmt.range, sql, result)
+    /// The tree-sitter tree of `stmt`.
+    pub(crate) fn tree(&self, stmt: &DocumentStatement) -> Arc<tree_sitter::Tree> {
+        self.cache.tree(&stmt.id, self.generation)
     }
-}
 
-pub struct TypecheckDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for TypecheckDiagnosticsMapper {
-    type Output = (
-        StatementId,
-        TextRange,
-        Option<Arc<pgls_query::NodeEnum>>,
-        Arc<tree_sitter::Tree>,
-    );
-
-    fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let ast_result = doc.cache.parse(&stmt.id, doc.generation);
-
-        let ast_option = match &*ast_result {
-            Ok(node) => Some(node.clone()),
-            Err(_) => None,
-        };
-
-        let cst_result = doc.cache.tree(&stmt.id, doc.generation);
-
-        (stmt.id, stmt.range, ast_option, cst_result)
-    }
-}
-
-pub struct AnalyserDiagnosticsMapper;
-impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
-    /// The statement if it parses, its syntax error, and the statement again if it is a
-    /// top-level statement that doesn't parse.
-    type Output = (
-        Option<AnalysableStatement>,
-        Option<SyntaxDiagnostic>,
-        Option<UnparsableStatement>,
-    );
-
-    fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
+    /// What the walk takes of `stmt`: the statement if it parses, its syntax error, and the
+    /// statement again if it is a top-level statement that doesn't parse.
+    pub(crate) fn walk_input(&self, stmt: DocumentStatement) -> StatementWalkInput {
         let DocumentStatement { id, range, offsets } = stmt;
-        let maybe_node = doc.cache.parse(&id, doc.generation);
+        let maybe_node = self.cache.parse(&id, self.generation);
 
-        let (ast_option, diagnostics) = match &*maybe_node {
+        let (ast_option, syntax_error) = match &*maybe_node {
             Ok(node) => {
-                let plpgsql_result = doc.cache.plpgsql_parse(&id, doc.generation);
+                let plpgsql_result = self.cache.plpgsql_parse(&id, self.generation);
                 if let Some(Err(diag)) = plpgsql_result {
                     // offset the pgpsql diagnostic from the parent statement start
                     let span = diag.location().span.map(|sp| sp + range.start());
@@ -622,7 +558,7 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
 
         // Statements in the body of a SQL function can reference its parameters.
         let function = id.parent().and_then(|root| {
-            let parent = doc.cache.parse(&root, doc.generation);
+            let parent = self.cache.parse(&root, self.generation);
             let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) =
                 parent.as_ref().as_deref()
             else {
@@ -631,8 +567,8 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
             pgls_resolve::FunctionContext::from_create_function(create_fn)
         });
 
-        (
-            ast_option.map(|root| {
+        StatementWalkInput {
+            analysable: ast_option.map(|root| {
                 AnalysableStatement {
                     offsets,
                     ..AnalysableStatement::new(root, range).with_sql(id.content())
@@ -642,86 +578,111 @@ impl<'a> StatementMapper<'a> for AnalyserDiagnosticsMapper {
                     pgls_lexer::convert_to_positional_params_with_metadata(id.content())
                         .has_identifier_parameters,
                 )
-                .with_unknown_values(doc.touches_unknown_value(range))
+                .with_unknown_values(self.touches_unknown_value(range))
             }),
-            diagnostics,
+            syntax_error,
             unparsable,
-        )
-    }
-}
-pub struct WithCSTMapper;
-impl<'a> StatementMapper<'a> for WithCSTMapper {
-    type Output = (DocumentStatement, Arc<tree_sitter::Tree>);
-
-    fn map(&self, doc: &'a Document, stmt: DocumentStatement) -> Self::Output {
-        let tree = doc.cache.tree(&stmt.id, doc.generation);
-        (stmt, tree)
+        }
     }
 }
 
-/*
- * We allow an offset of two for the statement:
- *
- * select * from | <-- we want to suggest items for the next token.
- *
- * However, if the current statement is terminated by a semicolon, we don't apply any
- * offset.
- *
- * select * from users; | <-- no autocompletions here.
- */
-pub struct GetCompletionsFilter {
-    pub cursor_position: TextSize,
+/// What the walk takes of a statement, see [`Document::walk_input`].
+pub(crate) struct StatementWalkInput {
+    /// The statement, if it parses.
+    pub analysable: Option<AnalysableStatement>,
+    /// Why the statement doesn't parse, or why the PL/pgSQL body of the function it creates
+    /// doesn't.
+    pub syntax_error: Option<SyntaxDiagnostic>,
+    /// The statement again if it is a top-level statement that doesn't parse.
+    pub unparsable: Option<UnparsableStatement>,
 }
-impl StatementFilter<'_> for GetCompletionsFilter {
-    fn predicate(&self, stmt: &DocumentStatement) -> bool {
-        let range = stmt.range;
-        let is_terminated_by_semi = stmt.id.content().ends_with(';');
 
-        let measuring_range = if is_terminated_by_semi {
+/// A statement of a document: a top-level statement, or a statement embedded in one, like a
+/// statement of a SQL function body. Its text, tree and parse result are read from the
+/// [`Document`].
+#[derive(Debug, Clone)]
+pub(crate) struct DocumentStatement {
+    id: StatementId,
+    /// Where the statement is in the document.
+    range: TextRange,
+    /// Maps offsets in the statement text, `id.content()`, to offsets in the document, relative
+    /// to the start of `range`. They only differ for embedded statements whose text isn't the
+    /// source text, like a function body with escaped quotes.
+    offsets: OffsetMap,
+}
+
+impl DocumentStatement {
+    fn top_level(id: StatementId, range: TextRange) -> Self {
+        Self {
+            id,
+            range,
+            offsets: OffsetMap::default(),
+        }
+    }
+
+    /// The id of the statement, which clients pass back to execute it.
+    pub(crate) fn id(&self) -> &StatementId {
+        &self.id
+    }
+
+    /// Where the statement is in the document.
+    pub(crate) fn range(&self) -> TextRange {
+        self.range
+    }
+
+    /// Maps offsets in the statement text to offsets in the document, relative to the start of
+    /// [`Self::range`]. They only differ for embedded statements whose text isn't the source
+    /// text, like a function body with escaped quotes.
+    pub(crate) fn offsets(&self) -> &OffsetMap {
+        &self.offsets
+    }
+
+    /// Whether the statement is embedded in a top-level statement, like a statement of a SQL
+    /// function body.
+    pub(crate) fn is_embedded(&self) -> bool {
+        self.id.is_child()
+    }
+
+    /// Whether the statement is embedded in the top-level statement `other`.
+    pub(crate) fn is_embedded_in(&self, other: &DocumentStatement) -> bool {
+        self.id.is_child_of(&other.id)
+    }
+
+    /// The range in the document of `range` in the statement text. Like [`Self::statement_offset`],
+    /// it can end after the statement text.
+    pub(crate) fn document_range(&self, range: TextRange) -> TextRange {
+        self.offsets.range_to_source(range) + self.range.start()
+    }
+
+    /// The offset in the statement text of `offset` in the document, which is in the
+    /// statement's range, or up to two bytes after the end of an unterminated statement, where
+    /// [`Self::completes_at`] finds the cursor of a completion.
+    pub(crate) fn statement_offset(&self, offset: TextSize) -> TextSize {
+        debug_assert!(self.range.start() <= offset);
+        self.offsets
+            .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())
+    }
+
+    /// Whether a completion at `position` can be in the statement. We allow an offset of two
+    /// for the statement:
+    ///
+    /// ```sql
+    /// select * from | <-- we want to suggest items for the next token.
+    /// ```
+    ///
+    /// However, if the statement is terminated by a semicolon, we don't apply any offset:
+    ///
+    /// ```sql
+    /// select * from users; | <-- no autocompletions here.
+    /// ```
+    fn completes_at(&self, position: TextSize) -> bool {
+        let range = self.range;
+        let measuring_range = if self.id.content().ends_with(';') {
             range
         } else {
             range.checked_expand_end(2.into()).unwrap_or(range)
         };
-        measuring_range.contains(self.cursor_position)
-    }
-}
-
-pub struct NoFilter;
-impl StatementFilter<'_> for NoFilter {
-    fn predicate(&self, _stmt: &DocumentStatement) -> bool {
-        true
-    }
-}
-
-pub struct CursorPositionFilter {
-    pos: TextSize,
-}
-
-impl CursorPositionFilter {
-    pub fn new(pos: TextSize) -> Self {
-        Self { pos }
-    }
-}
-
-impl StatementFilter<'_> for CursorPositionFilter {
-    fn predicate(&self, stmt: &DocumentStatement) -> bool {
-        stmt.range.contains(self.pos)
-    }
-}
-
-pub struct IdFilter {
-    id: StatementId,
-}
-
-impl IdFilter {
-    pub fn new(id: StatementId) -> Self {
-        Self { id }
-    }
-}
-
-impl StatementFilter<'_> for IdFilter {
-    fn predicate(&self, stmt: &DocumentStatement) -> bool {
-        stmt.id == self.id
+        measuring_range.contains(position)
     }
 }
 
@@ -853,6 +814,15 @@ fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
 mod tests {
     use super::*;
 
+    impl Document {
+        /// The walk input of every statement.
+        fn walk_inputs(&self) -> Vec<StatementWalkInput> {
+            self.statements()
+                .map(|stmt| self.walk_input(stmt))
+                .collect()
+        }
+    }
+
     #[test]
     fn common_prefix_stops_at_the_first_difference_on_a_char_boundary() {
         let long = "select 1;\n".repeat(20);
@@ -880,10 +850,10 @@ mod tests {
 
         let d = Document::new(input.to_string(), 1);
 
-        let stmts = d.iter(DefaultMapper).collect::<Vec<_>>();
+        let stmts = d.statements().collect::<Vec<_>>();
 
         assert_eq!(stmts.len(), 2);
-        assert_eq!(stmts[1].2, "select $1 + $2;");
+        assert_eq!(d.sql(&stmts[1]), "select $1 + $2;");
     }
 
     #[test]
@@ -892,11 +862,11 @@ mod tests {
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT a + $2;' LANGUAGE sql;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.walk_inputs();
 
         assert_eq!(results.len(), 2);
-        assert!(results[0].0.as_ref().unwrap().function.is_none());
-        let body = results[1].0.as_ref().unwrap();
+        assert!(results[0].analysable.as_ref().unwrap().function.is_none());
+        let body = results[1].analysable.as_ref().unwrap();
         assert_eq!(body.sql.as_deref(), Some("SELECT a + $2;"));
         let function = body.function.as_ref().unwrap();
         assert_eq!(function.function_name, "add");
@@ -915,12 +885,13 @@ mod tests {
         let input = "create function f(a int) returns int language sql as $$\n  insert into t values (a);\n  select a;\n$$;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.walk_inputs();
 
         assert_eq!(results.len(), 3);
-        for (statement, syntax_error, _) in &results[1..] {
+        for result in &results[1..] {
+            let syntax_error = &result.syntax_error;
             assert!(syntax_error.is_none(), "{syntax_error:?}");
-            let statement = statement.as_ref().unwrap();
+            let statement = result.analysable.as_ref().unwrap();
             assert!(statement.function.is_some());
             assert_eq!(
                 Some(&input[statement.range]),
@@ -929,11 +900,11 @@ mod tests {
             );
         }
         assert_eq!(
-            results[1].0.as_ref().unwrap().sql.as_deref(),
+            results[1].analysable.as_ref().unwrap().sql.as_deref(),
             Some("insert into t values (a);")
         );
         assert_eq!(
-            results[2].0.as_ref().unwrap().sql.as_deref(),
+            results[2].analysable.as_ref().unwrap().sql.as_deref(),
             Some("select a;")
         );
     }
@@ -947,10 +918,11 @@ mod tests {
         ] {
             let d = Document::new(input.to_string(), 1);
 
-            let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+            let results = d.walk_inputs();
 
             assert_eq!(results.len(), 2, "{input}");
-            for (_, syntax_error, _) in &results {
+            for result in &results {
+                let syntax_error = &result.syntax_error;
                 assert!(syntax_error.is_none(), "{input}: {syntax_error:?}");
             }
         }
@@ -961,14 +933,14 @@ mod tests {
         let input = "create function f() returns void language sql as $$ $$;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.walk_inputs();
 
         assert_eq!(results.len(), 1);
-        assert!(results[0].1.is_none());
+        assert!(results[0].syntax_error.is_none());
     }
 
     #[test]
-    fn test_sync_diagnostics_mapper_plpgsql_syntax_error() {
+    fn walk_input_has_the_plpgsql_syntax_error() {
         let input = "
 CREATE FUNCTION test_func()
     RETURNS void
@@ -982,10 +954,14 @@ END;
 $$;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.walk_inputs();
 
         assert_eq!(results.len(), 1);
-        let (ast, diagnostic, _) = &results[0];
+        let StatementWalkInput {
+            analysable: ast,
+            syntax_error: diagnostic,
+            ..
+        } = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -999,7 +975,7 @@ $$;";
     }
 
     #[test]
-    fn test_sync_diagnostics_mapper_plpgsql_valid() {
+    fn walk_input_of_a_valid_plpgsql_function() {
         let input = "
 CREATE FUNCTION valid_func()
     RETURNS integer
@@ -1013,10 +989,14 @@ END;
 $$;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.walk_inputs();
 
         assert_eq!(results.len(), 1);
-        let (ast, diagnostic, _) = &results[0];
+        let StatementWalkInput {
+            analysable: ast,
+            syntax_error: diagnostic,
+            ..
+        } = &results[0];
 
         // Should have parsed the CREATE FUNCTION statement
         assert!(ast.is_some());
@@ -1026,7 +1006,7 @@ $$;";
     }
 
     #[test]
-    fn test_sync_diagnostics_mapper_plpgsql_caching() {
+    fn walk_input_of_a_plpgsql_function_twice() {
         let input = "
 CREATE FUNCTION cached_func()
     RETURNS void
@@ -1039,32 +1019,30 @@ $$;";
 
         let d = Document::new(input.to_string(), 1);
 
-        let results1 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results1 = d.walk_inputs();
         assert_eq!(results1.len(), 1);
-        assert!(results1[0].0.is_some());
-        assert!(results1[0].1.is_none());
+        assert!(results1[0].analysable.is_some());
+        assert!(results1[0].syntax_error.is_none());
 
-        let results2 = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results2 = d.walk_inputs();
         assert_eq!(results2.len(), 1);
-        assert!(results2[0].0.is_some());
-        assert!(results2[0].1.is_none());
+        assert!(results2[0].analysable.is_some());
+        assert!(results2[0].syntax_error.is_none());
     }
 
     #[test]
-    fn test_default_mapper() {
+    fn statements_have_their_text_and_range() {
         let input = "SELECT 1; INSERT INTO users VALUES (1);";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(DefaultMapper).collect::<Vec<_>>();
+        let results = d.statements().collect::<Vec<_>>();
         assert_eq!(results.len(), 2);
 
-        assert_eq!(results[0].2, "SELECT 1;");
-        assert_eq!(results[1].2, "INSERT INTO users VALUES (1);");
+        assert_eq!(d.sql(&results[0]), "SELECT 1;");
+        assert_eq!(d.sql(&results[1]), "INSERT INTO users VALUES (1);");
 
-        assert_eq!(results[0].1.start(), 0.into());
-        assert_eq!(results[0].1.end(), 9.into());
-        assert_eq!(results[1].1.start(), 10.into());
-        assert_eq!(results[1].1.end(), 39.into());
+        assert_eq!(results[0].range(), TextRange::new(0.into(), 9.into()));
+        assert_eq!(results[1].range(), TextRange::new(10.into(), 39.into()));
     }
 
     #[test]
@@ -1074,31 +1052,31 @@ $$;";
 
         assert!(d.document_diagnostics().is_empty());
 
-        let results = d.iter(AnalyserDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.walk_inputs();
         assert_eq!(results.len(), 1);
-        assert!(results[0].0.is_some());
-        assert!(results[0].1.is_none());
+        assert!(results[0].analysable.is_some());
+        assert!(results[0].syntax_error.is_none());
     }
 
     #[test]
-    fn test_execute_statement_mapper() {
+    fn statements_parse_or_have_a_syntax_error() {
         let input = "SELECT 1; INVALID SYNTAX HERE;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(ExecuteStatementMapper).collect::<Vec<_>>();
+        let results = d.statements().collect::<Vec<_>>();
         assert_eq!(results.len(), 2);
 
         // First statement should parse successfully
-        assert_eq!(results[0].2, "SELECT 1;");
-        assert!(results[0].3.is_some());
+        assert_eq!(d.sql(&results[0]), "SELECT 1;");
+        assert!(d.parse(&results[0]).is_ok());
 
         // Second statement should fail to parse
-        assert_eq!(results[1].2, "INVALID SYNTAX HERE;");
-        assert!(results[1].3.is_none());
+        assert_eq!(d.sql(&results[1]), "INVALID SYNTAX HERE;");
+        assert!(d.parse(&results[1]).is_err());
     }
 
     #[test]
-    fn test_async_diagnostics_mapper() {
+    fn statements_have_a_tree() {
         let input = "
 CREATE FUNCTION test_fn() RETURNS integer AS $$
 BEGIN
@@ -1107,100 +1085,52 @@ END;
 $$ LANGUAGE plpgsql;";
 
         let d = Document::new(input.to_string(), 1);
-        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.statements().collect::<Vec<_>>();
 
         assert_eq!(results.len(), 1);
-        let (_id, _range, ast, cst) = &results[0];
-
-        // Should have both AST and CST
-        assert!(ast.is_some());
-        assert_eq!(cst.root_node().kind(), "program");
+        assert!(d.parse(&results[0]).is_ok());
+        assert_eq!(d.tree(&results[0]).root_node().kind(), "program");
     }
 
     #[test]
-    fn test_async_diagnostics_mapper_with_sql_function_body() {
+    fn statements_of_a_sql_function_body_parse() {
         let input =
             "CREATE FUNCTION add(a int, b int) RETURNS int AS 'SELECT $1 + $2;' LANGUAGE sql;";
         let d = Document::new(input.to_string(), 1);
 
-        let results = d.iter(TypecheckDiagnosticsMapper).collect::<Vec<_>>();
+        let results = d.statements().collect::<Vec<_>>();
         assert_eq!(results.len(), 2);
 
         // Check the function body
-        let (id, _range, ast, _cst) = &results[1];
-        assert_eq!(id.content(), "SELECT $1 + $2;");
-        assert!(ast.is_some());
+        assert!(results[1].is_embedded());
+        assert!(results[1].is_embedded_in(&results[0]));
+        assert_eq!(d.sql(&results[1]), "SELECT $1 + $2;");
+        assert!(d.parse(&results[1]).is_ok());
     }
 
     #[test]
-    fn test_get_completions_mapper() {
-        let input = "SELECT * FROM users;";
-        let d = Document::new(input.to_string(), 1);
-
-        let results = d.iter(WithCSTMapper).collect::<Vec<_>>();
-        assert_eq!(results.len(), 1);
-
-        let (stmt, tree) = &results[0];
-        assert_eq!(stmt.id.content(), "SELECT * FROM users;");
-        assert_eq!(tree.root_node().kind(), "program");
-    }
-
-    #[test]
-    fn test_get_completions_filter() {
+    fn statements_near_a_completion() {
         let input = "SELECT * FROM users; INSERT INTO";
         let d = Document::new(input.to_string(), 1);
 
-        // Test cursor at end of first statement (terminated with semicolon)
-        let filter1 = GetCompletionsFilter {
-            cursor_position: 20.into(),
-        };
-        let results1 = d
-            .iter_with_filter(DefaultMapper, filter1)
-            .collect::<Vec<_>>();
-        assert_eq!(results1.len(), 0); // No completions after semicolon
+        // No completions after the semicolon of the first statement.
+        assert_eq!(d.statements_near(20.into()).count(), 0);
 
-        // Test cursor at end of second statement (not terminated)
-        let filter2 = GetCompletionsFilter {
-            cursor_position: 32.into(),
-        };
-        let results2 = d
-            .iter_with_filter(DefaultMapper, filter2)
-            .collect::<Vec<_>>();
-        assert_eq!(results2.len(), 1);
-        assert_eq!(results2[0].2, "INSERT INTO");
+        // Up to two characters after the end of an unterminated statement.
+        let results = d.statements_near(32.into()).collect::<Vec<_>>();
+        assert_eq!(results.len(), 1);
+        assert_eq!(d.sql(&results[0]), "INSERT INTO");
     }
 
     #[test]
-    fn test_cursor_position_filter() {
-        let input = "SELECT 1; INSERT INTO users VALUES (1);";
-        let d = Document::new(input.to_string(), 1);
-
-        // Cursor in first statement
-        let filter1 = CursorPositionFilter::new(5.into());
-        let results1 = d
-            .iter_with_filter(DefaultMapper, filter1)
-            .collect::<Vec<_>>();
-        assert_eq!(results1.len(), 1);
-        assert_eq!(results1[0].2, "SELECT 1;");
-
-        // Cursor in second statement
-        let filter2 = CursorPositionFilter::new(25.into());
-        let results2 = d
-            .iter_with_filter(DefaultMapper, filter2)
-            .collect::<Vec<_>>();
-        assert_eq!(results2.len(), 1);
-        assert_eq!(results2[0].2, "INSERT INTO users VALUES (1);");
-    }
-
-    #[test]
-    fn iter_at_yields_the_statements_at_the_position() {
+    fn statements_at_yields_the_statements_at_the_position() {
         let input =
             "select 1;\ncreate function f() returns int language sql as 'select 2;';\nselect 3;";
         let d = Document::new(input.to_string(), 1);
         let at = |needle: &str| {
             let position = TextSize::try_from(input.find(needle).unwrap()).unwrap();
-            d.iter_at(DefaultMapper, position)
-                .map(|(_, _, sql)| sql)
+            d.statements_at(position)
+                .map(|stmt| d.sql(&stmt).to_owned())
                 .collect::<Vec<_>>()
         };
 
@@ -1220,11 +1150,7 @@ $$ LANGUAGE plpgsql;";
         assert_eq!(at("select 3"), ["select 3;"]);
         // Between two statements, and past the end.
         assert!(at("\ncreate").is_empty());
-        assert!(
-            d.iter_at(DefaultMapper, TextSize::of(input))
-                .next()
-                .is_none()
-        );
+        assert!(d.statements_at(TextSize::of(input)).next().is_none());
     }
 
     #[test]
@@ -1254,51 +1180,26 @@ $$ LANGUAGE plpgsql;";
     }
 
     #[test]
-    fn test_id_filter() {
-        let input = "SELECT 1; SELECT 2;";
+    #[cfg(feature = "db")]
+    fn statement_finds_the_statement_with_the_id() {
+        let input =
+            "SELECT 1; SELECT 2;\ncreate function f() returns int language sql as 'select 3;';";
         let d = Document::new(input.to_string(), 1);
 
-        // Get all statements first to get their IDs
-        let all_results = d.iter(DefaultMapper).collect::<Vec<_>>();
-        assert_eq!(all_results.len(), 2);
+        let all = d.statements().collect::<Vec<_>>();
+        assert_eq!(all.len(), 4);
+        for stmt in &all {
+            let found = d.statement(stmt.id()).unwrap();
+            assert_eq!(found.range(), stmt.range());
+            assert_eq!(d.sql(&found), d.sql(stmt));
+        }
 
-        // Filter by first statement ID
-        let filter = IdFilter::new(all_results[0].0.clone());
-        let results = d
-            .iter_with_filter(DefaultMapper, filter)
-            .collect::<Vec<_>>();
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].2, "SELECT 1;");
-    }
-
-    #[test]
-    fn test_no_filter() {
-        let input = "SELECT 1; SELECT 2; SELECT 3;";
-        let d = Document::new(input.to_string(), 1);
-
-        let results = d
-            .iter_with_filter(DefaultMapper, NoFilter)
-            .collect::<Vec<_>>();
-        assert_eq!(results.len(), 3);
-    }
-
-    #[test]
-    fn test_find_method() {
-        let input = "SELECT 1; SELECT 2;";
-        let d = Document::new(input.to_string(), 1);
-
-        // Get all statements to get their IDs
-        let all_results = d.iter(DefaultMapper).collect::<Vec<_>>();
-
-        // Find specific statement
-        let result = d.find(all_results[1].0.clone(), DefaultMapper);
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().2, "SELECT 2;");
-
-        // Try to find non-existent statement
-        let fake_id = StatementId::new("SELECT 3;");
-        let result = d.find(fake_id, DefaultMapper);
-        assert!(result.is_none());
+        // Neither a statement that isn't in the document, nor a body of another function.
+        assert!(d.statement(&StatementId::new("SELECT 3;")).is_none());
+        assert!(
+            d.statement(&StatementId::new("SELECT 1;").create_child("select 3;"))
+                .is_none()
+        );
     }
 
     /// Each change splits only the statements around it, with the same result as splitting the
@@ -1380,14 +1281,28 @@ $$ LANGUAGE plpgsql;";
             (1, "-- +goose ENVSUB ON"),
         ];
         let mut lines = lines.map(str::to_string);
-        let mut d = Document::open(ProjectKey::default(), 0, goose, lines.join("\n"), 0);
+        let mut d = Document::open(
+            ProjectKey::default(),
+            0,
+            goose,
+            NonZeroU64::MAX,
+            lines.join("\n"),
+            0,
+        );
         for (version, (line, text)) in (1..).zip(edits) {
             lines[line] = text.to_string();
             let content = lines.join("\n");
             d.update_content(content.clone(), version)
                 .drop_in_background();
 
-            let whole = Document::open(ProjectKey::default(), 0, goose, content.clone(), 0);
+            let whole = Document::open(
+                ProjectKey::default(),
+                0,
+                goose,
+                NonZeroU64::MAX,
+                content.clone(),
+                0,
+            );
             assert_eq!(d.split, whole.split, "{content}");
             assert_eq!(d.text(), whole.text(), "{content}");
         }
@@ -1420,8 +1335,9 @@ $$ LANGUAGE plpgsql;";
             .join("\n");
         let mut d = Document::new(content.clone(), 0);
         let fill = |d: &Document| {
-            for (stmt, _) in d.iter(WithCSTMapper) {
-                d.cache.parse(&stmt.id, d.generation);
+            for stmt in d.statements() {
+                d.tree(&stmt);
+                d.parse(&stmt);
             }
         };
         fill(&d);
@@ -1511,8 +1427,9 @@ $$ LANGUAGE plpgsql;";
             .update_content("select 1;\nselect 3;".into(), 2)
             .drop_in_background();
         // `select 2;` is no longer in the document, so it stays out of the cache.
-        for (stmt, _) in previous.iter(WithCSTMapper) {
-            previous.cache.parse(&stmt.id, previous.generation);
+        for stmt in previous.statements() {
+            previous.tree(&stmt);
+            previous.parse(&stmt);
         }
         let stats = current.cache_stats();
         assert_eq!((stats.parse_results, stats.trees), (0, 0));

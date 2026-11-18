@@ -9,7 +9,6 @@ use pgls_fs::PgLSPath;
 use pgls_workspace::WorkspaceError;
 use pgls_workspace::features::code_actions::FixFileParams;
 use std::path::Path;
-use std::sync::atomic::Ordering;
 
 /// Lints a single file and returns a [FileResult]
 pub(crate) fn check_file<'ctx>(
@@ -35,6 +34,26 @@ pub(crate) fn check_with_guard<'ctx>(
             else {
                 return Ok(FileStatus::Unchanged);
             };
+
+            // Don't write fixes to a file that `--skip-errors` skips.
+            if ctx.config.skip_errors && fix.is_some() {
+                let diagnostics = workspace_file
+                    .guard()
+                    .pull_file_diagnostics(
+                        RuleCategoriesBuilder::default().all().build(),
+                        u32::MAX,
+                        only.clone(),
+                        skip.clone(),
+                    )
+                    .with_file_path_and_code(
+                        workspace_file.path.display().to_string(),
+                        category!("check"),
+                    )?
+                    .diagnostics;
+                if ctx.config.skips(&diagnostics) {
+                    return Ok(ctx.skip_file(&workspace_file.path));
+                }
+            }
 
             if let Some(fix_file_mode) = *fix {
                 let fixed = ctx
@@ -74,13 +93,13 @@ pub(crate) fn check_with_guard<'ctx>(
                 }
             }
 
-            let max_diagnostics = ctx.remaining_diagnostics.load(Ordering::Relaxed);
-
+            // Every diagnostic counts towards the errors, warnings and fixes of the summary and the
+            // exit code. The printer stops printing them at `--max-diagnostics`.
             let pull_diagnostics_result = workspace_file
                 .guard()
                 .pull_file_diagnostics(
                     RuleCategoriesBuilder::default().all().build(),
-                    max_diagnostics,
+                    u32::MAX,
                     only.clone(),
                     skip.clone(),
                 )
@@ -88,6 +107,10 @@ pub(crate) fn check_with_guard<'ctx>(
                     workspace_file.path.display().to_string(),
                     category!("check"),
                 )?;
+
+            if ctx.config.skips(&pull_diagnostics_result.diagnostics) {
+                return Ok(ctx.skip_file(&workspace_file.path));
+            }
 
             let no_diagnostics = pull_diagnostics_result.diagnostics.is_empty()
                 && pull_diagnostics_result.skipped_diagnostics == 0;

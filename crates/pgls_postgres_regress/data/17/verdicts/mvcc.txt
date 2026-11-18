@@ -1,11 +1,11 @@
-9:1 skipped
-11:1 accepted
-12:1 accepted
-13:1 accepted
-17:1 accepted
-18:1 accepted
-19:1 accepted
-22:1 rejected 42601
-24:1 accepted
-41:1 rejected 42601
-44:1 skipped
+320..326 skipped
+328..361 accepted
+362..401 accepted
+402..438 accepted
+561..613 accepted
+614..677 accepted
+678..762 accepted
+823..911 rejected 42601
+913..1648 accepted
+1684..1875 rejected 42601
+1877..1886 skipped

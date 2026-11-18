@@ -1,107 +1,107 @@
-2:1 accepted
-3:1 accepted
-9:1 accepted
-16:1 accepted
-25:1 accepted
-26:1 accepted
-27:1 accepted
-30:1 accepted
-40:1 accepted
-41:1 accepted
-44:1 accepted
-45:1 accepted
-48:1 accepted
-49:1 accepted
-57:1 accepted
-58:1 accepted
-61:1 accepted
-63:1 accepted
-64:1 accepted
-66:1 accepted
-69:1 accepted
-70:1 accepted
-73:1 accepted
-75:1 accepted
-76:1 accepted
-78:1 accepted
-86:1 skipped
-87:1 accepted
-88:1 accepted
-91:1 accepted
-96:1 accepted
-99:1 skipped
-102:1 skipped
-103:1 accepted
-104:1 accepted
-107:1 accepted
-112:1 accepted
-115:1 skipped
-118:1 skipped
-119:1 accepted
-120:1 accepted
-123:1 accepted
-128:1 accepted
-131:1 skipped
-134:1 skipped
-135:1 accepted
-136:1 accepted
-139:1 accepted
-144:1 accepted
-147:1 skipped
-154:1 skipped
-155:1 accepted
-158:1 accepted
-159:1 rejected 25P01
-162:1 rejected 34000
-163:1 rejected 34000
-166:1 rejected 34000
-167:1 rejected 34000
-168:1 rejected 34000
-169:1 rejected 34000
-170:1 rejected 34000
-173:1 rejected 34000
-174:1 rejected 34000
-175:1 rejected 34000
-176:1 rejected 34000
-177:1 rejected 34000
-178:1 rejected 34000
-179:1 rejected 34000
-181:1 skipped
-184:1 skipped
-185:1 accepted
-186:1 accepted
-189:1 accepted
-190:1 rejected 25P01
-193:1 rejected 34000
-194:1 rejected 34000
-197:1 rejected 34000
-198:1 rejected 34000
-199:1 rejected 34000
-200:1 rejected 34000
-201:1 rejected 34000
-204:1 rejected 34000
-205:1 rejected 34000
-206:1 rejected 34000
-207:1 rejected 34000
-208:1 rejected 34000
-209:1 rejected 34000
-210:1 rejected 34000
-212:1 skipped
-220:1 accepted
-243:1 skipped
-244:1 accepted
-246:1 accepted
-260:1 skipped
-267:1 accepted
-269:1 accepted
-272:1 skipped
-274:1 accepted
-275:1 accepted
-276:1 accepted
-279:1 rejected 42601
-290:1 rejected 42601
-291:1 rejected 42601
-294:1 accepted
-295:1 rejected 42601
-296:1 rejected 42601
-298:1 skipped
+59..100 accepted
+101..130 accepted
+364..539 accepted
+541..1162 accepted
+1183..1228 accepted
+1229..1275 accepted
+1276..1322 accepted
+1353..1657 accepted
+1772..1881 accepted
+1882..2003 accepted
+2052..2167 accepted
+2168..2295 accepted
+2341..2443 accepted
+2444..2560 accepted
+2692..2791 accepted
+2792..2891 accepted
+2903..3033 accepted
+3034..3144 accepted
+3145..3275 accepted
+3276..3386 accepted
+3444..3539 accepted
+3540..3635 accepted
+3647..3771 accepted
+3772..3876 accepted
+3877..4001 accepted
+4002..4106 accepted
+4212..4218 skipped
+4219..4254 accepted
+4255..4329 accepted
+4339..4471 accepted
+4481..4618 accepted
+4619..4628 skipped
+4665..4671 skipped
+4672..4707 accepted
+4708..4782 accepted
+4792..4924 accepted
+4934..5071 accepted
+5072..5081 skipped
+5122..5128 skipped
+5129..5164 accepted
+5165..5241 accepted
+5251..5383 accepted
+5393..5530 accepted
+5531..5540 skipped
+5580..5586 skipped
+5587..5622 accepted
+5623..5699 accepted
+5709..5841 accepted
+5851..5988 accepted
+5989..5998 skipped
+6098..6104 skipped
+6105..6140 accepted
+6253..6379 accepted
+6380..6486 rejected 25P01
+6508..6526 rejected 34000
+6527..6545 rejected 34000
+6574..6596 rejected 34000
+6597..6619 rejected 34000
+6620..6642 rejected 34000
+6643..6665 rejected 34000
+6666..6684 rejected 34000
+6711..6729 rejected 34000
+6730..6752 rejected 34000
+6753..6771 rejected 34000
+6772..6790 rejected 34000
+6791..6809 rejected 34000
+6810..6832 rejected 34000
+6833..6851 rejected 34000
+6853..6860 skipped
+6876..6882 skipped
+6883..6918 accepted
+6919..6948 accepted
+7061..7187 accepted
+7188..7294 rejected 25P01
+7316..7334 rejected 34000
+7335..7353 rejected 34000
+7382..7404 rejected 34000
+7405..7427 rejected 34000
+7428..7450 rejected 34000
+7451..7473 rejected 34000
+7474..7492 rejected 34000
+7519..7537 rejected 34000
+7538..7560 rejected 34000
+7561..7579 rejected 34000
+7580..7598 rejected 34000
+7599..7617 rejected 34000
+7618..7640 rejected 34000
+7641..7659 rejected 34000
+7661..7668 skipped
+7750..8696 accepted
+8729..8735 skipped
+8736..8765 accepted
+8767..9428 accepted
+9430..9439 skipped
+9483..9550 accepted
+9603..9744 accepted
+9746..9752 skipped
+9754..9786 accepted
+9787..9819 accepted
+9820..9852 accepted
+9932..10267 rejected 42601
+10311..10336 rejected 42601
+10337..10342 rejected 42601
+10384..10413 accepted
+10414..10439 rejected 42601
+10440..10445 rejected 42601
+10447..10454 skipped

@@ -1,29 +1,29 @@
-5:1 accepted
-16:1 accepted
-19:1 accepted
-27:1 accepted
-32:1 accepted
-41:1 accepted
-45:1 accepted
-50:1 accepted
-55:1 accepted
-60:1 rejected 42601
-63:1 rejected 42601
-67:1 accepted
-73:1 accepted
-78:1 accepted
-83:1 accepted
-87:1 accepted
-91:1 accepted
-95:1 accepted
-99:1 accepted
-103:1 accepted
-107:1 accepted
-111:1 rejected 42601
-113:1 accepted
-116:1 accepted
-118:1 accepted
-119:1 rejected 42601
-121:1 accepted
-122:1 rejected 42601
-124:1 accepted
+24..354 accepted
+382..399 accepted
+459..545 accepted
+637..762 accepted
+838..1106 accepted
+1176..1252 accepted
+1300..1416 accepted
+1465..1587 accepted
+1659..1786 accepted
+1836..1866 rejected 42601
+1915..1950 rejected 42601
+1969..2053 accepted
+2089..2189 accepted
+2241..2352 accepted
+2426..2462 accepted
+2491..2519 accepted
+2551..2587 accepted
+2623..2659 accepted
+2690..2718 accepted
+2752..2780 accepted
+2810..2856 accepted
+2885..2907 rejected 42601
+2909..2929 accepted
+2969..3014 accepted
+3016..3088 accepted
+3089..3125 rejected 42601
+3127..3168 accepted
+3202..3238 rejected 42601
+3240..3260 accepted

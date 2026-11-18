@@ -145,7 +145,7 @@ fn search_path() -> Vec<String> {
 /// Applies `setup` to the catalog, then resolves `sql`.
 fn resolve_after(setup: &str, sql: &str, function: Option<&FunctionContext>) -> Resolution {
     let search_path = search_path();
-    let mut catalog = Catalog::new(Some(database()));
+    let mut catalog = Catalog::from_base(database());
     if !setup.is_empty() {
         for stmt in pgls_query::parse(setup).expect("valid setup").stmts() {
             crate::apply_resolved(&mut catalog, stmt, &search_path);
@@ -365,7 +365,7 @@ fn search_and_cycle_add_columns_to_ctes() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     assert_eq!(
         query_columns(&query, &catalog, &search_path()).map(|columns| columns
             .into_iter()
@@ -382,7 +382,7 @@ fn search_and_cycle_add_columns_to_ctes() {
 
 #[test]
 fn search_and_cycle_columns_have_types() {
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let types = |sql: &str| {
         let parsed = pgls_query::parse(sql).expect("valid sql");
         let query = pgls_query::protobuf::Node {
@@ -809,7 +809,7 @@ fn merge_action_is_a_function_call_before_postgres_17() {
         .unwrap();
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
     for (version, typed) in [(150000, false), (160000, false), (170000, true)] {
-        let catalog = Catalog::new(Some(database_of_version(version)));
+        let catalog = Catalog::from_base(database_of_version(version));
         let columns = query_columns(&node, &catalog, &search_path).unwrap();
         assert_eq!(columns[0].ty.is_some(), typed, "{version}");
     }
@@ -818,7 +818,7 @@ fn merge_action_is_a_function_call_before_postgres_17() {
 #[test]
 fn merge_returning_star_expands_the_source_first() {
     let search_path = search_path();
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let stmt = pgls_query::parse(
         "merge into users u using posts p on p.user_id = u.id when matched then delete returning *",
     )
@@ -892,7 +892,7 @@ fn invalid_merge() {
     // Before Postgres 17, it is an ordinary function call, e.g. of `public.merge_action()`.
     for version in [150000, 160000] {
         let search_path = search_path();
-        let catalog = Catalog::new(Some(database_of_version(version)));
+        let catalog = Catalog::from_base(database_of_version(version));
         let stmt = pgls_query::parse("select merge_action()")
             .unwrap()
             .into_root()
@@ -937,7 +937,7 @@ fn names_of_sql_json_and_xml_expressions() {
 
 /// The output column names of a query.
 fn star_output_names(sql: &str) -> Option<Vec<String>> {
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let parsed = pgls_query::parse(sql).expect("valid sql");
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
@@ -1023,7 +1023,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
         [unknown_column(None, "nope")]
     );
     // The columns of a natural join have types, the merged ones their common type.
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let parsed = pgls_query::parse("select id, title from users natural join posts").unwrap();
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
@@ -1042,7 +1042,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
     };
     assert_eq!(types, [builtin("int8"), builtin("text")]);
     // A column that an inner join merged keeps its type in the outer one.
-    let mut catalog = Catalog::new(Some(database()));
+    let mut catalog = Catalog::from_base(database());
     for stmt in pgls_query::parse(setup).unwrap().stmts() {
         crate::apply_resolved(&mut catalog, stmt, &search_path());
     }
@@ -1503,7 +1503,7 @@ fn nested_subqueries_are_resolved_a_bounded_number_of_times() {
 #[test]
 fn correlated_scalar_subquery_has_the_type_of_the_outer_column() {
     let search_path = search_path();
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let stmt = pgls_query::parse("select (select u.id) as id from users u")
         .unwrap()
         .into_root()
@@ -1523,7 +1523,7 @@ fn correlated_scalar_subquery_has_the_type_of_the_outer_column() {
 
 /// The names of the output columns of `sql`, if their types are known.
 fn typed_output_names(sql: &str) -> Option<Vec<String>> {
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let parsed = pgls_query::parse(sql).expect("valid sql");
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
@@ -1565,7 +1565,7 @@ fn cte_column_lists_apply_to_typed_columns() {
         typed_output_names("with c(x) as (select 1 as a, 2 as b) select * from c"),
         Some(vec!["x".into(), "b".into()])
     );
-    let catalog = Catalog::new(Some(database()));
+    let catalog = Catalog::from_base(database());
     let parsed =
         pgls_query::parse("with c(x) as (select 1::int8 as a) select x from c").expect("valid sql");
     let query = pgls_query::protobuf::Node {
@@ -1693,7 +1693,7 @@ fn sequence_columns_have_types_in_queries() {
         ..Default::default()
     };
     let search_path = search_path();
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     for stmt in pgls_query::parse("create sequence file_seq;")
         .expect("valid sql")
         .stmts()
@@ -1722,10 +1722,10 @@ fn sequence_columns_have_types_in_queries() {
 /// and `SELECT INTO` from the output of their query.
 #[test]
 fn derived_columns_of_views_and_table_as() {
-    use pgls_catalog::{CatalogView, RelationKind};
+    use pgls_catalog::RelationKind;
 
     let search_path = search_path();
-    let mut catalog = Catalog::new(Some(database()));
+    let mut catalog = Catalog::from_base(database());
     let setup = "create view v1 as select * from users;
          create view v2 (ident) as select u.id, upper(name), 1, name::text as n2, case when true then 1 end, now()::date from users u;
          create table t3 as select users.* from users;

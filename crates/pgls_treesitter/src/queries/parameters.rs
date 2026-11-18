@@ -6,7 +6,7 @@ use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
-static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static TS_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
 [
   (object_reference) @reference
@@ -15,7 +15,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
 ]
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 #[derive(Debug)]
@@ -27,7 +28,8 @@ impl ParameterMatch<'_> {
     pub fn get_path(&self, sql: &str) -> String {
         self.node
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get path from ParameterMatch")
+            // A node of `sql` is UTF-8, unless the tree is stale.
+            .unwrap_or_default()
             .to_string()
     }
 
@@ -48,7 +50,6 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a ParameterMatch<'a> {
         match q {
             QueryResult::Parameter(r) => Ok(r),
 
-            #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
         }
     }
@@ -62,7 +63,10 @@ impl<'a> Query<'a> for ParameterMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
-        let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
+        let Some(query) = TS_QUERY.as_ref() else {
+            return vec![];
+        };
+        let matches = cursor.matches(query, root_node, stmt.as_bytes());
 
         let mut result = vec![];
 
@@ -70,9 +74,9 @@ impl<'a> Query<'a> for ParameterMatch<'a> {
             let captures = m.captures;
 
             // We expect exactly one capture for a parameter
-            if captures.len() == 1 {
+            if let [capture] = captures {
                 result.push(QueryResult::Parameter(ParameterMatch {
-                    node: captures[0].node,
+                    node: capture.node,
                 }))
             }
         });
