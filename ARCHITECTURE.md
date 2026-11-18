@@ -17,6 +17,37 @@ There are two main entry points, both thin frontends over the shared `pgls_works
 - `crates/pgls_lsp` — the language server. It spawns the server and listens for incoming LSP messages.
 - `crates/pgls_cli` — the command-line interface, exposing commands like `check`. The published binary is `postgres-language-server` (legacy name `postgrestools`).
 
+### Layering
+
+Crates depend only on crates in a layer below them. This is the layering we're moving to; [CONTRIBUTING.md](./CONTRIBUTING.md#api-conventions) has the conventions that go with it.
+
+```
+apps        pgls_cli ─► pgls_lsp ─┐                     pgls_wasm
+                                  │                         │
+                    pgls_lsp_converters (ls-types) ◄────────┤
+                                  ▼                         ▼
+service     pgls_workspace  (wire types, settings from configuration, documents, one database registry)
+                 │
+features    pgls_completions  pgls_hover  pgls_inlay_hints  pgls_semantic_tokens
+                 │            (from the resolver's references; tree-sitter only for completions and unparsable hover)
+checks      pgls_analyser (+ rules) ─► pgls_walk ─► pgls_resolve ─► pgls_catalog
+            pgls_suppressions ─► pgls_analyse
+            pgls_typecheck, pgls_plpgsql_check, pgls_splinter, pgls_pglinter ─► pgls_analyse, pgls_catalog
+config      pgls_configuration ─► pgls_analyse (framework, generated rule table, rule options), pgls_format_options,
+                                  pgls_migrations, pgls_matcher, pgls_diagnostics (bpaf behind a feature)
+syntax      pgls_query_ext (statement source: bodies, offsets, tokens) ─► pgls_query (generated nodes, AST methods)
+            pgls_statement_splitter ─► pgls_lexer (tokenizer folded in; keywords and identifier rules; no diagnostics)
+format      pgls_pretty_print ─► pgls_query, pgls_lexer, pgls_format_options
+foundation  pgls_text_size  pgls_line_index  pgls_text_edit  pgls_console/pgls_markup  pgls_diagnostics  pgls_fs  pgls_env
+```
+
+Where the code still differs:
+
+- `pgls_configuration` depends on `pgls_analyser` and `pgls_pretty_print`, and `pgls_suppressions` and `pgls_splinter` depend on configuration or the analyser. So the frontends, the xtasks and the checks build the whole analysis stack and libpg_query. The rule table and rule options move to `pgls_analyse`, and the formatter options to a new leaf crate, `pgls_format_options`.
+- `pgls_lsp` and `pgls_wasm` depend on feature and analysis crates directly, and each converts LSP types on its own. The conversions move to a new `pgls_lsp_converters` crate on `ls-types`, which wasm can use too.
+- `pgls_lexer` and `pgls_query_ext` depend on `pgls_diagnostics` for one diagnostic each, and `pgls_treesitter` depends on `pgls_catalog`.
+- `pgls_tokenizer`, `pgls_query_macros`, `pgls_lexer_codegen`, `pgls_pretty_print_codegen` and `pgls_workspace_macros` are still separate crates. The first is folded into `pgls_lexer`, the codegen crates become `xtask` generators with checked-in output, and the workspace macro goes.
+
 ### Code Map
 
 This section talks briefly about various important crates and data structures. All crates are prefixed with `pgls_`.
@@ -103,7 +134,7 @@ Integration with `plpgsql_check` to validate PL/pgSQL function bodies.
 
 ##### `crates/pgls_typecheck`
 
-The fallback type check against the database (via `EXPLAIN`), for statements that only reference objects that exist unchanged in the database. The static checks are the `typecheck` rules, built on `pgls_catalog` and `pgls_resolve`.
+The fallback type check against the database: it `PREPARE`s a statement on a connection, after setting the search path, and turns Postgres' error into a diagnostic. It runs for statements that only reference objects that exist unchanged in the database. The static checks are the `typecheck` rules, built on `pgls_catalog` and `pgls_resolve`.
 
 ##### `crates/pgls_suppressions`
 
