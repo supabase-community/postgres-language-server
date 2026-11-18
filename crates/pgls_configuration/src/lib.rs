@@ -130,7 +130,7 @@ pub struct Configuration {
     #[partial(type, bpaf(external(partial_typecheck_configuration), optional))]
     pub typecheck: TypecheckConfiguration,
 
-    /// The configuration for type checking
+    /// The configuration for plpgsql_check
     #[partial(type, bpaf(external(partial_pl_pg_sql_check_configuration), optional))]
     pub plpgsql_check: PlPgSqlCheckConfiguration,
 

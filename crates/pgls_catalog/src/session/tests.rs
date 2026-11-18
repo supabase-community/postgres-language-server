@@ -7,13 +7,13 @@ use crate::Catalog;
 /// names are in the first schema of the search path.
 fn apply(s: &mut Session, q: &str) {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-    let mut catalog = Catalog::new(None);
+    let mut catalog = Catalog::without_database();
     catalog.apply(&n, s.search_path(), None);
     s.apply(&n, &catalog);
 }
 fn dangerous(s: &Session, q: &str) -> bool {
     let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-    s.is_dangerous_lock_stmt(&n, &Catalog::new(None))
+    s.is_dangerous_lock_stmt(&n, &Catalog::without_database())
 }
 fn range_var(schema: &str, name: &str) -> RangeVar {
     RangeVar {
@@ -24,13 +24,13 @@ fn range_var(schema: &str, name: &str) -> RangeVar {
     }
 }
 fn created(s: &Session, schema: &str, name: &str) -> bool {
-    s.has_created_relation(&range_var(schema, name), &Catalog::new(None))
+    s.has_created_relation(&range_var(schema, name), &Catalog::without_database())
 }
 fn altered(s: &Session, schema: &str, name: &str) -> bool {
-    s.has_altered_table(&range_var(schema, name), &Catalog::new(None))
+    s.has_altered_table(&range_var(schema, name), &Catalog::without_database())
 }
 fn not_valid(s: &Session, table: &str, name: &str) -> bool {
-    s.has_not_valid_constraint(&range_var("", table), name, &Catalog::new(None))
+    s.has_not_valid_constraint(&range_var("", table), name, &Catalog::without_database())
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn not_valid_and_access_exclusive_are_tracked() {
     assert!(!s.is_holding_access_exclusive());
     let locks = |s: &Session, q: &str| {
         let n = pgls_query::parse(q).unwrap().into_root().unwrap();
-        s.table_locks(&n, &Catalog::new(None))
+        s.table_locks(&n, &Catalog::without_database())
             .into_iter()
             .map(|lock| (lock.mode, lock.schema, lock.name))
             .collect::<Vec<_>>()
@@ -503,8 +503,6 @@ fn implicit_block_runs_statements_in_a_transaction_until_the_query_ends() {
 }
 /// A catalog over a snapshot with the schemas, `pg_catalog`, and the table `public.users`.
 fn catalog_with_users(schemas: &[&str]) -> Catalog {
-    use std::sync::Arc;
-
     let snapshot = crate::Snapshot {
         schemas: schemas
             .iter()
@@ -522,7 +520,7 @@ fn catalog_with_users(schemas: &[&str]) -> Catalog {
         }],
         ..Default::default()
     };
-    Catalog::new(Some(Arc::new(crate::CatalogBase::new(Arc::new(snapshot)))))
+    Catalog::from_snapshot(snapshot)
 }
 /// Applies a statement to the catalog and the session, like the analyser. Returns whether the
 /// statement was a dangerous lock statement.
@@ -603,7 +601,7 @@ fn skipped_if_not_exists_creates_nothing() {
 fn temporary_tables_dont_capture_new_tables() {
     // Without `TEMP`, Postgres creates the table in the first schema of the search path, even
     // if a temporary table of that name exists.
-    let mut catalog = Catalog::new(None);
+    let mut catalog = Catalog::without_database();
     let mut s = Session::new(vec!["public".into()]);
     run(&mut s, &mut catalog, "BEGIN");
     run(&mut s, &mut catalog, "CREATE TEMP TABLE events (id bigint)");

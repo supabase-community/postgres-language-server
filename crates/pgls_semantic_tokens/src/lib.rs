@@ -11,7 +11,7 @@
 // input takes down the server for every connected editor.
 #![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use pgls_catalog::{CatalogView, identifier_name};
+use pgls_catalog::{Catalog, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
@@ -21,7 +21,7 @@ pub struct SemanticTokensParams<'a> {
     pub stmt: &'a NodeEnum,
     /// The statement text. The AST's locations point into it.
     pub sql: &'a str,
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     /// The explicit search path of the session.
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.

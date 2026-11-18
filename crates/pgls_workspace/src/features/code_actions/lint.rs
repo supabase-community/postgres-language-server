@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-use pgls_analyse::{ActionCategory, Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyse::Applicability;
 use pgls_analyser::{LinterDiagnostic, RuleFix};
 use pgls_configuration::RuleSelector;
 use pgls_diagnostics::Diagnostic;
@@ -11,7 +11,9 @@ use pgls_fs::PgLSPath;
 use pgls_text_size::{TextRange, TextSize};
 use tracing::warn;
 
-use super::{CodeAction, CodeActionKind, EditAction, TextEdit};
+use super::{
+    ActionCategory, CodeAction, CodeActionKind, EditAction, SUPPRESSION_ACTION_CATEGORY, TextEdit,
+};
 use crate::workspace::Document;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -63,11 +65,13 @@ pub(crate) fn lint_actions<'a>(
         let category = diagnostic.get_category_name();
         let rule = category.strip_prefix("lint/").unwrap_or(category);
 
-        // A fix must not write the placeholder of an `ENVSUB` expansion into the file.
+        // A fix must not write the placeholder of an `ENVSUB` expansion into the file, and must
+        // keep the SQL valid.
         if let Some(fix) = diagnostic.get_fix().filter(|fix| {
             !fix.edits
                 .iter()
                 .any(|edit| doc.touches_placeholder(edit.range))
+                && fix.keeps_sql_valid(doc.text(), doc.statement_ranges())
         }) {
             actions.push(CodeAction {
                 title: fix.message.clone(),
@@ -125,6 +129,7 @@ pub(crate) fn fix_file(
             open.project_key(),
             open.settings_version(),
             open.migration_tool(),
+            open.max_size(),
             code.clone(),
             0,
         );
@@ -139,6 +144,7 @@ pub(crate) fn fix_file(
                 !fix.edits
                     .iter()
                     .any(|edit| doc.touches_placeholder(edit.range))
+                    && fix.keeps_sql_valid(doc.text(), doc.statement_ranges())
             })
         {
             if fix.applicability == Applicability::Always || mode == FixFileMode::SafeAndUnsafeFixes

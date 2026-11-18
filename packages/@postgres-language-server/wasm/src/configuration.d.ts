@@ -40,7 +40,7 @@ export interface PartialConfiguration {
    */
   pglinter?: PartialPglinterConfiguration;
   /**
-   * The configuration for type checking
+   * The configuration for plpgsql_check
    */
   plpgsqlCheck?: PartialPlPgSqlCheckConfiguration;
   /**
@@ -115,7 +115,7 @@ export interface PartialFilesConfiguration {
    */
   include?: StringSet;
   /**
-   * The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB
+   * The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 10 MiB
    */
   maxSize?: number;
 }
@@ -232,7 +232,7 @@ export interface PartialLinterConfiguration {
   rules?: LinterRules;
 }
 /**
- * The configuration of the filesystem
+ * The configuration of the migration files
  */
 export interface PartialMigrationsConfiguration {
   /**
@@ -283,7 +283,7 @@ export interface PartialPlPgSqlCheckConfiguration {
    */
   constantTracing?: boolean;
   /**
-   * if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
+   * if `false`, it disables the feature and plpgsql_check won't be executed. `true` by default
    */
   enabled?: boolean;
   /**
@@ -827,25 +827,25 @@ export type MigrationVersion = number | string;
 export type MigrationTool = "none" | "supabase" | "dbmate" | "goose";
 export interface PglinterRules {
   /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   * It enables all rules.
    */
   all?: boolean;
   base?: Base;
   cluster?: Cluster;
   /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   * It enables the recommended rules. `true` by default.
    */
   recommended?: boolean;
   schema?: Schema;
 }
 export interface SplinterRules {
   /**
-   * It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+   * It enables all rules.
    */
   all?: boolean;
   performance?: Performance;
   /**
-   * It enables the lint rules recommended by Postgres Language Server. `true` by default.
+   * It enables the recommended rules. `true` by default.
    */
   recommended?: boolean;
   security?: Security;
