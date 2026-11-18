@@ -50,7 +50,9 @@ pub fn db_test(attr: TokenStream, item: TokenStream) -> TokenStream {
                 pool_options: ::sqlx::pool::PoolOptions<::sqlx::Postgres>,
                 connect_options: ::sqlx::postgres::PgConnectOptions,
             ) #output {
-                let pool = ::pgls_test_utils::db::connect_test_pool(pool_options, connect_options).await;
+                let pool = ::pgls_test_utils::db::connect_test_pool(pool_options, connect_options)
+                    .await
+                    .expect("failed to connect test pool");
                 let result = #name(pool.clone()).await;
                 ::pgls_test_utils::db::close_test_pool(pool).await;
                 result

@@ -8,7 +8,7 @@ use pgls_treesitter::TreesitterContext;
 
 use super::helper::{get_range_to_replace, with_schema_or_alias};
 
-pub fn complete_roles<'a>(
+pub(crate) fn complete_roles<'a>(
     ctx: &TreesitterContext<'a>,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,
@@ -19,7 +19,7 @@ pub fn complete_roles<'a>(
         let relevance = CompletionRelevanceData::Role(role);
 
         let item = PossibleCompletionItem {
-            label: role.name.chars().take(35).collect::<String>(),
+            label: role.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             description: role.name.clone(),

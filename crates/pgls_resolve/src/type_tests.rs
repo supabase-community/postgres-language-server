@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pgls_catalog::{Catalog, CatalogBase, Snapshot, typing::format_type};
+use pgls_catalog::{Catalog, Snapshot, typing::format_type};
 use sqlx::PgPool;
 
 fn output_types(catalog: &mut Catalog, setup_sql: &str, query: &str) -> Vec<Option<String>> {
@@ -27,7 +27,7 @@ fn output_types(catalog: &mut Catalog, setup_sql: &str, query: &str) -> Vec<Opti
 #[pgls_test_utils::db_test]
 async fn infers_query_columns(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let cases = [
         (
             "create table typed_values (i int4, big int8, n numeric, t text, b bool, d date, a int4[]);",
@@ -136,8 +136,8 @@ async fn infers_fields_of_a_composite_without_its_kind(test_db: PgPool) {
         .iter_mut()
         .find(|ty| ty.schema == "public" && ty.name == "pair")
         .expect("the composite type pair");
-    pair.typtype = String::new();
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    pair.typtype = Default::default();
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(&mut catalog, "", "select (p).a from items"),
         [Some("integer".into())]
@@ -147,7 +147,7 @@ async fn infers_fields_of_a_composite_without_its_kind(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_length_result_type(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(&mut catalog, "", "select length('a')"),
         [Some("integer".into())]
@@ -157,7 +157,7 @@ async fn infers_length_result_type(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_mixed_numeric_operator(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(&mut catalog, "", "select 1 + 2.5"),
         [Some("numeric".into())]
@@ -167,7 +167,7 @@ async fn infers_mixed_numeric_operator(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_timestamp_minus_interval(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(&mut catalog, "", "select now() - interval '1 day'"),
         [Some("timestamp with time zone".into())]
@@ -177,7 +177,7 @@ async fn infers_timestamp_minus_interval(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_array_subscripts(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(
             &mut catalog,
@@ -195,7 +195,7 @@ async fn infers_array_subscripts(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_fields_of_domains_over_composite_types(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(
             &mut catalog,
@@ -215,7 +215,7 @@ async fn infers_fields_of_domains_over_composite_types(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_array_agg_result(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     assert_eq!(
         output_types(
             &mut catalog,
@@ -229,7 +229,7 @@ async fn infers_array_agg_result(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn infers_the_types_of_recursive_ctes(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let types = |catalog: &mut Catalog, query| output_types(catalog, "", query);
     let some = |names: &[&str]| -> Vec<Option<String>> {
         names.iter().map(|name| Some(name.to_string())).collect()
@@ -283,7 +283,7 @@ async fn infers_the_types_of_recursive_ctes(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn unknown_output_types_stay_unknown(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let catalog = Catalog::from_snapshot(snapshot);
     for query in [
         "select missing from (values (1)) x",
         "select absent_function(1)",
@@ -305,7 +305,7 @@ async fn unknown_output_types_stay_unknown(test_db: PgPool) {
 #[pgls_test_utils::db_test]
 async fn knows_the_types_of_each_select_list_entry(test_db: PgPool) {
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let setup = "create type place as (street text, zip int4); \
         create table places (p place); \
         create function pairs() returns setof record language sql as 'select 1, ''a''';";
@@ -355,10 +355,10 @@ async fn knows_the_types_of_each_select_list_entry(test_db: PgPool) {
 /// `CREATE TABLE AS` get the types of their query's output columns.
 #[pgls_test_utils::db_test]
 async fn derived_columns_are_typed(test_db: PgPool) {
-    use pgls_catalog::{CatalogView, typing::Type};
+    use pgls_catalog::typing::Type;
 
     let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let path = vec!["public".to_owned()];
     for stmt in pgls_query::parse(
         "create table typed_source (id int, name text);

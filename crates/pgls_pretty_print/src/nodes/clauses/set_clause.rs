@@ -29,12 +29,11 @@ pub(crate) fn emit_set_clause(e: &mut EventEmitter, n: &ResTarget) {
 pub(crate) fn emit_set_clause_list(e: &mut EventEmitter, nodes: &[pgls_query::Node]) {
     let mut index = 0;
 
-    while index < nodes.len() {
+    while let Some(node) = nodes.get(index) {
         if index > 0 {
-            emit_list_comma(e, nodes.get(index), ListSeparatorSpacing::SoftOrSpace);
+            emit_list_comma(e, Some(node), ListSeparatorSpacing::SoftOrSpace);
         }
 
-        let node = &nodes[index];
         let Some(NodeEnum::ResTarget(target)) = node.node.as_ref() else {
             emit_node(e, node);
             index += 1;
@@ -101,7 +100,7 @@ fn emit_multi_assign_clause(
     e.token(TokenKind::L_PAREN);
     e.line(LineType::Soft);
     e.indent_start();
-    for (idx, node) in nodes[start..end].iter().enumerate() {
+    for (idx, node) in nodes.get(start..end).unwrap_or_default().iter().enumerate() {
         if idx > 0 {
             emit_list_comma(e, Some(node), ListSeparatorSpacing::SoftOrSpace);
         }

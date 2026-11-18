@@ -2,7 +2,6 @@ use pgls_query::protobuf::CreateDomainStmt;
 use pgls_query_ext::utils::qualified_name;
 
 use crate::catalog::Catalog;
-use crate::lookup::CatalogView;
 
 /// `CREATE DOMAIN`. Models [`DefineDomain`].
 ///

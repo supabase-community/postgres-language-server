@@ -1,16 +1,14 @@
 use std::sync::Arc;
 
-use crate::typing::{CoercionContext, Type, TypeId};
-use crate::{
-    CastInfo, CastMethod, FunctionArgument, FunctionArgumentMode, FunctionSignature, OperatorInfo,
-    OperatorKind, TypeKind,
-};
-use crate::{Extension, Generated, Identity, ProcKind, Snapshot, TableKind};
+use crate::typing::{Type, TypeId};
+use crate::{CastInfo, FunctionArgument, FunctionArgumentMode, FunctionSignature, OperatorInfo};
+use crate::{Extension, FunctionArg, Generated, Identity, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
 use crate::lookup::{
-    ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Origin, RelationInfo, RelationKind, TypeInfo,
+    ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo, RelationKind,
+    TypeInfo,
 };
 
 /// Indexed, immutable view of a database snapshot. Build it once per snapshot and share it
@@ -31,8 +29,11 @@ pub struct CatalogBase {
     types: FxHashMap<Key, TypeInfo>,
     functions: FxHashMap<Key, Vec<FunctionInfo>>,
     types_by_id: FxHashMap<i64, TypeInfo>,
-    casts: FxHashMap<(i64, i64), CastInfo>,
+    /// `None` for a cast whose context or method we don't know.
+    casts: FxHashMap<(i64, i64), Option<CastInfo>>,
     operators: FxHashMap<Key, Vec<OperatorInfo>>,
+    /// Operator names that some operator of a kind we don't know has, like a postfix operator.
+    operators_of_unknown_kind: FxHashSet<Key>,
 }
 
 impl CatalogBase {
@@ -88,7 +89,7 @@ impl CatalogBase {
                     origin: Origin::Database,
 
                     id: Some(TypeId::Snapshot(type_.id)),
-                    kind: type_.typtype.parse().ok().and_then(TypeKind::from_typtype),
+                    kind: type_.typtype.get(),
                     category: type_.typcategory.chars().next(),
                     preferred: Some(type_.typispreferred),
                     element: (type_.is_array && type_.typelem != 0)
@@ -154,6 +155,7 @@ impl CatalogBase {
                         TableKind::Partitioned => RelationKind::PartitionedTable,
                         TableKind::View => RelationKind::View,
                         TableKind::MaterializedView => RelationKind::MaterializedView,
+                        TableKind::Unknown => RelationKind::Other,
                     },
                     columns,
                     origin: Origin::Database,
@@ -220,7 +222,17 @@ impl CatalogBase {
         let mut functions: FxHashMap<Key, Vec<FunctionInfo>> = FxHashMap::default();
         for function in &snapshot.functions {
             let args = &function.args.args;
-            let is_procedure = function.kind == ProcKind::Procedure;
+            let kind = match function.kind {
+                ProcKind::Function => Some(FunctionKind::Function),
+                ProcKind::Aggregate => Some(FunctionKind::Aggregate),
+                ProcKind::Window => Some(FunctionKind::Window),
+                ProcKind::Procedure => Some(FunctionKind::Procedure),
+                ProcKind::Unknown => None,
+            };
+            let is_procedure = kind == Some(FunctionKind::Procedure);
+            // With a kind or an argument mode we don't know, the arguments that a call passes
+            // are unknown.
+            let known = kind.is_some() && args.iter().all(|arg| arg.mode().is_some());
             let inputs = function.call_arguments().count();
             // Defaults belong to the last input arguments. The snapshot doesn't attach them to
             // the right arguments when there are output arguments, but their number is correct.
@@ -232,10 +244,12 @@ impl CatalogBase {
                         .count(),
                 )
                 .min(inputs);
-            let variadic = args.iter().any(|arg| arg.mode == "variadic");
+            let variadic = args
+                .iter()
+                .any(|arg| arg.mode() == Some(FunctionArgumentMode::Variadic));
             let outputs: Vec<ColumnInfo> = args
                 .iter()
-                .filter(|arg| matches!(arg.mode.as_str(), "out" | "inout" | "table"))
+                .filter(|arg| arg.mode().is_some_and(FunctionArgumentMode::is_output))
                 .map(|arg| {
                     ColumnInfo::new(
                         arg.name.clone(),
@@ -254,6 +268,13 @@ impl CatalogBase {
             } else {
                 Some(outputs)
             };
+            let argument = |arg: &FunctionArg, mode| FunctionArgument {
+                name: (!arg.name.is_empty()).then(|| arg.name.clone()),
+                ty: types_by_id
+                    .contains_key(&arg.type_id)
+                    .then_some(TypeId::Snapshot(arg.type_id)),
+                mode,
+            };
 
             functions
                 .entry(key(&function.schema, &function.name))
@@ -261,37 +282,27 @@ impl CatalogBase {
                 .push(FunctionInfo {
                     schema: function.schema.clone(),
                     name: function.name.clone(),
-                    kind: match function.kind {
-                        ProcKind::Function => FunctionKind::Function,
-                        ProcKind::Aggregate => FunctionKind::Aggregate,
-                        ProcKind::Window => FunctionKind::Window,
-                        ProcKind::Procedure => FunctionKind::Procedure,
+                    // Only a procedure is ever treated differently, and the signature of a
+                    // function of unknown kind is unknown.
+                    kind: kind.unwrap_or(FunctionKind::Function),
+                    min_args: if known {
+                        inputs.saturating_sub(defaults)
+                    } else {
+                        0
                     },
-                    min_args: inputs.saturating_sub(defaults),
-                    max_args: (!variadic).then_some(inputs),
+                    max_args: (known && !variadic).then_some(inputs),
                     returns_set: function.is_set_returning_function,
                     return_columns,
                     volatility: Some(function.behavior),
                     origin: Origin::Database,
                     id: Some(function.id),
-                    signature: Some(FunctionSignature {
+                    signature: known.then(|| FunctionSignature {
                         arguments: args
                             .iter()
                             .filter_map(|arg| {
-                                let mode = match arg.mode.as_str() {
-                                    "in" => FunctionArgumentMode::In,
-                                    "inout" => FunctionArgumentMode::InOut,
-                                    "variadic" => FunctionArgumentMode::Variadic,
-                                    "out" if is_procedure => FunctionArgumentMode::Out,
-                                    _ => return None,
-                                };
-                                Some(FunctionArgument {
-                                    name: (!arg.name.is_empty()).then(|| arg.name.clone()),
-                                    ty: types_by_id
-                                        .contains_key(&arg.type_id)
-                                        .then_some(TypeId::Snapshot(arg.type_id)),
-                                    mode,
-                                })
+                                let mode = arg.mode()?;
+                                mode.is_call_argument(is_procedure)
+                                    .then(|| argument(arg, mode))
                             })
                             .collect(),
                         output_arguments: if is_procedure {
@@ -299,18 +310,9 @@ impl CatalogBase {
                         } else {
                             args.iter()
                                 .enumerate()
-                                .filter(|(_, arg)| matches!(arg.mode.as_str(), "out" | "table"))
+                                .filter(|(_, arg)| arg.mode() == Some(FunctionArgumentMode::Out))
                                 .map(|(position, arg)| {
-                                    (
-                                        position,
-                                        FunctionArgument {
-                                            name: (!arg.name.is_empty()).then(|| arg.name.clone()),
-                                            ty: types_by_id
-                                                .contains_key(&arg.type_id)
-                                                .then_some(TypeId::Snapshot(arg.type_id)),
-                                            mode: FunctionArgumentMode::Out,
-                                        },
-                                    )
+                                    (position, argument(arg, FunctionArgumentMode::Out))
                                 })
                                 .collect()
                         },
@@ -334,59 +336,43 @@ impl CatalogBase {
                 _ => None,
             })
             .collect();
+        // A cast with a context or method we don't know is in the map without its facts, so
+        // looking it up is unknown rather than missing.
         let casts = snapshot
             .casts
             .iter()
-            .filter_map(|cast| {
-                Some((
-                    (cast.source, cast.target),
-                    CastInfo {
+            .map(|cast| {
+                let info = cast
+                    .context
+                    .get()
+                    .zip(cast.method.get())
+                    .map(|(context, method)| CastInfo {
                         source: TypeId::Snapshot(cast.source),
                         target: TypeId::Snapshot(cast.target),
-                        context: match cast.context.as_str() {
-                            "i" => CoercionContext::Implicit,
-                            "a" => CoercionContext::Assignment,
-                            "e" => CoercionContext::Explicit,
-                            _ => return None,
-                        },
-                        method: match cast.method.as_str() {
-                            "f" => CastMethod::Function,
-                            "i" => CastMethod::InputOutput,
-                            "b" => CastMethod::Binary,
-                            _ => return None,
-                        },
-                    },
-                ))
+                        context,
+                        method,
+                    });
+                ((cast.source, cast.target), info)
             })
             .collect();
-        let operators = snapshot
-            .operators
-            .iter()
-            .map(|op| {
-                (
-                    key(&op.schema, &op.name),
-                    OperatorInfo {
-                        oid: op.oid,
-                        schema: op.schema.clone(),
-                        name: op.name.clone(),
-                        kind: if op.kind == "prefix" {
-                            OperatorKind::Prefix
-                        } else {
-                            OperatorKind::Infix
-                        },
-                        left: (op.left != 0).then_some(TypeId::Snapshot(op.left)),
-                        right: (op.right != 0).then_some(TypeId::Snapshot(op.right)),
-                        result: (op.result != 0).then_some(TypeId::Snapshot(op.result)),
-                    },
-                )
-            })
-            .fold(
-                FxHashMap::<Key, Vec<OperatorInfo>>::default(),
-                |mut map, (k, op)| {
-                    map.entry(k).or_default().push(op);
-                    map
-                },
-            );
+        let mut operators = FxHashMap::<Key, Vec<OperatorInfo>>::default();
+        let mut operators_of_unknown_kind = FxHashSet::default();
+        for op in &snapshot.operators {
+            let key = key(&op.schema, &op.name);
+            let Some(kind) = op.kind.get() else {
+                operators_of_unknown_kind.insert(key);
+                continue;
+            };
+            operators.entry(key).or_default().push(OperatorInfo {
+                oid: op.oid,
+                schema: op.schema.clone(),
+                name: op.name.clone(),
+                kind,
+                left: (op.left != 0).then_some(TypeId::Snapshot(op.left)),
+                right: (op.right != 0).then_some(TypeId::Snapshot(op.right)),
+                result: (op.result != 0).then_some(TypeId::Snapshot(op.result)),
+            });
+        }
         Self {
             snapshot,
             schemas,
@@ -401,6 +387,7 @@ impl CatalogBase {
             types_by_id,
             casts,
             operators,
+            operators_of_unknown_kind,
         }
     }
 
@@ -496,15 +483,35 @@ impl CatalogBase {
         }
     }
 
-    pub(super) fn cast(&self, source: &TypeId, target: &TypeId) -> Option<&CastInfo> {
-        match (source, target) {
-            (TypeId::Snapshot(s), TypeId::Snapshot(t)) => self.casts.get(&(*s, *t)),
-            _ => None,
+    /// The direct cast between two database types. Missing only when the snapshot has the
+    /// casts and this one isn't among them.
+    pub(super) fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
+        let (TypeId::Snapshot(source), TypeId::Snapshot(target)) = (source, target) else {
+            return self.not_in_snapshot();
+        };
+        match self.casts.get(&(*source, *target)) {
+            Some(Some(cast)) => Lookup::Found(cast.clone()),
+            Some(None) => Lookup::Unknown,
+            None => self.not_in_snapshot(),
+        }
+    }
+
+    /// A typing fact that the snapshot doesn't have: missing if it has the typing metadata.
+    fn not_in_snapshot<T>(&self) -> Lookup<T> {
+        if self.snapshot.typing_metadata {
+            Lookup::Missing
+        } else {
+            Lookup::Unknown
         }
     }
 
     pub(super) fn operators(&self, schema: &str, name: &str) -> Option<&[OperatorInfo]> {
         self.operators.get(&key(schema, name)).map(Vec::as_slice)
+    }
+
+    /// Whether an operator with this name has a kind we don't know, like a postfix operator.
+    pub(super) fn has_operator_of_unknown_kind(&self, schema: &str, name: &str) -> bool {
+        self.operators_of_unknown_kind.contains(&key(schema, name))
     }
 
     pub(super) fn has_installed_extension(&self, name: &str) -> bool {

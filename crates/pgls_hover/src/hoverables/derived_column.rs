@@ -8,7 +8,7 @@ use crate::{contextual_priority::ContextualPriority, to_markdown::ToHoverMarkdow
 
 /// A column of a CTE or a subquery in FROM, which isn't in the snapshot.
 #[derive(Debug)]
-pub struct DerivedColumn {
+pub(crate) struct DerivedColumn {
     pub source: ColumnSource,
     pub name: String,
     pub type_name: Option<String>,

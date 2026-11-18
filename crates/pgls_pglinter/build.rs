@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::Write;
 use std::path::Path;
 
 /// The pglinter commit that `vendor/sql/rules.sql`, and the rules generated from it in `src/rules`,
@@ -7,8 +6,8 @@ use std::path::Path;
 const EXPECTED_COMMIT: &str = "73fc2aefec54d1d2411769e7d21dd9172defab17";
 const REPO: &str = "pmpetit/pglinter";
 
-fn main() {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
     let vendor_dir = Path::new(&manifest_dir).join("vendor");
     let sql_dir = vendor_dir.join("sql");
     let sha_file = vendor_dir.join("COMMIT_SHA.txt");
@@ -26,28 +25,26 @@ fn main() {
         println!("cargo:warning=Downloading pglinter vendor files...");
 
         // Create directories
-        fs::create_dir_all(&sql_dir).expect("Failed to create vendor/sql directory");
+        fs::create_dir_all(&sql_dir)?;
 
         // Download rules.sql using ureq (blocking HTTP client)
         let url =
             format!("https://raw.githubusercontent.com/{REPO}/{EXPECTED_COMMIT}/sql/rules.sql");
 
-        let response = ureq::get(&url)
+        let content = ureq::get(&url)
             .call()
-            .expect("Failed to download rules.sql");
+            .map_err(|error| format!("Failed to download rules.sql: {error}"))?
+            .into_string()?;
 
-        let content = response.into_string().expect("Failed to read response");
-
-        let mut file = fs::File::create(&rules_file).expect("Failed to create rules.sql");
-        file.write_all(content.as_bytes())
-            .expect("Failed to write rules.sql");
+        fs::write(&rules_file, content)?;
 
         // Write commit SHA
-        fs::write(&sha_file, EXPECTED_COMMIT).expect("Failed to write COMMIT_SHA.txt");
+        fs::write(&sha_file, EXPECTED_COMMIT)?;
 
         println!("cargo:warning=Downloaded pglinter vendor files successfully");
     }
 
     // Tell cargo to rerun if SHA changes
     println!("cargo:rerun-if-changed=vendor/COMMIT_SHA.txt");
+    Ok(())
 }

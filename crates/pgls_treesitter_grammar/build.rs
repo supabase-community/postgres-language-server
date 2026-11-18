@@ -3,10 +3,9 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
-fn main() {
-    let manifest_dir =
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("Missing CARGO_MANIFEST_DIR"));
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("Missing OUT_DIR"));
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?);
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR")?);
     let grammar_file = manifest_dir.join("grammar.js");
     let config_file = manifest_dir.join("tree-sitter.json");
     let src_dir = manifest_dir.join("src");
@@ -28,7 +27,7 @@ fn main() {
     let target = std::env::var("TARGET").unwrap_or_default();
     let is_emscripten = target.contains("emscripten");
 
-    std::fs::create_dir_all(&generated_dir).expect("Failed to create generated output directory");
+    std::fs::create_dir_all(&generated_dir)?;
 
     let stamp = compute_stamp([&grammar_file, &config_file]);
     let should_regenerate =
@@ -36,7 +35,7 @@ fn main() {
 
     if should_regenerate {
         generate_grammar(&grammar_file, &config_file, &generated_dir);
-        std::fs::write(&stamp_path, &stamp).expect("Failed to write grammar stamp");
+        std::fs::write(&stamp_path, &stamp)?;
     }
 
     let mut c_config = cc::Build::new();
@@ -62,6 +61,7 @@ fn main() {
     }
 
     c_config.compile("tree_sitter_pgls");
+    Ok(())
 }
 
 fn compute_stamp(files: [&Path; 2]) -> String {
@@ -134,8 +134,9 @@ fn run_generate(
     let work_config = generator_workdir.join("tree-sitter.json");
 
     let _ = std::fs::remove_dir_all(&generator_workdir);
-    std::fs::create_dir_all(&generator_workdir)
-        .expect("Failed to create temporary tree-sitter generator workdir");
+    std::fs::create_dir_all(&generator_workdir).unwrap_or_else(|error| {
+        panic!("Failed to create the tree-sitter generator workdir: {error}");
+    });
     std::fs::copy(grammar_file, &work_grammar).unwrap_or_else(|error| {
         panic!(
             "Failed to copy {} into generator workdir: {error}",

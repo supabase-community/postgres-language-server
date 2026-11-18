@@ -10,6 +10,13 @@
 //! `CREATE FUNCTION`, with the function's parameters in scope. A finding in the body of a function
 //! Postgres accepted is a false positive too.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use std::{collections::BTreeMap, sync::Arc};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
@@ -201,14 +208,16 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
             }),
         }
     }
-    let diagnostics = analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: Some(catalog.clone()),
-        search_path: vec!["public".into()],
-        typecheck: true,
-        ..Default::default()
-    });
+    let diagnostics = analyser
+        .analyse(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: Some(catalog.clone()),
+            search_path: vec!["public".into()],
+            typecheck: true,
+            ..Default::default()
+        })
+        .diagnostics;
     let findings = diagnostics
         .iter()
         .map(|diagnostic| {

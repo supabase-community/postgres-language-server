@@ -1,7 +1,3 @@
-// plpgsql_check reports on functions from the client, so a panic on unexpected output takes down
-// the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod diagnostics;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
@@ -230,8 +226,10 @@ pub async fn check_plpgsql(
         .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
     let is_trigger = is_trigger_function(create_fn);
 
+    // A connection of the pool. The function only exists in the transaction, which is rolled
+    // back, and the queries that name it aren't prepared (`persistent(false)`), so the connection
+    // keeps nothing of it for the next function.
     let mut conn = params.conn.acquire().await?;
-    conn.close_on_drop();
 
     let mut tx: Transaction<'_, Postgres> = conn.begin().await?;
 
@@ -254,7 +252,10 @@ pub async fn check_plpgsql(
     };
 
     // create the function - this should always succeed
-    sqlx::query(&sql_with_replace).execute(&mut *tx).await?;
+    sqlx::query(&sql_with_replace)
+        .persistent(false)
+        .execute(&mut *tx)
+        .await?;
 
     // run plpgsql_check and collect results with their relations
     let extra = build_extra_params(&params);
@@ -272,6 +273,7 @@ pub async fn check_plpgsql(
                 let result: Option<String> = sqlx::query_scalar(&format!(
                     "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json'{extra})"
                 ))
+                .persistent(false)
                 .fetch_optional(&mut *tx)
                 .await?
                 .flatten();
@@ -287,6 +289,7 @@ pub async fn check_plpgsql(
         let result: Option<String> = sqlx::query_scalar(&format!(
             "select plpgsql_check_function('{fn_identifier}', format := 'json'{extra})"
         ))
+        .persistent(false)
         .fetch_optional(&mut *tx)
         .await?
         .flatten();
@@ -496,6 +499,34 @@ mod tests {
             span_texts[0].as_deref(),
             Some("if r.c is null or\n                 true is false\n                then")
         );
+    }
+
+    /// The checks use the connections of the pool. A function checked again with another body,
+    /// on the same connection, reports the issues of the new body.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_redefined_on_one_connection(test_db: PgPool) {
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(1)
+            .connect_with((*test_db.connect_options()).clone())
+            .await
+            .expect("Failed to connect");
+        let setup = "create extension if not exists plpgsql_check;";
+
+        for variable in ["missing_one", "missing_two", "missing_one"] {
+            let create_fn_sql = format!(
+                "create function public.f1() returns int language plpgsql as $$
+                begin
+                    return {variable};
+                end;
+                $$;"
+            );
+            let (diagnostics, _) = run_plpgsql_check_test(&pool, setup, &create_fn_sql)
+                .await
+                .expect("Failed to run plpgsql_check test");
+            assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+            let message = pgls_diagnostics::PrintDescription(&diagnostics[0]).to_string();
+            assert!(message.contains(variable), "{message}");
+        }
     }
 
     #[pgls_test_utils::db_test]

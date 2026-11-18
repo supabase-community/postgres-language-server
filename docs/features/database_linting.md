@@ -35,7 +35,7 @@ Configure database linting behavior in your `postgres-language-server.jsonc`:
 
 ## Ignoring Database Objects
 
-You can ignore specific database objects using glob patterns. Patterns use Unix-style globs where `*` matches any sequence of characters. Patterns should be in the format `schema.object_name`.
+You can ignore specific database objects using glob patterns. Patterns use Unix-style globs where `*` matches any sequence of characters and `?` any single character. A pattern matches the whole `schema.object_name` of an object: `public.users` ignores `public.users`, but not `public.users_archive`. An invalid pattern is a configuration error.
 
 ### Global Ignore
 
@@ -46,7 +46,7 @@ To ignore objects across all rules, use the top-level `ignore` field:
   "splinter": {
     "ignore": [
       "audit.*",
-      "temp_*"
+      "*.temp_*"
     ],
     "rules": {
       // ...

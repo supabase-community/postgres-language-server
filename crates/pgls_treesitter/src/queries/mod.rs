@@ -112,7 +112,10 @@ impl<'a> TreeSitterQueriesExecutor<'a> {
         }
     }
 
-    #[allow(private_bounds)]
+    #[allow(
+        private_bounds,
+        reason = "callers pick one of the queries of this module; they don't implement `Query`"
+    )]
     pub fn add_query_results<Q: Query<'a>>(&mut self) {
         let mut results = Q::execute(self.root_node, self.stmt);
         self.results.append(&mut results);

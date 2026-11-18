@@ -7,9 +7,6 @@
     unused_lifetimes,
     semicolon_in_expressions_from_macros
 )]
-// Fixes and code actions build their edits from the client's SQL, so a panic on unexpected input
-// takes down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
 use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 

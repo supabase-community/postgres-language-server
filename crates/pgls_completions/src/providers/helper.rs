@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use pgls_catalog::{NamePosition, quote_identifier};
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 use pgls_treesitter::TreesitterContext;
 
 use crate::{is_unterminated_quote, remove_sanitized_token};
@@ -22,17 +22,22 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     let mut start = node.start_byte();
     let mut end = start + length;
 
-    // Only the text inside the quotes is replaced. A quote the user hasn't closed yet has no
-    // closing quote here.
+    // Only the text inside the quotes is replaced, and the closing quote too when the cursor
+    // follows it, because the edit has to contain the cursor. A quote the user hasn't closed yet
+    // has no closing quote here.
     if sanitized.starts_with('"') {
         start += 1;
 
-        if sanitized.len() > 1 && sanitized.ends_with('"') {
+        if sanitized.len() > 1 && sanitized.ends_with('"') && !ctx.cursor_after_closing_quote() {
             end -= 1;
         }
     }
 
-    TextRange::new(start.try_into().unwrap(), end.try_into().unwrap())
+    // Offsets into the text, which is shorter than 4 GiB.
+    let (Ok(start), Ok(end)) = (TextSize::try_from(start), TextSize::try_from(end)) else {
+        return TextRange::default();
+    };
+    TextRange::new(start, end)
 }
 
 /// The bytes of the word at the cursor, like `ver` in `explain (analyze, ver|)`, or the
@@ -49,11 +54,15 @@ pub(crate) fn word_at_cursor(ctx: &TreesitterContext) -> Range<usize> {
         return ctx.node_under_cursor.byte_range();
     }
 
-    let start = bytes[..ctx.position]
+    let start = bytes
+        .get(..ctx.position)
+        .unwrap_or_default()
         .iter()
         .rposition(|b| !is_word(b))
         .map_or(0, |i| i + 1);
-    let end = bytes[ctx.position..]
+    let end = bytes
+        .get(ctx.position..)
+        .unwrap_or_default()
         .iter()
         .position(|b| !is_word(b))
         .map_or(bytes.len(), |i| ctx.position + i);
@@ -66,10 +75,11 @@ pub(crate) fn get_keyword_range_to_replace(ctx: &TreesitterContext) -> TextRange
     let word = word_at_cursor(ctx);
     let typed = remove_sanitized_token(&ctx.text[word.clone()]);
 
-    TextRange::at(
-        word.start.try_into().unwrap(),
-        typed.len().try_into().unwrap(),
-    )
+    // An offset into the text, which is shorter than 4 GiB.
+    let Ok(start) = TextSize::try_from(word.start) else {
+        return TextRange::default();
+    };
+    TextRange::at(start, TextSize::of(typed.as_str()))
 }
 
 /// Whether the cursor is in a quoted identifier without a closing quote, so the completion has to
@@ -106,15 +116,25 @@ pub(crate) fn with_schema_or_alias(
     let with_quotes = node_text_surrounded_by_quotes(ctx);
     let single_leading_quote = only_leading_quote(ctx);
 
-    // Inside quotes the user already typed, a name only needs its `"` escaped.
+    // Inside quotes the user already typed, a name only needs its `"` escaped. The closing quote
+    // is replaced too when the cursor follows it (see `get_range_to_replace`).
     let escaped = |name: &str| name.replace('"', r#""""#);
+    let closing_quote = if ctx.cursor_after_closing_quote() {
+        "\""
+    } else {
+        ""
+    };
 
     match prefix {
         Some(prefix) if !is_already_prefixed_with_schema_name => {
             if single_leading_quote {
                 format!(r#"{}"."{}""#, escaped(prefix), escaped(item_name))
             } else if with_quotes {
-                format!(r#"{}"."{}"#, escaped(prefix), escaped(item_name))
+                format!(
+                    r#"{}"."{}{closing_quote}"#,
+                    escaped(prefix),
+                    escaped(item_name)
+                )
             } else {
                 format!(
                     "{}.{}",
@@ -127,7 +147,7 @@ pub(crate) fn with_schema_or_alias(
             if single_leading_quote {
                 format!(r#"{}""#, escaped(item_name))
             } else if with_quotes {
-                escaped(item_name)
+                format!("{}{closing_quote}", escaped(item_name))
             } else if is_already_prefixed_with_schema_name {
                 quote_identifier(item_name, NamePosition::ColLabel).into_owned()
             } else {
@@ -216,6 +236,17 @@ mod tests {
                 r#"MyTable""#,
             ),
             (r#"select "I{c} from "MyTable""#, "Id", r#"Id""#),
+            // After the closing quote, the edit replaces it too, so that it contains the cursor.
+            (r#"select "I"{c} from "MyTable""#, "Id", r#"Id""#),
+            (r#"select t."I"{c} from "MyTable" t"#, "Id", r#"Id""#),
+            (r#"select * from "My"{c}"#, "MyTable", r#"MyTable""#),
+            (
+                r#"select * from "My"{c} where true"#,
+                "MyTable",
+                r#"MyTable""#,
+            ),
+            (r#"select public."MyFu"{c}"#, "MyFunc", r#"MyFunc"()"#),
+            (r#"select "MyFu"{c}()"#, "MyFunc", r#"MyFunc""#),
             // Policies and roles.
             (
                 r#"alter policy {c} on "MyTable""#,

@@ -10,7 +10,7 @@ pub(crate) enum HoveredNode {
     Role(String),
     PostgresType((Option<String>, String)),
 
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "policies aren't found under the cursor yet")]
     Policy((Option<String>, String)),
 }
 

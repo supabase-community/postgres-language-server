@@ -193,36 +193,39 @@ const COMPARE_BLOCK_BYTES: usize = 64;
 
 /// The length of the longest common prefix of `a` and `b`.
 fn common_prefix(a: &[u8], b: &[u8]) -> usize {
-    let len = a.len().min(b.len());
-    let mut equal = 0;
-    while equal + COMPARE_BLOCK_BYTES <= len
-        && a[equal..equal + COMPARE_BLOCK_BYTES] == b[equal..equal + COMPARE_BLOCK_BYTES]
-    {
-        equal += COMPARE_BLOCK_BYTES;
-    }
+    let equal = a
+        .as_chunks::<COMPARE_BLOCK_BYTES>()
+        .0
+        .iter()
+        .zip(b.as_chunks::<COMPARE_BLOCK_BYTES>().0)
+        .take_while(|(a, b)| a == b)
+        .count()
+        * COMPARE_BLOCK_BYTES;
     equal
-        + a[equal..len]
-            .iter()
-            .zip(&b[equal..len])
+        + a.iter()
+            .zip(b)
+            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
 
 /// The length of the longest common suffix of `a` and `b`, which have the same length.
 fn common_suffix(a: &[u8], b: &[u8]) -> usize {
-    let len = a.len();
-    let mut equal = 0;
-    while equal + COMPARE_BLOCK_BYTES <= len
-        && a[len - equal - COMPARE_BLOCK_BYTES..len - equal]
-            == b[len - equal - COMPARE_BLOCK_BYTES..len - equal]
-    {
-        equal += COMPARE_BLOCK_BYTES;
-    }
+    // `as_rchunks` puts the remainder at the start; its chunks run to the end.
+    let equal = a
+        .as_rchunks::<COMPARE_BLOCK_BYTES>()
+        .1
+        .iter()
+        .rev()
+        .zip(b.as_rchunks::<COMPARE_BLOCK_BYTES>().1.iter().rev())
+        .take_while(|(a, b)| a == b)
+        .count()
+        * COMPARE_BLOCK_BYTES;
     equal
-        + a[..len - equal]
-            .iter()
+        + a.iter()
             .rev()
-            .zip(b[..len - equal].iter().rev())
+            .zip(b.iter().rev())
+            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
@@ -251,8 +254,8 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // both would otherwise cover the whole of `old`.
     let max_suffix = old.len().min(new.len()) - prefix;
     let mut suffix = common_suffix(
-        &old_bytes[old.len() - max_suffix..],
-        &new_bytes[new.len() - max_suffix..],
+        old_bytes.get(old.len() - max_suffix..)?,
+        new_bytes.get(new.len() - max_suffix..)?,
     );
     while !old.is_char_boundary(old.len() - suffix) || !new.is_char_boundary(new.len() - suffix) {
         suffix -= 1;
@@ -266,9 +269,8 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // The change, with a byte of context on each side, because two bytes can form a token like
     // `/*` or `--` together.
     let touches_lexer_state = |text: &[u8], end: usize| {
-        text[prefix.saturating_sub(1)..(end + 1).min(text.len())]
-            .iter()
-            .any(|byte| LEXER_STATE_BYTES.contains(byte))
+        text.get(prefix.saturating_sub(1)..(end + 1).min(text.len()))
+            .is_none_or(|change| change.iter().any(|byte| LEXER_STATE_BYTES.contains(byte)))
     };
     if touches_lexer_state(old_bytes, old_end) || touches_lexer_state(new_bytes, new_end) {
         return None;
@@ -296,12 +298,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     let start = if first == 0 {
         0
     } else {
-        usize::from(ranges[first].start())
+        usize::from(ranges.get(first)?.start())
     };
     let new_region_end = if last == ranges.len() {
         new.len()
     } else {
-        (usize::from(ranges[last - 1].end()) + new.len()).checked_sub(old.len())?
+        (usize::from(ranges.get(last.checked_sub(1)?)?.end()) + new.len()).checked_sub(old.len())?
     };
     // The region has to contain the whole change.
     if start > prefix || new_region_end < new_end {
@@ -325,9 +327,7 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // reaches one of them, e.g. it merges a touched statement into it, the ranges differ here
     // and the whole file is split instead.
     let before = touched - first;
-    if first > 0
-        && (region_ranges.len() < before || region_ranges[..before] != ranges[first..touched])
-    {
+    if first > 0 && region_ranges.get(..before) != ranges.get(first..touched) {
         return None;
     }
     if last < ranges.len() {
@@ -335,11 +335,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         if region_ranges.len() < after_count {
             return None;
         }
-        let expected = ranges[after..last]
+        let expected = ranges
+            .get(after..last)?
             .iter()
             .map(|range| shift(*range))
             .collect::<Option<Vec<_>>>()?;
-        if region_ranges[region_ranges.len() - after_count..] != expected[..] {
+        if region_ranges.get(region_ranges.len() - after_count..) != Some(expected.as_slice()) {
             return None;
         }
     }
@@ -355,12 +356,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // region's first statement and before its last one. `old_high` is where `new_high` was in
     // `old`. Statements `..kept_before` and `kept_after..` come from `previous`.
     let low = if first > 0 {
-        ranges[first].end()
+        ranges.get(first)?.end()
     } else {
         TextSize::from(0)
     };
     let (old_high, new_high) = if last < ranges.len() {
-        let old_high = ranges[last - 1].start();
+        let old_high = ranges.get(last.checked_sub(1)?)?.start();
         (old_high, shift(TextRange::empty(old_high))?.start())
     } else {
         (to_size(old.len())?, to_size(new.len())?)
@@ -373,13 +374,13 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     };
 
     let mut result_ranges = Vec::with_capacity(ranges.len() + region_ranges.len());
-    result_ranges.extend_from_slice(&ranges[..kept_before]);
+    result_ranges.extend_from_slice(ranges.get(..kept_before)?);
     result_ranges.extend(
         region_ranges
             .into_iter()
             .filter(|range| range.start() >= low && range.start() < new_high),
     );
-    for range in &ranges[kept_after..] {
+    for range in ranges.get(kept_after..)? {
         result_ranges.push(shift(*range)?);
     }
 
@@ -486,7 +487,6 @@ fn splits_into_valid_statements(fragment: &str, pieces: &[TextRange]) -> bool {
 mod tests {
     use diagnostics::SplitDiagnostic;
     use ntest::timeout;
-    use pgls_lexer::SyntaxKind;
     use pgls_text_size::TextRange;
 
     use super::*;
@@ -831,7 +831,7 @@ SELECT 1",
         Tester::from("\ninsert select 1\n\nselect 3")
             .expect_statements(vec!["insert select 1", "select 3"])
             .expect_errors(vec![SplitDiagnostic::new(
-                format!("Expected {:?}", SyntaxKind::INTO_KW),
+                "Expected \"INTO\"",
                 TextRange::new(8.into(), 14.into()),
             )]);
     }
@@ -1096,7 +1096,7 @@ SELECT * FROM constraints, indexes, comments, functions;",
             assert_eq!(
                 result.errors.first(),
                 Some(&SplitDiagnostic::new(
-                    "Expected IDENT",
+                    "Expected an identifier",
                     TextRange::new(name.start.into(), name.end.into())
                 )),
                 "{stmt}"
@@ -1351,7 +1351,7 @@ VALUES
     #[test]
     fn does_not_panic_on_eof_expectation() {
         Tester::from("insert").expect_errors(vec![SplitDiagnostic::new(
-            "Expected INTO_KW".to_string(),
+            "Expected \"INTO\"".to_string(),
             TextRange::new(0.into(), 6.into()),
         )]);
     }
@@ -1546,6 +1546,15 @@ VALUES
     fn blank_line_with_named_param() {
         Tester::from("select id\nfrom t\n\nwhere id = $some_id;")
             .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    /// A lone `\r` ends a `--` comment, as in Postgres, so the text after it is part of the
+    /// statement.
+    #[test]
+    fn line_comment_ends_at_a_lone_carriage_return() {
+        Tester::from("select 1 -- c\rfrom t;\nselect 2;")
+            .expect_statements(vec!["select 1 -- c\rfrom t;", "select 2;"])
             .assert_no_errors();
     }
 

@@ -89,14 +89,14 @@ fn emit_dot_separated_identifiers(e: &mut EventEmitter, items: &[pgls_query::pro
 
 fn emit_drop_cast_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
-        && list.items.len() == 2
+        && let [source, target] = list.items.as_slice()
     {
         e.token(TokenKind::L_PAREN);
-        emit_node(e, &list.items[0]);
+        emit_node(e, source);
         e.space();
         e.token(TokenKind::AS_KW);
         e.space();
-        emit_node(e, &list.items[1]);
+        emit_node(e, target);
         e.token(TokenKind::R_PAREN);
         return;
     }
@@ -110,13 +110,11 @@ fn emit_drop_cast_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node
 /// The list is [table_name_parts..., object_name] - last item is the object name
 fn emit_drop_on_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
     if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
-        && list.items.len() >= 2
-    {
         // Last element is the object name (trigger/rule/policy)
         // All previous elements are the table name parts (schema, table, etc.)
-        let (table_parts, object_name_item) = list.items.split_at(list.items.len() - 1);
-        let object_name = &object_name_item[0];
-
+        && let [table_parts @ .., object_name] = list.items.as_slice()
+        && !table_parts.is_empty()
+    {
         // Emit object name first
         if let Some(pgls_query::NodeEnum::String(s)) = object_name.node.as_ref() {
             emit_identifier_maybe_quoted(e, &s.sval);

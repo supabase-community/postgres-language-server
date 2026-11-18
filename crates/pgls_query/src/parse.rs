@@ -103,12 +103,9 @@ impl ParseResult {
     ///
     /// Returns None if there is not exactly one statement in the parse result.
     pub fn root(&self) -> Option<&NodeEnum> {
-        if self.protobuf.stmts.len() != 1 {
+        let [raw_stmt] = self.protobuf.stmts.as_slice() else {
             return None;
-        }
-
-        // Get the first (and only) statement
-        let raw_stmt = &self.protobuf.stmts[0];
+        };
 
         // Navigate: RawStmt -> Node -> NodeEnum
         raw_stmt.stmt.as_ref().and_then(|stmt| stmt.node.as_ref())
@@ -134,12 +131,9 @@ impl ParseResult {
     ///
     /// Returns None if there is not exactly one statement in the parse result.
     pub fn root_mut(&mut self) -> Option<&mut NodeEnum> {
-        if self.protobuf.stmts.len() != 1 {
+        let [raw_stmt] = self.protobuf.stmts.as_mut_slice() else {
             return None;
-        }
-
-        // Get the first (and only) statement
-        let raw_stmt = &mut self.protobuf.stmts[0];
+        };
 
         // Navigate: RawStmt -> Node -> NodeEnum
         raw_stmt.stmt.as_mut().and_then(|stmt| stmt.node.as_mut())

@@ -28,7 +28,7 @@ use crate::{WasmError, Workspace};
 /// JSON-RPC request/notification structure
 #[derive(Debug, Deserialize)]
 struct JsonRpcMessage {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "required by JSON-RPC; its value isn't checked")]
     jsonrpc: String,
     id: Option<Value>,
     method: String,
@@ -434,9 +434,9 @@ impl LspHandler {
                     .cloned()
                     .collect();
                 let is_fix = edit.rule.is_some()
-                    && !edit
-                        .category
-                        .matches(pgls_analyse::SUPPRESSION_ACTION_CATEGORY);
+                    && !edit.category.matches(
+                        pgls_workspace::features::code_actions::SUPPRESSION_ACTION_CATEGORY,
+                    );
                 actions.push(CodeAction {
                     title: action.title,
                     kind: Some(CodeActionKind::from(edit.category.to_str().into_owned())),

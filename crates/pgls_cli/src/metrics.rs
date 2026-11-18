@@ -8,14 +8,9 @@ use std::{
 
 use hdrhistogram::Histogram;
 use rustc_hash::FxHashMap;
-use std::sync::{LazyLock, Mutex, RwLock};
+use std::sync::{LazyLock, Mutex, PoisonError, RwLock};
 use tracing::{Level, Metadata, Subscriber, span, subscriber::Interest};
-use tracing_subscriber::{
-    Layer,
-    layer::Context,
-    prelude::*,
-    registry::{LookupSpan, SpanRef},
-};
+use tracing_subscriber::{Layer, layer::Context, prelude::*, registry::LookupSpan};
 
 /// Implementation of a tracing [Layer] that collects timing information for spans into [Histogram]s
 struct MetricsLayer;
@@ -56,22 +51,21 @@ enum CallsiteEntry {
 }
 
 impl CallsiteEntry {
-    fn from_level(level: &Level) -> Self {
+    /// `None` only if `SIGNIFICANT_FIGURES` were invalid; 3 is valid.
+    fn from_level(level: &Level) -> Option<Self> {
         /// Number of significant figures retained by the histogram
         const SIGNIFICANT_FIGURES: u8 = 3;
 
-        match level {
+        Some(match level {
             &Level::TRACE => Self::Trace {
-                // SAFETY: Histogram::new only returns an error if the value of
-                // SIGNIFICANT_FIGURES is invalid, 3 is statically known to work
-                total: Histogram::new(SIGNIFICANT_FIGURES).unwrap(),
-                busy: Histogram::new(SIGNIFICANT_FIGURES).unwrap(),
-                idle: Histogram::new(SIGNIFICANT_FIGURES).unwrap(),
+                total: Histogram::new(SIGNIFICANT_FIGURES).ok()?,
+                busy: Histogram::new(SIGNIFICANT_FIGURES).ok()?,
+                idle: Histogram::new(SIGNIFICANT_FIGURES).ok()?,
             },
             _ => Self::Debug {
-                total: Histogram::new(SIGNIFICANT_FIGURES).unwrap(),
+                total: Histogram::new(SIGNIFICANT_FIGURES).ok()?,
             },
-        }
+        })
     }
 
     fn into_histograms(self, name: &str) -> Vec<(Cow<'_, str>, Histogram<u64>)> {
@@ -134,23 +128,15 @@ impl<I: Timepoint> Timings<I> {
 
         match entry {
             CallsiteEntry::Debug { total } => {
-                total.record(self.busy + self.idle).unwrap();
+                total.saturating_record(self.busy + self.idle);
             }
             CallsiteEntry::Trace { total, busy, idle } => {
-                busy.record(self.busy).unwrap();
-                idle.record(self.idle).unwrap();
-                total.record(self.busy + self.idle).unwrap();
+                busy.saturating_record(self.busy);
+                idle.saturating_record(self.idle);
+                total.saturating_record(self.busy + self.idle);
             }
         }
     }
-}
-
-fn read_span<'ctx, S>(ctx: &'ctx Context<'_, S>, id: &span::Id) -> SpanRef<'ctx, S>
-where
-    S: Subscriber + for<'a> LookupSpan<'a>,
-{
-    ctx.span(id)
-        .expect("Span not found, it should have been stored in the registry")
 }
 
 impl<S> Layer<S> for MetricsLayer
@@ -164,11 +150,15 @@ where
             return Interest::never();
         }
 
-        let entry = CallsiteEntry::from_level(metadata.level());
+        let Some(entry) = CallsiteEntry::from_level(metadata.level()) else {
+            return Interest::never();
+        };
 
+        // The map stays consistent if a thread panicked while it held the lock: each entry is
+        // inserted, read or drained as a whole.
         METRICS
             .write()
-            .unwrap()
+            .unwrap_or_else(PoisonError::into_inner)
             .insert(CallsiteKey(metadata), Mutex::new(entry));
 
         Interest::always()
@@ -176,7 +166,10 @@ where
 
     /// When a new span is created, attach the timing data extension to it
     fn on_new_span(&self, _attrs: &span::Attributes<'_>, id: &span::Id, ctx: Context<'_, S>) {
-        let span = read_span(&ctx, id);
+        // The registry stores every span it hands to the layer.
+        let Some(span) = ctx.span(id) else {
+            return;
+        };
         let mut extensions = span.extensions_mut();
 
         if extensions.get_mut::<Timings>().is_none() {
@@ -187,7 +180,10 @@ where
     /// When a span is entered, start counting idle time for the parent span if
     /// it exists and busy time for the entered span itself
     fn on_enter(&self, id: &span::Id, ctx: Context<'_, S>) {
-        let span = read_span(&ctx, id);
+        // The registry stores every span it hands to the layer.
+        let Some(span) = ctx.span(id) else {
+            return;
+        };
 
         let now = Instant::now();
         if let Some(parent) = span.parent() {
@@ -208,7 +204,10 @@ where
     /// When a span is exited, stop it from counting busy time and start
     /// counting the parent as busy instead
     fn on_exit(&self, id: &span::Id, ctx: Context<'_, S>) {
-        let span = read_span(&ctx, id);
+        // The registry stores every span it hands to the layer.
+        let Some(span) = ctx.span(id) else {
+            return;
+        };
 
         let now = Instant::now();
         let mut extensions = span.extensions_mut();
@@ -230,36 +229,45 @@ where
     /// When a span is closed, extract its timing information and write it to
     /// the associated histograms
     fn on_close(&self, id: span::Id, ctx: Context<'_, S>) {
-        let span = read_span(&ctx, &id);
+        // The registry stores every span it hands to the layer.
+        let Some(span) = ctx.span(&id) else {
+            return;
+        };
         let mut extensions = span.extensions_mut();
         if let Some(timing) = extensions.remove::<Timings>() {
             let now = Instant::now();
 
             // Acquire a read lock on the metrics storage, access the metrics entry
             // associated with this call site and acquire a write lock on it
-            let metrics = METRICS.read().unwrap();
-            let entry = metrics
-                .get(&CallsiteKey(span.metadata()))
-                .expect("callsite not found, it should have been registered in register_callsite");
+            let metrics = METRICS.read().unwrap_or_else(PoisonError::into_inner);
+            // `register_callsite` registered every span callsite.
+            let Some(entry) = metrics.get(&CallsiteKey(span.metadata())) else {
+                return;
+            };
 
-            let mut entry = entry.lock().unwrap();
+            let mut entry = entry.lock().unwrap_or_else(PoisonError::into_inner);
             timing.record(now, &mut entry);
         }
     }
 }
 
 /// Initializes metrics recording
-pub fn init_metrics() {
+pub(crate) fn init_metrics() {
     // Create and injects the metrics recording layer with the tracing library
     tracing_subscriber::registry().with(MetricsLayer).init();
 }
 
 /// Flush and print the recorded metrics to the console
-pub fn print_metrics() {
-    let mut write_guard = METRICS.write().unwrap();
+pub(crate) fn print_metrics() {
+    let mut write_guard = METRICS.write().unwrap_or_else(PoisonError::into_inner);
     let mut histograms: Vec<_> = write_guard
         .drain()
-        .flat_map(|(key, entry)| entry.into_inner().unwrap().into_histograms(key.0.name()))
+        .flat_map(|(key, entry)| {
+            entry
+                .into_inner()
+                .unwrap_or_else(PoisonError::into_inner)
+                .into_histograms(key.0.name())
+        })
         .collect();
 
     histograms.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
@@ -326,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_timing() {
-        let mut entry = CallsiteEntry::from_level(&Level::TRACE);
+        let mut entry = CallsiteEntry::from_level(&Level::TRACE).unwrap();
 
         for i in 1..=5 {
             let mut timing = Timings::<TestTime>::new();

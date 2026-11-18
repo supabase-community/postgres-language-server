@@ -5,7 +5,7 @@ use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 
 /// The function is used to convert a LSP position to TextSize.
-pub fn offset(
+pub(crate) fn offset(
     line_index: &LineIndex,
     position: ls_types::Position,
     position_encoding: PositionEncoding,
@@ -28,7 +28,7 @@ pub fn offset(
 }
 
 /// The function is used to convert a LSP range to TextRange.
-pub fn text_range(
+pub(crate) fn text_range(
     line_index: &LineIndex,
     range: ls_types::Range,
     position_encoding: PositionEncoding,

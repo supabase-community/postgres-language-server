@@ -14,7 +14,9 @@ use docs_codegen::version::replace_version;
 fn docs_root() -> PathBuf {
     let dir =
         env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_owned());
-    Path::new(&dir).parent().unwrap().to_path_buf()
+    // `docs/codegen` is one level below `docs`.
+    let dir = Path::new(&dir);
+    dir.parent().unwrap_or(dir).to_path_buf()
 }
 
 fn main() -> anyhow::Result<()> {

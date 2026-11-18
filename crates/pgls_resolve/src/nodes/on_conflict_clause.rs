@@ -1,6 +1,7 @@
 use pgls_query::protobuf::OnConflictClause;
 
 use super::{Resolver, record_unresolved_node, res_target::resolve_set_clause, resolve_node};
+use crate::resolver::Context;
 use crate::scope::{Item, Level, untyped};
 
 /// `ON CONFLICT` sees the target relation and the row proposed for insertion, `excluded`. Port
@@ -16,14 +17,17 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
             record_unresolved_node(r, elem, false);
         }
         if let Some(where_clause) = infer.where_clause.as_deref() {
-            r.enter_level(Level {
+            let level = Level {
                 items: vec![target.clone()],
                 ..Default::default()
+            };
+            let context = Context {
+                single_relation: true,
+                ..r.context()
+            };
+            r.in_level(level, |r| {
+                r.with_context(context, |r| resolve_node(r, where_clause));
             });
-            let single_relation = std::mem::replace(&mut r.single_relation, true);
-            resolve_node(r, where_clause);
-            r.single_relation = single_relation;
-            r.exit_level();
         }
     }
 
@@ -32,14 +36,14 @@ pub(super) fn resolve_on_conflict_clause(r: &mut Resolver, n: &OnConflictClause,
         untyped(target.columns.clone()),
         false,
     );
-    r.enter_level(Level {
+    let level = Level {
         items: vec![target.clone(), excluded],
         ..Default::default()
+    };
+    r.in_level(level, |r| {
+        resolve_set_clause(r, target, &n.target_list);
+        if let Some(where_clause) = n.where_clause.as_deref() {
+            resolve_node(r, where_clause);
+        }
     });
-    resolve_set_clause(r, target, &n.target_list);
-    if let Some(where_clause) = n.where_clause.as_deref() {
-        resolve_node(r, where_clause);
-    }
-
-    r.exit_level();
 }

@@ -5,7 +5,7 @@ use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
-static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static TS_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     [
         (relation
@@ -44,7 +44,8 @@ static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
     ]
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 #[derive(Debug)]
@@ -58,23 +59,24 @@ impl TableAliasMatch<'_> {
     pub fn get_alias(&self, sql: &str) -> String {
         self.alias
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get alias from TableAliasMatch")
+            // A node of `sql` is UTF-8, unless the tree is stale.
+            .unwrap_or_default()
             .to_string()
     }
 
     pub fn get_table(&self, sql: &str) -> String {
         self.table
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get table from TableAliasMatch")
+            // A node of `sql` is UTF-8, unless the tree is stale.
+            .unwrap_or_default()
             .to_string()
     }
 
     pub fn get_schema(&self, sql: &str) -> Option<String> {
-        self.schema.as_ref().map(|n| {
-            n.utf8_text(sql.as_bytes())
-                .expect("Failed to get table from TableAliasMatch")
-                .to_string()
-        })
+        self.schema
+            .as_ref()
+            .and_then(|n| n.utf8_text(sql.as_bytes()).ok())
+            .map(str::to_string)
     }
 }
 
@@ -85,7 +87,6 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a TableAliasMatch<'a> {
         match q {
             QueryResult::TableAliases(t) => Ok(t),
 
-            #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
         }
     }
@@ -99,14 +100,16 @@ impl<'a> Query<'a> for TableAliasMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
-        let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
+        let Some(query) = TS_QUERY.as_ref() else {
+            return vec![];
+        };
+        let matches = cursor.matches(query, root_node, stmt.as_bytes());
 
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 2 {
-                let obj_ref = m.captures[0].node;
-                let alias = m.captures[1].node;
+            if let [obj_ref, alias] = m.captures {
+                let (obj_ref, alias) = (obj_ref.node, alias.node);
                 if let Some((_, schema, table)) = parts_of_reference_query(obj_ref, stmt) {
                     to_return.push(QueryResult::TableAliases(TableAliasMatch {
                         schema,

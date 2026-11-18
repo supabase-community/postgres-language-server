@@ -7,8 +7,7 @@
 //! 3. `linter.groups.<group>`
 //! 4. the presets `linter.rules.all` and `linter.rules.recommended` (never enabling `nursery`)
 
-// This module reads the deprecated settings.
-#![allow(deprecated)]
+#![allow(deprecated, reason = "this module reads the deprecated settings")]
 
 use pgls_analyse::{MetadataRegistry, RuleFilter};
 use pgls_analyser::{LinterRules, RuleOptions};
@@ -203,7 +202,7 @@ fn find_rule(rule: &str) -> Option<&'static LinterRuleMetadata> {
     LINTER_RULES
         .binary_search_by(|metadata| metadata.name.cmp(rule))
         .ok()
-        .map(|index| &LINTER_RULES[index])
+        .and_then(|index| LINTER_RULES.get(index))
 }
 
 fn severity_level(severity: Severity) -> RulePlainConfiguration {
@@ -355,7 +354,9 @@ mod tests {
         );
 
         let options = settings.rule_options("preferBigInt").unwrap();
-        let options = options.value::<pgls_analyser::options::PreferBigInt>();
+        let options = options
+            .value::<pgls_analyser::options::PreferBigInt>()
+            .unwrap();
         assert!(!options.check_int);
         assert!(options.check_smallint);
 

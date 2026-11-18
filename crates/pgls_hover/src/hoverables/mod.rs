@@ -12,11 +12,11 @@ mod table;
 
 mod test_helper;
 
-pub use derived_column::DerivedColumn;
+pub(crate) use derived_column::DerivedColumn;
 
 /// Mapper type that will be used for filtering and turning data to markdown.
 #[derive(Debug)]
-pub enum Hoverable<'a> {
+pub(crate) enum Hoverable<'a> {
     Table(&'a pgls_catalog::Table),
     Column(&'a pgls_catalog::Column),
     Function(&'a pgls_catalog::Function),

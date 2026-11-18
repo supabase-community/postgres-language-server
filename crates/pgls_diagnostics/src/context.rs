@@ -1,10 +1,9 @@
 use pgls_console::fmt;
 
-use crate::context::internal::{SeverityDiagnostic, TagsDiagnostic};
 use crate::{
-    Category, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
+    Category, DiagnosticTags, Error, Resource, Severity,
     diagnostic::internal::AsDiagnostic,
-    location::{AsResource, AsSpan},
+    location::{AsResource, AsSpan, IntoSharedSourceCode},
 };
 
 /// This trait is implemented for all types implementing [Diagnostic](super::Diagnostic)
@@ -25,37 +24,37 @@ pub trait DiagnosticExt: internal::Sealed + Sized {
     /// doesn't already have one.
     fn with_category(self, category: &'static Category) -> Error
     where
-        Error: From<internal::CategoryDiagnostic<Self>>;
+        Error: From<internal::Decorated<Self>>;
 
     /// Returns a new diagnostic using the provided `path` if `self`
     /// doesn't already have one.
     fn with_file_path(self, path: impl AsResource) -> Error
     where
-        Error: From<internal::FilePathDiagnostic<Self>>;
+        Error: From<internal::Decorated<Self>>;
 
     /// Returns a new diagnostic using the provided `span` instead of the one in `self`.
     fn with_file_span(self, span: impl AsSpan) -> Error
     where
-        Error: From<internal::FileSpanDiagnostic<Self>>;
+        Error: From<internal::Decorated<Self>>;
 
     /// Returns a new diagnostic using the provided `source_code` if `self`
-    /// doesn't already have one.
+    /// doesn't already have one. `None` adds no source code.
     ///
-    /// Pass the same [SharedSourceCode] to all the diagnostics of a file: from a `&str`, every
-    /// diagnostic gets a copy of the text and a line index of its own.
-    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
+    /// Pass the same [SharedSourceCode](crate::SharedSourceCode) to all the diagnostics of a file:
+    /// from a `&str`, every diagnostic gets a copy of the text and a line index of its own.
+    fn with_file_source_code(self, source_code: impl IntoSharedSourceCode) -> Error
     where
-        Error: From<internal::FileSourceCodeDiagnostic<Self>>;
+        Error: From<internal::Decorated<Self>>;
 
     /// Returns a new diagnostic with additional `tags`
     fn with_tags(self, tags: DiagnosticTags) -> Error
     where
-        Error: From<internal::TagsDiagnostic<Self>>;
+        Error: From<internal::Decorated<Self>>;
 
     /// Returns a new diagnostic with additional `severity`
     fn with_severity(self, severity: Severity) -> Error
     where
-        Error: From<internal::SeverityDiagnostic<Self>>;
+        Error: From<internal::Decorated<Self>>;
 }
 
 impl<E: AsDiagnostic> internal::Sealed for E {}
@@ -75,58 +74,61 @@ impl<E: AsDiagnostic> DiagnosticExt for E {
 
     fn with_category(self, category: &'static Category) -> Error
     where
-        Error: From<internal::CategoryDiagnostic<Self>>,
+        Error: From<internal::Decorated<Self>>,
     {
-        Error::from(internal::CategoryDiagnostic {
-            category,
-            source: self,
+        Error::from(internal::Decorated {
+            category: Some(category),
+            ..internal::Decorated::new(self)
         })
     }
 
     fn with_file_path(self, path: impl AsResource) -> Error
     where
-        Error: From<internal::FilePathDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
-        Error::from(internal::FilePathDiagnostic {
+        Error::from(internal::Decorated {
             path: path.as_resource().map(Resource::to_owned),
-            source: self,
+            ..internal::Decorated::new(self)
         })
     }
 
     fn with_file_span(self, span: impl AsSpan) -> Error
     where
-        Error: From<internal::FileSpanDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
-        Error::from(internal::FileSpanDiagnostic {
+        Error::from(internal::Decorated {
             span: span.as_span(),
-            source: self,
+            ..internal::Decorated::new(self)
         })
     }
 
-    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
+    fn with_file_source_code(self, source_code: impl IntoSharedSourceCode) -> Error
     where
-        Error: From<internal::FileSourceCodeDiagnostic<Self>>,
+        Error: From<internal::Decorated<Self>>,
     {
-        Error::from(internal::FileSourceCodeDiagnostic {
-            source_code: source_code.into(),
-            source: self,
+        Error::from(internal::Decorated {
+            source_code: source_code.into_shared_source_code(),
+            ..internal::Decorated::new(self)
         })
     }
 
     fn with_tags(self, tags: DiagnosticTags) -> Error
     where
-        Error: From<internal::TagsDiagnostic<Self>>,
+        Error: From<internal::Decorated<Self>>,
     {
-        Error::from(internal::TagsDiagnostic { tags, source: self })
+        Error::from(internal::Decorated {
+            tags,
+            ..internal::Decorated::new(self)
+        })
     }
 
     fn with_severity(self, severity: Severity) -> Error
     where
-        Error: From<internal::SeverityDiagnostic<Self>>,
+        Error: From<internal::Decorated<Self>>,
     {
-        Error::from(internal::SeverityDiagnostic {
-            severity,
-            source: self,
+        Error::from(internal::Decorated {
+            severity: Some(severity),
+            ..internal::Decorated::new(self)
         })
     }
 }
@@ -146,25 +148,25 @@ pub trait Context<T, E>: internal::Sealed {
     /// `category` if `self` doesn't already have one.
     fn with_category(self, category: &'static Category) -> Result<T, Error>
     where
-        Error: From<internal::CategoryDiagnostic<E>>;
+        Error: From<internal::Decorated<E>>;
 
     /// If `self` is an error, returns a new diagnostic using the provided
     /// `path` if `self` doesn't already have one.
     fn with_file_path(self, path: impl AsResource) -> Result<T, Error>
     where
-        Error: From<internal::FilePathDiagnostic<E>>;
+        Error: From<internal::Decorated<E>>;
 
     /// If `self` is an error, returns a new diagnostic using the provided
     /// `severity` if `self` doesn't already have one.
     fn with_severity(self, severity: Severity) -> Result<T, Error>
     where
-        Error: From<internal::SeverityDiagnostic<E>>;
+        Error: From<internal::Decorated<E>>;
 
     /// If `self` is an error, returns a new diagnostic using the provided
     /// `tags` if `self` doesn't already have one.
     fn with_tags(self, tags: DiagnosticTags) -> Result<T, Error>
     where
-        Error: From<internal::TagsDiagnostic<E>>;
+        Error: From<internal::Decorated<E>>;
 
     /// If `self` is an error, returns a new diagnostic using the provided
     /// `span` instead of the one returned by `self`.
@@ -175,7 +177,7 @@ pub trait Context<T, E>: internal::Sealed {
     /// be relative to the entire file instead.
     fn with_file_span(self, span: impl AsSpan) -> Result<T, Error>
     where
-        Error: From<internal::FileSpanDiagnostic<E>>;
+        Error: From<internal::Decorated<E>>;
 }
 
 impl<T, E: AsDiagnostic> internal::Sealed for Result<T, E> {}
@@ -195,7 +197,7 @@ impl<T, E: AsDiagnostic> Context<T, E> for Result<T, E> {
 
     fn with_category(self, category: &'static Category) -> Result<T, Error>
     where
-        Error: From<internal::CategoryDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
         match self {
             Ok(value) => Ok(value),
@@ -205,7 +207,7 @@ impl<T, E: AsDiagnostic> Context<T, E> for Result<T, E> {
 
     fn with_file_path(self, path: impl AsResource) -> Result<T, Error>
     where
-        Error: From<internal::FilePathDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
         match self {
             Ok(value) => Ok(value),
@@ -215,7 +217,7 @@ impl<T, E: AsDiagnostic> Context<T, E> for Result<T, E> {
 
     fn with_severity(self, severity: Severity) -> Result<T, Error>
     where
-        Error: From<SeverityDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
         match self {
             Ok(value) => Ok(value),
@@ -225,7 +227,7 @@ impl<T, E: AsDiagnostic> Context<T, E> for Result<T, E> {
 
     fn with_tags(self, tags: DiagnosticTags) -> Result<T, Error>
     where
-        Error: From<TagsDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
         match self {
             Ok(value) => Ok(value),
@@ -235,7 +237,7 @@ impl<T, E: AsDiagnostic> Context<T, E> for Result<T, E> {
 
     fn with_file_span(self, span: impl AsSpan) -> Result<T, Error>
     where
-        Error: From<internal::FileSpanDiagnostic<E>>,
+        Error: From<internal::Decorated<E>>,
     {
         match self {
             Ok(value) => Ok(value),
@@ -359,152 +361,74 @@ mod internal {
         }
     }
 
-    /// Diagnostic type returned by [super::DiagnosticExt::with_category],
-    /// uses `category` as its category if `source` doesn't return one.
-    pub struct CategoryDiagnostic<E> {
-        pub(super) category: &'static Category,
-        pub(super) source: E,
-    }
-
-    impl<E: Debug> Debug for CategoryDiagnostic<E> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Diagnostic")
-                .field("category", &self.category)
-                .field("source", &self.source)
-                .finish()
-        }
-    }
-
-    impl<E: AsDiagnostic> Diagnostic for CategoryDiagnostic<E> {
-        fn category(&self) -> Option<&'static Category> {
-            Some(
-                self.source
-                    .as_diagnostic()
-                    .category()
-                    .unwrap_or(self.category),
-            )
-        }
-
-        fn severity(&self) -> Severity {
-            self.source.as_diagnostic().severity()
-        }
-
-        fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.source.as_diagnostic().description(fmt)
-        }
-
-        fn message(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
-            self.source.as_diagnostic().message(fmt)
-        }
-
-        fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().advices(visitor)
-        }
-
-        fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().verbose_advices(visitor)
-        }
-
-        fn location(&self) -> Location<'_> {
-            self.source.as_diagnostic().location()
-        }
-
-        fn tags(&self) -> DiagnosticTags {
-            self.source.as_diagnostic().tags()
-        }
-    }
-
-    /// Diagnostic type returned by [super::DiagnosticExt::with_file_path],
-    /// uses `path` as its location path if `source` doesn't return one.
-    pub struct FilePathDiagnostic<E> {
+    /// Diagnostic type returned by the `with_*` methods of [super::DiagnosticExt]: `source`
+    /// with the given overrides. Everything that isn't overridden forwards to `source`,
+    /// [Diagnostic::source] included, so a chain of causes survives a category, path, span,
+    /// source code, tags or severity added on top of it.
+    pub struct Decorated<E> {
+        /// Used if `source` has no category.
+        pub(super) category: Option<&'static Category>,
+        /// Used if `source` has no resource, and replaces the path of a file.
         pub(super) path: Option<Resource<String>>,
-        pub(super) source: E,
-    }
-
-    impl<E: Debug> Debug for FilePathDiagnostic<E> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Diagnostic")
-                .field("path", &self.path)
-                .field("source", &self.source)
-                .finish()
-        }
-    }
-
-    impl<E: AsDiagnostic> Diagnostic for FilePathDiagnostic<E> {
-        fn category(&self) -> Option<&'static Category> {
-            self.source.as_diagnostic().category()
-        }
-
-        fn severity(&self) -> Severity {
-            self.source.as_diagnostic().severity()
-        }
-
-        fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.source.as_diagnostic().description(fmt)
-        }
-
-        fn message(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
-            self.source.as_diagnostic().message(fmt)
-        }
-
-        fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().advices(visitor)
-        }
-
-        fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().verbose_advices(visitor)
-        }
-
-        fn location(&self) -> Location<'_> {
-            let loc = self.source.as_diagnostic().location();
-            Location {
-                resource: match loc.resource {
-                    Some(Resource::Argv) => Some(Resource::Argv),
-                    Some(Resource::Memory) => Some(Resource::Memory),
-                    Some(Resource::Database) => Some(Resource::Database),
-                    Some(Resource::File(file)) => {
-                        if let Some(Resource::File(path)) = &self.path {
-                            Some(Resource::File(path.as_ref()))
-                        } else {
-                            Some(Resource::File(file))
-                        }
-                    }
-                    None => self.path.as_ref().map(Resource::as_deref),
-                },
-                span: loc.span,
-                database_object: loc.database_object,
-                source_code: loc.source_code,
-            }
-        }
-
-        fn tags(&self) -> DiagnosticTags {
-            self.source.as_diagnostic().tags()
-        }
-    }
-
-    /// Diagnostic type returned by [super::DiagnosticExt::with_file_span],
-    /// uses `span` as its location span instead of the one returned by `source`.
-    pub struct FileSpanDiagnostic<E> {
+        /// Replaces the span of `source`.
         pub(super) span: Option<TextRange>,
+        /// Used if `source` has no source code, also for the code frames of its advices.
+        pub(super) source_code: Option<SharedSourceCode>,
+        /// Added to the tags of `source`.
+        pub(super) tags: DiagnosticTags,
+        /// Replaces the severity of `source`.
+        pub(super) severity: Option<Severity>,
         pub(super) source: E,
     }
 
-    impl<E: Debug> Debug for FileSpanDiagnostic<E> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Diagnostic")
-                .field("span", &self.span)
-                .field("source", &self.source)
-                .finish()
+    impl<E> Decorated<E> {
+        /// `source` without overrides.
+        pub(super) fn new(source: E) -> Self {
+            Self {
+                category: None,
+                path: None,
+                span: None,
+                source_code: None,
+                tags: DiagnosticTags::empty(),
+                severity: None,
+                source,
+            }
         }
     }
 
-    impl<E: AsDiagnostic> Diagnostic for FileSpanDiagnostic<E> {
+    impl<E: Debug> Debug for Decorated<E> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let mut debug = f.debug_struct("Diagnostic");
+            if let Some(category) = &self.category {
+                debug.field("category", category);
+            }
+            if let Some(path) = &self.path {
+                debug.field("path", path);
+            }
+            if let Some(span) = &self.span {
+                debug.field("span", span);
+            }
+            if let Some(source_code) = &self.source_code {
+                debug.field("source_code", source_code);
+            }
+            if !self.tags.is_empty() {
+                debug.field("tags", &self.tags);
+            }
+            if let Some(severity) = &self.severity {
+                debug.field("severity", severity);
+            }
+            debug.field("source", &self.source).finish()
+        }
+    }
+
+    impl<E: AsDiagnostic> Diagnostic for Decorated<E> {
         fn category(&self) -> Option<&'static Category> {
-            self.source.as_diagnostic().category()
+            self.source.as_diagnostic().category().or(self.category)
         }
 
         fn severity(&self) -> Severity {
-            self.source.as_diagnostic().severity()
+            self.severity
+                .unwrap_or_else(|| self.source.as_diagnostic().severity())
         }
 
         fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -516,94 +440,54 @@ mod internal {
         }
 
         fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().advices(visitor)
-        }
+            if let Some(source_code) = &self.source_code {
+                let mut visitor = FileSourceCodeVisitor {
+                    visitor,
+                    source_code: source_code.as_borrowed(),
+                };
 
-        fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().verbose_advices(visitor)
-        }
-
-        fn location(&self) -> Location<'_> {
-            let loc = self.source.as_diagnostic().location();
-            Location {
-                resource: loc.resource,
-                span: self.span.or(loc.span),
-                database_object: loc.database_object,
-                source_code: loc.source_code,
+                self.source.as_diagnostic().advices(&mut visitor)
+            } else {
+                self.source.as_diagnostic().advices(visitor)
             }
         }
 
-        fn tags(&self) -> DiagnosticTags {
-            self.source.as_diagnostic().tags()
-        }
-    }
-
-    /// Diagnostic type returned by [super::DiagnosticExt::with_file_source_code],
-    /// uses `source_code` as its location source code if `source` doesn't
-    /// return one.
-    pub struct FileSourceCodeDiagnostic<E> {
-        pub(super) source_code: SharedSourceCode,
-        pub(super) source: E,
-    }
-
-    impl<E: Debug> Debug for FileSourceCodeDiagnostic<E> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Diagnostic")
-                .field("source_code", &self.source_code)
-                .field("source", &self.source)
-                .finish()
-        }
-    }
-
-    impl<E: AsDiagnostic> Diagnostic for FileSourceCodeDiagnostic<E> {
-        fn category(&self) -> Option<&'static Category> {
-            self.source.as_diagnostic().category()
-        }
-
-        fn severity(&self) -> Severity {
-            self.source.as_diagnostic().severity()
-        }
-
-        fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.source.as_diagnostic().description(fmt)
-        }
-
-        fn message(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
-            self.source.as_diagnostic().message(fmt)
-        }
-
-        fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            let mut visitor = FileSourceCodeVisitor {
-                visitor,
-                source_code: self.source_code.as_borrowed(),
-            };
-
-            self.source.as_diagnostic().advices(&mut visitor)
-        }
-
         fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            let mut visitor = FileSourceCodeVisitor {
-                visitor,
-                source_code: self.source_code.as_borrowed(),
-            };
+            if let Some(source_code) = &self.source_code {
+                let mut visitor = FileSourceCodeVisitor {
+                    visitor,
+                    source_code: source_code.as_borrowed(),
+                };
 
-            self.source.as_diagnostic().verbose_advices(&mut visitor)
+                self.source.as_diagnostic().verbose_advices(&mut visitor)
+            } else {
+                self.source.as_diagnostic().verbose_advices(visitor)
+            }
         }
 
         fn location(&self) -> Location<'_> {
             let location = self.source.as_diagnostic().location();
             Location {
-                source_code: Some(
-                    location
-                        .source_code
-                        .unwrap_or_else(|| self.source_code.as_borrowed()),
-                ),
-                ..location
+                resource: match (location.resource, &self.path) {
+                    (Some(Resource::File(_)), Some(Resource::File(path))) => {
+                        Some(Resource::File(path.as_ref()))
+                    }
+                    (None, path) => path.as_ref().map(Resource::as_deref),
+                    (resource, _) => resource,
+                },
+                span: self.span.or(location.span),
+                source_code: location
+                    .source_code
+                    .or_else(|| Some(self.source_code.as_ref()?.as_borrowed())),
             }
         }
 
         fn tags(&self) -> DiagnosticTags {
-            self.source.as_diagnostic().tags()
+            self.source.as_diagnostic().tags() | self.tags
+        }
+
+        fn source(&self) -> Option<&dyn Diagnostic> {
+            self.source.as_diagnostic().source()
         }
     }
 
@@ -658,104 +542,44 @@ mod internal {
             self.visitor.record_group(title, advice)
         }
     }
+}
 
-    /// Diagnostic type returned by [super::DiagnosticExt::with_tags],
-    /// merges `tags` with the tags of its source
-    pub struct TagsDiagnostic<E> {
-        pub(super) tags: DiagnosticTags,
-        pub(super) source: E,
-    }
+#[cfg(test)]
+mod tests {
+    use pgls_text_size::{TextRange, TextSize};
 
-    impl<E: Debug> Debug for TagsDiagnostic<E> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Diagnostic")
-                .field("tags", &self.tags)
-                .field("source", &self.source)
-                .finish()
-        }
-    }
+    use crate::{self as pgls_diagnostics, DiagnosticExt, DiagnosticTags, Resource, Severity};
+    use pgls_diagnostics_macros::Diagnostic;
 
-    impl<E: AsDiagnostic> Diagnostic for TagsDiagnostic<E> {
-        fn category(&self) -> Option<&'static Category> {
-            self.source.as_diagnostic().category()
-        }
+    #[derive(Debug, Diagnostic)]
+    #[diagnostic(category = "internalError/io", severity = Error, message = "the cause")]
+    struct Cause;
 
-        fn severity(&self) -> Severity {
-            self.source.as_diagnostic().severity()
-        }
+    #[test]
+    fn decorations_keep_the_cause() {
+        let span = TextRange::new(TextSize::from(1), TextSize::from(4));
+        let error = Cause
+            .context("the error")
+            .with_category(pgls_diagnostics::category!("internalError/fs"))
+            .with_file_path("file.sql")
+            .with_file_span(span)
+            .with_file_source_code("select 1;")
+            .with_tags(DiagnosticTags::VERBOSE)
+            .with_severity(Severity::Warning);
 
-        fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.source.as_diagnostic().description(fmt)
-        }
+        let cause = error.source().expect("the cause survives the decorations");
+        assert_eq!(cause.category().map(|c| c.name()), Some("internalError/io"));
 
-        fn message(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
-            self.source.as_diagnostic().message(fmt)
-        }
-
-        fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().advices(visitor)
-        }
-
-        fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().verbose_advices(visitor)
-        }
-
-        fn location(&self) -> Location<'_> {
-            self.source.as_diagnostic().location()
-        }
-
-        fn tags(&self) -> DiagnosticTags {
-            self.source.as_diagnostic().tags() | self.tags
-        }
-    }
-
-    /// Diagnostic type returned by [super::DiagnosticExt::with_severity],
-    /// replaces `severity` with the severity of its source
-    pub struct SeverityDiagnostic<E> {
-        pub(super) severity: Severity,
-        pub(super) source: E,
-    }
-
-    impl<E: Debug> Debug for SeverityDiagnostic<E> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Diagnostic")
-                .field("severity", &self.severity)
-                .field("source", &self.source)
-                .finish()
-        }
-    }
-
-    impl<E: AsDiagnostic> Diagnostic for SeverityDiagnostic<E> {
-        fn category(&self) -> Option<&'static Category> {
-            self.source.as_diagnostic().category()
-        }
-
-        fn severity(&self) -> Severity {
-            self.severity
-        }
-
-        fn description(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            self.source.as_diagnostic().description(fmt)
-        }
-
-        fn message(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
-            self.source.as_diagnostic().message(fmt)
-        }
-
-        fn advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().advices(visitor)
-        }
-
-        fn verbose_advices(&self, visitor: &mut dyn Visit) -> io::Result<()> {
-            self.source.as_diagnostic().verbose_advices(visitor)
-        }
-
-        fn location(&self) -> Location<'_> {
-            self.source.as_diagnostic().location()
-        }
-
-        fn tags(&self) -> DiagnosticTags {
-            self.source.as_diagnostic().tags()
-        }
+        // The context takes its category from the cause, so the decoration's is unused.
+        assert_eq!(error.category().map(|c| c.name()), Some("internalError/io"));
+        assert_eq!(error.severity(), Severity::Warning);
+        assert!(error.tags().is_verbose());
+        let location = error.location();
+        assert_eq!(location.resource, Some(Resource::File("file.sql")));
+        assert_eq!(location.span, Some(span));
+        assert_eq!(
+            location.source_code.map(|code| code.text),
+            Some("select 1;")
+        );
     }
 }

@@ -72,9 +72,9 @@ pub struct Pushd {
     _p: (),
 }
 
-pub fn pushd(path: impl Into<PathBuf>) -> Pushd {
-    Env::with(|env| env.pushd(path.into()));
-    Pushd { _p: () }
+pub fn pushd(path: impl Into<PathBuf>) -> Result<Pushd> {
+    Env::with(|env| env.pushd(path.into()))?;
+    Ok(Pushd { _p: () })
 }
 
 impl Drop for Pushd {
@@ -138,7 +138,11 @@ fn run_process_inner(cmd: &str, echo: bool, stdin: Option<&[u8]>) -> Result<Stri
         Some(stdin) => {
             command.stdin(Stdio::piped()).stdout(Stdio::piped());
             let mut process = command.spawn()?;
-            process.stdin.take().unwrap().write_all(stdin)?;
+            process
+                .stdin
+                .take()
+                .context("the child's stdin is piped")?
+                .write_all(stdin)?;
             process.wait_with_output()
         }
     }?;
@@ -172,6 +176,9 @@ fn shelx(cmd: &str) -> Vec<String> {
 }
 
 struct Env {
+    /// The working directory at the start; empty if it couldn't be read, which makes the
+    /// pushed directories relative to the process's working directory.
+    initial_dir: PathBuf,
     pushd_stack: Vec<PathBuf>,
     pushenv_stack: Vec<(OsString, Option<OsString>)>,
 }
@@ -180,21 +187,24 @@ impl Env {
     fn with<F: FnOnce(&mut Env) -> T, T>(f: F) -> T {
         thread_local! {
             static ENV: RefCell<Env> = RefCell::new(Env {
-                pushd_stack: vec![env::current_dir().unwrap()],
+                initial_dir: env::current_dir().unwrap_or_default(),
+                pushd_stack: vec![],
                 pushenv_stack: vec![],
             });
         }
         ENV.with(|it| f(&mut it.borrow_mut()))
     }
 
-    fn pushd(&mut self, dir: PathBuf) {
+    fn pushd(&mut self, dir: PathBuf) -> Result<()> {
         let dir = self.cwd().join(dir);
         self.pushd_stack.push(dir);
-        env::set_current_dir(self.cwd()).unwrap();
+        env::set_current_dir(self.cwd())?;
+        Ok(())
     }
     fn popd(&mut self) {
-        self.pushd_stack.pop().unwrap();
-        env::set_current_dir(self.cwd()).unwrap();
+        self.pushd_stack.pop();
+        // Runs in `Drop`, with nobody to report a failure to; the next command fails instead.
+        let _ = env::set_current_dir(self.cwd());
     }
     fn pushenv(&mut self, var: OsString, value: OsString) {
         self.pushenv_stack.push((var.clone(), env::var_os(&var)));
@@ -202,7 +212,9 @@ impl Env {
         unsafe { env::set_var(var, value) }
     }
     fn popenv(&mut self) {
-        let (var, value) = self.pushenv_stack.pop().unwrap();
+        let Some((var, value)) = self.pushenv_stack.pop() else {
+            return;
+        };
         match value {
             // TODO: Audit that the environment access only happens in single-threaded code.
             None => unsafe { env::remove_var(var) },
@@ -211,6 +223,6 @@ impl Env {
         }
     }
     fn cwd(&self) -> &Path {
-        self.pushd_stack.last().unwrap()
+        self.pushd_stack.last().unwrap_or(&self.initial_dir)
     }
 }

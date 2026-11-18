@@ -24,9 +24,6 @@ struct PglinterRuleMeta {
     scope: String,
     /// Description of the rule
     description: String,
-    /// Message template with placeholders
-    #[allow(dead_code)]
-    message: String,
     /// Suggested fixes
     fixes: Vec<String>,
     /// Warning threshold percentage
@@ -72,22 +69,18 @@ fn parse_rules_sql(content: &str) -> Result<BTreeMap<String, PglinterRuleMeta>> 
     )?;
 
     for caps in value_pattern.captures_iter(&normalized) {
-        let name = caps.get(1).unwrap().as_str().to_string();
-        let code = caps.get(2).unwrap().as_str().to_string();
-        let warning_level: i32 = caps.get(3).unwrap().as_str().parse()?;
-        let error_level: i32 = caps.get(4).unwrap().as_str().parse()?;
-        let scope = caps.get(5).unwrap().as_str().to_string();
-        let description = caps
-            .get(6)
-            .unwrap()
-            .as_str()
-            .replace("''", "'") // Unescape single quotes
-            .to_string();
-        let message = caps.get(7).unwrap().as_str().to_string();
-        let fixes_str = caps.get(8).unwrap().as_str();
+        // The pattern has eight groups, none of them optional.
+        let (_, [name, code, warning_level, error_level, scope, description, _message, fixes_str]) =
+            caps.extract();
+        let name = name.to_string();
+        let code = code.to_string();
+        let warning_level: i32 = warning_level.parse()?;
+        let error_level: i32 = error_level.parse()?;
+        let scope = scope.to_string();
+        let description = description.replace("''", "'"); // Unescape single quotes
 
         // Parse fixes array
-        let fixes: Vec<String> = parse_fixes_array(fixes_str);
+        let fixes: Vec<String> = parse_fixes_array(fixes_str)?;
 
         let snake_name = to_snake_case(&name);
         let camel_name = to_camel_case(&name);
@@ -99,7 +92,6 @@ fn parse_rules_sql(content: &str) -> Result<BTreeMap<String, PglinterRuleMeta>> 
             code,
             scope,
             description,
-            message,
             fixes,
             warning_level,
             error_level,
@@ -146,12 +138,15 @@ fn normalize_sql_values(content: &str) -> String {
 }
 
 /// Parse ARRAY['fix1', 'fix2'] into Vec<String>
-fn parse_fixes_array(s: &str) -> Vec<String> {
-    let fix_pattern = Regex::new(r#"'([^']+)'"#).unwrap();
-    fix_pattern
+fn parse_fixes_array(s: &str) -> Result<Vec<String>> {
+    let fix_pattern = Regex::new(r#"'([^']+)'"#)?;
+    Ok(fix_pattern
         .captures_iter(s)
-        .map(|cap| cap.get(1).unwrap().as_str().to_string())
-        .collect()
+        .map(|cap| {
+            let (_, [fix]) = cap.extract();
+            fix.to_string()
+        })
+        .collect())
 }
 
 /// Convert PascalCase to camelCase

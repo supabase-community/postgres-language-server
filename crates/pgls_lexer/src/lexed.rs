@@ -5,7 +5,7 @@ use crate::SyntaxKind;
 
 /// Internal error type used during lexing
 #[derive(Debug, Clone)]
-pub struct LexError {
+pub(crate) struct LexError {
     pub msg: String,
     pub token: u32,
 }

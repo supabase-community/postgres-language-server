@@ -12,11 +12,11 @@ use rustc_hash::FxHashMap;
 use crate::workspace::StatementId;
 
 /// The tree of a statement, or why it doesn't parse.
-pub type ParseResult = Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>;
+pub(crate) type ParseResult = Result<Arc<pgls_query::NodeEnum>, SyntaxDiagnostic>;
 
 /// The parse results of the statements of a document. They are kept until the statement is
 /// no longer in the document, see [`PgQueryStore::remove`].
-pub struct PgQueryStore {
+pub(super) struct PgQueryStore {
     /// The tree is in an `Arc` of its own, so that the analyser can share it.
     ast_db: Mutex<FxHashMap<StatementId, Arc<ParseResult>>>,
     plpgsql_db: Mutex<FxHashMap<StatementId, Result<(), SyntaxDiagnostic>>>,
@@ -25,7 +25,7 @@ pub struct PgQueryStore {
 }
 
 impl PgQueryStore {
-    pub fn new() -> PgQueryStore {
+    pub(super) fn new() -> PgQueryStore {
         PgQueryStore {
             ast_db: Mutex::default(),
             plpgsql_db: Mutex::default(),
@@ -34,7 +34,7 @@ impl PgQueryStore {
     }
 
     /// The number of statements embedded in `statement`, if they are cached.
-    pub fn cached_embedded_len(&self, statement: &StatementId) -> Option<usize> {
+    pub(super) fn cached_embedded_len(&self, statement: &StatementId) -> Option<usize> {
         self.embedded_db
             .lock()
             .get(statement)
@@ -42,12 +42,12 @@ impl PgQueryStore {
     }
 
     /// The number of statements with a cached parse result.
-    pub fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.ast_db.lock().len()
     }
 
     /// Drops every cached result, and the memory of the maps.
-    pub fn clear(&self) {
+    pub(super) fn clear(&self) {
         drop(std::mem::take(&mut *self.ast_db.lock()));
         drop(std::mem::take(&mut *self.plpgsql_db.lock()));
         drop(std::mem::take(&mut *self.embedded_db.lock()));
@@ -56,7 +56,7 @@ impl PgQueryStore {
     /// Drops the results of the top-level statement `statement` and of its embedded statements.
     /// Returns the ids of the embedded statements, which are cached only if those of
     /// `statement` are.
-    pub fn remove(&self, statement: &StatementId) -> Vec<StatementId> {
+    pub(super) fn remove(&self, statement: &StatementId) -> Vec<StatementId> {
         debug_assert!(statement.is_root());
         let embedded: Vec<StatementId> = self
             .embedded_db
@@ -76,7 +76,7 @@ impl PgQueryStore {
     }
 
     /// Shrinks the maps that are less than a quarter full, see [`shrink`].
-    pub fn shrink(&self) {
+    pub(super) fn shrink(&self) {
         shrink(&mut self.ast_db.lock());
         shrink(&mut self.plpgsql_db.lock());
         shrink(&mut self.embedded_db.lock());
@@ -84,7 +84,7 @@ impl PgQueryStore {
 
     /// The number of entries that the maps have room for.
     #[cfg(test)]
-    pub fn capacity(&self) -> usize {
+    pub(super) fn capacity(&self) -> usize {
         self.ast_db.lock().capacity()
             + self.plpgsql_db.lock().capacity()
             + self.embedded_db.lock().capacity()
@@ -93,7 +93,7 @@ impl PgQueryStore {
     /// The statements embedded in the top-level statement `statement`, in order: the statements
     /// of the body of a SQL function. Empty if it doesn't parse. They are only cached if
     /// `may_insert` returns `true`, see [`get_or_cache_ast`](Self::get_or_cache_ast).
-    pub fn get_or_cache_embedded(
+    pub(super) fn get_or_cache_embedded(
         &self,
         statement: &StatementId,
         may_insert: impl Fn() -> bool,
@@ -117,7 +117,7 @@ impl PgQueryStore {
     /// The tree of `statement`, or why it doesn't parse. It is only cached if `may_insert`
     /// returns `true`, which is checked while the cache is locked, so that it can't be inserted
     /// after [`Self::remove`] ran for an edit that `may_insert` doesn't know of yet.
-    pub fn get_or_cache_ast(
+    pub(super) fn get_or_cache_ast(
         &self,
         statement: &StatementId,
         may_insert: impl Fn() -> bool,
@@ -143,7 +143,7 @@ impl PgQueryStore {
         r
     }
 
-    pub fn get_or_cache_plpgsql_parse(
+    pub(super) fn get_or_cache_plpgsql_parse(
         &self,
         statement: &StatementId,
         may_insert: impl Fn() -> bool,
