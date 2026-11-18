@@ -39,7 +39,9 @@ pub fn select_function(
     }
     // Named arguments must follow the positional ones; anything else is a syntax error.
     let positional = args.iter().take_while(|arg| arg.name.is_none()).count();
-    let Some(names) = args[positional..]
+    let Some(names) = args
+        .get(positional..)
+        .unwrap_or_default()
         .iter()
         .map(|arg| arg.name.clone())
         .collect::<Option<Vec<String>>>()
@@ -94,7 +96,10 @@ pub fn select_function(
             0 => {
                 // `ParseFuncOrColumn` tries `col(row)` as a field selection next:
                 // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
-                if inputs.len() == 1 && names.is_empty() && !is_scalar(c, &inputs[0]) {
+                if let [input] = inputs.as_slice()
+                    && names.is_empty()
+                    && !is_scalar(c, input)
+                {
                     return Selection::Unknown;
                 }
                 return Selection::NoMatch;

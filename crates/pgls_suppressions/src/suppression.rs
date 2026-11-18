@@ -185,9 +185,10 @@ impl TryFrom<&str> for RuleSpecifier {
                 String::new(),
                 removed(rule).into(),
             )),
-            [_] | [_, _] | [_, _, _] if value.parse::<&Category>().is_ok() => {
-                Ok(RuleSpecifier::from(value.parse::<&Category>().unwrap()))
-            }
+            [_] | [_, _] | [_, _, _] => value
+                .parse::<&Category>()
+                .map(RuleSpecifier::from)
+                .map_err(|_| invalid()),
             _ => Err(invalid()),
         }
     }
@@ -198,7 +199,7 @@ pub(crate) struct Suppression {
     pub(crate) suppression_range: TextRange,
     pub(crate) kind: SuppressionKind,
     pub(crate) rule_specifier: RuleSpecifier,
-    #[allow(unused)]
+    #[allow(dead_code, reason = "parsed and tested, but not shown to the user yet")]
     pub(crate) explanation: Option<String>,
     /// The flat form of a legacy specifier.
     pub(crate) legacy_replacement: Option<String>,
@@ -210,7 +211,6 @@ impl Suppression {
     /// Leading whitespace is ignored.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
         let start_trimmed = line.trim_ascii_start();
-        let leading_whitespace_offset = line.len() - start_trimmed.len();
         let trimmed = start_trimmed.trim_ascii_end();
 
         assert!(
@@ -219,11 +219,8 @@ impl Suppression {
             "Only try parsing suppressions from lines starting with `-- pgt-ignore` or `-- pgls-ignore`."
         );
 
-        let full_offset = *offset + TextSize::new(leading_whitespace_offset.try_into().unwrap());
-        let span = TextRange::new(
-            full_offset,
-            pgls_text_size::TextSize::new(trimmed.len().try_into().unwrap()) + full_offset,
-        );
+        let full_offset = *offset + TextSize::of(line) - TextSize::of(start_trimmed);
+        let span = TextRange::new(full_offset, TextSize::of(trimmed) + full_offset);
 
         let (line, explanation) = match trimmed.split_once(':') {
             Some((suppr, explanation)) => (suppr, Some(explanation.trim())),
@@ -233,7 +230,8 @@ impl Suppression {
         let mut parts = line.split_ascii_whitespace();
 
         let _ = parts.next();
-        let kind = match parts.next().unwrap() {
+        // The line starts with `-- pgt-ignore` or `-- pgls-ignore`, so the tag is there.
+        let kind = match parts.next().unwrap_or_default() {
             "pgt-ignore-all" | "pgls-ignore-all" => SuppressionKind::File,
             "pgt-ignore-start" | "pgls-ignore-start" => SuppressionKind::Start,
             "pgt-ignore-end" | "pgls-ignore-end" => SuppressionKind::End,

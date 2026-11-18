@@ -149,14 +149,18 @@ impl Suppressions {
         };
         let mut specifier = None;
         for index in self.line_suppressions_for(span) {
-            if used[index] {
+            let (Some(used), Some(line)) = (used.get_mut(index), self.line_suppressions.get(index))
+            else {
+                continue;
+            };
+            if *used {
                 continue;
             }
             let Some(specifier) = specifier.get_or_insert_with(|| RuleSpecifier::of(diagnostic))
             else {
                 break;
             };
-            used[index] = self.line_suppressions[index].suppression.matches(specifier);
+            *used = line.suppression.matches(specifier);
         }
     }
 
@@ -179,7 +183,8 @@ impl Suppressions {
             }))
             .chain(span.into_iter().flat_map(|span| {
                 self.line_suppressions_for(span)
-                    .map(|index| &self.line_suppressions[index].suppression)
+                    .filter_map(|index| self.line_suppressions.get(index))
+                    .map(|line| &line.suppression)
             }))
             .peekable();
         if candidates.peek().is_none() {
@@ -215,8 +220,11 @@ impl Suppressions {
         let first = self
             .line_suppressions
             .partition_point(|line| line.target.end() <= start);
-        let count =
-            self.line_suppressions[first..].partition_point(|line| line.target.start() <= end);
+        let count = self
+            .line_suppressions
+            .get(first..)
+            .unwrap_or_default()
+            .partition_point(|line| line.target.start() <= end);
         first..first + count
     }
 
@@ -242,7 +250,7 @@ mod tests {
 
     #[derive(Clone, Debug, Diagnostic)]
     #[diagnostic(category = "lint", severity = Error)]
-    pub struct TestDiagnostic {
+    pub(crate) struct TestDiagnostic {
         #[location(span)]
         pub span: TextRange,
     }

@@ -167,10 +167,10 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     .and_then(|x| infer_expr(r, x));
                 let bounds = n.rexpr.as_deref().and_then(|x| x.node.as_ref());
                 if let Some(NodeEnum::List(list)) = bounds
-                    && list.items.len() == 2
+                    && let [low_item, high_item] = list.items.as_slice()
                 {
-                    let low = list.items[0].node.as_ref().and_then(|x| infer_expr(r, x));
-                    let high = list.items[1].node.as_ref().and_then(|x| infer_expr(r, x));
+                    let low = low_item.node.as_ref().and_then(|x| infer_expr(r, x));
+                    let high = high_item.node.as_ref().and_then(|x| infer_expr(r, x));
                     if let (Some(left), Some(low), Some(high)) =
                         (left.as_ref(), low.as_ref(), high.as_ref())
                     {
@@ -181,8 +181,8 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                             Kind::AexprNotBetween | Kind::AexprNotBetweenSym => ("<", ">"),
                             _ => (">=", "<="),
                         };
-                        let low_expr = list.items[0].node.as_ref();
-                        let high_expr = list.items[1].node.as_ref();
+                        let low_expr = low_item.node.as_ref();
+                        let high_expr = high_item.node.as_ref();
                         let mut comparisons =
                             vec![(lower, low_expr, low), (upper, high_expr, high)];
                         if matches!(kind, Kind::AexprBetweenSym | Kind::AexprNotBetweenSym) {

@@ -98,7 +98,7 @@ pub(super) struct ItemSource {
 impl ItemSource {
     /// The source of a CTE or subquery with these output columns, whose types are known if
     /// `types_known`.
-    pub fn derived(
+    pub(crate) fn derived(
         r: &Resolver,
         source: ColumnSource,
         columns: &[TypedColumn],
@@ -129,7 +129,7 @@ pub(super) enum DefaultOnly {
 }
 
 impl DefaultOnly {
-    pub fn of(column: &ColumnInfo) -> Option<Self> {
+    pub(crate) fn of(column: &ColumnInfo) -> Option<Self> {
         if column.generated.is_generated() {
             Some(DefaultOnly::Generated)
         } else if column.identity == pgls_catalog::Identity::Always {
@@ -142,7 +142,7 @@ impl DefaultOnly {
 
 impl Item {
     /// An item with these columns, whose types are known if `types_known`.
-    pub fn named(name: Option<String>, columns: Columns, types_known: bool) -> Self {
+    pub(crate) fn named(name: Option<String>, columns: Columns, types_known: bool) -> Self {
         Self {
             name,
             schema: None,
@@ -156,7 +156,7 @@ impl Item {
 
     /// Where the column with this name comes from, if the item has exactly one such column and
     /// its source is known.
-    pub fn column_source(&self, column: &str) -> Option<(ColumnSource, ColumnInfo)> {
+    pub(crate) fn column_source(&self, column: &str) -> Option<(ColumnSource, ColumnInfo)> {
         let source = self.source.as_deref()?;
         let mut positions = self
             .columns
@@ -175,7 +175,7 @@ impl Item {
 
     /// The type of the column with this name, if the item has it. `None` if its columns are not
     /// known.
-    pub fn type_of(&self, column: &str) -> Option<Option<Type>> {
+    pub(crate) fn type_of(&self, column: &str) -> Option<Option<Type>> {
         let columns = self.columns.as_ref()?;
         columns
             .iter()
@@ -184,13 +184,13 @@ impl Item {
     }
 
     /// The columns of the item, if their types are known as a whole.
-    pub fn typed_columns(&self) -> Option<&[TypedColumn]> {
+    pub(crate) fn typed_columns(&self) -> Option<&[TypedColumn]> {
         self.columns.as_deref().filter(|_| self.types_known)
     }
 
     /// Why a value for the column can only be `DEFAULT`, if it can. An INSERT with an
     /// `OVERRIDING` clause (`overriding`) can set `GENERATED ALWAYS` identity columns.
-    pub fn default_only(&self, column: &str, overriding: bool) -> Option<DefaultOnly> {
+    pub(crate) fn default_only(&self, column: &str, overriding: bool) -> Option<DefaultOnly> {
         self.default_only_columns
             .iter()
             .find(|(name, _)| name == column)
@@ -198,7 +198,7 @@ impl Item {
             .filter(|kind| !(overriding && *kind == DefaultOnly::IdentityAlways))
     }
 
-    pub fn has_column(&self, column: &str) -> Option<bool> {
+    pub(crate) fn has_column(&self, column: &str) -> Option<bool> {
         let columns = self.columns.as_ref()?;
         Some(
             columns.iter().any(|c| c.name == column)
@@ -293,14 +293,14 @@ pub(super) enum StarEntry {
 }
 
 impl Level {
-    pub fn with_item(item: Item) -> Self {
+    pub(crate) fn with_item(item: Item) -> Self {
         Self {
             items: vec![item],
             ..Default::default()
         }
     }
 
-    pub fn extend(&mut self, other: Level) {
+    pub(crate) fn extend(&mut self, other: Level) {
         self.star_order = match (&self.star_order, &other.star_order) {
             (StarOrder::Items, StarOrder::Items) => StarOrder::Items,
             _ => match (self.star(), other.star()) {
@@ -330,7 +330,7 @@ impl Level {
     ///
     /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
     /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
-    pub fn star(&self) -> Option<Vec<StarEntry>> {
+    pub(crate) fn star(&self) -> Option<Vec<StarEntry>> {
         match &self.star_order {
             StarOrder::Items => {
                 let mut columns = Vec::new();
@@ -346,7 +346,7 @@ impl Level {
     }
 
     /// The name of a column of `*`.
-    pub fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
+    pub(crate) fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
         match column {
             StarEntry::Merged(name) => Some(name),
             StarEntry::Item { item, column } => self
@@ -381,7 +381,7 @@ impl Level {
     }
 
     /// The names of the items that have `column`, for the message of an ambiguous reference.
-    pub fn items_with_column(&self, column: &str) -> Vec<String> {
+    pub(crate) fn items_with_column(&self, column: &str) -> Vec<String> {
         self.items
             .iter()
             .filter(|item| item.has_column(column) == Some(true))
@@ -393,7 +393,7 @@ impl Level {
     /// as a whole: if they are known for every item. The columns of an item whose types are not
     /// known as a whole have no types. The type of a merged column is unknown if nested joins
     /// merge the same name again. `None` if the columns are not known.
-    pub fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
+    pub(crate) fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
         if self.items.is_empty() {
             return None;
         }
@@ -446,7 +446,7 @@ impl Level {
         }
     }
 
-    pub fn item(&self, name: &str) -> Option<&Item> {
+    pub(crate) fn item(&self, name: &str) -> Option<&Item> {
         self.items
             .iter()
             .chain(&self.qualified_only)
@@ -505,15 +505,17 @@ pub(super) fn find_column_type(levels: &[Level], column: &str) -> Option<Type> {
             .collect::<Vec<_>>();
         let uncertain = level.items.iter().any(|item| item.columns.is_none());
         if !matches.is_empty() {
-            if matches.len() != 1
-                || uncertain
+            let [item] = matches.as_slice() else {
+                return None;
+            };
+            if uncertain
                 || level.merged_columns.iter().any(|c| c.name == column)
                 || level.has_natural_join
                 || is_system_column(column)
             {
                 return None;
             }
-            return matches[0].type_of(column).flatten();
+            return item.type_of(column).flatten();
         }
         if uncertain {
             return None;

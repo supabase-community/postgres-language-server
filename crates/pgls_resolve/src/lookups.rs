@@ -274,7 +274,9 @@ fn record_operator(
         Some(construct) => r.construct_span(location, construct.last_token()),
         None => r.token_span(location),
     };
-    let name = construct.map_or(name, |construct| construct.operators()[0]);
+    let name = construct
+        .and_then(|construct| construct.operators().first().copied())
+        .unwrap_or(name);
     r.record_lookup(LookupKind::Operator(construct), name, location, span);
 }
 

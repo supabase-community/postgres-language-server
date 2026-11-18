@@ -693,9 +693,10 @@ impl Catalog {
                         existing.as_ref() == Some(&types)
                     })
                 });
-                match replaced {
-                    Some(position) => overloads[position] = function,
-                    None => overloads.push(function),
+                if let Some(slot) = replaced.and_then(|position| overloads.get_mut(position)) {
+                    *slot = function;
+                } else {
+                    overloads.push(function);
                 }
                 Entry::defined(overloads)
             }

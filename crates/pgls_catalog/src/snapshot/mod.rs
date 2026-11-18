@@ -1,8 +1,6 @@
 //! The database snapshot: the objects of the connected database, as loaded by the queries in
 //! `queries/`.
 
-#![allow(dead_code)]
-
 mod casts;
 mod code;
 mod columns;

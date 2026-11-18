@@ -24,7 +24,7 @@ pub trait RegistryVisitor {
 
 /// Key struct for a rule in the metadata map, sorted alphabetically
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MetadataKey {
+pub(crate) struct MetadataKey {
     inner: (&'static str, &'static str),
 }
 

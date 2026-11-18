@@ -431,7 +431,7 @@ fn column_list(
         .filter_map(|(index, name)| match &name.node {
             Some(NodeEnum::String(name)) => Some(Column {
                 name: name.sval.clone(),
-                span: spans.as_ref().map(|spans| spans[index]),
+                span: spans.as_ref().and_then(|spans| spans.get(index).copied()),
             }),
             _ => None,
         })

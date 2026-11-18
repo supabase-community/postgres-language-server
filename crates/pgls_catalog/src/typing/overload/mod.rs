@@ -189,14 +189,20 @@ pub(super) fn select_candidate<T: Clone>(
     // it; otherwise all candidates must agree.
     let mut slots: Vec<Option<(char, bool)>> = vec![None; inputs.len()];
     let mut resolved = true;
-    'positions: for position in 0..inputs.len() {
-        if base_inputs[position].is_some() {
+    'positions: for (position, (base_input, resolved_slot)) in
+        base_inputs.iter().zip(slots.iter_mut()).enumerate()
+    {
+        if base_input.is_some() {
             continue;
         }
         let mut slot: Option<(char, bool)> = None;
         let mut conflict = false;
         for candidate in &candidates {
-            let (category, preferred) = match type_category(c, &candidate.args[position]) {
+            // Every candidate has one argument per input.
+            let Some(arg) = candidate.args.get(position) else {
+                return Decision::Unknown;
+            };
+            let (category, preferred) = match type_category(c, arg) {
                 Decision::Known(category) => category,
                 Decision::Unknown => return Decision::Unknown,
             };
@@ -216,7 +222,7 @@ pub(super) fn select_candidate<T: Clone>(
             resolved = false;
             break 'positions;
         }
-        slots[position] = slot;
+        *resolved_slot = slot;
     }
     if resolved {
         let mut kept = Vec::new();
@@ -226,11 +232,13 @@ pub(super) fn select_candidate<T: Clone>(
                 let Some((category, has_preferred)) = slot else {
                     continue;
                 };
-                let (declared_category, preferred) =
-                    match type_category(c, &candidate.args[position]) {
-                        Decision::Known(category) => category,
-                        Decision::Unknown => return Decision::Unknown,
-                    };
+                let Some(arg) = candidate.args.get(position) else {
+                    return Decision::Unknown;
+                };
+                let (declared_category, preferred) = match type_category(c, arg) {
+                    Decision::Known(category) => category,
+                    Decision::Unknown => return Decision::Unknown,
+                };
                 if declared_category != *category || (*has_preferred && !preferred) {
                     keep = false;
                     break;
