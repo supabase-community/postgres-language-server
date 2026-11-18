@@ -30,18 +30,27 @@ pub use split::*;
 pub use protobuf::Node;
 
 // Include the generated bindings with 2024 edition compatibility
-#[allow(non_upper_case_globals)]
-#[allow(non_camel_case_types)]
-#[allow(non_snake_case)]
-#[allow(dead_code)]
-#[allow(improper_ctypes)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(
+    non_upper_case_globals,
+    non_camel_case_types,
+    non_snake_case,
+    dead_code,
+    improper_ctypes,
+    unsafe_op_in_unsafe_fn,
+    unreachable_pub,
+    clippy::indexing_slicing,
+    clippy::allow_attributes_without_reason,
+    reason = "bindgen's output for libpg_query's C header follows C's names and layout"
+)]
 mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
 // Include the generated protobuf code
-#[allow(clippy::all)]
+#[allow(
+    clippy::all,
+    reason = "prost's output for libpg_query's protobuf definitions"
+)]
 pub mod protobuf {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/protobuf.rs"));
 }

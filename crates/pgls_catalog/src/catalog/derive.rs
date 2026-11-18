@@ -10,11 +10,12 @@ impl Catalog {
     pub(super) fn query_columns(&self, output: Option<&[TypedColumn]>) -> Option<Vec<ColumnInfo>> {
         let columns = resolve_unknown_outputs(self, Some(output?.to_vec()))?;
         // Postgres rejects a relation with duplicate column names.
-        if columns
-            .iter()
-            .enumerate()
-            .any(|(i, column)| columns[..i].iter().any(|other| other.name == column.name))
-        {
+        if columns.iter().enumerate().any(|(i, column)| {
+            columns
+                .iter()
+                .take(i)
+                .any(|other| other.name == column.name)
+        }) {
             return None;
         }
         Some(

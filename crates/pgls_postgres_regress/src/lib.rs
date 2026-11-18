@@ -146,7 +146,11 @@ impl File {
 
     /// The 1-based line and column of an offset in [`File::source`].
     pub fn line_col_at(&self, offset: TextSize) -> (usize, usize) {
-        line_cols(&self.source, std::iter::once(offset))[0]
+        // One offset, one position.
+        line_cols(&self.source, std::iter::once(offset))
+            .into_iter()
+            .next()
+            .unwrap_or((1, 1))
     }
 }
 
@@ -192,9 +196,10 @@ impl Version {
         let sql_dir = self.dir.join("sql");
         let mut names = fs::read_dir(&sql_dir)
             .unwrap_or_else(|e| panic!("read {}: {e}", sql_dir.display()))
-            .map(|entry| entry.expect("read directory entry").path())
+            .flatten()
+            .map(|entry| entry.path())
             .filter(|path| path.extension().is_some_and(|x| x == "sql"))
-            .map(|path| path.file_stem().unwrap().to_string_lossy().into_owned())
+            .filter_map(|path| Some(path.file_stem()?.to_string_lossy().into_owned()))
             .collect::<Vec<_>>();
         names.sort();
         for dir in [VERDICTS_DIR, OUTPUT_TYPES_DIR] {
@@ -261,9 +266,11 @@ impl Version {
         let Ok(entries) = fs::read_dir(self.dir.join(dir)) else {
             return;
         };
-        for entry in entries {
-            let path = entry.expect("read directory entry").path();
-            let name = path.file_stem().unwrap().to_string_lossy();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_stem().map(|stem| stem.to_string_lossy()) else {
+                continue;
+            };
             if !names.iter().any(|x| *x == name) {
                 self.out_of_date(&name, &format!("file in {dir} without SQL file"));
             }
@@ -292,8 +299,9 @@ pub fn versions() -> Vec<Version> {
     let root = data_dir();
     let mut versions = fs::read_dir(&root)
         .unwrap_or_else(|e| panic!("read {}: {e}", root.display()))
+        .flatten()
         .filter_map(|entry| {
-            let dir = entry.expect("read directory entry").path();
+            let dir = entry.path();
             let major = dir.file_name()?.to_str()?.parse().ok()?;
             Some(version_in(dir, major))
         })

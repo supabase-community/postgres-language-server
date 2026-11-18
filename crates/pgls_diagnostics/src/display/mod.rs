@@ -139,23 +139,6 @@ impl<D: Diagnostic + ?Sized> fmt::Display for PrintHeader<'_, D> {
             fmt.write_str(" ")?;
         }
 
-        // Print the database object if present (e.g., "table public.contacts")
-        if let Some(db_obj) = location.database_object {
-            if let Some(obj_type) = db_obj.object_type {
-                fmt.write_markup(markup! {
-                    <Dim>{obj_type}" "</Dim>
-                })?;
-            }
-            if let Some(schema) = db_obj.schema {
-                fmt.write_markup(markup! {
-                    <Emphasis>{schema}"."</Emphasis>
-                })?;
-            }
-            fmt.write_markup(markup! {
-                <Emphasis>{db_obj.name}</Emphasis>" "
-            })?;
-        }
-
         // Print the category of the diagnostic, with a hyperlink if
         // the category has an associated link
         if let Some(category) = diagnostic.category() {
@@ -501,12 +484,12 @@ impl Visit for PrintAdvices<'_, '_> {
             "headers and columns must have the same number length"
         );
 
-        if columns.is_empty() {
+        let Some(first_column) = columns.first() else {
             return Ok(());
-        }
+        };
 
         let mut headers_iter = headers.iter().enumerate();
-        let rows_number = columns[0].len();
+        let rows_number = first_column.len();
         let columns_number = columns.len();
 
         let mut longest_cell = 0;
@@ -816,7 +799,6 @@ mod tests {
             visitor.record_frame(Location {
                 resource: Some(Resource::File("other_path")),
                 span: Some(TextRange::new(TextSize::from(8), TextSize::from(16))),
-                database_object: None,
                 source_code: Some(SourceCode {
                     text: "context location context",
                     line_starts: None,

@@ -2,7 +2,7 @@ use quote::{format_ident, quote};
 
 use crate::proto_analyser::ProtoAnalyzer;
 
-pub fn node_ref_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
+pub(crate) fn node_ref_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
     let node_variants = analyser.enum_variants();
 
     let mut to_enum_matches = Vec::new();

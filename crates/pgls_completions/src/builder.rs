@@ -23,15 +23,15 @@ pub(crate) struct CompletionBuilder<'a> {
 }
 
 impl<'a> CompletionBuilder<'a> {
-    pub fn new(ctx: &'a TreesitterContext) -> Self {
+    pub(crate) fn new(ctx: &'a TreesitterContext) -> Self {
         CompletionBuilder { items: vec![], ctx }
     }
 
-    pub fn add_item(&mut self, item: PossibleCompletionItem<'a>) {
+    pub(crate) fn add_item(&mut self, item: PossibleCompletionItem<'a>) {
         self.items.push(item);
     }
 
-    pub fn finish(self) -> Vec<CompletionItem> {
+    pub(crate) fn finish(self) -> Vec<CompletionItem> {
         let mut shared_tree = self.ctx.tree.clone();
 
         let mut items: Vec<PossibleCompletionItem> = self
@@ -51,9 +51,14 @@ impl<'a> CompletionBuilder<'a> {
                 .get_score()
                 .cmp(&a.score.get_score())
                 .then_with(|| a.label.cmp(&b.label))
+                .then_with(|| a.description.cmp(&b.description))
         });
 
-        items.dedup_by(|a, b| a.label == b.label);
+        // Only the same object offered twice is a duplicate, e.g. the overloads of a function.
+        // Same-named columns of different tables differ in their description.
+        items.dedup_by(|a, b| {
+            a.kind == b.kind && a.label == b.label && a.description == b.description
+        });
         items.truncate(crate::LIMIT);
 
         let should_preselect_first_item = should_preselect_first_item(&items);

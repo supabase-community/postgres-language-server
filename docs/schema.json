@@ -100,7 +100,7 @@
       ]
     },
     "plpgsqlCheck": {
-      "description": "The configuration for type checking",
+      "description": "The configuration for plpgsql_check",
       "anyOf": [
         {
           "$ref": "#/definitions/PlPgSqlCheckConfiguration"
@@ -496,7 +496,7 @@
           ]
         },
         "maxSize": {
-          "description": "The maximum allowed size for source code files in bytes. Files above this limit will be ignored for performance reasons. Defaults to 1 MiB",
+          "description": "The maximum allowed size for source code files in bytes. Files above this limit are not checked for performance reasons, and get a warning that says so. Defaults to 10 MiB",
           "type": [
             "integer",
             "null"
@@ -1975,7 +1975,7 @@
       ]
     },
     "MigrationsConfiguration": {
-      "description": "The configuration of the filesystem",
+      "description": "The configuration of the migration files",
       "type": "object",
       "properties": {
         "after": {
@@ -2180,7 +2180,7 @@
       "type": "object",
       "properties": {
         "all": {
-          "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
+          "description": "It enables all rules.",
           "type": [
             "boolean",
             "null"
@@ -2207,7 +2207,7 @@
           ]
         },
         "recommended": {
-          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
+          "description": "It enables the recommended rules. `true` by default.",
           "type": [
             "boolean",
             "null"
@@ -2252,7 +2252,7 @@
           ]
         },
         "enabled": {
-          "description": "if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default",
+          "description": "if `false`, it disables the feature and plpgsql_check won't be executed. `true` by default",
           "type": [
             "boolean",
             "null"
@@ -3318,7 +3318,7 @@
       "type": "object",
       "properties": {
         "all": {
-          "description": "It enables ALL rules. The rules that belong to `nursery` won't be enabled.",
+          "description": "It enables all rules.",
           "type": [
             "boolean",
             "null"
@@ -3335,7 +3335,7 @@
           ]
         },
         "recommended": {
-          "description": "It enables the lint rules recommended by Postgres Language Server. `true` by default.",
+          "description": "It enables the recommended rules. `true` by default.",
           "type": [
             "boolean",
             "null"

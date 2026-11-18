@@ -10,9 +10,9 @@ pub(super) fn emit_scalar_array_op_expr(e: &mut EventEmitter, n: &ScalarArrayOpE
         "ScalarArrayOpExpr should have exactly two arguments"
     );
 
-    if n.args.len() == 2 {
-        let lhs = &n.args[0];
-        let rhs = &n.args[1];
+    if let [first, second] = n.args.as_slice() {
+        let lhs = first;
+        let rhs = second;
 
         emit_node(e, lhs);
         e.space();

@@ -2,7 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CoercionForm, FuncCall},
 };
-use pgls_query_ext::utils::{QualifiedName, qualified_name, string_values};
+use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name};
 
 use super::{Resolver, resolve_list, resolve_node, resolve_opt};
 use crate::{
@@ -106,16 +106,19 @@ fn may_be_field_access(r: &Resolver, n: &FuncCall) -> bool {
         return false;
     };
     match argument.node.as_ref() {
-        Some(NodeEnum::ColumnRef(column)) => match string_values(&column.fields).as_deref() {
+        Some(NodeEnum::ColumnRef(column)) => match NameParts::of(&column.fields)
+            .as_ref()
+            .map(NameParts::as_slice)
+        {
             // A whole row, a function parameter, or a column that may be composite.
             Some([name]) => {
-                find_item(&r.levels, name).is_some()
+                find_item(r.levels(), name).is_some()
                     || r.function_param(name).is_some()
-                    || may_be_composite(r, find_column_type(&r.levels, name))
+                    || may_be_composite(r, find_column_type(r.levels(), name))
             }
             Some([table, name]) => may_be_composite(
                 r,
-                find_item(&r.levels, table).and_then(|item| item.type_of(name).flatten()),
+                find_item(r.levels(), table).and_then(|item| item.type_of(name).flatten()),
             ),
             _ => true,
         },

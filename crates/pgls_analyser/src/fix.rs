@@ -25,7 +25,12 @@ impl<'a> StatementTokens<'a> {
 
     /// The range of the token at `index`.
     pub fn range(&self, index: usize) -> TextRange {
-        let token = &self.tokens[index];
+        let Some(token) = self.tokens.get(index) else {
+            // Callers pass indices of tokens they found. An empty range at the end keeps a fix
+            // from touching the statement, and the fix is checked before it's offered.
+            debug_assert!(false, "token {index} of {}", self.tokens.len());
+            return TextRange::empty(TextSize::of(self.sql));
+        };
         TextRange::new(
             TextSize::from(token.start as u32),
             TextSize::from(token.end as u32),
@@ -177,7 +182,11 @@ impl<'a> StatementTokens<'a> {
     /// A fix that inserts the keywords ` <text>` after the token at `index`, in the case of that
     /// token if it is a keyword, or else of the statement's first keyword.
     pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
-        let is_keyword = |index: usize| self.tokens[index].keyword_kind() != KeywordKind::NoKeyword;
+        let is_keyword = |index: usize| {
+            self.tokens
+                .get(index)
+                .is_some_and(|token| token.keyword_kind() != KeywordKind::NoKeyword)
+        };
         let like = Some(index)
             .filter(|index| is_keyword(*index))
             .or_else(|| (0..self.tokens.len()).find(|index| is_keyword(*index)))

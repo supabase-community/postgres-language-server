@@ -40,10 +40,10 @@ select |
 
 Results:
 id - public.audio_books.id (Column)
+id - public.users.id (Column)
 name - public.users.name (Column)
 narrator - public.audio_books.narrator (Column)
 id - private.audio_books.id (Column)
-narrator_id - private.audio_books.narrator_id (Column)
 
 --------------
 

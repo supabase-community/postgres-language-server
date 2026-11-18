@@ -30,13 +30,13 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
         emit_comma_separated_list(e, &n.functions, |e, node| {
             // Each item is a List containing function + optional column definitions
             if let Some(pgls_query::NodeEnum::List(func_list)) = node.node.as_ref() {
-                if !func_list.items.is_empty() {
+                if let [first, rest @ ..] = func_list.items.as_slice() {
                     // Emit the function call (first item)
-                    emit_function(e, &func_list.items[0]);
+                    emit_function(e, first);
 
                     // Emit column definitions if present (items after first)
                     // Check that there are actual non-empty column definitions
-                    let col_defs: Vec<pgls_query::Node> = func_list.items[1..]
+                    let col_defs: Vec<pgls_query::Node> = rest
                         .iter()
                         .filter(|item| item.node.is_some())
                         .cloned()
@@ -56,14 +56,14 @@ pub(super) fn emit_range_function(e: &mut EventEmitter, n: &RangeFunction) {
         e.token(TokenKind::R_PAREN);
     } else {
         // Simple function call - Functions contains a single List with one function
-        if !n.functions.is_empty() {
+        if let Some(first) = n.functions.first() {
             // For non-ROWS FROM, functions[0] is the List containing the function
-            if let Some(pgls_query::NodeEnum::List(func_list)) = n.functions[0].node.as_ref() {
-                if !func_list.items.is_empty() {
-                    emit_function(e, &func_list.items[0]);
+            if let Some(pgls_query::NodeEnum::List(func_list)) = first.node.as_ref() {
+                if let Some(function) = func_list.items.first() {
+                    emit_function(e, function);
                 }
             } else {
-                emit_function(e, &n.functions[0]);
+                emit_function(e, first);
             }
         }
     }

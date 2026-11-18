@@ -37,9 +37,7 @@ pgls_query_ext                    = { workspace = true }
 pgls_semantic_tokens              = { workspace = true }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
-pgls_text_edit.workspace          = true
 pgls_text_size.workspace          = true
-pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
 pgls_walk                         = { workspace = true }
 pgls_workspace_macros             = { workspace = true }
@@ -97,5 +95,14 @@ tokio           = { workspace = true, features = ["test-util"] }
 [lib]
 doctest = false
 
+# Loads the snapshot from the database.
+[[test]]
+name              = "snapshot_memory"
+required-features = ["db"]
+
 [lints]
 workspace = true
+
+[package.metadata.cargo-shear]
+# The `db` feature builds pglinter for the database checks, which don't run it yet (#1197).
+ignored = ["pgls_pglinter"]

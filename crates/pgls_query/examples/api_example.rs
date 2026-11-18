@@ -1,12 +1,12 @@
 use pgls_query::{NodeRef, parse};
 
-fn main() {
-    let mut result = parse("SELECT * FROM users WHERE id IN (SELECT id FROM admins)").unwrap();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut result = parse("SELECT * FROM users WHERE id IN (SELECT id FROM admins)")?;
 
     // Immutable access
     {
         let stmts = result.stmts();
-        let stmt = stmts.first().unwrap();
+        let stmt = stmts.first().ok_or("the query has no statement")?;
 
         // nodes() returns a Vec<NodeRef>
         let all_nodes = stmt.nodes();
@@ -39,4 +39,6 @@ fn main() {
     if let Some(root) = result.root_mut() {
         println!("Root node type: {:?}", std::mem::discriminant(root));
     }
+
+    Ok(())
 }

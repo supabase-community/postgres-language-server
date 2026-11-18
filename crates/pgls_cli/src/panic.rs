@@ -16,25 +16,30 @@ fn panic_handler(info: &PanicHookInfo) {
     // panic at the same time
     let mut error = String::new();
 
-    writeln!(error, "Encountered an unexpected error").unwrap();
-    writeln!(error).unwrap();
+    // Writing to a `String` can't fail.
 
-    writeln!(error, "This is a bug in the Postgres Language Server, not an error in your code, and we would appreciate it if you could report it along with the following information to help us fixing the issue:").unwrap();
-    writeln!(error).unwrap();
+    let _ = writeln!(error, "Encountered an unexpected error");
+    let _ = writeln!(error);
+
+    let _ = writeln!(
+        error,
+        "This is a bug in the Postgres Language Server, not an error in your code, and we would appreciate it if you could report it along with the following information to help us fixing the issue:"
+    );
+    let _ = writeln!(error);
 
     if let Some(location) = info.location() {
-        writeln!(error, "Source Location: {location}").unwrap();
+        let _ = writeln!(error, "Source Location: {location}");
     }
 
     if let Some(thread) = thread::current().name() {
-        writeln!(error, "Thread Name: {thread}").unwrap();
+        let _ = writeln!(error, "Thread Name: {thread}");
     }
 
     let payload = info.payload();
     if let Some(msg) = payload.downcast_ref::<&'static str>() {
-        writeln!(error, "Message: {msg}").unwrap();
+        let _ = writeln!(error, "Message: {msg}");
     } else if let Some(msg) = payload.downcast_ref::<String>() {
-        writeln!(error, "Message: {msg}").unwrap();
+        let _ = writeln!(error, "Message: {msg}");
     }
 
     // Write the panic to stderr

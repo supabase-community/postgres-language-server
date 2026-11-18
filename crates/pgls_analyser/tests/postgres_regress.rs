@@ -13,6 +13,13 @@
 //! The output columns that the resolver infers for the statements that return rows are compared
 //! with the types Postgres described for them, see [`output_types_agree_with_postgres`].
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use std::{collections::BTreeMap, sync::Arc};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
@@ -20,7 +27,7 @@ use pgls_analyser::{
     AnalysableStatement, Analyser, AnalyserConfig, AnalyserParams, LinterOptions, ResolveOptions,
     TYPECHECK_GROUP, UnparsableStatement, WalkParams, walk_statements,
 };
-use pgls_catalog::{Catalog, CatalogBase, CatalogView, Decision, Snapshot, Type};
+use pgls_catalog::{Catalog, CatalogBase, Decision, Snapshot, Type};
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, PrintDiagnostic};
 use pgls_postgres_regress::{File, Verdict, Version};
@@ -186,14 +193,16 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
         unparsable,
         bodies,
     } = Statements::of(file, &file.statements);
-    let diagnostics = analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: Some(catalog.clone()),
-        search_path: vec!["public".into()],
-        typecheck: true,
-        ..Default::default()
-    });
+    let diagnostics = analyser
+        .analyse(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: Some(catalog.clone()),
+            search_path: vec!["public".into()],
+            typecheck: true,
+            ..Default::default()
+        })
+        .diagnostics;
     let findings = diagnostics
         .iter()
         .map(|diagnostic| {

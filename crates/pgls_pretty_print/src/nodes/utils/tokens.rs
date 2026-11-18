@@ -100,11 +100,20 @@ pub(crate) fn emit_body_literal(e: &mut EventEmitter, value: &str) {
 
 /// The first of `$$`, `$body$`, `$body1$`, `$body2$`, ... that can quote `body`.
 fn dollar_quote_tag(body: &str) -> String {
-    ["$$".to_string(), "$body$".to_string()]
-        .into_iter()
-        .chain((1..).map(|n| format!("$body{n}$")))
-        .find(|tag| can_dollar_quote(body, tag))
-        .expect("a numbered tag the body does not contain exists")
+    for tag in ["$$", "$body$"] {
+        if can_dollar_quote(body, tag) {
+            return tag.to_string();
+        }
+    }
+    // Ends: the body contains fewer numbered tags than it has bytes.
+    let mut number: u64 = 1;
+    loop {
+        let tag = format!("$body{number}$");
+        if can_dollar_quote(body, &tag) {
+            return tag;
+        }
+        number += 1;
+    }
 }
 
 /// Whether `value` can be quoted with `tag`: the first occurrence of the tag after the opening one

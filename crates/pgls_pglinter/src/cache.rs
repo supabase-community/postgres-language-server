@@ -79,7 +79,7 @@ impl PglinterCache {
 
 /// Get disabled rules by querying the pglinter.rules table
 /// Uses the rules table directly since show_rules() only outputs to NOTICE
-pub async fn get_disabled_rules(conn: &PgPool) -> Result<FxHashSet<String>, sqlx::Error> {
+pub(crate) async fn get_disabled_rules(conn: &PgPool) -> Result<FxHashSet<String>, sqlx::Error> {
     let rows: Vec<(String, bool)> = sqlx::query_as("SELECT code, enable FROM pglinter.rules")
         .fetch_all(conn)
         .await?;
@@ -92,7 +92,7 @@ pub async fn get_disabled_rules(conn: &PgPool) -> Result<FxHashSet<String>, sqlx
 }
 
 /// Check if pglinter.rule_messages table exists (requires pglinter v1.1.0+)
-pub async fn check_rule_messages_table_exists(conn: &PgPool) -> Result<bool, sqlx::Error> {
+pub(crate) async fn check_rule_messages_table_exists(conn: &PgPool) -> Result<bool, sqlx::Error> {
     let result: Option<(bool,)> = sqlx::query_as(
         "SELECT EXISTS (
             SELECT 1 FROM information_schema.tables
@@ -106,7 +106,7 @@ pub async fn check_rule_messages_table_exists(conn: &PgPool) -> Result<bool, sql
 }
 
 /// Fetch rule messages from pglinter.rule_messages table (pglinter v1.1.0+)
-pub async fn fetch_rule_messages(
+pub(crate) async fn fetch_rule_messages(
     conn: &PgPool,
 ) -> Result<FxHashMap<String, RuleMessage>, sqlx::Error> {
     let rows: Vec<(String, sqlx::types::Json<RuleMessageJson>)> =
