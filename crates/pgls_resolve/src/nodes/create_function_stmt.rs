@@ -396,7 +396,7 @@ fn output_columns(
     let mut body = Resolver::new(r.catalog, r.search_path, Some(&function), None);
     let output = resolve_node_enum(&mut body, last)?;
     let columns = output.names()?;
-    if !body.findings.is_empty() {
+    if body.has_findings() {
         return None;
     }
     match output.columns() {
