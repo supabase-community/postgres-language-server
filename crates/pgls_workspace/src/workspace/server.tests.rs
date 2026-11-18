@@ -3697,13 +3697,13 @@ fn document_caches_stay_within_the_budget() {
     assert_eq!(workspace.document_caches.total(), 0);
 }
 
-/// Executing a statement parses the statements before it to find it, and charges them to the
-/// budget, also when it returns early, like without a database connection.
+/// Executing a statement parses it, and only it, and charges it to the budget, also when it
+/// returns early, like without a database connection.
 #[test]
 fn executing_a_statement_charges_the_document_caches() {
     let (mut workspace, project_key) =
         get_test_workspace(None).expect("Unable to create test workspace");
-    workspace.document_caches = super::document_cache::CacheBudget::new(8);
+    workspace.document_caches = super::document_cache::CacheBudget::new(6);
 
     let content = "drop table a;\ndrop table b;\ndrop table c;\nselect 1;\nselect 2;\nselect 3;\n";
     let paths = [PgLSPath::new("a.sql"), PgLSPath::new("b.sql")];
@@ -3744,13 +3744,13 @@ fn executing_a_statement_charges_the_document_caches() {
         })
         .expect("Unable to execute statement");
 
-    // Both documents together keep 12 parse results, so the first one's caches are dropped.
+    // Both documents together keep 7 parse results, so the first one's caches are dropped.
     assert_eq!(
         workspace
             .document_cache_stats(&paths[1])
             .unwrap()
             .parse_results,
-        6
+        1
     );
     assert_eq!(
         workspace
@@ -3900,6 +3900,62 @@ fn test_fix_file() {
     );
     assert_eq!(all.fixes_applied, 2);
     assert_eq!(all.skipped_suggested_fixes, 0);
+}
+
+/// The passes of `fix_file` edit a document of their own, so the open document keeps what its
+/// cache holds for its content.
+#[test]
+fn test_fix_file_keeps_the_caches_of_the_open_document() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(
+        serde_json::from_str::<PartialConfiguration>(r#"{"linter": {"rules": {"all": true}}}"#)
+            .unwrap(),
+    );
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let content = "create table t (a char(10));\ncreate index t_a_idx on t (a);\nselect 1;\n";
+    let path = PgLSPath::new("test.sql");
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+    workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+            database_checks: DatabaseChecks::Run,
+        })
+        .expect("Unable to pull diagnostics");
+    let before = workspace.document_cache_stats(&path).unwrap();
+    assert_eq!(before.parse_results, 3);
+
+    // `char(10)` becomes `varchar(10)`, and then `text` in the next pass.
+    let result = workspace
+        .fix_file(FixFileParams {
+            project_key,
+            path: path.clone(),
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec![
+                "style/banCharField".parse().unwrap(),
+                "style/preferTextField".parse().unwrap(),
+            ],
+            skip: vec![],
+        })
+        .expect("Unable to fix file");
+    assert_eq!(
+        result.code,
+        "create table t (a text);\ncreate index t_a_idx on t (a);\nselect 1;\n"
+    );
+    assert_eq!(result.fixes_applied, 2);
+    assert_eq!(workspace.document_cache_stats(&path).unwrap(), before);
 }
 
 #[test]

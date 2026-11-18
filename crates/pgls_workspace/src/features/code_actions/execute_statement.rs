@@ -4,7 +4,7 @@ use pgls_fs::PgLSPath;
 use pgls_text_size::TextSize;
 
 use super::{CodeAction, CodeActionKind, CommandAction, CommandActionCategory};
-use crate::workspace::{DefaultMapper, Document, StatementId};
+use crate::workspace::{Document, StatementId};
 
 #[cfg(feature = "db")]
 pub(crate) mod execution;
@@ -97,19 +97,19 @@ pub(crate) fn execute_statement_actions(
     cursor: TextSize,
     disabled_reason: Option<String>,
 ) -> Vec<CodeAction> {
-    doc.iter_at(DefaultMapper, cursor)
-        .map(|(stmt, range, txt)| {
+    doc.statements_at(cursor)
+        .map(|stmt| {
             let title = format!(
                 "Execute Statement: {}...",
-                txt.chars().take(50).collect::<String>()
+                doc.sql(&stmt).chars().take(50).collect::<String>()
             );
 
             CodeAction {
                 title,
                 kind: CodeActionKind::Command(CommandAction {
-                    category: CommandActionCategory::ExecuteStatement(stmt),
+                    category: CommandActionCategory::ExecuteStatement(stmt.id().clone()),
                 }),
-                disabled_reason: if doc.touches_placeholder(range) {
+                disabled_reason: if doc.touches_placeholder(stmt.range()) {
                     Some(PLACEHOLDER_EXECUTION_DISABLED.into())
                 } else {
                     disabled_reason.clone()
