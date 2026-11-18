@@ -151,6 +151,9 @@ pub struct TreesitterContext<'a> {
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub position: usize,
+    /// The byte offset of the cursor as requested. `position` is moved onto the node before the
+    /// cursor when the cursor is between nodes or at the end of the text.
+    cursor: usize,
     /// See [`TreeSitterContextParams::server_version_num`].
     server_version_num: Option<i64>,
 
@@ -197,6 +200,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
+            cursor: usize::from(params.position),
             server_version_num: params.server_version_num,
             node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
@@ -346,6 +350,16 @@ impl<'a> TreesitterContext<'a> {
             .utf8_text(source.as_bytes())
             .ok()
             .map(|txt| txt.into())
+    }
+
+    /// Whether the node under the cursor is a closed quoted identifier and the cursor follows its
+    /// closing quote, as in `select "na"| from t`.
+    pub fn cursor_after_closing_quote(&self) -> bool {
+        self.cursor >= self.node_under_cursor.end_byte()
+            && self
+                .node_under_cursor
+                .utf8_text(self.text.as_bytes())
+                .is_ok_and(|text| text.len() > 1 && text.starts_with('"') && text.ends_with('"'))
     }
 
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
