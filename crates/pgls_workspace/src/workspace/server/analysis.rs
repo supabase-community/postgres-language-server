@@ -14,8 +14,9 @@ use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
-    WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
-    document::Document,
+    WorkspaceServer,
+    analyser::AnalyserVisitorBuilder,
+    document::{Document, StatementWalkInput},
 };
 use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
@@ -209,14 +210,17 @@ impl WorkspaceServer {
         let mut analysable_stmts = vec![];
         let mut syntax_diagnostics = vec![];
         let mut unparsable = vec![];
-        for (i, (stmt, diagnostic, unparsable_stmt)) in
-            doc.iter(AnalyserDiagnosticsMapper).enumerate()
-        {
+        for (i, stmt) in doc.statements().enumerate() {
             if (i + 1).is_multiple_of(STOP_CHECK_INTERVAL) && should_stop() {
                 return None;
             }
-            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
-            syntax_diagnostics.extend(diagnostic);
+            let StatementWalkInput {
+                analysable,
+                syntax_error,
+                unparsable: unparsable_stmt,
+            } = doc.walk_input(stmt);
+            analysable_stmts.extend(analysable.filter(|stmt| !is_skipped(stmt.range)));
+            syntax_diagnostics.extend(syntax_error);
             unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
         }
 
