@@ -22,12 +22,13 @@ pub(crate) fn get_range_to_replace(ctx: &TreesitterContext) -> TextRange {
     let mut start = node.start_byte();
     let mut end = start + length;
 
-    // Only the text inside the quotes is replaced. A quote the user hasn't closed yet has no
-    // closing quote here.
+    // Only the text inside the quotes is replaced, and the closing quote too when the cursor
+    // follows it, because the edit has to contain the cursor. A quote the user hasn't closed yet
+    // has no closing quote here.
     if sanitized.starts_with('"') {
         start += 1;
 
-        if sanitized.len() > 1 && sanitized.ends_with('"') {
+        if sanitized.len() > 1 && sanitized.ends_with('"') && !ctx.cursor_after_closing_quote() {
             end -= 1;
         }
     }
@@ -106,15 +107,25 @@ pub(crate) fn with_schema_or_alias(
     let with_quotes = node_text_surrounded_by_quotes(ctx);
     let single_leading_quote = only_leading_quote(ctx);
 
-    // Inside quotes the user already typed, a name only needs its `"` escaped.
+    // Inside quotes the user already typed, a name only needs its `"` escaped. The closing quote
+    // is replaced too when the cursor follows it (see `get_range_to_replace`).
     let escaped = |name: &str| name.replace('"', r#""""#);
+    let closing_quote = if ctx.cursor_after_closing_quote() {
+        "\""
+    } else {
+        ""
+    };
 
     match prefix {
         Some(prefix) if !is_already_prefixed_with_schema_name => {
             if single_leading_quote {
                 format!(r#"{}"."{}""#, escaped(prefix), escaped(item_name))
             } else if with_quotes {
-                format!(r#"{}"."{}"#, escaped(prefix), escaped(item_name))
+                format!(
+                    r#"{}"."{}{closing_quote}"#,
+                    escaped(prefix),
+                    escaped(item_name)
+                )
             } else {
                 format!(
                     "{}.{}",
@@ -127,7 +138,7 @@ pub(crate) fn with_schema_or_alias(
             if single_leading_quote {
                 format!(r#"{}""#, escaped(item_name))
             } else if with_quotes {
-                escaped(item_name)
+                format!("{}{closing_quote}", escaped(item_name))
             } else if is_already_prefixed_with_schema_name {
                 quote_identifier(item_name, NamePosition::ColLabel).into_owned()
             } else {
@@ -216,6 +227,17 @@ mod tests {
                 r#"MyTable""#,
             ),
             (r#"select "I{c} from "MyTable""#, "Id", r#"Id""#),
+            // After the closing quote, the edit replaces it too, so that it contains the cursor.
+            (r#"select "I"{c} from "MyTable""#, "Id", r#"Id""#),
+            (r#"select t."I"{c} from "MyTable" t"#, "Id", r#"Id""#),
+            (r#"select * from "My"{c}"#, "MyTable", r#"MyTable""#),
+            (
+                r#"select * from "My"{c} where true"#,
+                "MyTable",
+                r#"MyTable""#,
+            ),
+            (r#"select public."MyFu"{c}"#, "MyFunc", r#"MyFunc"()"#),
+            (r#"select "MyFu"{c}()"#, "MyFunc", r#"MyFunc""#),
             // Policies and roles.
             (
                 r#"alter policy {c} on "MyTable""#,

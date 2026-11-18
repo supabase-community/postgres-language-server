@@ -227,9 +227,13 @@ impl Session {
     }
 
     /// Port of what `BEGIN`, `COMMIT`, `ROLLBACK` and `PREPARE TRANSACTION` do to the transaction
-    /// block, see [`BeginTransactionBlock`] and [`ends_transaction_block`].
+    /// block, see [`BeginTransactionBlock`] and [`ends_transaction_block`], and of what
+    /// [`DefineSavepoint`], [`RollbackToSavepoint`] and [`ReleaseSavepoint`] do to the settings.
     ///
     /// [`BeginTransactionBlock`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L3924
+    /// [`DefineSavepoint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4373
+    /// [`RollbackToSavepoint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4567
+    /// [`ReleaseSavepoint`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/transam/xact.c#L4458
     fn apply_transaction(&mut self, stmt: &protobuf::TransactionStmt) {
         use protobuf::TransactionStmtKind as Kind;
         match stmt.kind() {
@@ -253,6 +257,11 @@ impl Session {
                 self.end_block(stmt.chain);
             }
             // Savepoints don't open or end the block, and Postgres rejects them outside of one.
+            Kind::TransStmtSavepoint if self.in_transaction() != Some(false) => {
+                self.settings.savepoint(&stmt.savepoint_name);
+            }
+            Kind::TransStmtRelease => self.settings.release(&stmt.savepoint_name),
+            Kind::TransStmtRollbackTo => self.settings.rollback_to(&stmt.savepoint_name),
             _ => {}
         }
     }

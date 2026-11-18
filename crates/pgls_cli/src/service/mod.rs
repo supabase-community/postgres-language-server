@@ -514,7 +514,8 @@ mod tests {
     };
     use pgls_workspace::features::completions::GetCompletionsParams;
     use pgls_workspace::features::diagnostics::{
-        CheckDatabaseConnectionParams, PullDatabaseDiagnosticsParams, PullFileDiagnosticsParams,
+        CheckDatabaseConnectionParams, DatabaseChecks, PullDatabaseDiagnosticsParams,
+        PullFileDiagnosticsParams,
     };
     use pgls_workspace::features::format::PullFileFormattingParams;
     use pgls_workspace::features::inlay_hints::PullInlayHintsParams;
@@ -670,6 +671,7 @@ mod tests {
                 max_diagnostics: 100,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Reuse,
             })
             .unwrap();
         let formatting = client
