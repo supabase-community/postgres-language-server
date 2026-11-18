@@ -29,6 +29,20 @@ pub(super) struct Settings {
     transaction_function_bodies_unchecked: Option<bool>,
     /// `function_bodies_unchecked` to restore when the transaction ends after `SET LOCAL`.
     local_function_bodies_unchecked: Option<bool>,
+    /// The settings at each `SAVEPOINT` of the transaction, oldest first.
+    savepoints: Vec<Savepoint>,
+}
+
+/// The settings at a `SAVEPOINT`, which `ROLLBACK TO` restores.
+#[derive(Debug, Clone)]
+struct Savepoint {
+    name: String,
+    search_path: Vec<String>,
+    role: Option<String>,
+    function_bodies_unchecked: bool,
+    local_search_path: Option<Vec<String>>,
+    local_role: Option<Option<String>>,
+    local_function_bodies_unchecked: Option<bool>,
 }
 
 impl Settings {
@@ -73,6 +87,7 @@ impl Settings {
         self.transaction_search_path = None;
         self.transaction_role = None;
         self.transaction_function_bodies_unchecked = None;
+        self.savepoints.clear();
     }
 
     /// Restores the settings of the start of the transaction.
@@ -89,6 +104,55 @@ impl Settings {
         self.local_search_path = None;
         self.local_role = None;
         self.local_function_bodies_unchecked = None;
+        self.savepoints.clear();
+    }
+
+    /// Remembers the settings at a `SAVEPOINT`. A setting changed after it goes back with
+    /// `ROLLBACK TO` and stays with `RELEASE`, like in [`AtEOXact_GUC`] at the end of a
+    /// subtransaction.
+    ///
+    /// [`AtEOXact_GUC`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/misc/guc.c#L2262
+    pub(super) fn savepoint(&mut self, name: &str) {
+        self.savepoints.push(Savepoint {
+            name: name.to_owned(),
+            search_path: self.search_path.clone(),
+            role: self.role.clone(),
+            function_bodies_unchecked: self.function_bodies_unchecked,
+            local_search_path: self.local_search_path.clone(),
+            local_role: self.local_role.clone(),
+            local_function_bodies_unchecked: self.local_function_bodies_unchecked,
+        });
+    }
+
+    /// Forgets the savepoint and the ones after it, and keeps the settings.
+    pub(super) fn release(&mut self, name: &str) {
+        if let Some(position) = self.savepoint_position(name) {
+            self.savepoints.truncate(position);
+        }
+    }
+
+    /// Restores the settings of the savepoint, which stays, and forgets the ones after it.
+    pub(super) fn rollback_to(&mut self, name: &str) {
+        let Some(position) = self.savepoint_position(name) else {
+            return;
+        };
+        self.savepoints.truncate(position + 1);
+        let Some(savepoint) = self.savepoints.last() else {
+            return;
+        };
+        self.search_path = savepoint.search_path.clone();
+        self.role = savepoint.role.clone();
+        self.function_bodies_unchecked = savepoint.function_bodies_unchecked;
+        self.local_search_path = savepoint.local_search_path.clone();
+        self.local_role = savepoint.local_role.clone();
+        self.local_function_bodies_unchecked = savepoint.local_function_bodies_unchecked;
+    }
+
+    /// The latest savepoint with the name, which Postgres picks when names repeat.
+    fn savepoint_position(&self, name: &str) -> Option<usize> {
+        self.savepoints
+            .iter()
+            .rposition(|savepoint| savepoint.name == name)
     }
 
     pub(super) fn apply_variable_set(&mut self, stmt: &protobuf::VariableSetStmt) {
