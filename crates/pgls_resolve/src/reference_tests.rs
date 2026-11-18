@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
 use sqlx::{Executor, PgPool};
 
 use super::{ColumnSource, FunctionContext, FunctionParam, Reference, ResolveParams, resolve};
 use pgls_catalog::{
-    Catalog, CatalogBase, Snapshot,
+    Catalog, Snapshot,
     typing::{Type, format_type},
 };
 
@@ -37,7 +35,7 @@ async fn catalog(test_db: &PgPool) -> (Catalog, Vec<String>) {
     test_db.execute(SETUP).await.expect("valid setup");
     let snapshot = Snapshot::load(test_db).await.expect("snapshot");
     let search_path = snapshot.expand_search_path(&["public".to_owned()]);
-    let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let catalog = Catalog::from_snapshot(snapshot);
     (catalog, search_path)
 }
 
@@ -542,7 +540,7 @@ async fn returning_old_and_new_references(test_db: PgPool) {
     // `old` and `new` exist since Postgres 18, and the test database can be older.
     snapshot.version.version_num = Some(180000);
     let search_path = snapshot.expand_search_path(&["public".to_owned()]);
-    let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let catalog = Catalog::from_snapshot(snapshot);
 
     assert_eq!(
         references(

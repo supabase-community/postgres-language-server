@@ -1,149 +1,149 @@
-5:1 accepted
-13:1 skipped
-15:1 accepted
-16:1 accepted
-17:1 accepted
-19:1 accepted
-20:1 accepted
-22:1 accepted
-23:1 accepted
-24:1 accepted
-26:1 skipped
-28:1 accepted
-33:1 accepted
-34:1 accepted
-36:1 skipped
-37:1 accepted
-38:1 accepted
-39:1 accepted
-40:1 accepted
-41:1 accepted
-42:1 accepted
-43:1 skipped
-45:1 accepted
-48:1 accepted
-49:1 accepted
-50:1 accepted
-53:1 accepted
-56:1 accepted
-57:1 accepted
-58:1 accepted
-59:1 accepted
-60:1 accepted
-63:1 accepted
-64:1 accepted
-65:1 accepted
-66:1 accepted
-67:1 accepted
-68:1 accepted
-69:1 accepted
-70:1 accepted
-73:1 accepted
-74:1 accepted
-75:1 accepted
-76:1 accepted
-77:1 accepted
-80:1 accepted
-81:1 accepted
-82:1 accepted
-83:1 accepted
-84:1 accepted
-85:1 accepted
-86:1 accepted
-87:1 accepted
-88:1 accepted
-89:1 accepted
-90:1 accepted
-91:1 accepted
-92:1 accepted
-93:1 accepted
-95:1 rejected 22023
-98:1 accepted
-100:1 accepted
-101:1 accepted
-102:1 accepted
-103:1 accepted
-104:1 accepted
-105:1 accepted
-106:1 accepted
-108:1 accepted
-109:1 accepted
-110:1 accepted
-111:1 accepted
-112:1 accepted
-113:1 accepted
-114:1 accepted
-115:1 accepted
-116:1 accepted
-118:1 accepted
-119:1 accepted
-120:1 accepted
-121:1 accepted
-122:1 accepted
-123:1 accepted
-124:1 accepted
-125:1 rejected 22008
-126:1 accepted
-127:1 accepted
-128:1 accepted
-129:1 accepted
-130:1 accepted
-131:1 accepted
-132:1 accepted
-135:1 rejected 22009
-136:1 rejected 22008
-138:1 accepted
-141:1 accepted
-142:1 rejected 22008
-143:1 accepted
-144:1 rejected 22008
-147:1 accepted
-150:1 accepted
-153:1 accepted
-156:1 accepted
-159:1 accepted
-162:1 accepted
-165:1 accepted
-168:1 accepted
-173:1 accepted
-190:1 accepted
-207:1 accepted
-224:1 accepted
-241:1 accepted
-260:1 accepted
-263:1 accepted
-266:1 rejected 0A000
-267:1 rejected 0A000
-270:1 rejected 22008
-273:1 rejected 22008
-276:1 rejected 22008
-277:1 rejected 22008
-278:1 rejected 22008
-281:1 accepted
-287:1 accepted
-293:1 accepted
-298:1 accepted
-304:1 accepted
-314:1 accepted
-323:1 accepted
-324:1 accepted
-326:1 accepted
-329:1 accepted
-332:1 accepted
-335:1 accepted
-338:1 accepted
-341:1 accepted
-344:1 accepted
-347:1 accepted
-350:1 accepted
-353:1 accepted
-356:1 accepted
-359:1 accepted
-362:1 accepted
-371:1 accepted
-377:1 accepted
-378:1 accepted
-380:1 rejected 22008
-383:1 accepted
-388:1 accepted
-392:1 rejected 22023
+20..83 accepted
+380..386 skipped
+388..431 accepted
+432..479 accepted
+480..526 accepted
+576..626 accepted
+627..678 accepted
+680..769 accepted
+770..864 accepted
+865..958 accepted
+960..967 skipped
+969..995 accepted
+1158..1199 accepted
+1200..1221 accepted
+1223..1229 skipped
+1230..1271 accepted
+1272..1293 accepted
+1294..1335 accepted
+1336..1357 accepted
+1358..1448 accepted
+1449..1521 accepted
+1522..1529 skipped
+1531..1554 accepted
+1574..1621 accepted
+1622..1668 accepted
+1669..1712 accepted
+1754..1820 accepted
+1876..1949 accepted
+1950..2023 accepted
+2024..2092 accepted
+2093..2161 accepted
+2162..2230 accepted
+2251..2299 accepted
+2300..2357 accepted
+2358..2418 accepted
+2419..2481 accepted
+2482..2546 accepted
+2547..2606 accepted
+2607..2671 accepted
+2672..2729 accepted
+2803..2866 accepted
+2867..2930 accepted
+2931..2994 accepted
+2995..3058 accepted
+3059..3125 accepted
+3170..3234 accepted
+3235..3293 accepted
+3294..3350 accepted
+3351..3413 accepted
+3414..3475 accepted
+3476..3538 accepted
+3539..3600 accepted
+3601..3658 accepted
+3659..3680 accepted
+3681..3740 accepted
+3741..3800 accepted
+3801..3817 accepted
+3818..3877 accepted
+3878..3948 accepted
+4012..4088 rejected 22023
+4135..4196 accepted
+4198..4256 accepted
+4257..4315 accepted
+4316..4374 accepted
+4375..4433 accepted
+4434..4492 accepted
+4493..4551 accepted
+4552..4610 accepted
+4612..4673 accepted
+4674..4732 accepted
+4733..4791 accepted
+4792..4850 accepted
+4851..4909 accepted
+4910..4968 accepted
+4969..5027 accepted
+5028..5086 accepted
+5087..5145 accepted
+5147..5205 accepted
+5206..5264 accepted
+5265..5323 accepted
+5324..5382 accepted
+5383..5441 accepted
+5442..5500 accepted
+5501..5559 accepted
+5560..5618 rejected 22008
+5619..5677 accepted
+5678..5736 accepted
+5737..5795 accepted
+5796..5854 accepted
+5855..5913 accepted
+5914..5972 accepted
+5973..6031 accepted
+6076..6135 rejected 22009
+6136..6197 rejected 22008
+6199..6228 accepted
+6289..6332 accepted
+6333..6376 rejected 22008
+6394..6436 accepted
+6437..6479 rejected 22008
+6537..6621 accepted
+6623..6707 accepted
+6709..6793 accepted
+6795..6880 accepted
+6882..6967 accepted
+6969..7054 accepted
+7056..7186 accepted
+7188..7269 accepted
+7381..7750 accepted
+7788..8162 accepted
+8200..8569 accepted
+8607..8981 accepted
+9026..9390 accepted
+9434..9535 accepted
+9585..9691 accepted
+9736..9831 rejected 0A000
+9832..9927 rejected 0A000
+9956..10059 rejected 22008
+10092..10196 rejected 22008
+10221..10314 rejected 22008
+10315..10409 rejected 22008
+10410..10507 rejected 22008
+10552..10742 accepted
+10774..11030 accepted
+11032..11187 accepted
+11189..11411 accepted
+11413..11670 accepted
+11784..12052 accepted
+12106..12168 accepted
+12169..12231 accepted
+12271..12331 accepted
+12346..12444 accepted
+12446..12537 accepted
+12539..12625 accepted
+12627..12739 accepted
+12741..12809 accepted
+12811..12912 accepted
+12914..12983 accepted
+12985..13047 accepted
+13049..13161 accepted
+13163..13232 accepted
+13234..13317 accepted
+13319..13578 accepted
+13624..13755 accepted
+13797..13848 accepted
+13849..13895 accepted
+13911..13955 rejected 22008
+13990..14162 accepted
+14305..14458 accepted
+14469..14641 rejected 22023

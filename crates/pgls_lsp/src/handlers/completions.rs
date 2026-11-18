@@ -11,7 +11,7 @@ use tower_lsp_server::ls_types::{
 use tracing::warn;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
-pub fn get_completions(
+pub(crate) fn get_completions(
     session: &Session,
     params: ls_types::CompletionParams,
 ) -> Result<ls_types::CompletionResponse, LspError> {

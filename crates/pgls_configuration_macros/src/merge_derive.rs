@@ -1,9 +1,9 @@
-use proc_macro_error::*;
+use proc_macro_error3::*;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{Data, Fields};
 
-pub enum MergeableData {
+pub(crate) enum MergeableData {
     Enum,
     Newtype,
     Struct(Fields),
@@ -15,7 +15,7 @@ pub(crate) struct DeriveInput {
 }
 
 impl DeriveInput {
-    pub fn parse(input: syn::DeriveInput) -> Self {
+    pub(crate) fn parse(input: syn::DeriveInput) -> Self {
         let data = match input.data {
             Data::Enum(_) => MergeableData::Enum,
             Data::Struct(data) => {

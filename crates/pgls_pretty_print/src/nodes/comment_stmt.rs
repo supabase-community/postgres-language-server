@@ -36,16 +36,16 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             // Format: CONSTRAINT constraint_name ON DOMAIN domain_name
             // The list has [TypeName(domain_name), constraint_name]
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
-                if list.items.len() == 2 {
+                if let [first, second] = list.items.as_slice() {
                     // Emit constraint name first (second element)
-                    emit_node(e, &list.items[1]);
+                    emit_node(e, second);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     emit_keyword(e, "DOMAIN");
                     e.space();
                     // Then domain name (first element)
-                    emit_node(e, &list.items[0]);
+                    emit_node(e, first);
                 } else {
                     emit_node(e, object);
                 }
@@ -56,14 +56,14 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             // Format: CONSTRAINT constraint_name ON table_name
             // The list has [table_name, constraint_name]
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
-                if list.items.len() == 2 {
+                if let [first, second] = list.items.as_slice() {
                     // Emit constraint name first (second element)
-                    emit_node(e, &list.items[1]);
+                    emit_node(e, second);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    emit_node(e, &list.items[0]);
+                    emit_node(e, first);
                 } else {
                     emit_node(e, object);
                 }
@@ -74,14 +74,14 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             // Format: RULE rule_name ON table_name
             // The list has [table_name, rule_name]
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
-                if list.items.len() == 2 {
+                if let [first, second] = list.items.as_slice() {
                     // Emit rule name first (second element)
-                    emit_node(e, &list.items[1]);
+                    emit_node(e, second);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    emit_node(e, &list.items[0]);
+                    emit_node(e, first);
                 } else {
                     emit_node(e, object);
                 }
@@ -92,14 +92,14 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             // Format: TRIGGER trigger_name ON table_name
             // The list has [table_name, trigger_name]
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
-                if list.items.len() == 2 {
+                if let [first, second] = list.items.as_slice() {
                     // Emit trigger name first (second element)
-                    emit_node(e, &list.items[1]);
+                    emit_node(e, second);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    emit_node(e, &list.items[0]);
+                    emit_node(e, first);
                 } else {
                     emit_node(e, object);
                 }
@@ -110,14 +110,14 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             // Format: POLICY policy_name ON table_name
             // The list has [table_name, policy_name]
             if let Some(NodeEnum::List(list)) = object.node.as_ref() {
-                if list.items.len() == 2 {
+                if let [first, second] = list.items.as_slice() {
                     // Emit policy name first (second element)
-                    emit_node(e, &list.items[1]);
+                    emit_node(e, second);
                     e.line(LineType::SoftOrSpace);
                     e.token(TokenKind::ON_KW);
                     e.space();
                     // Then table name (first element)
-                    emit_node(e, &list.items[0]);
+                    emit_node(e, first);
                 } else {
                     emit_node(e, object);
                 }

@@ -88,17 +88,14 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Option<Que
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)
         | NodeEnum::MergeStmt(_) => {
-            r.query_depth += 1;
-            let output = match node {
+            return r.in_query(|r| match node {
                 NodeEnum::SelectStmt(n) => resolve_select_stmt(r, n),
                 NodeEnum::InsertStmt(n) => resolve_insert_stmt(r, n),
                 NodeEnum::UpdateStmt(n) => resolve_update_stmt(r, n),
                 NodeEnum::DeleteStmt(n) => resolve_delete_stmt(r, n),
                 NodeEnum::MergeStmt(n) => resolve_merge_stmt(r, n),
                 _ => None,
-            };
-            r.query_depth -= 1;
-            return output;
+            });
         }
         NodeEnum::CreateFunctionStmt(n) => {
             record_type_names(r, node);
@@ -235,7 +232,7 @@ pub(super) fn resolve_node_enum(r: &mut Resolver, node: &NodeEnum) -> Option<Que
         _ => {
             r.depends_on_file();
             record_type_names(r, node);
-            record_unresolved(r, node.to_ref(), r.query_depth > 0);
+            record_unresolved(r, node.to_ref(), r.in_any_query());
         }
     }
     None

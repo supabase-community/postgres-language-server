@@ -8,7 +8,7 @@ use pgls_query::{
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
 use pgls_query_ext::{
-    function_body::is_sql_function,
+    function_body::Language,
     utils::{QualifiedName, find_option_value, qualified_name},
 };
 
@@ -65,7 +65,7 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
     // Statements of the file never come unchanged from the database.
     r.depends_on_file();
 
-    if n.is_procedure || !is_sql_function(n) {
+    if n.is_procedure || Language::of(n) != Some(Language::Sql) {
         return;
     }
     let params: Vec<&FunctionParameter> = n
@@ -100,7 +100,7 @@ pub(super) fn resolve_create_function_stmt(r: &mut Resolver, n: &CreateFunctionS
 
     let returns_rows = match last {
         // `SELECT ... INTO` is rejected for other reasons.
-        NodeEnum::SelectStmt(select) if select.into_clause.is_some() => return,
+        NodeEnum::SelectStmt(select) if select.into_clause_of_query().is_some() => return,
         // The type of a `RETURN` expression is not checked.
         NodeEnum::ReturnStmt(_) => return,
         NodeEnum::SelectStmt(_) => true,
@@ -163,18 +163,20 @@ fn compare(r: &Resolver, shape: &Shape, found: &[Option<Type>]) -> Option<Return
         })
     };
     match shape {
-        Shape::Scalar(_) if found.len() != 1 => Some(ReturnMismatch::ColumnCount {
-            expected: 1,
-            found: found.len(),
-        }),
-        Shape::Scalar(expected) => match assignable(&found[0], expected)? {
-            true => None,
-            false => column_type(None, expected, &found[0]),
+        Shape::Scalar(expected) => match found {
+            [found] => match assignable(found, expected)? {
+                true => None,
+                false => column_type(None, expected, found),
+            },
+            _ => Some(ReturnMismatch::ColumnCount {
+                expected: 1,
+                found: found.len(),
+            }),
         },
         Shape::Row { row, attributes } => {
             // A single column may hold the whole row.
-            if found.len() == 1 {
-                match assignable(&found[0], row)? {
+            if let [single] = found {
+                match assignable(single, row)? {
                     true => return None,
                     false if attributes.len() != 1 => {
                         return Some(ReturnMismatch::ColumnCount {
@@ -394,7 +396,7 @@ fn output_columns(
     let mut body = Resolver::new(r.catalog, r.search_path, Some(&function), None);
     let output = resolve_node_enum(&mut body, last)?;
     let columns = output.names()?;
-    if !body.findings.is_empty() {
+    if body.has_findings() {
         return None;
     }
     match output.columns() {

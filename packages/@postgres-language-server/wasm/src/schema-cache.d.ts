@@ -26,7 +26,13 @@ export interface SchemaCache {
  * A cast present in pg_cast.
  */
 export interface PostgresCast {
+  /**
+   * `pg_cast.castcontext`.
+   */
   context: string;
+  /**
+   * `pg_cast.castmethod`.
+   */
   method: string;
   source: number;
   target: number;
@@ -159,6 +165,9 @@ export interface Index {
  * An operator present in pg_operator.
  */
 export interface PostgresOperator {
+  /**
+   * `prefix` or `infix`, from `pg_operator.oprkind`. Unknown for a postfix operator (Postgres 13 and older).
+   */
   kind: string;
   left: number;
   name: string;
@@ -248,6 +257,9 @@ export interface PostgresType {
   typelem?: number;
   typispreferred?: boolean;
   typrelid?: number;
+  /**
+   * `pg_type.typtype`.
+   */
   typtype?: string;
 }
 export interface Version {
@@ -294,7 +306,7 @@ export interface Enums {
 export interface FunctionArg {
   has_default?: boolean;
   /**
-   * `in`, `out`, or `inout`.
+   * `in`, `out`, `inout`, `variadic` or `table`.
    */
   mode: string;
   name: string;

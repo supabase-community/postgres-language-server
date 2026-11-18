@@ -1,7 +1,7 @@
 use std::{borrow, collections::BTreeSet};
 
 use crate::{
-    filter::{GroupKey, RuleKey},
+    filter::RuleKey,
     metadata::{GroupCategory, RuleGroup, RuleMeta},
 };
 
@@ -24,16 +24,11 @@ pub trait RegistryVisitor {
 
 /// Key struct for a rule in the metadata map, sorted alphabetically
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MetadataKey {
+pub(crate) struct MetadataKey {
     inner: (&'static str, &'static str),
 }
 
 impl MetadataKey {
-    fn into_group_key(self) -> GroupKey {
-        let (group, _) = self.inner;
-        GroupKey::new(group)
-    }
-
     fn into_rule_key(self) -> RuleKey {
         let (group, rule) = self.inner;
         RuleKey::new(group, rule)
@@ -46,12 +41,6 @@ impl<'a> borrow::Borrow<(&'a str, &'a str)> for MetadataKey {
     }
 }
 
-impl borrow::Borrow<str> for MetadataKey {
-    fn borrow(&self) -> &str {
-        self.inner.0
-    }
-}
-
 /// Stores metadata information for all the rules in the registry, sorted
 /// alphabetically
 #[derive(Debug, Default)]
@@ -60,12 +49,6 @@ pub struct MetadataRegistry {
 }
 
 impl MetadataRegistry {
-    /// Return a unique identifier for a rule group if it's known by this registry
-    pub fn find_group(&self, group: &str) -> Option<GroupKey> {
-        let key = self.inner.get(group)?;
-        Some(key.into_group_key())
-    }
-
     /// Return a unique identifier for a rule if it's known by this registry
     pub fn find_rule(&self, group: &str, rule: &str) -> Option<RuleKey> {
         let key = self.inner.get(&(group, rule))?;

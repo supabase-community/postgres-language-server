@@ -190,7 +190,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             emit_distinct_clause(e, &n.distinct_clause);
         }
 
-        if !n.target_list.is_empty() {
+        if let Some(first) = n.target_list.first() {
             // Compact keeps a lone item on the SELECT line, `select 1`; a list of several still
             // puts one item per line. The indent is for the item's continuation lines, which an
             // item that only breaks inside its parentheses, `coalesce(...)`, doesn't have: indented,
@@ -198,8 +198,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             let lone_compact_item =
                 matches!(e.config().clause_body_style, ClauseBodyStyle::Compact)
                     && n.target_list.len() == 1;
-            let indent =
-                !(lone_compact_item && breaks_only_inside_its_parentheses(e, &n.target_list[0]));
+            let indent = !(lone_compact_item && breaks_only_inside_its_parentheses(e, first));
 
             if indent {
                 e.indent_start();

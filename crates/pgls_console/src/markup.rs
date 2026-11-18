@@ -170,8 +170,11 @@ pub struct Markup<'fmt>(pub &'fmt [MarkupNode<'fmt>]);
 impl Markup<'_> {
     pub fn to_owned(&self) -> MarkupBuf {
         let mut result = MarkupBuf(Vec::new());
-        // SAFETY: The implementation of Write for MarkupBuf below always returns Ok
-        Formatter::new(&mut result).write_markup(*self).unwrap();
+        let written = Formatter::new(&mut result).write_markup(*self);
+        debug_assert!(
+            written.is_ok(),
+            "the implementation of Write for MarkupBuf below always returns Ok"
+        );
         result
     }
 }

@@ -35,7 +35,7 @@ pub(crate) fn is_query(ast: &NodeEnum) -> bool {
     let NodeEnum::SelectStmt(select) = ast else {
         return false;
     };
-    select.into_clause.is_none()
+    select.into_clause_of_query().is_none()
         && select.with_clause.as_ref().is_none_or(|with| {
             with.ctes.iter().all(|cte| match &cte.node {
                 Some(NodeEnum::CommonTableExpr(cte)) => matches!(
@@ -72,7 +72,7 @@ pub(crate) fn refusal(ast: &NodeEnum) -> Option<String> {
 /// Whether executing `ast` may change the schema, i.e. it does more than reading or writing rows.
 pub(crate) fn may_change_schema(ast: &NodeEnum) -> bool {
     match ast {
-        NodeEnum::SelectStmt(select) => select.into_clause.is_some(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_some(),
         NodeEnum::InsertStmt(_)
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)
@@ -124,7 +124,7 @@ async fn execute_on_own_connection(
     let backend_pid = prepare_session(conn, options.timeout).await?;
 
     // Boxing the future pins down the lifetime of the borrowed connection, which the `Send`
-    // check of `run_async` can't infer otherwise.
+    // check of `WorkspaceRuntime::run` can't infer otherwise.
     let result = match future::select(run(conn, sql, options.is_query).boxed(), cancel).await {
         future::Either::Left((result, _)) => result,
         future::Either::Right((cancelled, run)) => {
@@ -362,4 +362,20 @@ fn row_values(row: &PgRow, truncated_values: &mut bool) -> Vec<Option<String>> {
             Some(value)
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_query, may_change_schema};
+
+    #[test]
+    fn select_into_of_a_set_operation_creates_a_table() {
+        // Postgres takes the `INTO` from the left-most select of the set operation.
+        let ast = pgls_query::parse("select 1 as a into t union select 2")
+            .unwrap()
+            .into_root()
+            .unwrap();
+        assert!(!is_query(&ast));
+        assert!(may_change_schema(&ast));
+    }
 }

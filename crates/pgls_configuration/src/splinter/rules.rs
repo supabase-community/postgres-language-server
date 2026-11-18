@@ -52,10 +52,10 @@ impl std::str::FromStr for RuleGroup {
 #[cfg_attr(feature = "schema", schemars(rename = "SplinterRules"))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rules {
-    #[doc = r" It enables the lint rules recommended by Postgres Language Server. `true` by default."]
+    #[doc = r" It enables the recommended rules. `true` by default."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recommended: Option<bool>,
-    #[doc = r" It enables ALL rules. The rules that belong to `nursery` won't be enabled."]
+    #[doc = r" It enables all rules."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub all: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -227,22 +227,22 @@ impl Performance {
         "unusedIndex",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
+        RuleFilter::Rule(Self::GROUP_NAME, "authRlsInitplan"),
+        RuleFilter::Rule(Self::GROUP_NAME, "duplicateIndex"),
+        RuleFilter::Rule(Self::GROUP_NAME, "multiplePermissivePolicies"),
+        RuleFilter::Rule(Self::GROUP_NAME, "noPrimaryKey"),
+        RuleFilter::Rule(Self::GROUP_NAME, "tableBloat"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unindexedForeignKeys"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unusedIndex"),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
+        RuleFilter::Rule(Self::GROUP_NAME, "authRlsInitplan"),
+        RuleFilter::Rule(Self::GROUP_NAME, "duplicateIndex"),
+        RuleFilter::Rule(Self::GROUP_NAME, "multiplePermissivePolicies"),
+        RuleFilter::Rule(Self::GROUP_NAME, "noPrimaryKey"),
+        RuleFilter::Rule(Self::GROUP_NAME, "tableBloat"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unindexedForeignKeys"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unusedIndex"),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -262,37 +262,40 @@ impl Performance {
         if let Some(rule) = self.auth_rls_initplan.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "authRlsInitplan"));
         }
         if let Some(rule) = self.duplicate_index.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "duplicateIndex"));
         }
         if let Some(rule) = self.multiple_permissive_policies.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "multiplePermissivePolicies",
+            ));
         }
         if let Some(rule) = self.no_primary_key.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "noPrimaryKey"));
         }
         if let Some(rule) = self.table_bloat.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "tableBloat"));
         }
         if let Some(rule) = self.unindexed_foreign_keys.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unindexedForeignKeys"));
         }
         if let Some(rule) = self.unused_index.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unusedIndex"));
         }
         index_set
     }
@@ -301,43 +304,49 @@ impl Performance {
         if let Some(rule) = self.auth_rls_initplan.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "authRlsInitplan"));
         }
         if let Some(rule) = self.duplicate_index.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "duplicateIndex"));
         }
         if let Some(rule) = self.multiple_permissive_policies.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "multiplePermissivePolicies",
+            ));
         }
         if let Some(rule) = self.no_primary_key.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "noPrimaryKey"));
         }
         if let Some(rule) = self.table_bloat.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "tableBloat"));
         }
         if let Some(rule) = self.unindexed_foreign_keys.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unindexedForeignKeys"));
         }
         if let Some(rule) = self.unused_index.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unusedIndex"));
         }
         index_set
     }
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-        Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+        Self::GROUP_RULES
+            .binary_search(&rule_name)
+            .ok()
+            .and_then(|index| Self::GROUP_RULES.get(index).copied())
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS
@@ -571,40 +580,40 @@ impl Security {
         "unsupportedRegTypes",
     ];
     const RECOMMENDED_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
+        RuleFilter::Rule(Self::GROUP_NAME, "authUsersExposed"),
+        RuleFilter::Rule(Self::GROUP_NAME, "extensionInPublic"),
+        RuleFilter::Rule(Self::GROUP_NAME, "extensionVersionsOutdated"),
+        RuleFilter::Rule(Self::GROUP_NAME, "fkeyToAuthUnique"),
+        RuleFilter::Rule(Self::GROUP_NAME, "foreignTableInApi"),
+        RuleFilter::Rule(Self::GROUP_NAME, "functionSearchPathMutable"),
+        RuleFilter::Rule(Self::GROUP_NAME, "insecureQueueExposedInApi"),
+        RuleFilter::Rule(Self::GROUP_NAME, "materializedViewInApi"),
+        RuleFilter::Rule(Self::GROUP_NAME, "policyExistsRlsDisabled"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsDisabledInPublic"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsEnabledNoPolicy"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsPolicyAlwaysTrue"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsReferencesUserMetadata"),
+        RuleFilter::Rule(Self::GROUP_NAME, "securityDefinerView"),
+        RuleFilter::Rule(Self::GROUP_NAME, "sensitiveColumnsExposed"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unsupportedRegTypes"),
     ];
     const ALL_RULES_AS_FILTERS: &'static [RuleFilter<'static>] = &[
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]),
-        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
+        RuleFilter::Rule(Self::GROUP_NAME, "authUsersExposed"),
+        RuleFilter::Rule(Self::GROUP_NAME, "extensionInPublic"),
+        RuleFilter::Rule(Self::GROUP_NAME, "extensionVersionsOutdated"),
+        RuleFilter::Rule(Self::GROUP_NAME, "fkeyToAuthUnique"),
+        RuleFilter::Rule(Self::GROUP_NAME, "foreignTableInApi"),
+        RuleFilter::Rule(Self::GROUP_NAME, "functionSearchPathMutable"),
+        RuleFilter::Rule(Self::GROUP_NAME, "insecureQueueExposedInApi"),
+        RuleFilter::Rule(Self::GROUP_NAME, "materializedViewInApi"),
+        RuleFilter::Rule(Self::GROUP_NAME, "policyExistsRlsDisabled"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsDisabledInPublic"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsEnabledNoPolicy"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsPolicyAlwaysTrue"),
+        RuleFilter::Rule(Self::GROUP_NAME, "rlsReferencesUserMetadata"),
+        RuleFilter::Rule(Self::GROUP_NAME, "securityDefinerView"),
+        RuleFilter::Rule(Self::GROUP_NAME, "sensitiveColumnsExposed"),
+        RuleFilter::Rule(Self::GROUP_NAME, "unsupportedRegTypes"),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -624,82 +633,100 @@ impl Security {
         if let Some(rule) = self.auth_users_exposed.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "authUsersExposed"));
         }
         if let Some(rule) = self.extension_in_public.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "extensionInPublic"));
         }
         if let Some(rule) = self.extension_versions_outdated.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "extensionVersionsOutdated",
+            ));
         }
         if let Some(rule) = self.fkey_to_auth_unique.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "fkeyToAuthUnique"));
         }
         if let Some(rule) = self.foreign_table_in_api.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "foreignTableInApi"));
         }
         if let Some(rule) = self.function_search_path_mutable.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "functionSearchPathMutable",
+            ));
         }
         if let Some(rule) = self.insecure_queue_exposed_in_api.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "insecureQueueExposedInApi",
+            ));
         }
         if let Some(rule) = self.materialized_view_in_api.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "materializedViewInApi"));
         }
         if let Some(rule) = self.policy_exists_rls_disabled.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "policyExistsRlsDisabled",
+            ));
         }
         if let Some(rule) = self.rls_disabled_in_public.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "rlsDisabledInPublic"));
         }
         if let Some(rule) = self.rls_enabled_no_policy.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "rlsEnabledNoPolicy"));
         }
         if let Some(rule) = self.rls_policy_always_true.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "rlsPolicyAlwaysTrue"));
         }
         if let Some(rule) = self.rls_references_user_metadata.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "rlsReferencesUserMetadata",
+            ));
         }
         if let Some(rule) = self.security_definer_view.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "securityDefinerView"));
         }
         if let Some(rule) = self.sensitive_columns_exposed.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "sensitiveColumnsExposed",
+            ));
         }
         if let Some(rule) = self.unsupported_reg_types.as_ref()
             && rule.is_enabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unsupportedRegTypes"));
         }
         index_set
     }
@@ -708,88 +735,109 @@ impl Security {
         if let Some(rule) = self.auth_users_exposed.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[0]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "authUsersExposed"));
         }
         if let Some(rule) = self.extension_in_public.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[1]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "extensionInPublic"));
         }
         if let Some(rule) = self.extension_versions_outdated.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[2]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "extensionVersionsOutdated",
+            ));
         }
         if let Some(rule) = self.fkey_to_auth_unique.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[3]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "fkeyToAuthUnique"));
         }
         if let Some(rule) = self.foreign_table_in_api.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[4]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "foreignTableInApi"));
         }
         if let Some(rule) = self.function_search_path_mutable.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[5]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "functionSearchPathMutable",
+            ));
         }
         if let Some(rule) = self.insecure_queue_exposed_in_api.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[6]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "insecureQueueExposedInApi",
+            ));
         }
         if let Some(rule) = self.materialized_view_in_api.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[7]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "materializedViewInApi"));
         }
         if let Some(rule) = self.policy_exists_rls_disabled.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[8]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "policyExistsRlsDisabled",
+            ));
         }
         if let Some(rule) = self.rls_disabled_in_public.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[9]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "rlsDisabledInPublic"));
         }
         if let Some(rule) = self.rls_enabled_no_policy.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[10]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "rlsEnabledNoPolicy"));
         }
         if let Some(rule) = self.rls_policy_always_true.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[11]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "rlsPolicyAlwaysTrue"));
         }
         if let Some(rule) = self.rls_references_user_metadata.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[12]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "rlsReferencesUserMetadata",
+            ));
         }
         if let Some(rule) = self.security_definer_view.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[13]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "securityDefinerView"));
         }
         if let Some(rule) = self.sensitive_columns_exposed.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
+            index_set.insert(RuleFilter::Rule(
+                Self::GROUP_NAME,
+                "sensitiveColumnsExposed",
+            ));
         }
         if let Some(rule) = self.unsupported_reg_types.as_ref()
             && rule.is_disabled()
         {
-            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
+            index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, "unsupportedRegTypes"));
         }
         index_set
     }
     #[doc = r" Checks if, given a rule name, matches one of the rules contained in this category"]
     pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-        Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+        Self::GROUP_RULES
+            .binary_search(&rule_name)
+            .ok()
+            .and_then(|index| Self::GROUP_RULES.get(index).copied())
     }
     pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
         Self::RECOMMENDED_RULES_AS_FILTERS

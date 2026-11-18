@@ -32,7 +32,7 @@ pub struct SplitResult {
 /// two just because it is formatted across a blank line.
 pub fn split(sql: &str) -> SplitResult {
     let lexed = Lexer::new(sql).lex();
-    let coarse = split_pass(&lexed, false);
+    let coarse = split_pass(&lexed, false, true);
 
     // Resolved to text ranges up front so each one can be attributed to the
     // fragment that contains it. There is normally none at all.
@@ -50,9 +50,12 @@ pub fn split(sql: &str) -> SplitResult {
             .peekable()
     });
 
-    let mut ranges = Vec::with_capacity(coarse.ranges.len());
-    let mut errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
-    let lex_errors = errors.len();
+    let errors: Vec<SplitDiagnostic> = lexed.errors().into_iter().map(Into::into).collect();
+    let mut result = SplitResult {
+        ranges: Vec::with_capacity(coarse.ranges.len()),
+        lex_errors: errors.len(),
+        errors,
+    };
 
     for range in coarse.ranges {
         let contains_blank_line = blank_lines.as_mut().is_some_and(|blank_lines| {
@@ -65,13 +68,17 @@ pub fn split(sql: &str) -> SplitResult {
                 .peek()
                 .is_some_and(|blank_line| range.contains_range(*blank_line))
         });
+        let holds_back = coarse.operand_keywords.any_in(range);
 
         // The two passes differ only in how they treat a blank line, so a
         // fragment without one would come back from the recovery pass
         // byte-identical, errors included. Nothing to ask PostgreSQL about.
         if !contains_blank_line {
-            ranges.push(range);
-            errors.extend(
+            if holds_back && result.push_split_at_operand_keywords(sql, range, false) {
+                continue;
+            }
+            result.ranges.push(range);
+            result.errors.extend(
                 coarse_errors
                     .iter()
                     .filter(|(span, _)| range.contains_range(*span))
@@ -85,7 +92,7 @@ pub fn split(sql: &str) -> SplitResult {
         // the whole-source lex above already reported them.
         let offset = range.start();
         let fragment = Lexer::new(&sql[range]).lex();
-        let recovered = split_pass(&fragment, true);
+        let recovered = split_pass(&fragment, true, true);
 
         if parses(&sql[range])
             && (continues_schema_elements(&fragment, &recovered.ranges)
@@ -93,23 +100,70 @@ pub fn split(sql: &str) -> SplitResult {
         {
             // PostgreSQL is happy with the fragment as a whole, so any splitter
             // complaint about it was a false positive. Drop it with the blank line.
-            ranges.push(range);
+            result.ranges.push(range);
             continue;
         }
 
-        ranges.extend(recovered.ranges.into_iter().map(|r| r + offset));
-        errors.extend(
+        // A piece that holds back a statement start may be split again at it,
+        // replacing the errors of the recovery pass in it.
+        let mut split_again = Vec::new();
+        for piece in recovered.ranges {
+            if recovered.operand_keywords.any_in(piece)
+                && result.push_split_at_operand_keywords(sql, piece + offset, true)
+            {
+                split_again.push(piece);
+            } else {
+                result.ranges.push(piece + offset);
+            }
+        }
+        result.errors.extend(
             recovered
                 .errors
                 .into_iter()
-                .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
+                .map(|err| (fragment.range(err.token), err.msg))
+                .filter(|(span, _)| !split_again.iter().any(|piece| piece.contains_range(*span)))
+                .map(|(span, msg)| SplitDiagnostic::new(msg, span + offset)),
         );
     }
 
-    SplitResult {
-        ranges,
-        errors,
-        lex_errors,
+    result
+}
+
+impl SplitResult {
+    /// Splits `range` of `sql` at the statement keywords it holds back, e.g. the `update` after
+    /// `where`, if PostgreSQL can't parse the range as a whole but a statement that starts at
+    /// one of them: that is what a `;` missing before it looks like, as when a statement is
+    /// typed above another one. Pushes the statements and their errors, and returns whether it
+    /// did. A range that stays whole is one statement, finished or not, like `where update = `
+    /// while typing.
+    fn push_split_at_operand_keywords(
+        &mut self,
+        sql: &str,
+        range: TextRange,
+        blank_line_is_boundary: bool,
+    ) -> bool {
+        if parses(&sql[range]) {
+            return false;
+        }
+        let offset = range.start();
+        let fragment = Lexer::new(&sql[range]).lex();
+        let pass = split_pass(&fragment, blank_line_is_boundary, false);
+        // Each statement keyword the pass didn't hold back starts a statement.
+        let starts_statement = pass
+            .ranges
+            .iter()
+            .any(|piece| pass.operand_keywords.start(*piece) && parses(&sql[*piece + offset]));
+        if !starts_statement {
+            return false;
+        }
+        self.ranges
+            .extend(pass.ranges.into_iter().map(|r| r + offset));
+        self.errors.extend(
+            pass.errors
+                .into_iter()
+                .map(|err| SplitDiagnostic::new(err.msg, fragment.range(err.token) + offset)),
+        );
+        true
     }
 }
 
@@ -139,36 +193,39 @@ const COMPARE_BLOCK_BYTES: usize = 64;
 
 /// The length of the longest common prefix of `a` and `b`.
 fn common_prefix(a: &[u8], b: &[u8]) -> usize {
-    let len = a.len().min(b.len());
-    let mut equal = 0;
-    while equal + COMPARE_BLOCK_BYTES <= len
-        && a[equal..equal + COMPARE_BLOCK_BYTES] == b[equal..equal + COMPARE_BLOCK_BYTES]
-    {
-        equal += COMPARE_BLOCK_BYTES;
-    }
+    let equal = a
+        .as_chunks::<COMPARE_BLOCK_BYTES>()
+        .0
+        .iter()
+        .zip(b.as_chunks::<COMPARE_BLOCK_BYTES>().0)
+        .take_while(|(a, b)| a == b)
+        .count()
+        * COMPARE_BLOCK_BYTES;
     equal
-        + a[equal..len]
-            .iter()
-            .zip(&b[equal..len])
+        + a.iter()
+            .zip(b)
+            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
 
 /// The length of the longest common suffix of `a` and `b`, which have the same length.
 fn common_suffix(a: &[u8], b: &[u8]) -> usize {
-    let len = a.len();
-    let mut equal = 0;
-    while equal + COMPARE_BLOCK_BYTES <= len
-        && a[len - equal - COMPARE_BLOCK_BYTES..len - equal]
-            == b[len - equal - COMPARE_BLOCK_BYTES..len - equal]
-    {
-        equal += COMPARE_BLOCK_BYTES;
-    }
+    // `as_rchunks` puts the remainder at the start; its chunks run to the end.
+    let equal = a
+        .as_rchunks::<COMPARE_BLOCK_BYTES>()
+        .1
+        .iter()
+        .rev()
+        .zip(b.as_rchunks::<COMPARE_BLOCK_BYTES>().1.iter().rev())
+        .take_while(|(a, b)| a == b)
+        .count()
+        * COMPARE_BLOCK_BYTES;
     equal
-        + a[..len - equal]
-            .iter()
+        + a.iter()
             .rev()
-            .zip(b[..len - equal].iter().rev())
+            .zip(b.iter().rev())
+            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
@@ -197,8 +254,8 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // both would otherwise cover the whole of `old`.
     let max_suffix = old.len().min(new.len()) - prefix;
     let mut suffix = common_suffix(
-        &old_bytes[old.len() - max_suffix..],
-        &new_bytes[new.len() - max_suffix..],
+        old_bytes.get(old.len() - max_suffix..)?,
+        new_bytes.get(new.len() - max_suffix..)?,
     );
     while !old.is_char_boundary(old.len() - suffix) || !new.is_char_boundary(new.len() - suffix) {
         suffix -= 1;
@@ -212,9 +269,8 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // The change, with a byte of context on each side, because two bytes can form a token like
     // `/*` or `--` together.
     let touches_lexer_state = |text: &[u8], end: usize| {
-        text[prefix.saturating_sub(1)..(end + 1).min(text.len())]
-            .iter()
-            .any(|byte| LEXER_STATE_BYTES.contains(byte))
+        text.get(prefix.saturating_sub(1)..(end + 1).min(text.len()))
+            .is_none_or(|change| change.iter().any(|byte| LEXER_STATE_BYTES.contains(byte)))
     };
     if touches_lexer_state(old_bytes, old_end) || touches_lexer_state(new_bytes, new_end) {
         return None;
@@ -242,12 +298,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     let start = if first == 0 {
         0
     } else {
-        usize::from(ranges[first].start())
+        usize::from(ranges.get(first)?.start())
     };
     let new_region_end = if last == ranges.len() {
         new.len()
     } else {
-        (usize::from(ranges[last - 1].end()) + new.len()).checked_sub(old.len())?
+        (usize::from(ranges.get(last.checked_sub(1)?)?.end()) + new.len()).checked_sub(old.len())?
     };
     // The region has to contain the whole change.
     if start > prefix || new_region_end < new_end {
@@ -271,9 +327,7 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // reaches one of them, e.g. it merges a touched statement into it, the ranges differ here
     // and the whole file is split instead.
     let before = touched - first;
-    if first > 0
-        && (region_ranges.len() < before || region_ranges[..before] != ranges[first..touched])
-    {
+    if first > 0 && region_ranges.get(..before) != ranges.get(first..touched) {
         return None;
     }
     if last < ranges.len() {
@@ -281,11 +335,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         if region_ranges.len() < after_count {
             return None;
         }
-        let expected = ranges[after..last]
+        let expected = ranges
+            .get(after..last)?
             .iter()
             .map(|range| shift(*range))
             .collect::<Option<Vec<_>>>()?;
-        if region_ranges[region_ranges.len() - after_count..] != expected[..] {
+        if region_ranges.get(region_ranges.len() - after_count..) != Some(expected.as_slice()) {
             return None;
         }
     }
@@ -301,12 +356,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     // region's first statement and before its last one. `old_high` is where `new_high` was in
     // `old`. Statements `..kept_before` and `kept_after..` come from `previous`.
     let low = if first > 0 {
-        ranges[first].end()
+        ranges.get(first)?.end()
     } else {
         TextSize::from(0)
     };
     let (old_high, new_high) = if last < ranges.len() {
-        let old_high = ranges[last - 1].start();
+        let old_high = ranges.get(last.checked_sub(1)?)?.start();
         (old_high, shift(TextRange::empty(old_high))?.start())
     } else {
         (to_size(old.len())?, to_size(new.len())?)
@@ -319,13 +374,13 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     };
 
     let mut result_ranges = Vec::with_capacity(ranges.len() + region_ranges.len());
-    result_ranges.extend_from_slice(&ranges[..kept_before]);
+    result_ranges.extend_from_slice(ranges.get(..kept_before)?);
     result_ranges.extend(
         region_ranges
             .into_iter()
             .filter(|range| range.start() >= low && range.start() < new_high),
     );
-    for range in &ranges[kept_after..] {
+    for range in ranges.get(kept_after..)? {
         result_ranges.push(shift(*range)?);
     }
 
@@ -367,12 +422,12 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     })
 }
 
-fn split_pass(lexed: &Lexed, blank_line_is_boundary: bool) -> PassResult {
-    let mut splitter = if blank_line_is_boundary {
-        Splitter::with_blank_line_boundaries(lexed)
-    } else {
-        Splitter::new(lexed)
-    };
+fn split_pass(
+    lexed: &Lexed,
+    blank_line_is_boundary: bool,
+    hold_back_statement_starts: bool,
+) -> PassResult {
+    let mut splitter = Splitter::new(lexed, blank_line_is_boundary, hold_back_statement_starts);
 
     let _ = source(&mut splitter);
 
@@ -435,7 +490,6 @@ fn splits_into_valid_statements(fragment: &str, pieces: &[TextRange]) -> bool {
 mod tests {
     use diagnostics::SplitDiagnostic;
     use ntest::timeout;
-    use pgls_lexer::SyntaxKind;
     use pgls_text_size::TextRange;
 
     use super::*;
@@ -780,7 +834,7 @@ SELECT 1",
         Tester::from("\ninsert select 1\n\nselect 3")
             .expect_statements(vec!["insert select 1", "select 3"])
             .expect_errors(vec![SplitDiagnostic::new(
-                format!("Expected {:?}", SyntaxKind::INTO_KW),
+                "Expected \"INTO\"",
                 TextRange::new(8.into(), 14.into()),
             )]);
     }
@@ -1045,7 +1099,7 @@ SELECT * FROM constraints, indexes, comments, functions;",
             assert_eq!(
                 result.errors.first(),
                 Some(&SplitDiagnostic::new(
-                    "Expected IDENT",
+                    "Expected an identifier",
                     TextRange::new(name.start.into(), name.end.into())
                 )),
                 "{stmt}"
@@ -1300,7 +1354,7 @@ VALUES
     #[test]
     fn does_not_panic_on_eof_expectation() {
         Tester::from("insert").expect_errors(vec![SplitDiagnostic::new(
-            "Expected INTO_KW".to_string(),
+            "Expected \"INTO\"".to_string(),
             TextRange::new(0.into(), 6.into()),
         )]);
     }
@@ -1507,6 +1561,15 @@ VALUES
             .assert_no_errors();
     }
 
+    /// A lone `\r` ends a `--` comment, as in Postgres, so the text after it is part of the
+    /// statement.
+    #[test]
+    fn line_comment_ends_at_a_lone_carriage_return() {
+        Tester::from("select 1 -- c\rfrom t;\nselect 2;")
+            .expect_statements(vec!["select 1 -- c\rfrom t;", "select 2;"])
+            .assert_no_errors();
+    }
+
     #[test]
     fn semicolon_in_comment_and_dollar_quote() {
         Tester::from("select /*;*/ 1;\nselect $$;$$;")
@@ -1521,6 +1584,51 @@ VALUES
     fn blank_line_splits_when_both_halves_are_valid_statements() {
         Tester::from("SELECT a FROM t\n\nBEGIN;")
             .expect_statements(vec!["SELECT a FROM t", "BEGIN;"]);
+    }
+
+    /// `alter`, `insert`, `update` and `delete` are unreserved, so they can name a column or a
+    /// table. After a token that needs an operand they don't start a statement.
+    #[test]
+    fn statement_keywords_as_identifiers() {
+        for sql in [
+            "select * from t where update = 1;",
+            "update t set delete = 1;",
+            "select id, alter from t;",
+            "select * from alter;",
+            "select 1 +\nalter;",
+            "select insert, update, delete from permissions;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+    }
+
+    /// If the statement doesn't parse with the keyword, but a statement starting at the keyword
+    /// does, a `;` is missing before it.
+    #[test]
+    fn statement_keyword_after_an_unfinished_statement() {
+        // While typing, neither parses: the statement stays whole.
+        Tester::from("select * from t where update = ")
+            .assert_single_statement()
+            .assert_no_errors();
+        Tester::from("select * from t where\nupdate t set x = 1;")
+            .expect_statements(vec!["select * from t where", "update t set x = 1;"])
+            .assert_no_errors();
+        Tester::from("select\ninsert into t values (1);")
+            .expect_statements(vec!["select", "insert into t values (1);"])
+            .assert_no_errors();
+        // The same in a piece of the recovery pass on blank lines.
+        Tester::from("select * from t where\nupdate t set x = 1\n\nvacuum")
+            .expect_statements(vec![
+                "select * from t where",
+                "update t set x = 1",
+                "vacuum",
+            ])
+            .assert_no_errors();
+        Tester::from("select * from t where update = 1\n\nvacuum")
+            .expect_statements(vec!["select * from t where update = 1", "vacuum"])
+            .assert_no_errors();
     }
 
     #[test]

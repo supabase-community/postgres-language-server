@@ -32,28 +32,10 @@ impl ToolConfig {
         self.name
     }
 
-    /// Derived: Crate name that contains the rules
-    #[allow(dead_code)]
-    fn crate_name(&self) -> String {
-        format!("pgls_{}", self.name)
-    }
-
-    /// Derived: The main struct name (Rules, Actions, or Transformations)
-    #[allow(dead_code)]
-    fn struct_name(&self) -> &str {
-        match self.category {
-            RuleCategory::Lint => "Rules",
-            RuleCategory::Action => "Actions",
-            RuleCategory::Transformation => "Transformations",
-        }
-    }
-
-    /// Derived: The generated file name (rules.rs, actions.rs, or transformations.rs)
+    /// Derived: The generated file name
     fn generated_file(&self) -> &str {
         match self.category {
             RuleCategory::Lint => "rules.rs",
-            RuleCategory::Action => "actions.rs",
-            RuleCategory::Transformation => "transformations.rs",
         }
     }
 
@@ -79,7 +61,6 @@ impl ToolConfig {
 /// All supported tools
 const TOOLS: &[ToolConfig] = &[
     ToolConfig::new("linter", RuleCategory::Lint, true),
-    ToolConfig::new("assists", RuleCategory::Action, true),
     ToolConfig::new("splinter", RuleCategory::Lint, false), // Database linter, doesn't handle files
     ToolConfig::new("pglinter", RuleCategory::Lint, false), // Database linter via pglinter extension
 ];
@@ -142,17 +123,12 @@ pub fn generate_tool_configuration(mode: Mode, tool_name: &str) -> Result<()> {
         "linter" => pgls_analyser::visit_registry(&mut visitor),
         "splinter" => pgls_splinter::registry::visit_registry(&mut visitor),
         "pglinter" => pgls_pglinter::registry::visit_registry(&mut visitor),
-        "assists" => anyhow::bail!("Configuration generation for assists is not implemented yet"),
         _ => unreachable!("every tool in `TOOLS` is handled above"),
     }
 
     // Generate configuration files based on category
     let (mod_content, rules_content) = match tool.category {
         RuleCategory::Lint => generate_lint_config(tool, visitor.groups)?,
-        RuleCategory::Action => generate_action_config(tool, visitor.groups)?,
-        RuleCategory::Transformation => {
-            anyhow::bail!("Configuration generation for transformations is not implemented yet")
-        }
     };
 
     // Write generated files
@@ -167,13 +143,13 @@ fn generate_lint_config(
     tool: &ToolConfig,
     groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
 ) -> Result<(String, String)> {
-    let mod_file = generate_lint_mod_file(tool);
+    let mod_file = generate_lint_mod_file(tool)?;
     let rules_file = generate_lint_rules_file(tool, groups)?;
     Ok((mod_file, rules_file))
 }
 
 /// Generate the mod.rs file for a Lint tool
-fn generate_lint_mod_file(tool: &ToolConfig) -> String {
+fn generate_lint_mod_file(tool: &ToolConfig) -> Result<String> {
     let config_struct = Ident::new(&tool.config_struct_name(), Span::call_site());
     let partial_config_struct = Ident::new(&tool.partial_config_struct_name(), Span::call_site());
     let generated_file = tool.generated_file().trim_end_matches(".rs");
@@ -343,7 +319,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> String {
         }
     };
 
-    crate::reformat(content.to_string()).unwrap()
+    crate::reformat(content.to_string())
 }
 
 /// The linter groups, including groups that have no rules yet.
@@ -498,21 +474,23 @@ fn generate_flat_linter_rules_file(
                 severity: #severity,
             }
         });
-        level_arms.push(quote! {
+        let level_arm = quote! {
             #name_literal => self.#ident.as_ref().map(RuleConfiguration::level)
-        });
-        options_arms.push(quote! {
+        };
+        let options_arm = quote! {
             #name_literal => self.#ident.as_ref().and_then(RuleConfiguration::get_options)
-        });
+        };
         if LEGACY_SAFETY_RULES.contains(name) {
             legacy_fields.push(quote! {
                 #[serde(skip_serializing_if = "Option::is_none")]
                 pub #ident: Option<RuleConfiguration<pgls_analyser::options::#options>>
             });
-            legacy_level_arms.push(level_arms.last().unwrap().clone());
-            legacy_options_arms.push(options_arms.last().unwrap().clone());
+            legacy_level_arms.push(level_arm.clone());
+            legacy_options_arms.push(options_arm.clone());
             legacy_names.push((name.to_string(), ident));
         }
+        level_arms.push(level_arm);
+        options_arms.push(options_arm);
     }
 
     for name in REMOVED_LINTER_RULES {
@@ -823,11 +801,11 @@ fn generate_lint_rules_file(
         #[cfg_attr(feature = "schema", schemars(rename = #rules_schema_name_lit))]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
         pub struct Rules {
-            /// It enables the lint rules recommended by Postgres Language Server. `true` by default.
+            /// It enables the recommended rules. `true` by default.
             #[serde(skip_serializing_if = "Option::is_none")]
             pub recommended: Option<bool>,
 
-            /// It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+            /// It enables all rules.
             #[serde(skip_serializing_if = "Option::is_none")]
             pub all: Option<bool>,
 
@@ -974,20 +952,19 @@ fn generate_lint_group_struct(
     // For splinter, generate code to build matchers from ignore patterns
     let mut splinter_ignore_matcher_lines = Vec::new();
 
-    for (index, (rule, metadata)) in rules.iter().enumerate() {
+    for (rule, metadata) in rules {
         let summary = extract_summary_from_docs(metadata.docs);
-        let rule_position = Literal::u8_unsuffixed(index as u8);
         let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
         let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
 
         if metadata.recommended {
             lines_recommended_rule_as_filter.push(quote! {
-                RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
+                RuleFilter::Rule(Self::GROUP_NAME, #rule)
             });
         }
 
         lines_all_rule_as_filter.push(quote! {
-            RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[#rule_position])
+            RuleFilter::Rule(Self::GROUP_NAME, #rule)
         });
 
         lines_rule.push(quote! {
@@ -1035,7 +1012,7 @@ fn generate_lint_group_struct(
             {
                 index_set.insert(RuleFilter::Rule(
                     Self::GROUP_NAME,
-                    Self::GROUP_RULES[#rule_position],
+                    #rule,
                 ));
             }
         });
@@ -1046,7 +1023,7 @@ fn generate_lint_group_struct(
             {
                 index_set.insert(RuleFilter::Rule(
                     Self::GROUP_NAME,
-                    Self::GROUP_RULES[#rule_position],
+                    #rule,
                 ));
             }
         });
@@ -1146,7 +1123,10 @@ fn generate_lint_group_struct(
 
             /// Checks if, given a rule name, matches one of the rules contained in this category
             pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-                Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
+                Self::GROUP_RULES
+                    .binary_search(&rule_name)
+                    .ok()
+                    .and_then(|index| Self::GROUP_RULES.get(index).copied())
             }
 
             pub(crate) fn recommended_rules_as_filters() -> &'static [RuleFilter<'static>] {
@@ -1242,322 +1222,4 @@ fn extract_summary_from_docs(docs: &str) -> String {
     }
 
     summary
-}
-
-/// Generate configuration files for Action category tools (assists)
-fn generate_action_config(
-    tool: &ToolConfig,
-    groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
-) -> Result<(String, String)> {
-    let mod_file = generate_action_mod_file(tool);
-    let actions_file = generate_action_actions_file(tool, groups)?;
-    Ok((mod_file, actions_file))
-}
-
-/// Generate the mod.rs file for an Action tool
-fn generate_action_mod_file(tool: &ToolConfig) -> String {
-    let config_struct = Ident::new(&tool.config_struct_name(), Span::call_site());
-    let partial_config_struct = Ident::new(&tool.partial_config_struct_name(), Span::call_site());
-    let generated_file = tool.generated_file().trim_end_matches(".rs");
-    let generated_file_ident = Ident::new(generated_file, Span::call_site());
-
-    let content = quote! {
-        //! Generated file, do not edit by hand, see `xtask/codegen`
-
-        mod #generated_file_ident;
-
-        use crate::StringSet;
-        use pgls_configuration_macros::{Merge, Partial};
-        use bpaf::Bpaf;
-        pub use #generated_file_ident::*;
-        use serde::{Deserialize, Serialize};
-
-        #[derive(Clone, Debug, Deserialize, Eq, Partial, PartialEq, Serialize)]
-        #[partial(derive(Bpaf, Clone, Eq, Merge, PartialEq))]
-        #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
-        #[partial(serde(deny_unknown_fields, rename_all = "camelCase"))]
-        pub struct #config_struct {
-            /// Whether assists should be enabled via LSP.
-            #[partial(bpaf(long("assists-enabled"), argument("true|false")))]
-            pub enabled: bool,
-
-            /// List of actions
-            #[partial(bpaf(pure(Default::default()), optional, hide))]
-            pub actions: Actions,
-
-            /// A list of Unix shell style patterns. The assists will ignore files/folders that will
-            /// match these patterns.
-            #[partial(bpaf(hide))]
-            pub ignore: StringSet,
-
-            /// A list of Unix shell style patterns. The assists will include files/folders that will
-            /// match these patterns.
-            #[partial(bpaf(hide))]
-            pub include: StringSet,
-        }
-
-        impl Default for #config_struct {
-            fn default() -> Self {
-                Self {
-                    enabled: true,
-                    actions: Actions::default(),
-                    ignore: Default::default(),
-                    include: Default::default(),
-                }
-            }
-        }
-
-        impl #partial_config_struct {
-            pub const fn is_disabled(&self) -> bool {
-                matches!(self.enabled, Some(false))
-            }
-
-            pub fn get_actions(&self) -> Actions {
-                self.actions.clone().unwrap_or_default()
-            }
-        }
-    };
-
-    crate::reformat(content.to_string()).unwrap()
-}
-
-/// Generate the actions.rs file for an Action tool
-fn generate_action_actions_file(
-    _tool: &ToolConfig,
-    groups: BTreeMap<&'static str, BTreeMap<&'static str, RuleMetadata>>,
-) -> Result<String> {
-    let mut struct_groups = Vec::with_capacity(groups.len());
-    let mut group_pascal_idents = Vec::with_capacity(groups.len());
-    let mut group_idents = Vec::with_capacity(groups.len());
-    let mut group_strings = Vec::with_capacity(groups.len());
-    let mut group_as_enabled_rules = Vec::with_capacity(groups.len());
-
-    for (group, rules) in groups {
-        let group_pascal_ident = quote::format_ident!("{}", &group.to_case(Case::Pascal));
-        let group_ident = quote::format_ident!("{}", group);
-
-        group_as_enabled_rules.push(quote! {
-            if let Some(group) = self.#group_ident.as_ref() {
-                enabled_rules.extend(&group.get_enabled_rules());
-            }
-        });
-
-        group_pascal_idents.push(group_pascal_ident);
-        group_idents.push(group_ident);
-        group_strings.push(Literal::string(group));
-        struct_groups.push(generate_action_group_struct(group, &rules));
-    }
-
-    let actions_struct_content = quote! {
-        //! Generated file, do not edit by hand, see `xtask/codegen`
-
-        use crate::rules::{RuleAssistConfiguration, RuleAssistPlainConfiguration};
-        use pgls_configuration_macros::Merge;
-        use pgls_analyse::RuleFilter;
-        use pgls_analyser::RuleOptions;
-        use pgls_diagnostics::{Category, Severity};
-        use rustc_hash::FxHashSet;
-        #[cfg(feature = "schema")]
-        use schemars::JsonSchema;
-        use serde::{Deserialize, Serialize};
-
-        #[derive(
-            Clone,
-            Copy,
-            Debug,
-            Eq,
-            Hash,
-            Merge,
-            Ord,
-            PartialEq,
-            PartialOrd,
-            serde::Deserialize,
-            serde::Serialize,
-        )]
-        #[cfg_attr(feature = "schema", derive(JsonSchema))]
-        #[serde(rename_all = "camelCase")]
-        pub enum RuleGroup {
-            #( #group_pascal_idents ),*
-        }
-
-        impl RuleGroup {
-            pub const fn as_str(self) -> &'static str {
-                match self {
-                    #( Self::#group_pascal_idents => #group_pascal_idents::GROUP_NAME, )*
-                }
-            }
-        }
-
-        impl std::str::FromStr for RuleGroup {
-            type Err = &'static str;
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                match s {
-                    #( #group_pascal_idents::GROUP_NAME => Ok(Self::#group_pascal_idents), )*
-                    _ => Err("This rule group doesn't exist.")
-                }
-            }
-        }
-
-        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
-        #[cfg_attr(feature = "schema", derive(JsonSchema))]
-        #[serde(rename_all = "camelCase", deny_unknown_fields)]
-        pub struct Actions {
-            #(
-                #[serde(skip_serializing_if = "Option::is_none")]
-                pub #group_idents: Option<#group_pascal_idents>,
-            )*
-        }
-
-        impl Actions {
-            /// Checks if the code coming from [pgls_diagnostics::Diagnostic] corresponds to a rule.
-            /// Usually the code is built like {group}/{rule_name}
-            pub fn has_rule(
-                group: RuleGroup,
-                rule_name: &str,
-            ) -> Option<&'static str> {
-                match group {
-                    #(
-                        RuleGroup::#group_pascal_idents => #group_pascal_idents::has_rule(rule_name),
-                    )*
-                }
-            }
-
-            /// Given a category coming from [Diagnostic](pgls_diagnostics::Diagnostic), this function returns
-            /// the [Severity](pgls_diagnostics::Severity) associated to the rule, if the configuration changed it.
-            /// If the severity is off or not set, then the function returns the default severity of the rule:
-            /// [Severity::Error] for recommended rules and [Severity::Warning] for other rules.
-            ///
-            /// If not, the function returns [None].
-            pub fn get_severity_from_code(&self, category: &Category) -> Option<Severity> {
-                let mut split_code = category.name().split('/');
-
-                let _assists = split_code.next();
-                debug_assert_eq!(_assists, Some("assists"));
-
-                let group = <RuleGroup as std::str::FromStr>::from_str(split_code.next()?).ok()?;
-                let rule_name = split_code.next()?;
-                let rule_name = Self::has_rule(group, rule_name)?;
-                match group {
-                    #(
-                        RuleGroup::#group_pascal_idents => self
-                            .#group_idents
-                            .as_ref()
-                            .and_then(|group| group.get_rule_configuration(rule_name))
-                            .filter(|(level, _)| !matches!(level, RuleAssistPlainConfiguration::Off))
-                            .map(|(level, _)| level.into()),
-                    )*
-                }
-            }
-
-            /// It returns the enabled rules by default.
-            ///
-            /// The enabled rules are calculated from the difference with the disabled rules.
-            pub fn as_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
-                let mut enabled_rules = FxHashSet::default();
-                #( #group_as_enabled_rules )*
-                enabled_rules
-            }
-        }
-
-        #( #struct_groups )*
-
-        #[test]
-        fn test_order() {
-            #(
-                for items in #group_pascal_idents::GROUP_RULES.windows(2) {
-                    assert!(items[0] < items[1], "{} < {}", items[0], items[1]);
-                }
-            )*
-        }
-    };
-
-    crate::reformat(actions_struct_content.to_string())
-}
-
-/// Generate a group struct for action rules
-fn generate_action_group_struct(
-    group: &str,
-    rules: &BTreeMap<&'static str, RuleMetadata>,
-) -> TokenStream {
-    let mut lines_rule = Vec::new();
-    let mut schema_lines_rules = Vec::new();
-    let mut rule_enabled_check_line = Vec::new();
-    let mut get_rule_configuration_line = Vec::new();
-
-    for (index, (rule, metadata)) in rules.iter().enumerate() {
-        let summary = extract_summary_from_docs(metadata.docs);
-        let rule_position = Literal::u8_unsuffixed(index as u8);
-        let rule_identifier = quote::format_ident!("{}", to_snake_case(rule));
-        let rule_name = Ident::new(&to_capitalized(rule), Span::call_site());
-
-        lines_rule.push(quote! {
-             #rule
-        });
-
-        let rule_option_type = quote! {
-            pgls_analyser::options::#rule_name
-        };
-        let rule_option = quote! { Option<RuleAssistConfiguration<#rule_option_type>> };
-
-        schema_lines_rules.push(quote! {
-            #[doc = #summary]
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pub #rule_identifier: #rule_option
-        });
-
-        rule_enabled_check_line.push(quote! {
-            if let Some(rule) = self.#rule_identifier.as_ref()
-                && rule.is_enabled()
-            {
-                index_set.insert(RuleFilter::Rule(
-                    Self::GROUP_NAME,
-                    Self::GROUP_RULES[#rule_position],
-                ));
-            }
-        });
-
-        get_rule_configuration_line.push(quote! {
-            #rule => self.#rule_identifier.as_ref().map(|conf| (conf.level(), conf.get_options()))
-        });
-    }
-
-    let group_pascal_ident = Ident::new(&to_capitalized(group), Span::call_site());
-
-    quote! {
-        #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
-        #[cfg_attr(feature = "schema", derive(JsonSchema))]
-        #[serde(rename_all = "camelCase", default, deny_unknown_fields)]
-        /// A list of rules that belong to this group
-        pub struct #group_pascal_ident {
-            #( #schema_lines_rules ),*
-        }
-
-        impl #group_pascal_ident {
-            const GROUP_NAME: &'static str = #group;
-            pub(crate) const GROUP_RULES: &'static [&'static str] = &[
-                #( #lines_rule ),*
-            ];
-
-            pub(crate) fn get_enabled_rules(&self) -> FxHashSet<RuleFilter<'static>> {
-               let mut index_set = FxHashSet::default();
-               #( #rule_enabled_check_line )*
-               index_set
-            }
-
-            /// Checks if, given a rule name, matches one of the rules contained in this category
-            pub(crate) fn has_rule(rule_name: &str) -> Option<&'static str> {
-                Some(Self::GROUP_RULES[Self::GROUP_RULES.binary_search(&rule_name).ok()?])
-            }
-
-            pub(crate) fn get_rule_configuration(
-                &self,
-                rule_name: &str,
-            ) -> Option<(RuleAssistPlainConfiguration, Option<RuleOptions>)> {
-                match rule_name {
-                    #( #get_rule_configuration_line ),*,
-                    _ => None
-                }
-            }
-        }
-    }
 }

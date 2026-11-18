@@ -7,13 +7,13 @@ use crate::workspace::StatementId;
 
 /// The tree-sitter trees of the statements of a document. They are kept until the statement is
 /// no longer in the document, see [`TreeSitterStore::remove`].
-pub struct TreeSitterStore {
+pub(super) struct TreeSitterStore {
     db: Mutex<FxHashMap<StatementId, Arc<tree_sitter::Tree>>>,
     parser: Mutex<tree_sitter::Parser>,
 }
 
 impl TreeSitterStore {
-    pub fn new() -> TreeSitterStore {
+    pub(super) fn new() -> TreeSitterStore {
         let mut parser = tree_sitter::Parser::new();
         #[expect(
             clippy::expect_used,
@@ -30,34 +30,34 @@ impl TreeSitterStore {
     }
 
     /// The number of statements with a cached tree.
-    pub fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.db.lock().len()
     }
 
     /// Drops every cached tree, and the memory of the map.
-    pub fn clear(&self) {
+    pub(super) fn clear(&self) {
         drop(std::mem::take(&mut *self.db.lock()));
     }
 
     /// Drops the tree of `statement`.
-    pub fn remove(&self, statement: &StatementId) {
+    pub(super) fn remove(&self, statement: &StatementId) {
         self.db.lock().remove(statement);
     }
 
     /// Shrinks the map if it is less than a quarter full, see [`super::parse::shrink`].
-    pub fn shrink(&self) {
+    pub(super) fn shrink(&self) {
         super::parse::shrink(&mut self.db.lock());
     }
 
     /// The number of trees that the map has room for.
     #[cfg(test)]
-    pub fn capacity(&self) -> usize {
+    pub(super) fn capacity(&self) -> usize {
         self.db.lock().capacity()
     }
 
     /// The tree of `statement`. It is only cached if `may_insert` returns `true`, see
     /// [`PgQueryStore::get_or_cache_ast`](super::parse::PgQueryStore::get_or_cache_ast).
-    pub fn get_or_cache_tree(
+    pub(super) fn get_or_cache_tree(
         &self,
         statement: &StatementId,
         may_insert: impl Fn() -> bool,

@@ -1,7 +1,6 @@
 use crate::utils::{alter_table_cmds, altered_relation, cmd_def};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::CatalogView;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 

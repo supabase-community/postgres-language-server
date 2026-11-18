@@ -61,8 +61,8 @@ pub(super) fn emit_rule_stmt(e: &mut EventEmitter, n: &RuleStmt) {
     // Actions - can be NOTHING or a list of statements
     if n.actions.is_empty() {
         e.token(TokenKind::NOTHING_KW);
-    } else if n.actions.len() == 1 {
-        emit_node(e, &n.actions[0]);
+    } else if let [first] = n.actions.as_slice() {
+        emit_node(e, first);
     } else {
         e.token(TokenKind::L_PAREN);
         emit_semicolon_separated_list(e, &n.actions, emit_node);

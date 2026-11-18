@@ -62,7 +62,7 @@ impl PgLSEnv {
             ),
             pgls_log_level: PgLSEnvVariable::new(
                 "PGLS_LOG_LEVEL",
-                "Allows to change the log level. Default is debug. This will only affect \"pgls*\" crates. All others are logged with info level.",
+                "Allows to change the log level: `none`, `trace`, `debug`, `info`, `warn` or `error`. Default is debug for the language server and none for the other commands. This will only affect \"pgls*\" crates. All others are logged with info level.",
             ),
             pgls_log_prefix: PgLSEnvVariable::new(
                 "PGLS_LOG_PREFIX_NAME",

@@ -1,7 +1,3 @@
-// The tokenizer runs on the client's SQL on every change, so a panic on unexpected input takes
-// down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod cursor;
 mod token;
 use cursor::{Cursor, EOF_CHAR};
@@ -270,12 +266,13 @@ impl Cursor<'_> {
         }
     }
 
-    // see: https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L227
+    // see: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L211-L213
+    // non_newline		[^\n\r]
     // comment			("--"{non_newline}*)
     pub(crate) fn line_comment(&mut self) -> TokenKind {
         self.bump();
 
-        self.eat_while(|c| c != '\n');
+        self.eat_while(|c| !is_line_ending(c));
         TokenKind::LineComment
     }
 
@@ -519,52 +516,33 @@ impl Cursor<'_> {
     }
 
     // https://www.postgresql.org/docs/16/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
+    //
+    // The string ends only at the full `$tag$` of its start, as in Postgres'
+    // `<xdolq>{dolqdelim}` rule:
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L757
+    // A `$` that doesn't start it is part of the string, so `myfn$` or `$other$`
+    // inside `$fn$ … $fn$` doesn't end it. Tags can't contain `$`, so checking
+    // each `$` is the same as Postgres' longest match.
     fn dollar_quoted_string(&mut self, start: Vec<char>) -> TokenKind {
-        // we have a dollar quoted string deliminated with `$$`
-        let Some(&first) = start.first() else {
-            loop {
-                self.eat_while(|c| c != '$');
-                if self.is_eof() {
-                    return TokenKind::Literal {
-                        kind: LiteralKind::DollarQuotedString { terminated: false },
-                    };
-                }
-                // eat $
-                self.bump();
-                if self.first() == '$' {
-                    self.bump();
-                    return TokenKind::Literal {
-                        kind: LiteralKind::DollarQuotedString { terminated: true },
-                    };
-                }
-            }
-        };
         loop {
-            self.eat_while(|c| c != first);
+            self.eat_while(|c| c != '$');
             if self.is_eof() {
                 return TokenKind::Literal {
                     kind: LiteralKind::DollarQuotedString { terminated: false },
                 };
             }
+            // eat $
+            self.bump();
 
-            // might be the start of our start/end sequence
-            let mut match_count = 0;
-            for start_char in &start {
-                if self.first() == *start_char {
+            let mut rest = self.as_str().chars();
+            let closes = start.iter().all(|c| rest.next() == Some(*c)) && rest.next() == Some('$');
+            if closes {
+                // the tag and the closing $
+                for _ in 0..=start.len() {
                     self.bump();
-                    match_count += 1;
-                } else {
-                    self.bump();
-                    break;
                 }
-            }
-
-            // closing '$'
-            let terminated = match_count == start.len();
-            if self.first() == '$' && terminated {
-                self.bump();
                 return TokenKind::Literal {
-                    kind: LiteralKind::DollarQuotedString { terminated },
+                    kind: LiteralKind::DollarQuotedString { terminated: true },
                 };
             }
         }
@@ -755,6 +733,27 @@ mod tests {
     }
 
     #[test]
+    fn line_comment_ends_at_a_lone_carriage_return() {
+        assert_debug_snapshot!(lex("select 1 -- c\rfrom t;\r\n-- d\r\n"), @r#"
+        [
+            "select" @ Ident,
+            " " @ Space,
+            "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+            " " @ Space,
+            "-- c" @ LineComment,
+            "\r" @ LineEnding { count: 1 },
+            "from" @ Ident,
+            " " @ Space,
+            "t" @ Ident,
+            ";" @ Semi,
+            "\r\n" @ LineEnding { count: 1 },
+            "-- d" @ LineComment,
+            "\r\n" @ LineEnding { count: 1 },
+        ]
+        "#);
+    }
+
+    #[test]
     fn line_comment_whitespace() {
         assert_debug_snapshot!(lex(r#"
 select 'Hello' -- This is a comment
@@ -794,6 +793,26 @@ $foo$hello world$bar$
 -- with dollar inside but mismatched tags
 $foo$hello$world$bar$
 "#));
+    }
+
+    #[test]
+    fn dollar_quote_closes_only_at_full_tag() {
+        // `myfn$` and `$other$` don't close `$fn$`
+        assert_debug_snapshot!(lex("$fn$ select 1 /* myfn$ $other$ fn$ $f$ */ $fn$;"), @r#"
+        [
+            "$fn$ select 1 /* myfn$ $other$ fn$ $f$ */ $fn$" @ Literal { kind: DollarQuotedString { terminated: true } },
+            ";" @ Semi,
+        ]
+        "#);
+    }
+
+    #[test]
+    fn dollar_quote_unterminated_at_partial_tag() {
+        assert_debug_snapshot!(lex("$fn$ select 1 myfn$"), @r#"
+        [
+            "$fn$ select 1 myfn$" @ Literal { kind: DollarQuotedString { terminated: false } },
+        ]
+        "#);
     }
 
     #[test]

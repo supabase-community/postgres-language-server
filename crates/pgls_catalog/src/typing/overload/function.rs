@@ -4,9 +4,10 @@
 
 use super::candidates::expand_candidates;
 use super::{match_argtypes, resolve_result, select_candidate};
+use crate::Catalog;
 use crate::typing::pseudo::PolymorphicIds;
 use crate::typing::{CallArg, Decision, ResolvedFunction, Selection, Type};
-use crate::{CatalogView, Lookup, TypeKind};
+use crate::{Lookup, TypeKind};
 
 /// Selects the function for a call. Returns `Unknown` when no function with this name and
 /// argument count is visible; that's the job of the name and arity check. `variadic` is set when
@@ -18,7 +19,7 @@ use crate::{CatalogView, Lookup, TypeKind};
 ///
 /// [`func_get_detail`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L1450
 pub fn select_function(
-    c: &dyn CatalogView,
+    c: &Catalog,
     schema: Option<&str>,
     name: &str,
     args: &[CallArg],
@@ -38,7 +39,9 @@ pub fn select_function(
     }
     // Named arguments must follow the positional ones; anything else is a syntax error.
     let positional = args.iter().take_while(|arg| arg.name.is_none()).count();
-    let Some(names) = args[positional..]
+    let Some(names) = args
+        .get(positional..)
+        .unwrap_or_default()
         .iter()
         .map(|arg| arg.name.clone())
         .collect::<Option<Vec<String>>>()
@@ -93,7 +96,10 @@ pub fn select_function(
             0 => {
                 // `ParseFuncOrColumn` tries `col(row)` as a field selection next:
                 // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_func.c#L90
-                if inputs.len() == 1 && names.is_empty() && !is_scalar(c, &inputs[0]) {
+                if let [input] = inputs.as_slice()
+                    && names.is_empty()
+                    && !is_scalar(c, input)
+                {
                     return Selection::Unknown;
                 }
                 return Selection::NoMatch;
@@ -138,7 +144,7 @@ pub fn select_function(
 
 /// Whether a value of this type is certainly not a row, so `col(value)` can't be a field
 /// selection.
-pub(super) fn is_scalar(c: &dyn CatalogView, ty: &Type) -> bool {
+pub(super) fn is_scalar(c: &Catalog, ty: &Type) -> bool {
     let Type::Named(id) = ty else {
         return matches!(ty, Type::UnknownLiteral);
     };

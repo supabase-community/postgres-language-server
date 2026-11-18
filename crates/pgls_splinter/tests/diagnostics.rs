@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use pgls_analyse::AnalysisFilter;
 use pgls_configuration::StringSet;
 use pgls_configuration::rules::RuleConfiguration;
@@ -5,7 +12,7 @@ use pgls_configuration::splinter::{
     Performance, Rules, SplinterConfiguration, SplinterRuleOptions,
 };
 use pgls_console::fmt::{Formatter, HTML};
-use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
+use pgls_diagnostics::{Diagnostic, LogCategory, Severity, Visit};
 use pgls_splinter::{SplinterParams, run_splinter};
 use sqlx::PgPool;
 use std::fmt::Write;
@@ -614,4 +621,68 @@ async fn global_ignore_combined_with_per_rule_ignore(test_db: PgPool) {
         Some("kept"),
         "Expected remaining diagnostic to be for kept"
     );
+}
+
+/// A configured rule level replaces the level of the query: `noPrimaryKey` reports `INFO`.
+#[pgls_test_utils::db_test]
+async fn configured_level_sets_the_severity(test_db: PgPool) {
+    sqlx::raw_sql("CREATE TABLE public.no_pk (data text);")
+        .execute(&test_db)
+        .await
+        .expect("Failed to create test tables");
+
+    let splinter_config = SplinterConfiguration {
+        rules: Rules {
+            recommended: None,
+            all: None,
+            performance: Some(Performance {
+                recommended: None,
+                all: None,
+                auth_rls_initplan: None,
+                duplicate_index: None,
+                multiple_permissive_policies: None,
+                no_primary_key: Some(RuleConfiguration::Plain(
+                    pgls_configuration::rules::RulePlainConfiguration::Error,
+                )),
+                table_bloat: None,
+                unindexed_foreign_keys: None,
+                unused_index: None,
+            }),
+            security: None,
+        },
+        ..Default::default()
+    };
+
+    let filter = AnalysisFilter::default();
+    let severities = |diagnostics: Vec<pgls_splinter::SplinterDiagnostic>| {
+        diagnostics
+            .into_iter()
+            .filter(|d| d.category.name() == "splinter/performance/noPrimaryKey")
+            .map(|d| d.severity)
+            .collect::<Vec<_>>()
+    };
+
+    let unconfigured = run_splinter(
+        SplinterParams {
+            conn: &test_db,
+            snapshot: None,
+            config: None,
+        },
+        &filter,
+    )
+    .await
+    .expect("Failed to run splinter checks");
+    assert_eq!(severities(unconfigured), [Severity::Information]);
+
+    let configured = run_splinter(
+        SplinterParams {
+            conn: &test_db,
+            snapshot: None,
+            config: Some(&splinter_config),
+        },
+        &filter,
+    )
+    .await
+    .expect("Failed to run splinter checks");
+    assert_eq!(severities(configured), [Severity::Error]);
 }

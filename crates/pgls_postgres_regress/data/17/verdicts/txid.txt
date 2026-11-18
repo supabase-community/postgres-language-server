@@ -1,45 +1,45 @@
-7:1 accepted
-8:1 accepted
-9:1 accepted
-12:1 rejected 22P02
-13:1 rejected 22P02
-14:1 rejected 22P02
-15:1 rejected 22P02
-17:1 accepted
-22:1 accepted
-23:1 accepted
-24:1 accepted
-25:1 accepted
-26:1 accepted
-28:1 accepted
-33:1 accepted
-38:1 accepted
-43:1 accepted
-47:1 accepted
-51:1 accepted
-52:1 accepted
-53:1 accepted
-56:1 accepted
-57:1 rejected 22P02
-60:1 skipped
-61:1 accepted
-62:1 rejected 42601
-63:1 rejected 42601
-64:1 skipped
-67:1 skipped
-68:1 rejected 42601
-71:1 skipped
-72:1 rejected 42601
-75:1 skipped
-76:1 rejected 42601
-78:1 rejected 42601
-79:1 rejected 42601
-80:1 rejected 42601
-81:1 accepted
-82:1 accepted
-83:1 accepted
-85:1 skipped
-87:1 skipped
-88:1 accepted
-101:1 rejected 42601
-102:1 skipped
+247..278 accepted
+279..315 accepted
+316..352 accepted
+364..395 rejected 22P02
+396..425 rejected 22P02
+426..458 rejected 22P02
+459..495 rejected 22P02
+497..566 accepted
+568..615 accepted
+616..671 accepted
+672..747 accepted
+748..920 accepted
+921..964 accepted
+966..1083 accepted
+1085..1191 accepted
+1209..1316 accepted
+1346..1415 accepted
+1479..1552 accepted
+1573..1664 accepted
+1665..1788 accepted
+1789..1912 accepted
+1937..1984 accepted
+1985..2032 rejected 22P02
+2067..2073 skipped
+2074..2116 accepted
+2117..2144 rejected 42601
+2145..2223 rejected 42601
+2224..2231 skipped
+2262..2268 skipped
+2269..2317 rejected 42601
+2319..2325 skipped
+2326..2377 rejected 42601
+2379..2385 skipped
+2386..2427 rejected 42601
+2429..2473 rejected 42601
+2474..2520 rejected 42601
+2521..2567 rejected 42601
+2568..2590 accepted
+2637..2659 accepted
+2703..2725 accepted
+2807..2814 skipped
+2816..2822 skipped
+2823..3122 accepted
+3123..3174 rejected 42601
+3175..3184 skipped

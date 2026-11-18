@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::{fmt::Write, slice};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use pgls_analyse::{
     AnalysisFilter, GroupCategory, RegistryVisitor, RuleCategory, RuleFilter, RuleGroup, RuleMeta,
     RuleMetadata,
@@ -148,20 +148,23 @@ fn assert_lint(
     // Typecheck rules need a database. Examples run against one with empty `public` and
     // `pg_catalog` schemas and create everything else themselves.
     let is_typecheck = group == pgls_analyser::TYPECHECK_GROUP;
-    let diagnostics = analyser.run(pgls_analyser::AnalyserParams {
-        stmts,
-        catalog_base: is_typecheck.then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
-        search_path: vec!["public".into()],
-        typecheck: is_typecheck,
-        ..Default::default()
-    });
+    let diagnostics = analyser
+        .analyse(pgls_analyser::AnalyserParams {
+            stmts,
+            catalog_base: is_typecheck
+                .then(|| std::sync::Arc::new(pgls_catalog::CatalogBase::empty())),
+            search_path: vec!["public".into()],
+            typecheck: is_typecheck,
+            ..Default::default()
+        })
+        .diagnostics;
     for rule_diag in diagnostics {
         let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 
-        let category = diag.category().expect("linter diagnostic has no code");
-        let severity = settings
-            .get_severity_from_rule_code(category)
-            .expect("If you see this error, it means you need to run cargo codegen-configuration");
+        let category = diag.category().context("linter diagnostic has no code")?;
+        let severity = settings.get_severity_from_rule_code(category).context(
+            "If you see this error, it means you need to run cargo codegen-configuration",
+        )?;
 
         let error = diag
             .with_severity(severity)

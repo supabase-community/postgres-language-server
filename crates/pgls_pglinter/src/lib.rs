@@ -8,21 +8,20 @@ pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
 use pgls_catalog::Snapshot;
-use pgls_diagnostics::DatabaseObjectOwned;
 use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
 pub use cache::{PglinterCache, RuleMessage};
-pub use diagnostics::{PglinterAdvices, PglinterDiagnostic};
+pub use diagnostics::{DatabaseObject, PglinterAdvices, PglinterDiagnostic};
 pub use rule::PglinterRule;
 
 /// PostgreSQL catalog OIDs for different object types
 mod pg_catalog {
-    pub const PG_CLASS: i64 = 1259; // tables, views, indexes, sequences
-    pub const PG_PROC: i64 = 1255; // functions, procedures
-    pub const PG_TYPE: i64 = 1247; // types
-    pub const PG_NAMESPACE: i64 = 2615; // schemas
-    pub const PG_ATTRIBUTE: i64 = 1249; // columns (objid=table oid, objsubid=column number)
+    pub(crate) const PG_CLASS: i64 = 1259; // tables, views, indexes, sequences
+    pub(crate) const PG_PROC: i64 = 1255; // functions, procedures
+    pub(crate) const PG_TYPE: i64 = 1247; // types
+    pub(crate) const PG_NAMESPACE: i64 = 2615; // schemas
+    pub(crate) const PG_ATTRIBUTE: i64 = 1249; // columns (objid=table oid, objsubid=column number)
 }
 
 /// A violation row returned by pglinter.get_violations()
@@ -188,66 +187,56 @@ fn resolve_object_from_cache(
     classid: i64,
     objid: i64,
     objsubid: i32,
-) -> Option<DatabaseObjectOwned> {
+) -> Option<DatabaseObject> {
     match classid {
         pg_catalog::PG_CLASS => {
             // pg_class contains tables, views, indexes, sequences, etc.
             // Try tables first, then indexes, then sequences
             snapshot
                 .find_table_by_id(objid)
-                .map(|t| DatabaseObjectOwned {
+                .map(|t| DatabaseObject {
                     schema: Some(t.schema.clone()),
                     name: t.name.clone(),
                     object_type: Some(format!("{:?}", t.table_kind).to_lowercase()),
                 })
                 .or_else(|| {
-                    snapshot
-                        .find_index_by_id(objid)
-                        .map(|i| DatabaseObjectOwned {
-                            schema: Some(i.schema.clone()),
-                            name: i.name.clone(),
-                            object_type: Some("index".to_string()),
-                        })
+                    snapshot.find_index_by_id(objid).map(|i| DatabaseObject {
+                        schema: Some(i.schema.clone()),
+                        name: i.name.clone(),
+                        object_type: Some("index".to_string()),
+                    })
                 })
                 .or_else(|| {
-                    snapshot
-                        .find_sequence_by_id(objid)
-                        .map(|s| DatabaseObjectOwned {
-                            schema: Some(s.schema.clone()),
-                            name: s.name.clone(),
-                            object_type: Some("sequence".to_string()),
-                        })
+                    snapshot.find_sequence_by_id(objid).map(|s| DatabaseObject {
+                        schema: Some(s.schema.clone()),
+                        name: s.name.clone(),
+                        object_type: Some("sequence".to_string()),
+                    })
                 })
         }
         pg_catalog::PG_PROC => {
             // Functions and procedures
-            snapshot
-                .find_function_by_id(objid)
-                .map(|f| DatabaseObjectOwned {
-                    schema: Some(f.schema.clone()),
-                    name: f.name.clone(),
-                    object_type: Some(format!("{:?}", f.kind).to_lowercase()),
-                })
+            snapshot.find_function_by_id(objid).map(|f| DatabaseObject {
+                schema: Some(f.schema.clone()),
+                name: f.name.clone(),
+                object_type: Some(format!("{:?}", f.kind).to_lowercase()),
+            })
         }
         pg_catalog::PG_TYPE => {
             // Types
-            snapshot
-                .find_type_by_id(objid)
-                .map(|t| DatabaseObjectOwned {
-                    schema: Some(t.schema.clone()),
-                    name: t.name.clone(),
-                    object_type: Some("type".to_string()),
-                })
+            snapshot.find_type_by_id(objid).map(|t| DatabaseObject {
+                schema: Some(t.schema.clone()),
+                name: t.name.clone(),
+                object_type: Some("type".to_string()),
+            })
         }
         pg_catalog::PG_NAMESPACE => {
             // Schemas
-            snapshot
-                .find_schema_by_id(objid)
-                .map(|s| DatabaseObjectOwned {
-                    schema: None,
-                    name: s.name.clone(),
-                    object_type: Some("schema".to_string()),
-                })
+            snapshot.find_schema_by_id(objid).map(|s| DatabaseObject {
+                schema: None,
+                name: s.name.clone(),
+                object_type: Some("schema".to_string()),
+            })
         }
         pg_catalog::PG_ATTRIBUTE => {
             // Columns: objid is table OID, objsubid is column number (attnum)
@@ -257,7 +246,7 @@ fn resolve_object_from_cache(
                 .columns
                 .iter()
                 .find(|c| c.table_oid == objid && c.number == col_num)
-                .map(|c| DatabaseObjectOwned {
+                .map(|c| DatabaseObject {
                     schema: Some(c.schema_name.clone()),
                     name: format!("{}.{}", c.table_name, c.name),
                     object_type: Some("column".to_string()),

@@ -2,7 +2,7 @@ use quote::{format_ident, quote};
 
 use crate::proto_analyser::ProtoAnalyzer;
 
-pub fn node_location_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
+pub(crate) fn node_location_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
     let arms = analyser
         .enum_variants()
         .into_iter()

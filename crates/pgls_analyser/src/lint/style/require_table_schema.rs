@@ -1,7 +1,6 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::CatalogView;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{Node, ObjectType, RangeVar, Token};
@@ -82,8 +81,8 @@ impl LinterRule for RequireTableSchema {
                 .map(table)
                 .collect(),
             NodeEnum::SelectStmt(stmt) => stmt
-                .into_clause
-                .iter()
+                .into_clause_of_query()
+                .into_iter()
                 .filter_map(|into| into.rel.as_ref())
                 .map(table)
                 .collect(),

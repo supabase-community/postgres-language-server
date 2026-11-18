@@ -32,7 +32,7 @@ use pgls_workspace::features::code_actions::{
     CodeAction, CodeActionsParams, FixFileMode, FixFileParams, FixFileResult,
 };
 use pgls_workspace::features::completions::GetCompletionsParams;
-use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
+use pgls_workspace::features::diagnostics::{DatabaseChecks, PullFileDiagnosticsParams};
 use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
@@ -252,7 +252,7 @@ impl Workspace {
         let configuration = if json.trim().is_empty() {
             PartialConfiguration::default()
         } else {
-            pgls_workspace::configuration::parse_configuration(json)
+            pgls_workspace::configuration::parse_configuration(json, None)
                 .map_err(|e| WasmError::InvalidConfiguration(e.to_string()))?
         };
         self.set_configuration(configuration)
@@ -376,9 +376,10 @@ impl Workspace {
                 project_key: self.project_key,
                 path: pgls_path,
                 categories: RuleCategories::all(),
-                max_diagnostics: 100,
+                max_diagnostics: u32::MAX,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .map_err(|e| WasmError::ParseError(format!("Lint failed: {e}")))?;
 
@@ -623,10 +624,12 @@ impl Workspace {
         self.inner
             .split_statements(sql)
             .into_iter()
-            .map(|range| Statement {
-                sql: sql[range].to_string(),
-                start: u32::from(range.start()),
-                end: u32::from(range.end()),
+            .filter_map(|range| {
+                Some(Statement {
+                    sql: sql.get(std::ops::Range::<usize>::from(range))?.to_string(),
+                    start: u32::from(range.start()),
+                    end: u32::from(range.end()),
+                })
             })
             .collect()
     }
@@ -645,6 +648,34 @@ mod tests {
         let diagnostics = workspace.lint("/test.sql").unwrap();
         // No diagnostics expected for valid SQL
         assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn test_workspace_schema_with_codes_of_a_newer_postgres() {
+        // A domain cycle, which Postgres can't produce, and codes that a newer Postgres could
+        // have: the schema loads, and linting a cast to the domain finishes.
+        let schema = r#"{
+            "types": [
+                {"id": 23, "name": "int4", "schema": "pg_catalog", "format": "int4",
+                 "typtype": "b", "enums": {"values": []}, "attributes": {"attrs": []}},
+                {"id": 901, "name": "d1", "schema": "public", "format": "d1",
+                 "typtype": "d", "typbasetype": 902,
+                 "enums": {"values": []}, "attributes": {"attrs": []}},
+                {"id": 902, "name": "d2", "schema": "public", "format": "d2",
+                 "typtype": "d", "typbasetype": 901,
+                 "enums": {"values": []}, "attributes": {"attrs": []}},
+                {"id": 903, "name": "future", "schema": "public", "format": "future",
+                 "typtype": "x", "enums": {"values": []}, "attributes": {"attrs": []}}
+            ],
+            "casts": [{"source": 23, "target": 901, "context": "q", "method": "f"}],
+            "operators": [{"oid": 1, "schema": "pg_catalog", "name": "!", "kind": "r",
+                           "left": 23, "right": 0, "result": 23}],
+            "typing_metadata": true
+        }"#;
+        let mut workspace = Workspace::new();
+        workspace.set_schema(schema).unwrap();
+        workspace.insert_file("/test.sql", "select 1::d1, 1::future;");
+        workspace.lint("/test.sql").unwrap();
     }
 
     #[test]
