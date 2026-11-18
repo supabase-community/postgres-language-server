@@ -1,7 +1,9 @@
 use std::fs;
 use std::path::Path;
 
-const EXPECTED_COMMIT: &str = "main";
+/// The pglinter commit that `vendor/sql/rules.sql`, and the rules generated from it in `src/rules`,
+/// come from. Pinned, so that builds are reproducible.
+const EXPECTED_COMMIT: &str = "73fc2aefec54d1d2411769e7d21dd9172defab17";
 const REPO: &str = "pmpetit/pglinter";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

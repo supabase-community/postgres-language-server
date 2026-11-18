@@ -7,7 +7,7 @@ pub mod rule;
 pub mod rules;
 
 use pgls_analyse::{AnalysisFilter, RegistryVisitor, RuleMeta};
-use pgls_catalog::Snapshot;
+use pgls_catalog::{Extension, Snapshot};
 use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
@@ -89,9 +89,8 @@ pub async fn run_pglinter(
     let extension_installed = cache.map(|c| c.extension_installed).unwrap_or_else(|| {
         params
             .snapshot
-            .extensions
-            .iter()
-            .any(|e| e.name == "pglinter")
+            .extension("pglinter")
+            .is_some_and(Extension::is_installed)
     });
 
     // Collect enabled rules from config

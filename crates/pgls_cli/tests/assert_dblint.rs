@@ -82,6 +82,40 @@ async fn dblint_error_on_warnings_detects_issues_snapshot(test_db: PgPool) {
     assert_snapshot!(output);
 }
 
+/// Without a configuration file, so without a `pglinter` section, `dblint` runs splinter but not
+/// pglinter. The database doesn't have the pglinter extension, so pglinter would report
+/// `pglinter/extensionNotInstalled`.
+#[pgls_test_utils::db_test]
+async fn dblint_without_pglinter_configuration_skips_pglinter(test_db: PgPool) {
+    sqlx::raw_sql(
+        "DROP EXTENSION IF EXISTS pglinter;
+         CREATE TABLE test_no_pk (id int, name text);",
+    )
+    .execute(&test_db)
+    .await
+    .expect("Failed to set up the database");
+    // Outside the repository, which has a configuration file.
+    let directory = tempfile::tempdir().expect("Failed to create a directory");
+
+    let url = get_database_url(&test_db);
+    let output = cargo_bin_cmd!("postgres-language-server")
+        .current_dir(directory.path())
+        .args(["dblint", "--connection-string", &url, "--log-level", "none"])
+        .output()
+        .expect("failed to run CLI");
+    let output = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    assert!(
+        output.contains("splinter/performance/noPrimaryKey"),
+        "{output}"
+    );
+    assert!(!output.contains("pglinter"), "{output}");
+}
+
 #[test]
 #[cfg_attr(
     target_os = "windows",

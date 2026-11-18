@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::typing::{Type, TypeId};
 use crate::{CastInfo, FunctionArgument, FunctionArgumentMode, FunctionSignature, OperatorInfo};
-use crate::{FunctionArg, Generated, Identity, ProcKind, Snapshot, TableKind};
+use crate::{Extension, FunctionArg, Generated, Identity, ProcKind, Snapshot, TableKind};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{Key, key};
@@ -516,9 +516,8 @@ impl CatalogBase {
 
     pub(super) fn has_installed_extension(&self, name: &str) -> bool {
         self.snapshot
-            .extensions
-            .iter()
-            .any(|extension| extension.name == name && extension.installed_version.is_some())
+            .extension(name)
+            .is_some_and(Extension::is_installed)
     }
 }
 

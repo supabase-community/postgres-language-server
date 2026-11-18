@@ -14,6 +14,8 @@ pub(crate) struct AnalyserVisitorBuilder<'a> {
     linted: bool,
     #[cfg(feature = "db")]
     splinter: Option<RuleSelection<'a>>,
+    #[cfg(feature = "db")]
+    pglinter: Option<RuleSelection<'a>>,
     settings: &'a Settings,
 }
 
@@ -25,6 +27,7 @@ impl<'a> AnalyserVisitorBuilder<'a> {
             lint: None,
             linted: false,
             splinter: None,
+            pglinter: None,
         }
     }
 
@@ -58,6 +61,17 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         skip: &'a [RuleSelector],
     ) -> Self {
         self.splinter = Some(RuleSelection::new(only, skip));
+        self
+    }
+
+    #[cfg(feature = "db")]
+    #[must_use]
+    pub(crate) fn with_pglinter_rules(
+        mut self,
+        only: &'a [RuleSelector],
+        skip: &'a [RuleSelector],
+    ) -> Self {
+        self.pglinter = Some(RuleSelection::new(only, skip));
         self
     }
 
@@ -102,13 +116,24 @@ impl<'a> AnalyserVisitorBuilder<'a> {
             enabled_rules.extend(splinter_enabled_rules);
             disabled_rules.extend(splinter_disabled_rules);
         }
+        #[cfg(feature = "db")]
+        if let Some(mut pglinter) = self.pglinter {
+            pgls_pglinter::registry::visit_registry(&mut pglinter);
+            let (pglinter_enabled_rules, pglinter_disabled_rules) = pglinter.finish(
+                self.settings
+                    .as_pglinter_rules()
+                    .map(|rules| (rules.as_enabled_rules(), rules.as_disabled_rules())),
+            );
+            enabled_rules.extend(pglinter_enabled_rules);
+            disabled_rules.extend(pglinter_disabled_rules);
+        }
 
         (enabled_rules, disabled_rules)
     }
 }
 
-/// The rules of a registry that `only` and `skip` select, visiting the registry of the linter
-/// or of splinter.
+/// The rules of a registry that `only` and `skip` select, visiting the registry of the linter,
+/// of splinter or of pglinter.
 #[derive(Debug)]
 struct RuleSelection<'a> {
     enabled_rules: FxHashSet<RuleFilter<'static>>,
@@ -151,7 +176,7 @@ impl<'a> RuleSelection<'a> {
 
 impl RegistryVisitor for RuleSelection<'_> {
     fn record_category<C: GroupCategory>(&mut self) {
-        // The splinter rules are of the lint kind too.
+        // The splinter and pglinter rules are of the lint kind too.
         if C::CATEGORY == RuleCategory::Lint {
             C::record_groups(self)
         }

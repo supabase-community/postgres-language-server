@@ -102,7 +102,3 @@ required-features = ["db"]
 
 [lints]
 workspace = true
-
-[package.metadata.cargo-shear]
-# The `db` feature builds pglinter for the database checks, which don't run it yet (#1197).
-ignored = ["pgls_pglinter"]

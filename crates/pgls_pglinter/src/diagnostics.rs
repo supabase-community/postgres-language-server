@@ -89,12 +89,15 @@ impl PglinterDiagnostic {
         PglinterDiagnostic {
             category: pgls_diagnostics::category!("pglinter/extensionNotInstalled"),
             db_object: None,
-            message: "The pglinter extension is not installed in the database. Install it with 'CREATE EXTENSION pglinter' or disable pglinter rules in your configuration.".into(),
+            message: "pglinter is enabled in your configuration, but the pglinter extension is not installed in the database.".into(),
             severity: Severity::Error,
             advices: PglinterAdvices {
-                description: "pglinter rules are enabled in your configuration but the extension is not installed.".to_string(),
+                description: "The pglinter rules run inside the database, through the pglinter extension (https://github.com/pmpetit/pglinter).".to_string(),
                 rule_code: None,
-                fixes: vec!["Install the pglinter extension: CREATE EXTENSION pglinter".to_string()],
+                fixes: vec![
+                    "Install pglinter on the database server, then run: CREATE EXTENSION pglinter".to_string(),
+                    "Or set `pglinter.enabled` to `false` in your configuration".to_string(),
+                ],
                 object_list: None,
             },
         }

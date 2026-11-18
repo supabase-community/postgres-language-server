@@ -217,6 +217,21 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> Result<String> {
         quote! {}
     };
 
+    // pglinter needs its extension in the database, so it only runs when turned on.
+    let enabled_default = tool.name != "pglinter";
+    let enabled_doc = if enabled_default {
+        quote! { /// if `false`, it disables the feature and the linter won't be executed. `true` by default
+        }
+    } else {
+        quote! { /// if `false`, it disables the feature and the linter won't be executed. `false` by default
+        }
+    };
+    let default_attribute = if enabled_default {
+        quote! {}
+    } else {
+        quote! { #[expect(clippy::derivable_impls, reason = "spells out that it is off by default")] }
+    };
+
     let splinter_ignore_default = if is_splinter {
         quote! { ignore: Default::default(), }
     } else {
@@ -276,7 +291,7 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> Result<String> {
         #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
         #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
         pub struct #config_struct {
-            /// if `false`, it disables the feature and the linter won't be executed. `true` by default
+            #enabled_doc
             #[partial(bpaf(hide))]
             pub enabled: bool,
 
@@ -298,10 +313,11 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> Result<String> {
             #splinter_ignore_method
         }
 
+        #default_attribute
         impl Default for #config_struct {
             fn default() -> Self {
                 Self {
-                    enabled: true,
+                    enabled: #enabled_default,
                     #splinter_ignore_default
                     rules: Default::default(),
                     #linter_groups_default
