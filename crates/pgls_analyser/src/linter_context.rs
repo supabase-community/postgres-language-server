@@ -106,6 +106,11 @@ where
     ///
     /// Empty unless the rule sets [`LinterRule::READS_LOOKUPS`].
     pub fn lookups(&self) -> &[SearchPathLookup] {
+        debug_assert!(
+            R::READS_LOOKUPS,
+            "rule {} reads lookups without READS_LOOKUPS",
+            R::METADATA.name
+        );
         self.statement.lookups(self.file_context)
     }
 

@@ -10,13 +10,13 @@ pub(super) fn emit_op_expr(e: &mut EventEmitter, n: &OpExpr) {
 
     // OpExpr represents binary operators in the planner
     // Without a pg_operator lookup, we use a generic fallback
-    if n.args.len() == 2 {
-        emit_node(e, &n.args[0]);
+    if let [first, second] = n.args.as_slice() {
+        emit_node(e, first);
         e.space();
         // opno is the operator OID - we don't have the symbol
         e.token(TokenKind::IDENT(format!("op#{}", n.opno)));
         e.space();
-        emit_node(e, &n.args[1]);
+        emit_node(e, second);
     } else {
         // Fallback for unexpected arg counts
         emit_args_as_sequence(e, &n.args, n.opno);

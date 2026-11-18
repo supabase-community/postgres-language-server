@@ -17,6 +17,13 @@
 //! to the next statement of the splitter. Such a statement is tried with the statements after it
 //! too, since the splitter may have cut at a `;` inside it, e.g. in a `BEGIN ATOMIC` body.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use pgls_postgres_regress::{File, Version};
 use pgls_query::protobuf::Token;
 use pgls_text_size::{TextRange, TextSize};

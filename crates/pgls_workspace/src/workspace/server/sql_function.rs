@@ -4,7 +4,7 @@ use pgls_query_ext::{function_body::Language, utils::find_option_value_mut};
 ///
 /// A reformatted body goes on lines of its own between the quotes. A body that formatting leaves
 /// alone keeps the layout it was written with. Returns true when the body was replaced.
-pub fn set_formatted_sql_fn_body(ast: &mut pgls_query::NodeEnum, formatted: &str) -> bool {
+pub(super) fn set_formatted_sql_fn_body(ast: &mut pgls_query::NodeEnum, formatted: &str) -> bool {
     let Some(body) = sql_fn_body_mut(ast) else {
         return false;
     };

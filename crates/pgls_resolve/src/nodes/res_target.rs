@@ -99,13 +99,13 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
 /// [`ExpandSingleTable`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1401
 fn expand_column_ref_star(r: &Resolver, qualifier: &[String]) -> Option<Vec<TypedColumn>> {
     if qualifier.is_empty() {
-        let (columns, _) = r.levels.last()?.star_columns()?;
+        let (columns, _) = r.levels().last()?.star_columns()?;
         return Some(columns);
     }
-    if has_opaque_items(&r.levels) {
+    if has_opaque_items(r.levels()) {
         return None;
     }
-    let item = find_qualified_item(&r.levels, qualifier)?;
+    let item = find_qualified_item(r.levels(), qualifier)?;
     Some(
         item.columns
             .as_ref()?
@@ -174,10 +174,10 @@ pub(super) fn record_star_references(r: &mut Resolver, output: &QueryOutput) {
         };
         let columns = match qualifier.as_slice() {
             [] => r
-                .levels
+                .levels()
                 .last()
                 .and_then(|level| star_columns(level, columns)),
-            _ => find_qualified_item(&r.levels, qualifier)
+            _ => find_qualified_item(r.levels(), qualifier)
                 .map(|item| item_columns(item, qualifier, columns)),
         };
         if let Some(columns) = columns {
@@ -269,12 +269,13 @@ pub(super) fn resolve_returning_clause(
         (clause.options.as_slice(), clause.exprs.as_slice())
     });
     add_old_and_new(r, options, target, &mut level);
-    r.enter_level(level);
-    resolve_list(r, list);
-    let mut output = select_list_output(r, list);
-    record_star_references(r, &output);
-    infer_select_list(r, list, &mut output);
-    r.exit_level();
+    let (output, _) = r.in_level(level, |r| {
+        resolve_list(r, list);
+        let mut output = select_list_output(r, list);
+        record_star_references(r, &output);
+        infer_select_list(r, list, &mut output);
+        output
+    });
     Some(output)
 }
 
@@ -424,7 +425,7 @@ fn add_old_and_new(r: &mut Resolver, options: &[Node], target: &Item, level: &mu
                 option.value.as_str()
             }
             // `refnameNamespaceItem` searches the outer queries too.
-            None if level.item(default).is_none() && find_item(&r.levels, default).is_none() => {
+            None if level.item(default).is_none() && find_item(r.levels(), default).is_none() => {
                 default
             }
             None => continue,

@@ -1,7 +1,6 @@
 use pgls_query::protobuf::{CreateSchemaStmt, RoleSpecType};
 
 use crate::catalog::Catalog;
-use crate::lookup::CatalogView;
 
 /// `CREATE SCHEMA`, including the objects it creates. Models [`CreateSchemaCommand`].
 ///

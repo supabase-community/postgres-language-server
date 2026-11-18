@@ -1,5 +1,7 @@
-// Every test crate includes this module and uses only some of it.
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "every test crate includes this module and uses only some of it"
+)]
 
 use pgls_query::protobuf::Token;
 
@@ -7,7 +9,7 @@ use pgls_query::protobuf::Token;
 /// after `(`, no double space between two tokens on a line, no trailing whitespace and no blank
 /// line. Whitespace inside string literals, quoted identifiers and comments is left alone, and so
 /// is the space that separates a comment from a parenthesis or comma.
-pub fn whitespace_problems(output: &str) -> Vec<String> {
+pub(crate) fn whitespace_problems(output: &str) -> Vec<String> {
     let Ok(scan) = pgls_query::scan(output) else {
         // The callers check that the output parses.
         return Vec::new();
@@ -91,7 +93,7 @@ pub fn whitespace_problems(output: &str) -> Vec<String> {
 /// Empty statements in the output: a `;` that follows another `;`, as in `select 1;;`, also with
 /// comments between them. Postgres accepts them, so the AST comparison doesn't notice, but they
 /// mean a statement wrote a terminator that its parent writes too.
-pub fn empty_statements(output: &str) -> Vec<String> {
+pub(crate) fn empty_statements(output: &str) -> Vec<String> {
     let Ok(scan) = pgls_query::scan(output) else {
         // The callers check that the output parses.
         return Vec::new();
@@ -116,12 +118,12 @@ pub fn empty_statements(output: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn assert_no_empty_statements(output: &str) {
+pub(crate) fn assert_no_empty_statements(output: &str) {
     let problems = empty_statements(output);
     assert!(problems.is_empty(), "{}\n\n{output}", problems.join("\n"));
 }
 
-pub fn assert_clean_whitespace(output: &str) {
+pub(crate) fn assert_clean_whitespace(output: &str) {
     let problems = whitespace_problems(output);
     assert!(
         problems.is_empty(),
@@ -134,7 +136,7 @@ pub fn assert_clean_whitespace(output: &str) {
 /// spaces, a space before a tab when indenting with tabs. Alignment after the tabs is written as
 /// spaces, so spaces after tabs are fine. Lines inside a multi-line token, such as a function body,
 /// keep the indentation of the source.
-pub fn mixed_indentation(output: &str, indent_with_tabs: bool) -> Vec<String> {
+pub(crate) fn mixed_indentation(output: &str, indent_with_tabs: bool) -> Vec<String> {
     let token_ranges = pgls_query::scan(output)
         .map(|scan| {
             scan.tokens
@@ -172,7 +174,11 @@ const WIDTH_OVERHEAD: usize = 12;
 /// left. String literals count like any other token, so a call that merely has a literal among its
 /// arguments still has to break. A `--` comment ending the line is written as in the source and is
 /// not counted.
-pub fn width_problems(output: &str, max_line_length: usize, tab_width: usize) -> Vec<String> {
+pub(crate) fn width_problems(
+    output: &str,
+    max_line_length: usize,
+    tab_width: usize,
+) -> Vec<String> {
     let tokens: Vec<_> = pgls_query::scan(output)
         .map(|scan| {
             scan.tokens

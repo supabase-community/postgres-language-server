@@ -24,7 +24,7 @@ pub(super) fn resolve_range_var(r: &mut Resolver, n: &RangeVar) -> Item {
     let is_unqualified = n.schemaname.is_empty() && n.catalogname.is_empty();
     if is_unqualified
         && let Some(cte) = r
-            .ctes
+            .ctes()
             .iter()
             .rev()
             .find(|cte| cte.name == n.relname)

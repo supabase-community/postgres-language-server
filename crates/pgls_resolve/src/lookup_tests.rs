@@ -33,9 +33,8 @@ fn lookups_in(
         collect_references: false,
         collect_lookups: true,
     });
-    let mut lookups = resolution.lookups;
-    lookups.sort_by_key(|lookup| lookup.location);
-    lookups
+    resolution
+        .lookups
         .iter()
         .map(|lookup| {
             let kind = match lookup.kind {
@@ -58,7 +57,7 @@ fn lookups_in(
 
 /// The lookups without a database snapshot.
 fn lookups(sql: &str) -> Vec<String> {
-    lookups_in(Catalog::new(None), "", sql, None)
+    lookups_in(Catalog::without_database(), "", sql, None)
 }
 
 /// The column lookups without a database snapshot.
@@ -75,7 +74,7 @@ fn only_columns(lookups: Vec<String>) -> Vec<String> {
 
 /// The lookups with the database of [`database`].
 fn lookups_with_database(sql: &str) -> Vec<String> {
-    lookups_in(Catalog::new(Some(database())), "", sql, None)
+    lookups_in(Catalog::from_base(database()), "", sql, None)
 }
 
 #[test]
@@ -136,7 +135,7 @@ fn skips_select_into_locked_aliases_and_temporary_tables() {
     );
     assert!(
         lookups_in(
-            Catalog::new(None),
+            Catalog::without_database(),
             "create temp table scratch (id int)",
             "select * from scratch",
             None
@@ -328,11 +327,19 @@ fn parameters_of_sql_functions_are_not_columns() {
         }],
     };
     let sql = "select u.name from public.users u where u.id = id";
-    assert!(only_columns(lookups_in(Catalog::new(None), "", sql, Some(&function))).is_empty());
+    assert!(
+        only_columns(lookups_in(
+            Catalog::without_database(),
+            "",
+            sql,
+            Some(&function)
+        ))
+        .is_empty()
+    );
     // A column with the name takes precedence.
     let sql = "select id from public.users u";
     assert_eq!(
-        lookups_in(Catalog::new(Some(database())), "", sql, Some(&function)),
+        lookups_in(Catalog::from_base(database()), "", sql, Some(&function)),
         ["column id `id`"]
     );
 }

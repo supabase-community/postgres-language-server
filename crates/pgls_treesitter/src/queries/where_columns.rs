@@ -6,32 +6,32 @@ use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
-static WHERE_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static WHERE_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (where) @where
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 /**
  * The binary expressions can be nested inside a @where clause, e.g. (where user_id = 1 or (email = 2 and user_id = 3));
  * We'll need a separate query to find all nested binary expressions.
  */
-static BINARY_EXPR_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static BINARY_EXPR_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (binary_expression 
         binary_expr_left: (object_reference) @ref
     )
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 #[derive(Debug)]
 pub struct WhereColumnMatch<'a> {
-    #[allow(unused)]
-    pub(crate) schema: Option<tree_sitter::Node<'a>>,
     pub(crate) alias: Option<tree_sitter::Node<'a>>,
     pub(crate) column: tree_sitter::Node<'a>,
 }
@@ -42,7 +42,7 @@ impl WhereColumnMatch<'_> {
             self.alias
                 .as_ref()?
                 .utf8_text(sql.as_bytes())
-                .expect("Failed to get alias from ColumnMatch")
+                .ok()?
                 .to_string(),
         )
     }
@@ -50,7 +50,8 @@ impl WhereColumnMatch<'_> {
     pub fn get_column(&self, sql: &str) -> String {
         self.column
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get column from ColumnMatch")
+            // A node of `sql` is UTF-8, unless the tree is stale.
+            .unwrap_or_default()
             .to_string()
     }
 }
@@ -62,7 +63,6 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a WhereColumnMatch<'a> {
         match q {
             QueryResult::WhereClauseColumns(c) => Ok(c),
 
-            #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
         }
     }
@@ -76,26 +76,30 @@ impl<'a> Query<'a> for WhereColumnMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
-        let where_matches = cursor.matches(&WHERE_QUERY, root_node, stmt.as_bytes());
+        let (Some(where_query), Some(binary_expr_query)) =
+            (WHERE_QUERY.as_ref(), BINARY_EXPR_QUERY.as_ref())
+        else {
+            return vec![];
+        };
+        let where_matches = cursor.matches(where_query, root_node, stmt.as_bytes());
 
         let mut to_return = vec![];
 
         where_matches.for_each(|where_match| {
+            let Some(where_clause) = where_match.captures.first() else {
+                return;
+            };
             let mut binary_cursor = tree_sitter::QueryCursor::new();
 
-            let binary_expr_matches = binary_cursor.matches(
-                &BINARY_EXPR_QUERY,
-                where_match.captures[0].node,
-                stmt.as_bytes(),
-            );
+            let binary_expr_matches =
+                binary_cursor.matches(binary_expr_query, where_clause.node, stmt.as_bytes());
 
             binary_expr_matches.for_each(|m| {
-                if m.captures.len() == 1 {
-                    let capture = m.captures[0].node;
+                if let [capture] = m.captures {
+                    let capture = capture.node;
 
-                    if let Some((schema, alias, column)) = parts_of_reference_query(capture, stmt) {
+                    if let Some((_, alias, column)) = parts_of_reference_query(capture, stmt) {
                         to_return.push(QueryResult::WhereClauseColumns(WhereColumnMatch {
-                            schema,
                             alias,
                             column,
                         }));

@@ -35,9 +35,12 @@ impl From<String> for QueryWithCursorPosition {
 
 impl From<&str> for QueryWithCursorPosition {
     fn from(value: &str) -> Self {
-        let marker = value
-            .find(CURSOR_POS)
-            .expect("Use `QueryWithCursorPosition::cursor_marker()` to insert cursor position into your Query.");
+        let marker = value.find(CURSOR_POS);
+        debug_assert!(
+            marker.is_some(),
+            "Use `QueryWithCursorPosition::cursor_marker()` to insert cursor position into your Query."
+        );
+        let marker = marker.unwrap_or(value.len());
 
         // The cursor is an offset into the trimmed text.
         let sql = value.replace(CURSOR_POS, "");
@@ -94,9 +97,8 @@ fn print_ts_tree_recur(
     );
 
     let mut cursor = node.walk();
-    for (idx, child) in node.children(&mut cursor).enumerate() {
-        let idx_u32: u32 = idx.try_into().unwrap();
-        let field_name = node.field_name_for_child(idx_u32);
+    for (idx, child) in (0..).zip(node.children(&mut cursor)) {
+        let field_name = node.field_name_for_child(idx);
         print_ts_tree_recur(&child, source, level + 1, result, field_name);
     }
 }

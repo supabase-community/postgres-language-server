@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct PlPgSqlCheckConfiguration {
-    /// if `false`, it disables the feature and pglpgsql_check won't be executed. `true` by default
+    /// if `false`, it disables the feature and plpgsql_check won't be executed. `true` by default
     #[partial(bpaf(hide))]
     pub enabled: bool,
 

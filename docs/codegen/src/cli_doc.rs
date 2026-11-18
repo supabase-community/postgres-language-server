@@ -12,7 +12,7 @@ pub fn generate_cli_doc(docs_dir: &Path) -> anyhow::Result<()> {
         &content,
         "CLI_REF",
         &pg_l_s_command().render_markdown("postgres-language-server"),
-    );
+    )?;
 
     fs::write(file_path, &new_content)?;
 

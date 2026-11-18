@@ -19,20 +19,7 @@ pub(crate) enum FileStatus {
     Unchanged,
 
     /// While handling the file, something happened
-    #[allow(unused)]
     Message(Message),
-
-    /// A match was found while searching a file
-    #[allow(unused)]
-    SearchResult(usize, Message),
-
-    /// File ignored, it should not be count as "handled"
-    #[allow(unused)]
-    Ignored,
-
-    /// Files that belong to other tools and shouldn't be touched
-    #[allow(unused)]
-    Protected(String),
 }
 
 /// Wrapper type for messages that can be printed during the traversal process
@@ -43,8 +30,6 @@ pub(crate) enum Message {
         skipped_suggested_fixes: u32,
     },
 
-    #[allow(unused)]
-    Failure,
     Error(Error),
     Diagnostics {
         name: String,

@@ -16,7 +16,6 @@ regex              = { workspace = true }
 anyhow                     = { workspace = true }
 bpaf                     = { workspace = true, features = ["docgen"] }
 schemars       = { workspace = true }
-serde       = { workspace = true }
 serde_json       = { workspace = true }
 pulldown-cmark          = "0.12.2"
 
@@ -38,3 +37,7 @@ convert_case = { workspace = true }
 
 [lints]
 workspace = true
+
+[package.metadata.cargo-shear]
+# Only enables bpaf's `docgen` feature for `pgls_cli`'s parser, which renders the CLI reference.
+ignored = ["bpaf"]

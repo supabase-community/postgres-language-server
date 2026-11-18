@@ -6,7 +6,7 @@ use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 
 /// The function is used to convert TextSize to a LSP position.
-pub fn position(
+pub(crate) fn position(
     line_index: &LineIndex,
     offset: TextSize,
     position_encoding: PositionEncoding,
@@ -36,7 +36,7 @@ pub fn position(
 }
 
 /// The function is used to convert TextRange to a LSP range.
-pub fn range(
+pub(crate) fn range(
     line_index: &LineIndex,
     range: TextRange,
     position_encoding: PositionEncoding,
@@ -47,7 +47,7 @@ pub fn range(
 }
 
 /// Convert a TextEdit diff to a list of LSP TextEdits.
-pub fn text_edits(
+pub(crate) fn text_edits(
     diff: &TextEdit,
     line_index: &LineIndex,
     encoding: PositionEncoding,
