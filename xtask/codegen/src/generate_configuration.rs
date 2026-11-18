@@ -240,16 +240,18 @@ fn generate_lint_mod_file(tool: &ToolConfig) -> Result<String> {
     let splinter_ignore_method = if is_splinter {
         quote! {
             /// Build a matcher from the global ignore patterns.
-            /// Returns None if no patterns are configured.
-            pub fn get_global_ignore_matcher(&self) -> Option<pgls_matcher::Matcher> {
+            /// Returns None if no patterns are configured, and an error for an invalid pattern.
+            pub fn get_global_ignore_matcher(&self) -> Result<Option<pgls_matcher::Matcher>, crate::ConfigurationDiagnostic> {
                 if self.ignore.is_empty() {
-                    return None;
+                    return Ok(None);
                 }
                 let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
                 for p in self.ignore.iter() {
-                    let _ = m.add_pattern(p);
+                    m.add_pattern(p).map_err(|err| {
+                        crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                    })?;
                 }
-                Some(m)
+                Ok(Some(m))
             }
         }
     } else {
@@ -736,18 +738,19 @@ fn generate_lint_rules_file(
         for group_ident in group_idents.iter() {
             group_matcher_code.push(quote! {
                 if let Some(group) = &self.#group_ident {
-                    matchers.extend(group.get_ignore_matchers());
+                    matchers.extend(group.get_ignore_matchers()?);
                 }
             });
         }
 
         quote! {
             /// Build matchers for all rules that have ignore patterns configured.
-            /// Returns a map from rule name (camelCase) to the matcher.
-            pub fn get_ignore_matchers(&self) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+            /// Returns a map from rule name (camelCase) to the matcher, and an error for an
+            /// invalid pattern.
+            pub fn get_ignore_matchers(&self) -> Result<rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher>, crate::ConfigurationDiagnostic> {
                 let mut matchers = rustc_hash::FxHashMap::default();
                 #( #group_matcher_code )*
-                matchers
+                Ok(matchers)
             }
         }
     } else {
@@ -981,7 +984,9 @@ fn generate_lint_group_struct(
                 {
                     let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
                     for p in &options.ignore {
-                        let _ = m.add_pattern(p);
+                        m.add_pattern(p).map_err(|err| {
+                            crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                        })?;
                     }
                     matchers.insert(#rule_str, m);
                 }
@@ -1050,11 +1055,12 @@ fn generate_lint_group_struct(
     // For splinter, generate get_ignore_matchers method
     let get_ignore_matchers_group_method = if tool_name == "splinter" {
         quote! {
-            /// Build matchers for rules in this group that have ignore patterns configured
-            pub fn get_ignore_matchers(&self) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+            /// Build matchers for rules in this group that have ignore patterns configured, or an
+            /// error for an invalid pattern
+            pub fn get_ignore_matchers(&self) -> Result<rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher>, crate::ConfigurationDiagnostic> {
                 let mut matchers = rustc_hash::FxHashMap::default();
                 #( #splinter_ignore_matcher_lines )*
-                matchers
+                Ok(matchers)
             }
         }
     } else {

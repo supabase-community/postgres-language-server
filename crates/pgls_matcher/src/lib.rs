@@ -53,7 +53,8 @@ impl Matcher {
 
     /// It matches the given string against the stored patterns.
     ///
-    /// It returns [true] if there's at least a match
+    /// It returns [true] if at least one pattern matches the whole string: `public.users` doesn't
+    /// match `public.users_archive`.
     pub fn matches(&self, source: &str) -> bool {
         // A panic while the lock was held leaves the map consistent: each entry is a finished result.
         let mut already_ignored = self
@@ -64,7 +65,7 @@ impl Matcher {
             return *matches;
         }
         for pattern in &self.patterns {
-            if pattern.matches_with(source, self.options) || source.contains(pattern.as_str()) {
+            if pattern.matches_with(source, self.options) {
                 already_ignored.insert(source.to_string(), true);
                 return true;
             }
@@ -158,6 +159,20 @@ mod test {
         assert!(result);
     }
 
+    /// A pattern matches the whole string, not a part of it.
+    #[test]
+    fn matches_the_whole_string() {
+        let mut ignore = Matcher::new(MatchOptions::default());
+        ignore.add_pattern("public.my_table").unwrap();
+        ignore.add_pattern("*.temp_*").unwrap();
+
+        assert!(ignore.matches("public.my_table"));
+        assert!(!ignore.matches("public.my_table_archive"));
+        assert!(!ignore.matches("xpublic.my_table"));
+        assert!(ignore.matches("public.temp_users"));
+        assert!(!ignore.matches("temp_users"));
+    }
+
     #[test]
     fn matches_path() {
         let current = env::current_dir().unwrap();
@@ -199,8 +214,7 @@ mod test {
         });
         ignore.add_pattern(dir).unwrap();
         let path = env::current_dir().unwrap().join("src/lib.rs");
-        let result = ignore.matches(path.to_str().unwrap());
-
-        assert!(result);
+        // A file name matches the paths that end with it.
+        assert!(ignore.matches_path(&path));
     }
 }
