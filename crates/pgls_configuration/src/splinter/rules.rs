@@ -167,18 +167,22 @@ impl Rules {
         disabled_rules
     }
     #[doc = r" Build matchers for all rules that have ignore patterns configured."]
-    #[doc = r" Returns a map from rule name (camelCase) to the matcher."]
+    #[doc = r" Returns a map from rule name (camelCase) to the matcher, and an error for an"]
+    #[doc = r" invalid pattern."]
     pub fn get_ignore_matchers(
         &self,
-    ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+    ) -> Result<
+        rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher>,
+        crate::ConfigurationDiagnostic,
+    > {
         let mut matchers = rustc_hash::FxHashMap::default();
         if let Some(group) = &self.performance {
-            matchers.extend(group.get_ignore_matchers());
+            matchers.extend(group.get_ignore_matchers()?);
         }
         if let Some(group) = &self.security {
-            matchers.extend(group.get_ignore_matchers());
+            matchers.extend(group.get_ignore_matchers()?);
         }
-        matchers
+        Ok(matchers)
     }
 }
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
@@ -417,10 +421,14 @@ impl Performance {
             _ => None,
         }
     }
-    #[doc = r" Build matchers for rules in this group that have ignore patterns configured"]
+    #[doc = r" Build matchers for rules in this group that have ignore patterns configured, or an"]
+    #[doc = r" error for an invalid pattern"]
     pub fn get_ignore_matchers(
         &self,
-    ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+    ) -> Result<
+        rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher>,
+        crate::ConfigurationDiagnostic,
+    > {
         let mut matchers = rustc_hash::FxHashMap::default();
         if let Some(conf) = &self.auth_rls_initplan
             && let Some(options) = conf.get_options_ref()
@@ -428,7 +436,9 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("authRlsInitplan", m);
         }
@@ -438,7 +448,9 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("duplicateIndex", m);
         }
@@ -448,7 +460,9 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("multiplePermissivePolicies", m);
         }
@@ -458,7 +472,9 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("noPrimaryKey", m);
         }
@@ -468,7 +484,9 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("tableBloat", m);
         }
@@ -478,7 +496,9 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("unindexedForeignKeys", m);
         }
@@ -488,11 +508,13 @@ impl Performance {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("unusedIndex", m);
         }
-        matchers
+        Ok(matchers)
     }
 }
 #[derive(Clone, Debug, Default, Deserialize, Eq, Merge, PartialEq, Serialize)]
@@ -953,10 +975,14 @@ impl Security {
             _ => None,
         }
     }
-    #[doc = r" Build matchers for rules in this group that have ignore patterns configured"]
+    #[doc = r" Build matchers for rules in this group that have ignore patterns configured, or an"]
+    #[doc = r" error for an invalid pattern"]
     pub fn get_ignore_matchers(
         &self,
-    ) -> rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher> {
+    ) -> Result<
+        rustc_hash::FxHashMap<&'static str, pgls_matcher::Matcher>,
+        crate::ConfigurationDiagnostic,
+    > {
         let mut matchers = rustc_hash::FxHashMap::default();
         if let Some(conf) = &self.auth_users_exposed
             && let Some(options) = conf.get_options_ref()
@@ -964,7 +990,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("authUsersExposed", m);
         }
@@ -974,7 +1002,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("extensionInPublic", m);
         }
@@ -984,7 +1014,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("extensionVersionsOutdated", m);
         }
@@ -994,7 +1026,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("fkeyToAuthUnique", m);
         }
@@ -1004,7 +1038,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("foreignTableInApi", m);
         }
@@ -1014,7 +1050,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("functionSearchPathMutable", m);
         }
@@ -1024,7 +1062,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("insecureQueueExposedInApi", m);
         }
@@ -1034,7 +1074,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("materializedViewInApi", m);
         }
@@ -1044,7 +1086,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("policyExistsRlsDisabled", m);
         }
@@ -1054,7 +1098,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("rlsDisabledInPublic", m);
         }
@@ -1064,7 +1110,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("rlsEnabledNoPolicy", m);
         }
@@ -1074,7 +1122,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("rlsPolicyAlwaysTrue", m);
         }
@@ -1084,7 +1134,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("rlsReferencesUserMetadata", m);
         }
@@ -1094,7 +1146,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("securityDefinerView", m);
         }
@@ -1104,7 +1158,9 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("sensitiveColumnsExposed", m);
         }
@@ -1114,11 +1170,13 @@ impl Security {
         {
             let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
             for p in &options.ignore {
-                let _ = m.add_pattern(p);
+                m.add_pattern(p).map_err(|err| {
+                    crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+                })?;
             }
             matchers.insert("unsupportedRegTypes", m);
         }
-        matchers
+        Ok(matchers)
     }
 }
 #[doc = r" Push the configured rules to the analyser"]

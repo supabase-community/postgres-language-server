@@ -110,7 +110,7 @@ impl<'a> SuppressionsParser<'a> {
                 continue;
             }
 
-            let trimmed = preview.trim();
+            let trimmed = preview.trim_start();
             if !trimmed.starts_with("-- pgt-ignore-all")
                 && !trimmed.starts_with("-- pgls-ignore-all")
             {
@@ -133,8 +133,7 @@ impl<'a> SuppressionsParser<'a> {
 
     fn parse_suppressions(&mut self) {
         for (idx, (offset, line)) in self.lines.by_ref() {
-            let trimmed = line.trim();
-            if !trimmed.starts_with("-- pgt-ignore") && !trimmed.starts_with("-- pgls-ignore") {
+            if Suppression::comment_on(line).is_none() {
                 continue;
             }
 

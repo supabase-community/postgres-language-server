@@ -18,7 +18,7 @@ use parking_lot::{Mutex, MutexGuard};
 use pgls_catalog::CatalogBase;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::EmbeddedStatement};
 
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{StatementId, analysis::DocumentAnalysis};
 use crate::workspace::ProjectKey;
@@ -34,7 +34,7 @@ pub(crate) use budget::CacheBudget;
 #[cfg(feature = "db")]
 pub(crate) use database::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 pub(crate) use parse::ParseResult;
-use parse::PgQueryStore;
+use parse::{ParseEntries, PgQueryStore};
 use tree::TreeSitterStore;
 pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
 
@@ -69,14 +69,19 @@ pub struct DocumentCacheStats {
     pub walk_checkpoints: usize,
 }
 
-/// What an edit invalidated in a document's cache. On a long file, the analysis, the copies of
-/// the catalog in the walk checkpoints and the snapshot hold every object the file defines, and
-/// dropping them takes tens of milliseconds, so [`StaleEntries::drop_in_background`] drops them
-/// off the path of the edit.
+/// What an edit invalidated in a document's cache, or all of it when the cache is cleared. On a
+/// long file, the analysis, the copies of the catalog in the walk checkpoints and the snapshot
+/// hold every object the file defines, and dropping them takes tens of milliseconds; dropping the
+/// parse results and trees of 20,000 statements takes about 230 ms. So
+/// [`StaleEntries::drop_in_background`] drops them off the path of the request.
 #[must_use]
 pub(crate) struct StaleEntries {
     analysis: Option<Arc<DocumentAnalysis>>,
     walk: WalkCache,
+    /// Only taken out by [`DocumentCache::clear`]: an edit drops the parse results and trees of
+    /// the statements it removed in place, see [`DocumentCache::remove_statements`].
+    parses: ParseEntries,
+    trees: FxHashMap<StatementId, Arc<tree_sitter::Tree>>,
 }
 
 /// The stack of the thread that drops [`StaleEntries`]. Dropping a statement's tree is recursive
@@ -85,11 +90,15 @@ pub(crate) struct StaleEntries {
 const DROP_THREAD_STACK_BYTES: usize = 8 * 1024 * 1024;
 
 impl StaleEntries {
-    /// Drops the entries on a thread of its own, so that the edit doesn't wait for it. If the
+    /// Drops the entries on a thread of its own, so that the request doesn't wait for it. If the
     /// thread can't be started, and in WebAssembly, which has no threads, they are dropped right
     /// away.
     pub(crate) fn drop_in_background(self) {
-        if self.analysis.is_none() && self.walk.is_empty() {
+        if self.analysis.is_none()
+            && self.walk.is_empty()
+            && self.parses.is_empty()
+            && self.trees.is_empty()
+        {
             return;
         }
         #[cfg(target_family = "wasm")]
@@ -105,7 +114,7 @@ impl StaleEntries {
             .stack_size(DROP_THREAD_STACK_BYTES)
             .spawn(move || drop(self));
         if let Err(error) = spawned {
-            tracing::debug!("Dropped the stale cache entries of an edit in place: {error}");
+            tracing::debug!("Dropped stale cache entries in place: {error}");
         }
     }
 }
@@ -266,11 +275,16 @@ impl DocumentCache {
         self.parses.len() + self.trees.len() + resolved + checkpoints * CHECKPOINT_ENTRIES
     }
 
-    /// Drops everything that is cached. It is recomputed when it is needed again.
-    pub(crate) fn clear(&self) {
-        self.parses.clear();
-        self.trees.clear();
-        *self.keyed.lock() = KeyedCaches::default();
+    /// Takes everything that is cached out, for the caller to drop, see
+    /// [`StaleEntries::drop_in_background`]. It is recomputed when it is needed again.
+    pub(crate) fn clear(&self) -> StaleEntries {
+        let keyed = std::mem::take(&mut *self.keyed.lock());
+        StaleEntries {
+            analysis: keyed.analysis,
+            walk: keyed.walk,
+            parses: self.parses.take(),
+            trees: self.trees.take(),
+        }
     }
 
     /// What the caches hold for a document with the top-level statements `statements`. The
@@ -335,6 +349,8 @@ impl DocumentCache {
         StaleEntries {
             analysis: None,
             walk: stale,
+            parses: ParseEntries::default(),
+            trees: FxHashMap::default(),
         }
         .drop_in_background();
         result
@@ -354,6 +370,8 @@ impl DocumentCache {
         StaleEntries {
             analysis: keyed.analysis.take(),
             walk: keyed.walk.content_changed(change),
+            parses: ParseEntries::default(),
+            trees: FxHashMap::default(),
         }
     }
 

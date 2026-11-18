@@ -81,8 +81,8 @@ impl LinterRule for RequireTableSchema {
                 .map(table)
                 .collect(),
             NodeEnum::SelectStmt(stmt) => stmt
-                .into_clause
-                .iter()
+                .into_clause_of_query()
+                .into_iter()
                 .filter_map(|into| into.rel.as_ref())
                 .map(table)
                 .collect(),

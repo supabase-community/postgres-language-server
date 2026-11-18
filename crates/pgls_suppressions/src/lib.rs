@@ -310,6 +310,29 @@ mod tests {
     }
 
     #[test]
+    fn a_suppression_indented_with_non_ascii_whitespace_is_a_suppression() {
+        // A non-breaking space, e.g. from a comment pasted from a web page, and an ideographic
+        // space. The parser and `from_line` used to disagree on them, and `from_line` panicked.
+        for indent in ["\u{00A0}", " \u{3000}\t"] {
+            let doc = format!("select 2;\n{indent}-- pgls-ignore lint\u{00A0}\nselect 1;");
+            let start = u32::try_from(doc.find("select 1").unwrap()).unwrap();
+            let diagnostic = TestDiagnostic {
+                span: TextRange::new(start.into(), u32::try_from(doc.len()).unwrap().into()),
+            };
+
+            let suppressions = super::Suppressions::from(doc.as_str());
+
+            assert!(suppressions.diagnostics.is_empty(), "{indent:?}");
+            assert!(suppressions.is_suppressed(&diagnostic), "{indent:?}");
+            let line = &suppressions.line_suppressions[0];
+            assert_eq!(
+                &doc[line.suppression.suppression_range],
+                "-- pgls-ignore lint"
+            );
+        }
+    }
+
+    #[test]
     fn correctly_suppresses_diagnostics_when_target_line_is_inside_multiline_span() {
         let doc = "alter table users\n-- pgt-ignore lint\ndrop column deprecated_field;";
 

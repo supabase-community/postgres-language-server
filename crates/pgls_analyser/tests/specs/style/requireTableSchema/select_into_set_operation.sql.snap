@@ -1,0 +1,20 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- The INTO of a set operation is on its left-most select.
+-- expect_lint/requireTableSchema
+select 1 as a into t union select 2;
+
+```
+
+# Diagnostics
+lint/requireTableSchema ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Table t is not schema-qualified.
+  
+  i Without a schema, the table is resolved through the search_path of the session that runs the statement.
+  
+  i Specify the schema, e.g. public.t.
