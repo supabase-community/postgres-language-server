@@ -1456,14 +1456,14 @@
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="ignoring-database-objects">Ignoring Database Objects<a class="headerlink" href="#ignoring-database-objects" title="Permanent link">&para;</a></h2>
-<p>You can ignore specific database objects using glob patterns. Patterns use Unix-style globs where <code>*</code> matches any sequence of characters. Patterns should be in the format <code>schema.object_name</code>.</p>
+<p>You can ignore specific database objects using glob patterns. Patterns use Unix-style globs where <code>*</code> matches any sequence of characters and <code>?</code> any single character. A pattern matches the whole <code>schema.object_name</code> of an object: <code>public.users</code> ignores <code>public.users</code>, but not <code>public.users_archive</code>. An invalid pattern is a configuration error.</p>
 <h3 id="global-ignore">Global Ignore<a class="headerlink" href="#global-ignore" title="Permanent link">&para;</a></h3>
 <p>To ignore objects across all rules, use the top-level <code>ignore</code> field:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"splinter"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"ignore"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="s2">"audit.*"</span><span class="p">,</span>
-<span class="w">      </span><span class="s2">"temp_*"</span>
+<span class="w">      </span><span class="s2">"*.temp_*"</span>
 <span class="w">    </span><span class="p">],</span>
 <span class="w">    </span><span class="nt">"rules"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// ...</span>
