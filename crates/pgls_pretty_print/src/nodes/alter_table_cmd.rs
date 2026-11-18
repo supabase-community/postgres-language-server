@@ -508,13 +508,18 @@ pub(super) fn emit_alter_table_cmd_of(
                 emit_node(e, def); // PartitionCmd node
             }
         }
-        AlterTableType::AtDetachPartition => {
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L2340
+        AlterTableType::AtDetachPartition | AlterTableType::AtDetachPartitionFinalize => {
             e.token(TokenKind::DETACH_KW);
             e.space();
             e.token(TokenKind::PARTITION_KW);
             if let Some(ref def) = cmd.def {
                 e.line(LineType::SoftOrSpace);
                 emit_node(e, def); // PartitionCmd node
+            }
+            if cmd.subtype() == AlterTableType::AtDetachPartitionFinalize {
+                e.space();
+                e.token(TokenKind::FINALIZE_KW);
             }
         }
         AlterTableType::AtEnableTrigAll => {

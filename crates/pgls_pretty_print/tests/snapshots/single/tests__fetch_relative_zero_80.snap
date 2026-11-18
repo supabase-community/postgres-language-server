@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/fetch_relative_zero.sql
+---
+fetch relative 0 from c1;

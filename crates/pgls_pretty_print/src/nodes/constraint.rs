@@ -72,13 +72,15 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
             if let Some(ref raw_expr) = n.raw_expr {
                 e.space();
 
-                // Complex expressions (SubLink, BoolExpr, etc.) need parentheses in DEFAULT
+                // The default of a column is a `b_expr`. Subqueries and operator expressions get
+                // parentheses for readability even where the grammar doesn't need them.
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L4005
                 let needs_parens = matches!(
                     raw_expr.node.as_ref(),
                     Some(NodeEnum::SubLink(_))
                         | Some(NodeEnum::BoolExpr(_))
                         | Some(NodeEnum::AExpr(_))
-                );
+                ) || needs_parentheses(raw_expr, Position::BExpr);
 
                 if needs_parens {
                     e.token(TokenKind::L_PAREN);

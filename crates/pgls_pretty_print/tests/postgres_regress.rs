@@ -1,6 +1,8 @@
-//! Formats every statement Postgres accepted in its own regression suite and checks that the output
-//! parses back to the same AST, that formatting the output again changes nothing, and that it has
-//! no stray whitespace.
+//! Formats every statement of Postgres' own regression suite that parses, whether Postgres accepted
+//! or rejected it, and checks that the output parses back to the same AST, that formatting the
+//! output again changes nothing, and that it has no stray whitespace. Users format code before
+//! they run it, so a statement the server rejects, for a missing table or a wrong type, is as much
+//! the formatter's business as one it accepts.
 
 mod common;
 
@@ -13,7 +15,7 @@ use rayon::prelude::*;
 const LINE_WIDTHS: [usize; 2] = [80, 100];
 
 #[test]
-fn formatting_preserves_every_statement_postgres_accepted() {
+fn formatting_preserves_every_statement_that_parses() {
     let parser_major = pgls_query::parse("select 1")
         .expect("parse select 1")
         .protobuf
@@ -33,12 +35,19 @@ fn formatting_preserves_every_statement_postgres_accepted() {
         .flat_map_iter(|(major, file)| {
             file.statements
                 .iter()
-                .filter(|statement| statement.verdict == Verdict::Accepted)
+                // A statement Postgres rejected may be a syntax error, which there's no AST of.
+                .filter(|statement| {
+                    statement.verdict == Verdict::Accepted
+                        || pgls_query::parse(file.sql(statement)).is_ok()
+                })
                 .map(move |statement| {
                     let sql = file.sql(statement);
                     round_trip(sql).map_err(|e| {
                         let (line, col) = file.line_col(statement);
-                        format!("{major}/{}.sql:{line}:{col}: {e}\n  {sql}", file.name)
+                        format!(
+                            "{major}/{}.sql:{line}:{col} ({}): {e}\n  {sql}",
+                            file.name, statement.verdict
+                        )
                     })
                 })
         })
@@ -48,10 +57,10 @@ fn formatting_preserves_every_statement_postgres_accepted() {
         .into_iter()
         .filter_map(Result::err)
         .collect::<Vec<_>>();
-    assert!(checked > 0, "no accepted statements to check");
+    assert!(checked > 0, "no statements to check");
     assert!(
         failures.is_empty(),
-        "{} of {checked} accepted statements don't survive formatting:\n{}",
+        "{} of {checked} statements don't survive formatting:\n{}",
         failures.len(),
         failures.join("\n")
     );

@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/type_cast_bit_without_length.sql
+---
+select
+  cast('101' as pg_catalog.bit),
+  cast('101' as bit(3)),
+  cast('1' as bit(1)),
+  cast('1' as bit varying);

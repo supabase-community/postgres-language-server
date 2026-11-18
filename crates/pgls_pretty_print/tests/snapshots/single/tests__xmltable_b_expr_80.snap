@@ -1,0 +1,14 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/xmltable_b_expr.sql
+---
+select
+  *
+from
+  xmltable(
+    xmlnamespaces(('a' collate "C") as x, default ('b' collate "C")),
+    '/r'
+    passing x
+    columns
+      a text path ('p' collate "C") default (null is null)
+  );
