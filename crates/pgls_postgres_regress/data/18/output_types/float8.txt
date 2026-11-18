@@ -1,0 +1,116 @@
+611..664	pg_catalog.bytea
+1089..1132	pg_catalog.bool
+1133..1175	pg_catalog.bool
+1176..1221	pg_catalog.bool
+1222..1276	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1296..1317	pg_catalog.float8
+1318..1339	pg_catalog.float8
+1340..1366	pg_catalog.float8
+1367..1393	pg_catalog.float8
+1394..1434	pg_catalog.float8
+1539..1573	pg_catalog.float8
+1574..1621	pg_catalog.float8
+1622..1663	pg_catalog.float8
+1664..1701	pg_catalog.float8
+1702..1737	pg_catalog.float8
+1738..1768	pg_catalog.float8
+1770..1795	pg_catalog.float8
+1797..1849	pg_catalog.float8
+1851..1902	pg_catalog.float8
+1904..1955	pg_catalog.float8
+1957..2009	pg_catalog.float8
+2011..2063	pg_catalog.float8
+2065..2118	pg_catalog.float8
+2120..2194	pg_catalog.float8	pg_catalog.float8
+2196..2270	pg_catalog.float8	pg_catalog.float8
+2272..2346	pg_catalog.float8	pg_catalog.float8
+2348..2422	pg_catalog.float8	pg_catalog.float8
+2424..2500	pg_catalog.float8
+2520..2570	pg_catalog.float8	pg_catalog.float8
+2584..2642	pg_catalog.float8	pg_catalog.float8
+2653..2711	pg_catalog.float8	pg_catalog.float8
+2731..2776	pg_catalog.float8
+2777..2828	pg_catalog.float8
+2839..2886	pg_catalog.float8
+2896..2941	pg_catalog.float8
+3059..3093	pg_catalog.float8
+3095..3126	pg_catalog.float8
+3128..3202	pg_catalog.float8	pg_catalog.float8
+3213..3254	pg_catalog.float8
+3255..3296	pg_catalog.float8
+3297..3338	pg_catalog.float8
+3339..3380	pg_catalog.float8
+3381..3421	pg_catalog.float8
+3422..3461	pg_catalog.float8
+3462..3501	pg_catalog.float8
+3502..3541	pg_catalog.float8
+3542..3582	pg_catalog.float8
+3583..3622	pg_catalog.float8
+3664..3703	pg_catalog.float8
+3704..3744	pg_catalog.float8
+3745..3785	pg_catalog.float8
+3786..3827	pg_catalog.float8
+3828..3869	pg_catalog.float8
+3870..3912	pg_catalog.float8
+3913..3954	pg_catalog.float8
+3955..3997	pg_catalog.float8
+3998..4040	pg_catalog.float8
+4041..4084	pg_catalog.float8
+4085..4127	pg_catalog.float8
+4128..4171	pg_catalog.float8
+4172..4212	pg_catalog.float8
+4213..4252	pg_catalog.float8
+4253..4294	pg_catalog.float8
+4295..4337	pg_catalog.float8
+4486..4533	pg_catalog.bool
+4534..4575	pg_catalog.float8
+4576..4616	pg_catalog.float8
+4617..4657	pg_catalog.float8
+4701..4743	pg_catalog.float8
+4744..4787	pg_catalog.float8
+4813..4896	pg_catalog.float8	pg_catalog.float8
+4926..4993	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+5008..5040	pg_catalog.float8
+5042..5092	pg_catalog.float8	pg_catalog.float8
+5095..5120	pg_catalog.float8
+5290..5331	pg_catalog.float8
+5522..5558	pg_catalog.float8
+5715..5739	pg_catalog.float8
+5740..5764	pg_catalog.float8
+5765..5789	pg_catalog.float8
+5790..5815	pg_catalog.float8
+5816..5841	pg_catalog.float8
+5842..5869	pg_catalog.float8
+5917..5948	pg_catalog.float8
+5949..5981	pg_catalog.float8
+5982..6008	pg_catalog.float8
+6009..6040	pg_catalog.float8
+6041..6073	pg_catalog.float8
+6074..6100	pg_catalog.float8
+6101..6132	pg_catalog.float8
+6133..6165	pg_catalog.float8
+6166..6192	pg_catalog.float8
+6193..6225	pg_catalog.float8
+6226..6259	pg_catalog.float8
+6260..6287	pg_catalog.float8
+6437..6464	pg_catalog.float8
+6532..6559	pg_catalog.float8
+6712..7020	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+7200..7347	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+7418..7452	pg_catalog.float8
+7485..7517	pg_catalog.float8
+7655..7684	pg_catalog.float8
+8117..8148	pg_catalog.int2
+8181..8213	pg_catalog.int2
+8247..8283	pg_catalog.int4
+8321..8358	pg_catalog.int4
+8397..8440	pg_catalog.int8
+8485..8531	pg_catalog.int8
+8638..8800	pg_catalog.int4	pg_catalog.float8	pg_catalog.bool
+8802..8964	pg_catalog.int4	pg_catalog.float8	pg_catalog.bool
+8966..9295	pg_catalog.int4	pg_catalog.float8	pg_catalog.bool	pg_catalog.float8	pg_catalog.bool
+9297..9498	pg_catalog.numeric	pg_catalog.float8	pg_catalog.bool	pg_catalog.float8	pg_catalog.bool
+9500..9667	pg_catalog.float8	pg_catalog.float8	pg_catalog.bool
+9669..9851	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.bool
+10941..11656	pg_catalog.bytea	pg_catalog.float8
+11679..17382	pg_catalog.bytea	pg_catalog.float8	pg_catalog.float8	pg_catalog.bytea	pg_catalog.bool

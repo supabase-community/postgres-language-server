@@ -1,0 +1,14 @@
+392..493	pg_catalog.name	pg_catalog.char	pg_catalog.char
+554..655	pg_catalog.name	pg_catalog.char	pg_catalog.char
+1544..1569	pg_catalog.int4
+1803..1958	pg_catalog.text
+2561..2710	pg_catalog.char	pg_catalog.regclass
+6712..6771	pg_catalog.char
+7638..7735	pg_catalog.text
+8038..8125	pg_catalog.text
+19668..19797	pg_catalog.name	pg_catalog.bool	pg_catalog.int4
+20327..20446	pg_catalog.bool	pg_catalog.int4
+20585..20671	pg_catalog.bool	pg_catalog.int4
+21070..21156	pg_catalog.bool	pg_catalog.int4
+25886..25941	pg_catalog.text
+27958..28013	pg_catalog.regclass

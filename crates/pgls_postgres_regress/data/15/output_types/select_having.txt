@@ -1,0 +1,9 @@
+623..701	pg_catalog.int4	pg_catalog.bpchar
+761..832	pg_catalog.int4	pg_catalog.bpchar
+834..954	pg_catalog.text	pg_catalog.int8
+956..1053	pg_catalog.bpchar	pg_catalog.int4
+1190..1252	pg_catalog.int4	pg_catalog.int4
+1253..1315	pg_catalog.int4	pg_catalog.int4
+1512..1558	pg_catalog.int4
+1559..1605	pg_catalog.int4
+1663..1723	pg_catalog.int4

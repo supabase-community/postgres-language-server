@@ -1,0 +1,18 @@
+114..171	pg_catalog.bool
+173..232	pg_catalog.bool
+777..800	pg_catalog.name
+802..911	pg_catalog.name
+913..1021	pg_catalog.name
+1023..1131	pg_catalog.name
+1133..1242	pg_catalog.name
+1244..1352	pg_catalog.name
+1354..1463	pg_catalog.name
+1465..1511	pg_catalog.name
+1513..1560	pg_catalog.name
+1562..1611	pg_catalog.name
+1613..1665	pg_catalog.name
+1907..1937	pg_catalog._text
+1986..2035	pg_catalog._text
+2253..3020	pg_catalog.int4	pg_catalog.int4
+3022..3111	pg_catalog._text
+3112..3209	pg_catalog._name

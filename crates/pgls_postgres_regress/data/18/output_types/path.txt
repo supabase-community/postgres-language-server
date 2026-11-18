@@ -1,0 +1,8 @@
+802..856	pg_catalog.path
+858..916	pg_catalog.path
+918..965	pg_catalog.path
+967..1011	pg_catalog.path
+1064..1112	pg_catalog.bool
+1113..1170	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1171..1225	pg_catalog.bool
+1226..1289	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

@@ -1,0 +1,1 @@
+1060..1132	pg_catalog.text

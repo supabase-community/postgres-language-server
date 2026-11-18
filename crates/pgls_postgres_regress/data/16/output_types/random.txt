@@ -1,0 +1,11 @@
+472..580	pg_catalog.float8	pg_catalog.int8
+770..1011	pg_catalog.int8	pg_catalog.bool	pg_catalog.bool
+1765..1878	pg_catalog.bool
+1984..2099	pg_catalog.float8	pg_catalog.int8
+2238..2337	pg_catalog.float8	pg_catalog.int8
+2338..2438	pg_catalog.float8	pg_catalog.int8
+3162..3280	pg_catalog.bool
+3353..3373	pg_catalog.void
+3375..3419	pg_catalog.float8
+3676..3727	pg_catalog.float8
+3728..3805	pg_catalog.float8

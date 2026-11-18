@@ -1,0 +1,11 @@
+81..115	pg_catalog.void
+2048..2081	pg_catalog.text
+2407..2529	pg_catalog.text
+8147..8189	pg_catalog.int8
+13746..13820	pg_catalog.record
+15876..15955	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+16706..16767	pg_catalog.text
+16768..16809	pg_catalog.text	pg_catalog._int4	pg_catalog.text
+17241..17289	pg_catalog.text
+17320..17368	pg_catalog.text
+18899..18933	pg_catalog.void

@@ -1,0 +1,6 @@
+2534..2613	pg_catalog.int8
+2614..2713	pg_catalog.int8
+2714..2793	pg_catalog.int8
+2884..2963	pg_catalog.int8
+2964..3063	pg_catalog.int8
+3064..3143	pg_catalog.int8

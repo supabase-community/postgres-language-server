@@ -1,0 +1,19 @@
+406..470	pg_catalog.bool
+472..528	pg_catalog.bool
+667..778	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4	pg_catalog.bool
+838..880	pg_catalog.bool
+941..983	pg_catalog.bool
+985..1034	pg_catalog.bool
+1095..1203	pg_catalog.bool	pg_catalog.bool
+1262..1376	pg_catalog.bool	pg_catalog.bool
+1427..1467	pg_catalog.bool
+1540..1594	pg_catalog.bool
+1627..1677	pg_catalog.bool
+1727..1771	pg_catalog.bool
+1806..1849	pg_catalog.bool
+1900..1952	pg_catalog.bool
+2051..2115	pg_catalog.text	pg_catalog.text
+2554..2623	pg_catalog.bool
+2624..2695	pg_catalog.bool
+2801..2872	pg_catalog.bool
+2911..2982	pg_catalog.bool

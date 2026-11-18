@@ -1,0 +1,11 @@
+8882..8932	pg_catalog.void
+9314..9364	pg_catalog.int4
+9504..9554	pg_catalog.void
+9555..9605	pg_catalog.void
+9606..9664	pg_catalog.void
+10119..10178	pg_catalog.int4
+10210..10269	pg_catalog.int4
+10293..10352	pg_catalog.int4
+10393..10461	pg_catalog.int4
+11120..11182	pg_catalog.text
+11247..11309	pg_catalog.text

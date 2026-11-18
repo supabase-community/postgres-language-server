@@ -1,0 +1,5 @@
+1988..2016	pg_catalog.text
+2017..2055	pg_catalog.text
+2180..2215	pg_catalog.int2
+2259..2495	pg_catalog.float8	pg_catalog.int2
+2541..2784	pg_catalog.numeric	pg_catalog.int2

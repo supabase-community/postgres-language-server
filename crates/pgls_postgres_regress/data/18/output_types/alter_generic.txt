@@ -1,0 +1,13 @@
+3738..3979	pg_catalog.name	pg_catalog.name	pg_catalog.regtype	pg_catalog.char	pg_catalog.name
+5373..5592	pg_catalog.name	pg_catalog.name	pg_catalog.name
+6109..6183	pg_catalog.name
+6184..6254	pg_catalog.name
+7074..7211	pg_catalog.name	pg_catalog.name
+8277..8551	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.regtype	pg_catalog.regtype	pg_catalog.regproc
+11810..12095	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name
+12097..12348	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.name
+22755..22968	pg_catalog.name	pg_catalog.name	pg_catalog.name
+24382..24596	pg_catalog.name	pg_catalog.name	pg_catalog.name
+26046..26258	pg_catalog.name	pg_catalog.name	pg_catalog.name
+26923..27077	pg_catalog.name	pg_catalog.name
+27923..28072	pg_catalog.name	pg_catalog.name

@@ -1,0 +1,4 @@
+4216..4228	pg_catalog.int4
+9464..9551	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog._text	pg_catalog._text	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+9585..9644	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog._text	pg_catalog._text	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+17506..17925	pg_catalog.name	pg_catalog.text	pg_catalog.text	pg_catalog._text	pg_catalog._text	pg_catalog.record

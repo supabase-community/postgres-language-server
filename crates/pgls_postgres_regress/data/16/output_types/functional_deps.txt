@@ -1,0 +1,9 @@
+514..582	pg_catalog.int4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.date
+963..1146	pg_catalog.int4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.date
+1452..1638	pg_catalog.int4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.date
+1944..2124	pg_catalog.date
+2507..2666	pg_catalog.int4	pg_catalog.text	pg_catalog.numeric
+2882..3024	pg_catalog.int4	pg_catalog.text	pg_catalog.numeric
+3617..3748	pg_catalog.int4	pg_catalog.varchar
+3756..3879	pg_catalog.int4	pg_catalog.varchar
+5291..5303	pg_catalog.int4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.date

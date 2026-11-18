@@ -1,0 +1,17 @@
+149..184	pg_catalog.bool
+773..796	pg_catalog.bpchar
+798..849	pg_catalog.bpchar
+851..901	pg_catalog.bpchar
+903..953	pg_catalog.bpchar
+955..1006	pg_catalog.bpchar
+1008..1058	pg_catalog.bpchar
+1060..1111	pg_catalog.bpchar
+1546..1565	pg_catalog.char
+1566..1588	pg_catalog.char
+1589..1611	pg_catalog.char
+1612..1637	pg_catalog.text
+1638..1666	pg_catalog.text
+1667..1695	pg_catalog.text
+1696..1721	pg_catalog.char
+1722..1750	pg_catalog.char
+1751..1775	pg_catalog.char

@@ -1,0 +1,26 @@
+62..129	pg_catalog.bool
+131..168	pg_catalog.bool
+169..202	pg_catalog.bool
+203..244	pg_catalog.bool
+246..267	pg_catalog.text
+268..353	pg_catalog.bool
+354..440	pg_catalog.bool
+441..519	pg_catalog.bool
+520..606	pg_catalog.bool
+607..691	pg_catalog.bool
+692..776	pg_catalog.bool
+832..885	pg_catalog.bool
+886..939	pg_catalog.bool
+941..1280	pg_catalog.int4	pg_catalog.text	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+1414..1495	pg_catalog.bool
+1496..1576	pg_catalog.bool
+1604..1688	pg_catalog.bool
+1689..1772	pg_catalog.bool
+1773..1857	pg_catalog.bool
+1886..1972	pg_catalog.bool
+1973..2059	pg_catalog.bool
+2088..2184	pg_catalog.bool
+2185..2285	pg_catalog.bool
+2321..2400	pg_catalog.bool
+2401..2486	pg_catalog.bool
+2487..2573	pg_catalog.bool

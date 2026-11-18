@@ -1,0 +1,2 @@
+4643..4752	pg_catalog.text
+5922..6012	pg_catalog.text

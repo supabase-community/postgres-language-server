@@ -1,0 +1,140 @@
+---
+source: crates/pgls_analyser/tests/postgres_regress.rs
+expression: total.report(&version)
+---
+REL_18_6: 15429 statements that return rows, 2309 without inferred output columns. Of the columns of the others, 20562 have the type Postgres described, 2337 an unknown type. 45 statements differ
+
+alter_table.sql:1340:1: inferred pg_catalog.text, ?, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.text
+  select * from foo;
+
+alter_table.sql:1342:1: inferred pg_catalog.text, ?, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.text
+  select * from foo;
+
+alter_table.sql:1344:1: inferred pg_catalog.text, ?, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.text
+  select * from foo;
+
+create_view.sql:299:1: inferred pg_catalog.int4, pg_catalog.numeric, pg_catalog.text, pg_catalog.unknown, pg_catalog.text, Postgres pg_catalog.int4, pg_catalog.numeric, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  SELECT * FROM unspecified_types;
+
+create_view.sql:655:1: inferred pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4
+  select * from tt14v;
+
+create_view.sql:661:1: inferred pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4
+  select * from tt14v;
+
+generated_stored.sql:62:1: inferred pg_catalog.record, Postgres generated_stored_tests.gtest1
+  SELECT gtest1 FROM gtest1 ORDER BY a;
+
+generated_virtual.sql:62:1: inferred pg_catalog.record, Postgres generated_virtual_tests.gtest1
+  SELECT gtest1 FROM gtest1 ORDER BY a;
+
+insert.sql:668:1: inferred pg_catalog.record, Postgres public.returningwrtest
+  insert into returningwrtest values (1) returning returningwrtest;
+
+insert.sql:675:1: inferred pg_catalog.record, Postgres public.returningwrtest
+  insert into returningwrtest values (2, 'foo') returning returningwrtest;
+
+matview.sql:194:1: inferred pg_catalog.int4, pg_catalog.numeric, pg_catalog.text, pg_catalog.unknown, pg_catalog.text, Postgres pg_catalog.int4, pg_catalog.numeric, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  SELECT * FROM mv_unspecified_types;
+
+merge.sql:231:1: inferred pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.int4, Postgres pg_catalog.text, public.target, public.target, pg_catalog.int4, pg_catalog.int4
+  MERGE INTO target t USING source AS s ON t.tid = s.sid WHEN NOT MATCHED BY SOURCE THEN 	DELETE WHEN NOT MATCHED BY TARGET THEN 	INSERT VALUES (s.sid, s.delta) RETURNING merge_action(), old, new, t.*;
+
+merge.sql:667:1: inferred pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.int4, Postgres pg_catalog.text, public.target, public.target, pg_catalog.int4, pg_catalog.int4
+  MERGE INTO target t USING source AS s ON t.tid = s.sid WHEN MATCHED AND t.balance > s.delta THEN     UPDATE SET balance = t.balance - s.delta WHEN MATCHED THEN 	UPDATE SET balance = 0 WHEN NOT MATCHED…
+
+partition_join.sql:54:1: inferred pg_catalog.record, pg_catalog.record, Postgres public.prt1, public.prt2
+  SELECT t1, t2 FROM prt1 t1 LEFT JOIN prt2 t2 ON t1.a = t2.b WHERE t1.b = 0 ORDER BY t1.a, t2.b;
+
+polymorphism.sql:529:1: inferred pg_catalog.text, pg_catalog.int8, Postgres pg_catalog.text, pg_catalog._int4
+  select f3, myaggp01a(*) from t group by f3 order by f3;
+
+polymorphism.sql:530:1: inferred pg_catalog.text, pg_catalog.int8, Postgres pg_catalog.text, pg_catalog._int4
+  select f3, myaggp03a(*) from t group by f3 order by f3;
+
+polymorphism.sql:531:1: inferred pg_catalog.text, pg_catalog.int8, Postgres pg_catalog.text, pg_catalog._int4
+  select f3, myaggp03b(*) from t group by f3 order by f3;
+
+polymorphism.sql:541:1: inferred pg_catalog.text, pg_catalog.int8, Postgres pg_catalog.text, pg_catalog._int4
+  select f3, myaggn01a(*) from t group by f3 order by f3;
+
+polymorphism.sql:542:1: inferred pg_catalog.text, pg_catalog.int8, Postgres pg_catalog.text, pg_catalog._int4
+  select f3, myaggn01b(*) from t group by f3 order by f3;
+
+polymorphism.sql:543:1: inferred pg_catalog.text, pg_catalog.int8, Postgres pg_catalog.text, pg_catalog._int4
+  select f3, myaggn03a(*) from t group by f3 order by f3;
+
+returning.sql:137:1: inferred pg_catalog.record, Postgres pg_temp.foo_v
+  UPDATE foo SET f2 = foo_v.f2 FROM foo_v WHERE foo_v.f1 = foo.f1   RETURNING foo_v;
+
+returning.sql:144:1: inferred pg_catalog.record, Postgres pg_temp.foo
+  UPDATE foo SET f2 = foo_f.f2 FROM foo_f() WHERE foo_f.f1 = foo.f1   RETURNING foo_f;
+
+returning.sql:153:1: inferred pg_catalog.record, Postgres public.foo_t
+  UPDATE foo SET f2 = foo_f.f2 FROM foo_f() WHERE foo_f.f1 = foo.f1   RETURNING foo_f;
+
+returning.sql:232:1: inferred pg_catalog.regclass, ?, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_catalog.record, pg_catalog.regclass, ?, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_catalog.record, pg_catalog.text, Postgres pg_catalog.regclass, pg_catalog.tid, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_temp.foo, pg_catalog.regclass, pg_catalog.tid, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_temp.foo, pg_catalog.text
+  UPDATE foo SET f4 = 100 WHERE f1 = 5   RETURNING old.tableoid::regclass, old.ctid, old.*, old,             new.tableoid::regclass, new.ctid, new.*, new,             old.f4::text||'->'||new.f4::text AS…
+
+returning.sql:247:1: inferred pg_catalog.record, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_catalog.record, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, Postgres pg_temp.foo, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_temp.foo, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8
+  INSERT INTO foo VALUES (6, 'paren-test', 60, 600)   RETURNING old, (old).f4, (old).*,             new, (new).f4, (new).*;
+
+returning.sql:250:1: inferred pg_catalog.record, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_catalog.record, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, Postgres pg_temp.foo, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_temp.foo, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8
+  UPDATE foo SET f4 = 700 WHERE f1 = 6   RETURNING old, (old).f4, (old).*,             new, (new).f4, (new).*;
+
+returning.sql:253:1: inferred pg_catalog.record, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_catalog.record, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, Postgres pg_temp.foo, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8, pg_temp.foo, pg_catalog.int8, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int8
+  DELETE FROM foo WHERE f1 = 6   RETURNING old, (old).f4, (old).*,             new, (new).f4, (new).*;
+
+returning.sql:337:1: inferred pg_catalog.record, pg_catalog.record, Postgres pg_temp.foo, pg_temp.foo
+  UPDATE foo SET f4 = f4 + 1 RETURNING old, new;
+
+rowsecurity.sql:285:1: inferred pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.record, Postgres pg_catalog.int4, pg_catalog.int4, pg_catalog.text, regress_rls_schema.t1
+  SELECT *, t1 FROM t1;
+
+rowsecurity.sql:615:1: inferred pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.record, Postgres pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, regress_rls_schema.t1
+  UPDATE only t1 SET b = b WHERE f_leak(b) RETURNING tableoid::regclass, *, t1;
+
+rowsecurity.sql:617:1: inferred pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.record, Postgres pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, regress_rls_schema.t1
+  UPDATE t1 SET b = b WHERE f_leak(b) RETURNING tableoid::regclass, *, t1;
+
+rowsecurity.sql:643:1: inferred pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.float8, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.float8, pg_catalog.record, pg_catalog.record, Postgres pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.float8, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.float8, regress_rls_schema.t2, regress_rls_schema.t2
+  UPDATE t2 t2_1 SET b = t2_2.b FROM t2 t2_2 WHERE t2_1.a = 3 AND t2_2.a = t2_1.a AND t2_2.b = t2_1.b AND f_leak(t2_1.b) AND f_leak(t2_2.b) RETURNING *, t2_1, t2_2;
+
+rowsecurity.sql:651:1: inferred pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, Postgres pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, regress_rls_schema.t1, regress_rls_schema.t1
+  UPDATE t1 t1_1 SET b = t1_2.b FROM t1 t1_2 WHERE t1_1.a = 4 AND t1_2.a = t1_1.a AND t1_2.b = t1_1.b AND f_leak(t1_1.b) AND f_leak(t1_2.b) RETURNING *, t1_1, t1_2;
+
+rowsecurity.sql:664:1: inferred pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.record, Postgres pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, regress_rls_schema.t1
+  DELETE FROM only t1 WHERE f_leak(b) RETURNING tableoid::regclass, *, t1;
+
+rowsecurity.sql:665:1: inferred pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, pg_catalog.record, Postgres pg_catalog.regclass, pg_catalog.int4, pg_catalog.int4, pg_catalog.text, regress_rls_schema.t1
+  DELETE FROM t1 WHERE f_leak(b) RETURNING tableoid::regclass, *, t1;
+
+subselect.sql:421:1: inferred pg_catalog.record, Postgres pg_temp.view_a
+  select view_a from view_a;
+
+subselect.sql:422:1: inferred pg_catalog.record, Postgres pg_temp.view_a
+  select (select view_a) from view_a;
+
+subselect.sql:423:1: inferred pg_catalog.record, Postgres pg_temp.view_a
+  select (select (select view_a)) from view_a;
+
+updatable_views.sql:181:1: inferred pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4, pg_catalog.text, public.rw_view1, public.rw_view1, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  MERGE INTO rw_view1 t   USING (VALUES (0, 'ROW 0'), (1, 'ROW 1'),                 (2, 'ROW 2'), (3, 'ROW 3')) AS v(a,b) ON t.a = v.a   WHEN MATCHED AND t.a <= 1 THEN UPDATE SET b = v.b   WHEN MATCHED …
+
+updatable_views.sql:193:1: inferred pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4, pg_catalog.text, public.rw_view1, public.rw_view1, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  MERGE INTO rw_view1 t   USING (VALUES (0, 'R0'), (1, 'R1'),                 (2, 'R2'), (3, 'R3')) AS v(a,b) ON t.a = v.a   WHEN MATCHED AND t.a <= 1 THEN UPDATE SET b = v.b   WHEN MATCHED THEN DELETE …
+
+updatable_views.sql:274:1: inferred pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4, pg_catalog.text, public.rw_view2, public.rw_view2, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  MERGE INTO rw_view2 t   USING (VALUES (3, 'R3'), (4, 'R4'), (5, 'R5')) AS v(a,b) ON aaa = v.a   WHEN MATCHED AND aaa = 3 THEN DELETE   WHEN MATCHED THEN UPDATE SET bbb = v.b   WHEN NOT MATCHED THEN IN…
+
+updatable_views.sql:282:1: inferred pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4, pg_catalog.text, public.rw_view2, public.rw_view2, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  MERGE INTO rw_view2 t   USING (VALUES (4, 'r4'), (5, 'r5'), (6, 'r6')) AS v(a,b) ON aaa = v.a   WHEN MATCHED AND aaa = 4 THEN DELETE   WHEN MATCHED THEN UPDATE SET bbb = v.b   WHEN NOT MATCHED THEN IN…
+
+updatable_views.sql:504:1: inferred pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4, pg_catalog.text, public.rw_view2, public.rw_view2, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  MERGE INTO rw_view2 t   USING (SELECT x, 'R'||x FROM generate_series(0,3) x) AS s(a,b) ON t.a = s.a   WHEN MATCHED AND t.a <= 1 THEN DELETE   WHEN MATCHED THEN UPDATE SET b = s.b   WHEN NOT MATCHED AN…
+
+updatable_views.sql:512:1: inferred pg_catalog.text, pg_catalog.int4, pg_catalog.text, pg_catalog.record, pg_catalog.record, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.int4, pg_catalog.text, public.rw_view2, public.rw_view2, pg_catalog.int4, pg_catalog.text, pg_catalog.text, pg_catalog.text
+  MERGE INTO rw_view2 t   USING (SELECT x, 'r'||x FROM generate_series(0,2) x) AS s(a,b) ON t.a = s.a   WHEN MATCHED THEN UPDATE SET b = s.b   WHEN NOT MATCHED AND s.a > 0 THEN INSERT VALUES (s.a, s.b) …
+
+update.sql:262:1: inferred pg_catalog.record, pg_catalog.text, pg_catalog.int8, pg_catalog.numeric, pg_catalog.int4, pg_catalog.varchar, Postgres public.range_parted, pg_catalog.text, pg_catalog.int8, pg_catalog.numeric, pg_catalog.int4, pg_catalog.varchar
+  UPDATE range_parted set c = 95 WHERE a = 'b' and b > 10 and c > 100 returning (range_parted), *;

@@ -1,0 +1,2 @@
+1145..1368	pg_catalog.bool
+1369..1613	pg_catalog.int8

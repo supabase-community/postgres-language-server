@@ -1,0 +1,3 @@
+3046..3339	pg_catalog.name	pg_catalog.text	pg_catalog.bool
+3538..3843	pg_catalog.int4	pg_catalog.text	pg_catalog.bool
+3897..4260	pg_catalog.int4	pg_catalog.text	pg_catalog.bool

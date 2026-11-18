@@ -1,0 +1,52 @@
+1046..1132	pg_catalog.text
+1133..1228	pg_catalog.text
+2253..2340	pg_catalog.text
+2341..2437	pg_catalog.text
+2983..3072	pg_catalog.text
+3073..3171	pg_catalog.text
+3395..3485	pg_catalog.text
+3486..3585	pg_catalog.text
+4281..4368	pg_catalog.text
+4369..4465	pg_catalog.text
+4698..4785	pg_catalog.text
+4786..4882	pg_catalog.text
+10176..10225	pg_catalog.int4range	pg_catalog.daterange
+10721..10770	pg_catalog.int4range	pg_catalog.daterange
+11296..11345	pg_catalog.int4range	pg_catalog.daterange
+13524..13574	pg_catalog.int4range	pg_catalog.daterange
+14379..14429	pg_catalog.int4range	pg_catalog.daterange
+14838..14888	pg_catalog.int4range	pg_catalog.daterange
+17178..17230	pg_catalog.int4range	pg_catalog.datemultirange
+17749..17801	pg_catalog.int4range	pg_catalog.datemultirange
+18373..18425	pg_catalog.int4range	pg_catalog.datemultirange
+20889..20942	pg_catalog.int4range	pg_catalog.datemultirange
+21797..21850	pg_catalog.int4range	pg_catalog.datemultirange
+22278..22331	pg_catalog.int4range	pg_catalog.datemultirange
+24025..24082	pg_catalog.int4range	pg_catalog.daterange	pg_catalog.text
+24083..24123	pg_catalog.int4range	pg_catalog.daterange	pg_catalog.text
+24124..24164	pg_catalog.int4range	pg_catalog.daterange	pg_catalog.text
+24817..24874	pg_catalog.int4range	pg_catalog.daterange	pg_catalog.text
+24875..24915	pg_catalog.int4range	pg_catalog.daterange	pg_catalog.text
+24916..24956	pg_catalog.int4range	pg_catalog.daterange	pg_catalog.text
+25688..25737	pg_catalog.int4range	pg_catalog.daterange
+26345..26394	pg_catalog.int4range	pg_catalog.daterange
+27047..27096	pg_catalog.int4range	pg_catalog.daterange
+27794..27843	pg_catalog.int4range	pg_catalog.daterange
+28586..28635	pg_catalog.int4range	pg_catalog.daterange
+29344..29390	pg_catalog.int4range	pg_catalog.daterange
+29983..30029	pg_catalog.int4range	pg_catalog.daterange
+30658..30704	pg_catalog.int4range	pg_catalog.daterange
+31387..31433	pg_catalog.int4range	pg_catalog.daterange
+32152..32198	pg_catalog.int4range	pg_catalog.daterange
+32898..32950	pg_catalog.int4range	pg_catalog.datemultirange
+33637..33689	pg_catalog.int4range	pg_catalog.datemultirange
+34430..34482	pg_catalog.int4range	pg_catalog.datemultirange
+35259..35311	pg_catalog.int4range	pg_catalog.datemultirange
+36142..36194	pg_catalog.int4range	pg_catalog.datemultirange
+37021..37074	pg_catalog.int4range	pg_catalog.datemultirange
+37766..37819	pg_catalog.int4range	pg_catalog.datemultirange
+38568..38621	pg_catalog.int4range	pg_catalog.datemultirange
+39403..39456	pg_catalog.int4range	pg_catalog.datemultirange
+40295..40348	pg_catalog.int4range	pg_catalog.datemultirange
+48998..49091	pg_catalog.text
+66555..66654	pg_catalog.text

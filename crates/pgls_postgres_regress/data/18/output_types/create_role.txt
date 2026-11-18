@@ -1,0 +1,4 @@
+3961..4055	pg_catalog.bool
+4098..4187	pg_catalog.bool
+4248..4342	pg_catalog.bool
+4433..4522	pg_catalog.bool

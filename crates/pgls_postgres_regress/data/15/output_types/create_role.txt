@@ -1,0 +1,4 @@
+2520..2612	pg_catalog.bool
+2653..2740	pg_catalog.bool
+2799..2891	pg_catalog.bool
+2980..3067	pg_catalog.bool

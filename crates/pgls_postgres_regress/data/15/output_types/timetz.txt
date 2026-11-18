@@ -1,0 +1,25 @@
+1018..1057	pg_catalog.timetz
+1059..1121	pg_catalog.timetz
+1123..1185	pg_catalog.timetz
+1187..1245	pg_catalog.timetz
+1247..1305	pg_catalog.timetz
+1327..1364	pg_catalog.timetz
+1365..1403	pg_catalog.timetz
+1418..1448	pg_catalog.timetz
+1463..1493	pg_catalog.timetz
+2093..2178	pg_catalog.numeric
+2179..2264	pg_catalog.numeric
+2265..2350	pg_catalog.numeric
+2351..2436	pg_catalog.numeric
+2437..2522	pg_catalog.numeric
+2715..2803	pg_catalog.numeric
+2804..2896	pg_catalog.numeric
+2897..2989	pg_catalog.numeric
+2990..3075	pg_catalog.numeric
+3189..3274	pg_catalog.float8
+3275..3360	pg_catalog.float8
+3361..3446	pg_catalog.float8
+3447..3532	pg_catalog.float8
+3815..3864	pg_catalog.text
+3865..3889	pg_catalog.timetz	pg_catalog.timetz	pg_catalog.timetz
+3890..4041	pg_catalog.timetz	pg_catalog.timetz	pg_catalog.timetz

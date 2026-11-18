@@ -1,0 +1,110 @@
+310..369	public.complex	public.quad
+371..431	pg_temp.fullname	pg_temp.fullname
+433..494	pg_temp.fullname	pg_temp.fullname
+496..563	pg_temp.fullname	pg_temp.fullname
+565..600	pg_temp.fullname
+602..628	pg_temp.fullname
+759..792	pg_temp.fullname
+1022..1046	pg_catalog.int4	public.quad
+1115..1164	pg_catalog.int4	public.complex	pg_catalog.float8
+1273..1294	pg_temp.fullname	pg_catalog.date
+1504..1525	pg_temp.fullname	pg_catalog.date
+1604..1625	pg_temp.fullname	pg_catalog.date
+1795..1819	pg_catalog.int4	public.quad
+2193..2268	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+2359..2434	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+2540..2575	pg_catalog.bool
+2576..2612	pg_catalog.bool
+2613..2651	pg_catalog.bool
+2652..2694	pg_catalog.bool
+2723..2768	pg_catalog.bool
+2769..2815	pg_catalog.bool
+2816..2861	pg_catalog.bool
+2915..2957	pg_catalog.bool
+2958..3001	pg_catalog.bool
+3002..3045	pg_catalog.bool
+3139..3193	pg_catalog.bool
+3194..3249	pg_catalog.bool
+3375..3408	pg_catalog.bool
+3409..3449	pg_catalog.bool
+3450..3496	pg_catalog.bool
+5044..5128	pg_catalog.text
+5130..5194	pg_catalog.text	pg_catalog.text
+5591..5615	pg_catalog.int4
+5616..5640	pg_catalog.numeric
+5679..5702	pg_catalog.int4	pg_catalog.numeric
+5703..5751	pg_catalog.int4
+5810..5857	pg_catalog.int4	pg_catalog.numeric
+5911..5924	pg_catalog.record
+5925..5946	pg_catalog.bool
+6026..6071	pg_catalog._record
+6142..6212	pg_catalog.bool
+6213..6283	pg_catalog.bool
+6664..6715	pg_catalog.bool
+6716..6768	pg_catalog.bool
+6769..6820	pg_catalog.bool
+6821..6873	pg_catalog.bool
+6874..6926	pg_catalog.bool
+6927..6978	pg_catalog.bool
+6993..7046	pg_catalog.bool
+7047..7101	pg_catalog.bool
+7102..7155	pg_catalog.bool
+7156..7210	pg_catalog.bool
+7211..7265	pg_catalog.bool
+7266..7319	pg_catalog.bool
+7347..7399	pg_catalog.bool
+8052..8104	pg_catalog.bool
+8105..8158	pg_catalog.bool
+8159..8211	pg_catalog.bool
+8212..8265	pg_catalog.bool
+8266..8319	pg_catalog.bool
+8320..8372	pg_catalog.bool
+8387..8441	pg_catalog.bool
+8442..8497	pg_catalog.bool
+8498..8552	pg_catalog.bool
+8553..8608	pg_catalog.bool
+8609..8664	pg_catalog.bool
+8665..8719	pg_catalog.bool
+8852..8905	pg_catalog.bool
+8995..9053	pg_catalog.bool
+9054..9114	pg_catalog.bool
+9115..9174	pg_catalog.bool
+9175..9235	pg_catalog.bool
+9299..9359	pg_catalog.bool
+9360..9421	pg_catalog.bool
+9422..9482	pg_catalog.bool
+9483..9544	pg_catalog.bool
+9614..9678	pg_catalog.bool
+9679..9744	pg_catalog.bool
+10078..10142	pg_catalog.bool
+10143..10208	pg_catalog.bool
+10209..10274	pg_catalog.bool
+10313..10556	pg_catalog.int4	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+11447..11467	pg_catalog.int4	pg_catalog.bool	pg_catalog.numeric
+12048..12078	pg_catalog.void
+12079..12109	pg_catalog.void
+12110..12142	pg_catalog.void
+12143..12164	pg_catalog.int4	pg_catalog.text
+12373..12418	pg_catalog.text
+12419..12455	pg_catalog.text
+12602..12643	pg_catalog.text
+12644..12678	pg_catalog.text
+12878..12908	pg_catalog.text
+12909..12940	pg_catalog.text
+13046..13080	pg_catalog.text
+13081..13116	pg_catalog.text
+13239..13273	pg_catalog.text
+13274..13309	pg_catalog.text
+15103..15321	pg_catalog.text
+15323..15512	pg_catalog.record	pg_catalog.bool	pg_catalog.bool
+15514..15754	pg_catalog.text
+15756..15967	pg_catalog.record	pg_catalog.bool	pg_catalog.bool
+16048..16272	pg_catalog.text
+16274..16469	pg_catalog.record
+16739..16782	pg_catalog.text
+16891..17017	pg_catalog.text
+17018..17156	pg_catalog.text
+17158..17300	pg_catalog.text
+17301..17455	pg_catalog.text
+17777..17853	pg_catalog.text	pg_catalog.text
+18142..18174	pg_catalog.text

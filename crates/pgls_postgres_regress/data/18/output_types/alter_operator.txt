@@ -1,0 +1,14 @@
+470..659	pg_catalog.text	pg_catalog.char
+847..979	pg_catalog.regproc	pg_catalog.regproc
+981..1170	pg_catalog.text	pg_catalog.char
+1301..1433	pg_catalog.regproc	pg_catalog.regproc
+1435..1624	pg_catalog.text	pg_catalog.char
+1701..1833	pg_catalog.regproc	pg_catalog.regproc
+1835..2024	pg_catalog.text	pg_catalog.char
+2117..2249	pg_catalog.regproc	pg_catalog.regproc
+2251..2440	pg_catalog.text	pg_catalog.char
+4063..4199	pg_catalog.bool	pg_catalog.bool
+4486..4786	pg_catalog.name	pg_catalog.name	pg_catalog.regproc
+5155..5455	pg_catalog.name	pg_catalog.name	pg_catalog.regproc
+5768..6060	pg_catalog.bool	pg_catalog.bool	pg_catalog.text	pg_catalog.text
+6871..7163	pg_catalog.bool	pg_catalog.bool	pg_catalog.text	pg_catalog.text
