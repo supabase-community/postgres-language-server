@@ -12,7 +12,8 @@ use pgls_query::{
 };
 
 use super::{
-    Finding, FindingKind, FunctionContext, FunctionParam, Reference, ResolvedCallArgument,
+    Finding, FindingKind, FunctionContext, FunctionParam, Reference, Resolution,
+    ResolvedCallArgument,
     column_name::target_name_with,
     lookups::{LookupKind, SearchPathLookup},
     output::QueryOutput,
@@ -30,34 +31,43 @@ pub(super) struct Resolver<'a> {
     sql: Option<&'a str>,
     /// The tokens of `sql`, scanned when the first span is needed.
     tokens: OnceCell<Option<Tokens<'a>>>,
-    pub findings: Vec<Finding>,
+    findings: Vec<Finding>,
     /// Cleared as soon as the statement references something that doesn't come unchanged from
     /// the database, or something the resolver doesn't understand.
-    pub database_only: bool,
-    /// The FROM items of the enclosing query levels, innermost last.
-    pub levels: Vec<Level>,
-    /// The common table expressions in scope, innermost last.
-    pub ctes: Vec<Cte>,
+    database_only: bool,
+    /// The FROM items of the enclosing query levels, innermost last. See
+    /// [`Resolver::in_level`].
+    levels: Vec<Level>,
+    /// The common table expressions in scope, innermost last. See [`Resolver::with_ctes`].
+    ctes: Vec<Cte>,
     /// The references resolved so far, when they are being collected.
-    pub references: Option<Vec<Reference>>,
+    references: Option<Vec<Reference>>,
     /// The location and kind of each reference in `references`.
     recorded: FxHashSet<(i32, Discriminant<Reference>)>,
     /// The names looked up through the search path so far, when they are being collected.
-    pub lookups: Option<Vec<SearchPathLookup>>,
+    lookups: Option<Vec<SearchPathLookup>>,
     /// The location and kind of each lookup in `lookups`.
     recorded_lookups: FxHashSet<(i32, LookupKind)>,
-    /// Set while resolving a clause whose unqualified names can only be columns of one relation,
-    /// like the index predicate of `ON CONFLICT`, so they are not recorded as column lookups.
-    pub single_relation: bool,
-    /// How many queries and data-modifying statements the resolver is in.
-    pub query_depth: usize,
+    /// What the clause being resolved allows. See [`Resolver::with_context`].
+    context: Context,
+    /// How many queries and data-modifying statements the resolver is in. See
+    /// [`Resolver::in_query`].
+    query_depth: usize,
     /// The output columns of the subqueries of sublinks resolved so far, by the address of the
     /// subquery's node, so that typing a sublink doesn't resolve its subquery again. Resolving
     /// it again at every level of nested subqueries took time exponential in their depth.
     subquery_outputs: FxHashMap<usize, Option<QueryOutput>>,
+}
+
+/// What the clause being resolved allows, including in its subqueries.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct Context {
+    /// Set while resolving a clause whose unqualified names can only be columns of one relation,
+    /// like the index predicate of `ON CONFLICT`, so they are not recorded as column lookups.
+    pub single_relation: bool,
     /// Set while resolving the RETURNING list of MERGE, including its subqueries, where
     /// `merge_action()` is allowed.
-    pub in_merge_returning: bool,
+    pub merge_returning: bool,
 }
 
 impl<'a> Resolver<'a> {
@@ -81,11 +91,46 @@ impl<'a> Resolver<'a> {
             recorded: FxHashSet::default(),
             lookups: None,
             recorded_lookups: FxHashSet::default(),
-            single_relation: false,
+            context: Context::default(),
             query_depth: 0,
             subquery_outputs: FxHashMap::default(),
-            in_merge_returning: false,
         }
+    }
+
+    /// Collects the references and the search path lookups of the statement too.
+    pub fn collecting(mut self, references: bool, lookups: bool) -> Self {
+        self.references = references.then(Vec::new);
+        self.lookups = lookups.then(Vec::new);
+        self
+    }
+
+    /// The resolution of a statement: what the resolver found, with the output columns of its
+    /// query. `checks_database` is whether the database can check the statement at all.
+    pub fn into_resolution(self, output: Option<QueryOutput>, checks_database: bool) -> Resolution {
+        let mut lookups = self.lookups.unwrap_or_default();
+        lookups.sort_by_key(|lookup| lookup.location);
+
+        Resolution {
+            // `Resolver::report_with_span` keeps each finding once.
+            findings: self.findings,
+            database_only: checks_database && self.database_only,
+            references: self.references.unwrap_or_default(),
+            lookups,
+            output,
+        }
+    }
+
+    /// Whether the resolver found anything Postgres would reject.
+    pub fn has_findings(&self) -> bool {
+        !self.findings.is_empty()
+    }
+
+    /// Runs `f`, and drops the findings it reports.
+    pub fn without_findings<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
+        let findings = self.findings.len();
+        let result = f(self);
+        self.findings.truncate(findings);
+        result
     }
 
     /// Remembers the output columns of `query`, the subquery of a sublink.
@@ -104,13 +149,79 @@ impl<'a> Resolver<'a> {
             .get(&(std::ptr::from_ref(query) as usize))
     }
 
-    /// Makes the FROM items of `level` visible, until [`Resolver::exit_level`].
-    pub fn enter_level(&mut self, level: Level) {
-        self.levels.push(level);
+    /// The FROM items of the enclosing query levels, innermost last.
+    pub fn levels(&self) -> &[Level] {
+        &self.levels
     }
 
-    pub fn exit_level(&mut self) -> Level {
-        self.levels.pop().unwrap_or_default()
+    /// Runs `f` with the FROM items of `level` visible, innermost, and returns its result and
+    /// the level, with what `f` changed in it.
+    pub fn in_level<T>(&mut self, level: Level, f: impl FnOnce(&mut Self) -> T) -> (T, Level) {
+        let depth = self.levels.len();
+        self.levels.push(level);
+        let result = f(self);
+        // Only this method pushes and pops levels, so `f` leaves them as it found them.
+        debug_assert_eq!(self.levels.len(), depth + 1, "unbalanced query levels");
+        let level = self.levels.pop().unwrap_or_default();
+        (result, level)
+    }
+
+    /// The common table expressions in scope, innermost last.
+    pub fn ctes(&self) -> &[Cte] {
+        &self.ctes
+    }
+
+    /// Runs `f`, and forgets the common table expressions it defines when it returns, like the
+    /// end of the statement whose `WITH` defines them.
+    pub fn with_ctes<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
+        let ctes = self.ctes.len();
+        let result = f(self);
+        self.ctes.truncate(ctes);
+        result
+    }
+
+    /// Makes `cte` visible, innermost.
+    pub fn define_cte(&mut self, cte: Cte) {
+        self.ctes.push(cte);
+    }
+
+    /// The innermost visible common table expression with this name.
+    pub fn cte_mut(&mut self, name: &str) -> Option<&mut Cte> {
+        self.ctes.iter_mut().rev().find(|cte| cte.name == name)
+    }
+
+    /// Runs `f` inside a query or data-modifying statement.
+    pub fn in_query<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
+        self.query_depth += 1;
+        let result = f(self);
+        self.query_depth -= 1;
+        result
+    }
+
+    /// Whether the resolver is inside a query or data-modifying statement.
+    pub fn in_any_query(&self) -> bool {
+        self.query_depth > 0
+    }
+
+    /// What the clause being resolved allows.
+    pub fn context(&self) -> Context {
+        self.context
+    }
+
+    /// Runs `f` with `context`, and restores the one before when it returns.
+    pub fn with_context<T>(&mut self, context: Context, f: impl FnOnce(&mut Self) -> T) -> T {
+        let outer = std::mem::replace(&mut self.context, context);
+        let result = f(self);
+        self.context = outer;
+        result
+    }
+
+    /// Names the output columns of the innermost level's select list, which `ORDER BY` and
+    /// `GROUP BY` can reference by bare name.
+    pub fn set_output_names(&mut self, names: Vec<String>) {
+        if let Some(level) = self.levels.last_mut() {
+            level.output_names = names;
+        }
     }
 
     /// Whether bare column names can refer to the output columns of the innermost level, as in
