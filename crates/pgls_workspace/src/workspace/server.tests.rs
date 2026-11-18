@@ -3697,13 +3697,13 @@ fn document_caches_stay_within_the_budget() {
     assert_eq!(workspace.document_caches.total(), 0);
 }
 
-/// Executing a statement parses the statements before it to find it, and charges them to the
-/// budget, also when it returns early, like without a database connection.
+/// Executing a statement parses it, and only it, and charges it to the budget, also when it
+/// returns early, like without a database connection.
 #[test]
 fn executing_a_statement_charges_the_document_caches() {
     let (mut workspace, project_key) =
         get_test_workspace(None).expect("Unable to create test workspace");
-    workspace.document_caches = super::document_cache::CacheBudget::new(8);
+    workspace.document_caches = super::document_cache::CacheBudget::new(6);
 
     let content = "drop table a;\ndrop table b;\ndrop table c;\nselect 1;\nselect 2;\nselect 3;\n";
     let paths = [PgLSPath::new("a.sql"), PgLSPath::new("b.sql")];
@@ -3744,13 +3744,13 @@ fn executing_a_statement_charges_the_document_caches() {
         })
         .expect("Unable to execute statement");
 
-    // Both documents together keep 12 parse results, so the first one's caches are dropped.
+    // Both documents together keep 7 parse results, so the first one's caches are dropped.
     assert_eq!(
         workspace
             .document_cache_stats(&paths[1])
             .unwrap()
             .parse_results,
-        6
+        1
     );
     assert_eq!(
         workspace
