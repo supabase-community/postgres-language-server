@@ -47,21 +47,19 @@ pub(super) fn resolve_insert_source(r: &mut Resolver, n: &SelectStmt) -> Option<
 fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Option<QueryOutput> {
     #[cfg(test)]
     RESOLVED_QUERIES.with(|count| count.set(count.get() + 1));
-    let ctes = r.ctes.len();
-    if let Some(with) = &n.with_clause {
-        resolve_with_clause(r, with);
-    }
+    r.with_ctes(|r| {
+        if let Some(with) = &n.with_clause {
+            resolve_with_clause(r, with);
+        }
 
-    let output = if n.op() != SetOperation::SetopNone {
-        resolve_set_operation(r, n)
-    } else if !n.values_lists.is_empty() {
-        resolve_values(r, n, !insert_source)
-    } else {
-        resolve_select(r, n)
-    };
-
-    r.ctes.truncate(ctes);
-    output
+        if n.op() != SetOperation::SetopNone {
+            resolve_set_operation(r, n)
+        } else if !n.values_lists.is_empty() {
+            resolve_values(r, n, !insert_source)
+        } else {
+            resolve_select(r, n)
+        }
+    })
 }
 
 /// Set operations take their column names from the left-most query and the common type of each
@@ -177,69 +175,67 @@ fn resolve_values(r: &mut Resolver, n: &SelectStmt, coerce: bool) -> Option<Quer
 /// [`transformSelectStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1389
 fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
     let level = resolve_from_clause(r, &n.from_clause);
-    r.enter_level(level);
-
-    resolve_list(r, &n.target_list);
-    // Named after resolving the select list, which names its scalar subqueries.
-    let mut output = select_list_output(r, &n.target_list);
-    let output_names = output.output_names();
-    if let Some(level) = r.levels.last_mut() {
-        level.output_names = output_names.clone();
-    }
-    record_star_references(r, &output);
-    for node in n.where_clause.iter().chain(&n.having_clause) {
-        resolve_expr(r, node);
-    }
-    // In `GROUP BY`, a column of FROM takes precedence over an output column with its name,
-    // unlike in `ORDER BY` and `DISTINCT ON`.
-    resolve_clause_items(r, &n.group_clause, OutputNames::AfterColumns, true);
-    for node in &n.group_clause {
-        if let Some(expr) = node.node.as_ref()
-            && !is_output_reference(expr, &output_names)
-        {
-            infer_expr(r, expr);
+    let (output, _) = r.in_level(level, |r| {
+        resolve_list(r, &n.target_list);
+        // Named after resolving the select list, which names its scalar subqueries.
+        let mut output = select_list_output(r, &n.target_list);
+        let output_names = output.output_names();
+        r.set_output_names(output_names.clone());
+        record_star_references(r, &output);
+        for node in n.where_clause.iter().chain(&n.having_clause) {
+            resolve_expr(r, node);
         }
-    }
-    resolve_clause_items(r, &n.sort_clause, OutputNames::BeforeColumns, false);
-    for node in &n.sort_clause {
-        if let Some(expr) = node.node.as_ref().and_then(|sort| match sort {
-            NodeEnum::SortBy(sort) => sort.node.as_deref().and_then(|node| node.node.as_ref()),
-            _ => Some(sort),
-        }) && !is_output_reference(expr, &output_names)
-        {
-            infer_expr(r, expr);
-        }
-    }
-    resolve_clause_items(r, &n.distinct_clause, OutputNames::BeforeColumns, false);
-    for node in &n.distinct_clause {
-        if let Some(expr) = node.node.as_ref()
-            && !is_output_reference(expr, &output_names)
-        {
-            infer_expr(r, expr);
-        }
-    }
-    for node in &n.window_clause {
-        resolve_node(r, node);
-        if let Some(NodeEnum::WindowDef(window)) = node.node.as_ref() {
-            for expr in window
-                .partition_clause
-                .iter()
-                .chain(&window.order_clause)
-                .chain(window.start_offset.iter().map(|offset| offset.as_ref()))
-                .chain(window.end_offset.iter().map(|offset| offset.as_ref()))
+        // In `GROUP BY`, a column of FROM takes precedence over an output column with its name,
+        // unlike in `ORDER BY` and `DISTINCT ON`.
+        resolve_clause_items(r, &n.group_clause, OutputNames::AfterColumns, true);
+        for node in &n.group_clause {
+            if let Some(expr) = node.node.as_ref()
+                && !is_output_reference(expr, &output_names)
             {
-                if let Some(expr) = expr.node.as_ref() {
-                    infer_expr(r, expr);
+                infer_expr(r, expr);
+            }
+        }
+        resolve_clause_items(r, &n.sort_clause, OutputNames::BeforeColumns, false);
+        for node in &n.sort_clause {
+            if let Some(expr) = node.node.as_ref().and_then(|sort| match sort {
+                NodeEnum::SortBy(sort) => sort.node.as_deref().and_then(|node| node.node.as_ref()),
+                _ => Some(sort),
+            }) && !is_output_reference(expr, &output_names)
+            {
+                infer_expr(r, expr);
+            }
+        }
+        resolve_clause_items(r, &n.distinct_clause, OutputNames::BeforeColumns, false);
+        for node in &n.distinct_clause {
+            if let Some(expr) = node.node.as_ref()
+                && !is_output_reference(expr, &output_names)
+            {
+                infer_expr(r, expr);
+            }
+        }
+        for node in &n.window_clause {
+            resolve_node(r, node);
+            if let Some(NodeEnum::WindowDef(window)) = node.node.as_ref() {
+                for expr in window
+                    .partition_clause
+                    .iter()
+                    .chain(&window.order_clause)
+                    .chain(window.start_offset.iter().map(|offset| offset.as_ref()))
+                    .chain(window.end_offset.iter().map(|offset| offset.as_ref()))
+                {
+                    if let Some(expr) = expr.node.as_ref() {
+                        infer_expr(r, expr);
+                    }
                 }
             }
         }
-    }
-    for node in n.limit_offset.iter().chain(&n.limit_count) {
-        resolve_expr(r, node);
-    }
+        for node in n.limit_offset.iter().chain(&n.limit_count) {
+            resolve_expr(r, node);
+        }
 
-    infer_select_list(r, &n.target_list, &mut output);
-    r.exit_level();
+        infer_select_list(r, &n.target_list, &mut output);
+        output
+    });
     Some(output)
 }
 

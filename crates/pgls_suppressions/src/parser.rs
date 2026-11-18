@@ -8,14 +8,15 @@ use pgls_line_index::{LineCol, LineIndex};
 use pgls_text_size::{TextRange, TextSize};
 
 use crate::{
-    Suppressions,
+    LineSuppression, Suppressions,
     suppression::{RangeSuppression, Suppression, SuppressionDiagnostic, SuppressionKind},
 };
 
 #[derive(Debug)]
 pub(crate) struct SuppressionsParser<'a> {
     file_suppressions: Vec<Suppression>,
-    line_suppressions: std::collections::HashMap<usize, Suppression>,
+    /// The line suppressions with their line, in file order.
+    line_suppressions: Vec<(usize, Suppression)>,
     range_suppressions: Vec<RangeSuppression>,
     diagnostics: Vec<SuppressionDiagnostic>,
     lines: Peekable<Enumerate<Lines<'a>>>,
@@ -30,7 +31,7 @@ impl<'a> SuppressionsParser<'a> {
 
         Self {
             file_suppressions: vec![],
-            line_suppressions: std::collections::HashMap::default(),
+            line_suppressions: vec![],
             range_suppressions: vec![],
             diagnostics: vec![],
             lines,
@@ -57,13 +58,49 @@ impl<'a> SuppressionsParser<'a> {
         parser.handle_unmatched_start_suppressions();
 
         Suppressions {
+            line_suppressions: parser.targeted_line_suppressions(),
             file_suppressions: parser.file_suppressions,
-            line_suppressions: parser.line_suppressions,
             range_suppressions: parser.range_suppressions,
             diagnostics: parser.diagnostics,
-            line_index: parser.line_index,
             statements: Vec::new(),
         }
+    }
+
+    /// The line suppressions with the lines they target: the next line that isn't a line
+    /// suppression, so that consecutive suppressions all target the line below them.
+    fn targeted_line_suppressions(&mut self) -> Vec<LineSuppression> {
+        let lines = std::mem::take(&mut self.line_suppressions);
+        let mut targeted = Vec::with_capacity(lines.len());
+        // Backwards, so a suppression right above another one takes over its target.
+        let mut below: Option<(usize, usize)> = None;
+        for (line, suppression) in lines.into_iter().rev() {
+            let target_line = match below {
+                Some((below_line, target_line)) if below_line == line + 1 => target_line,
+                _ => line + 1,
+            };
+            below = Some((line, target_line));
+            targeted.push(LineSuppression {
+                suppression,
+                target: self.line_range(target_line),
+            });
+        }
+        targeted.reverse();
+        targeted
+    }
+
+    /// The offsets of `line`: up to the start of the next line, or to `u32::MAX` for the last
+    /// line. Empty at `u32::MAX` if the document has no such line.
+    fn line_range(&self, line: usize) -> TextRange {
+        let start_of = |line: usize| {
+            u32::try_from(line)
+                .ok()
+                .and_then(|line| self.line_index.offset(LineCol { line, col: 0 }))
+        };
+        let Some(start) = start_of(line) else {
+            return TextRange::empty(TextSize::from(u32::MAX));
+        };
+        let end = start_of(line + 1).unwrap_or(TextSize::from(u32::MAX));
+        TextRange::new(start, end)
     }
 
     /// Will parse the suppressions at the start of the file.
@@ -126,7 +163,7 @@ impl<'a> SuppressionsParser<'a> {
                 }
 
                 SuppressionKind::Line => {
-                    self.line_suppressions.insert(idx, suppr);
+                    self.line_suppressions.push((idx, suppr));
                 }
 
                 SuppressionKind::Start => self.start_suppressions_stack.push(suppr),
@@ -238,7 +275,8 @@ SELECT 2;
         // Should have a line suppression on line 1 (0-based index)
         let suppression = suppressions
             .line_suppressions
-            .get(&2)
+            .first()
+            .map(|line| &line.suppression)
             .expect("no suppression found");
 
         assert_eq!(suppression.kind, SuppressionKind::Line);
@@ -266,30 +304,24 @@ SELECT 1;
         assert_eq!(suppressions.line_suppressions.len(), 3);
 
         assert_eq!(
-            suppressions
-                .line_suppressions
-                .get(&2)
-                .unwrap()
+            suppressions.line_suppressions[0]
+                .suppression
                 .rule_specifier
                 .rule(),
             Some("banDropColumn")
         );
 
         assert_eq!(
-            suppressions
-                .line_suppressions
-                .get(&3)
-                .unwrap()
+            suppressions.line_suppressions[1]
+                .suppression
                 .rule_specifier
                 .rule(),
             Some("banDropTable")
         );
 
         assert_eq!(
-            suppressions
-                .line_suppressions
-                .get(&4)
-                .unwrap()
+            suppressions.line_suppressions[2]
+                .suppression
                 .rule_specifier
                 .rule(),
             Some("banDropNotNull")
@@ -429,7 +461,8 @@ SELECT 2;
         // Should have a line suppression on line 2 (0-based index)
         let suppression = suppressions
             .line_suppressions
-            .get(&2)
+            .first()
+            .map(|line| &line.suppression)
             .expect("no suppression found");
 
         assert_eq!(suppression.kind, SuppressionKind::Line);

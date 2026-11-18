@@ -1,4 +1,4 @@
-use pgls_analyse::RuleFilter;
+use pgls_analyse::{RegistryVisitor, RuleFilter, RuleGroup, RuleMeta};
 use pgls_diagnostics::{Category, Diagnostic, MessageAndDescription};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -36,7 +36,40 @@ pub(crate) enum RuleSpecifier {
     Rule(String, String, String),
 }
 
+/// Whether the analyser has a group named `name`. It visits the groups but not their rules, and
+/// doesn't allocate.
+struct GroupLookup<'a> {
+    name: &'a str,
+    found: bool,
+}
+
+impl RegistryVisitor for GroupLookup<'_> {
+    fn record_group<G: RuleGroup>(&mut self) {
+        self.found |= G::NAME == self.name;
+    }
+
+    fn record_rule<R>(&mut self)
+    where
+        R: RuleMeta + 'static,
+    {
+    }
+}
+
 impl RuleSpecifier {
+    /// The rule specifier of a diagnostic's category, if it has one that a suppression can name.
+    pub(crate) fn of<D: Diagnostic>(diagnostic: &D) -> Option<Self> {
+        Self::try_from(diagnostic.category()?.name()).ok()
+    }
+
+    fn is_lint_group(group: &str) -> bool {
+        let mut lookup = GroupLookup {
+            name: group,
+            found: false,
+        };
+        pgls_analyser::visit_registry(&mut lookup);
+        lookup.found || matches!(group, "typecheck" | "nursery")
+    }
+
     pub(crate) fn category(&self) -> &str {
         match self {
             RuleSpecifier::Category(rule_category) => rule_category,
@@ -111,7 +144,7 @@ fn removed(rule: &str) -> &str {
 fn legacy_replacement(value: &str) -> Option<String> {
     match value.split('/').collect::<Vec<_>>().as_slice() {
         ["lint", "safety"] => Some("lint".into()),
-        ["lint", group] if is_lint_group(group) => Some((*group).into()),
+        ["lint", group] if RuleSpecifier::is_lint_group(group) => Some((*group).into()),
         ["lint", _group, rule] => Some(removed(rule).into()),
         ["lint", rule] | [rule] if removed(rule) != *rule => Some(removed(rule).into()),
         _ => None,
@@ -126,7 +159,7 @@ impl TryFrom<&str> for RuleSpecifier {
         let parts: Vec<_> = value.split('/').collect();
         match parts.as_slice() {
             ["lint"] => Ok(Self::Category("lint".into())),
-            ["lint", group] if is_lint_group(group) => {
+            ["lint", group] if RuleSpecifier::is_lint_group(group) => {
                 Ok(Self::Group("lint".into(), (*group).into()))
             }
             ["lint", rule] => {
@@ -144,7 +177,9 @@ impl TryFrom<&str> for RuleSpecifier {
                 Ok(Self::Rule("lint".into(), String::new(), rule.into()))
             }
             ["typecheck"] => Ok(Self::Category("typecheck".into())),
-            [group] if is_lint_group(group) => Ok(Self::Group("lint".into(), (*group).into())),
+            [group] if RuleSpecifier::is_lint_group(group) => {
+                Ok(Self::Group("lint".into(), (*group).into()))
+            }
             [rule] if pgls_analyser::METADATA.group_of(removed(rule)).is_some() => Ok(Self::Rule(
                 "lint".into(),
                 String::new(),
@@ -156,10 +191,6 @@ impl TryFrom<&str> for RuleSpecifier {
             _ => Err(invalid()),
         }
     }
-}
-
-fn is_lint_group(group: &str) -> bool {
-    pgls_analyser::METADATA.groups().contains(&group) || matches!(group, "typecheck" | "nursery")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

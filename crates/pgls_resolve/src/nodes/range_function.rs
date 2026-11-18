@@ -2,7 +2,7 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{FuncCall, RangeFunction},
 };
-use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
+use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name, string_value};
 
 use super::{
     Resolver, alias::apply_alias, func_call::resolve_func_call, record_unresolved_node,
@@ -32,62 +32,62 @@ pub(super) fn resolve_range_function(
     if let Some(expanded) = expand_unnest(n) {
         return resolve_range_function(r, &expanded, preceding);
     }
-    r.enter_level(preceding.clone());
+    // The function calls see the FROM items before them.
+    let ((mut columns, function_name), _) = r.in_level(preceding.clone(), |r| {
+        // The names of the columns, from the return columns that all overloads agree on and the
+        // column definitions.
+        let mut columns: Option<Vec<String>> = Some(Vec::new());
+        let mut function_name = None;
+        for entry in &n.functions {
+            // Each entry is a list of the function call and its column definitions.
+            let Some(NodeEnum::List(entry)) = entry.node.as_ref() else {
+                r.depends_on_file();
+                columns = None;
+                continue;
+            };
+            let call = entry.items.first();
+            let column_definitions = entry.items.get(1).and_then(|node| match &node.node {
+                Some(NodeEnum::List(list)) if !list.items.is_empty() => Some(&list.items),
+                _ => None,
+            });
 
-    // The names of the columns, from the return columns that all overloads agree on and the
-    // column definitions.
-    let mut columns: Option<Vec<String>> = Some(Vec::new());
-    let mut function_name = None;
-    for entry in &n.functions {
-        // Each entry is a list of the function call and its column definitions.
-        let Some(NodeEnum::List(entry)) = entry.node.as_ref() else {
-            r.depends_on_file();
-            columns = None;
-            continue;
-        };
-        let call = entry.items.first();
-        let column_definitions = entry.items.get(1).and_then(|node| match &node.node {
-            Some(NodeEnum::List(list)) if !list.items.is_empty() => Some(&list.items),
-            _ => None,
-        });
-
-        let mut function_columns = None;
-        match call.and_then(|call| call.node.as_ref()) {
-            Some(NodeEnum::FuncCall(call)) => {
-                resolve_func_call(r, call);
-                function_columns = return_columns(r, call);
-                if n.functions.len() == 1 {
-                    function_name = call
-                        .funcname
-                        .last()
-                        .and_then(string_value)
-                        .map(str::to_owned);
+            let mut function_columns = None;
+            match call.and_then(|call| call.node.as_ref()) {
+                Some(NodeEnum::FuncCall(call)) => {
+                    resolve_func_call(r, call);
+                    function_columns = return_columns(r, call);
+                    if n.functions.len() == 1 {
+                        function_name = call
+                            .funcname
+                            .last()
+                            .and_then(string_value)
+                            .map(str::to_owned);
+                    }
                 }
-            }
-            Some(_) => {
-                if let Some(call) = call {
-                    resolve_node(r, call);
+                Some(_) => {
+                    if let Some(call) = call {
+                        resolve_node(r, call);
+                    }
                 }
+                None => {}
             }
-            None => {}
-        }
-        if let Some(definitions) = column_definitions {
-            for definition in definitions {
-                record_unresolved_node(r, definition, false);
+            if let Some(definitions) = column_definitions {
+                for definition in definitions {
+                    record_unresolved_node(r, definition, false);
+                }
+                function_columns = column_definition_names(definitions);
             }
-            function_columns = column_definition_names(definitions);
-        }
 
-        columns = match (columns, function_columns) {
-            (Some(mut columns), Some(function_columns)) => {
-                columns.extend(function_columns);
-                Some(columns)
-            }
-            _ => None,
-        };
-    }
-
-    r.exit_level();
+            columns = match (columns, function_columns) {
+                (Some(mut columns), Some(function_columns)) => {
+                    columns.extend(function_columns);
+                    Some(columns)
+                }
+                _ => None,
+            };
+        }
+        (columns, function_name)
+    });
 
     if !n.coldeflist.is_empty() {
         for definition in &n.coldeflist {
@@ -170,8 +170,7 @@ fn multi_argument_unnest(entry: &Node) -> Option<&FuncCall> {
     else {
         return None;
     };
-    let is_unnest =
-        matches!(string_values(&call.funcname).as_deref(), Some([name]) if name == "unnest");
+    let is_unnest = matches!(NameParts::of(&call.funcname).as_ref().map(NameParts::as_slice), Some([name]) if *name == "unnest");
     (is_unnest
         && !has_column_definitions
         && call.args.len() > 1

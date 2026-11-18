@@ -409,13 +409,8 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         params.search_path,
         params.function,
         params.sql,
-    );
-    if params.collect_references {
-        resolver.references = Some(Vec::new());
-    }
-    if params.collect_lookups {
-        resolver.lookups = Some(Vec::new());
-    }
+    )
+    .collecting(params.collect_references, params.collect_lookups);
     let mut output = nodes::resolve_statement(&mut resolver, params.stmt);
     // Only the entries of a relation's columns need spans, and computing them scans the tokens
     // of the statement.
@@ -430,23 +425,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
-    let mut lookups = resolver.lookups.unwrap_or_default();
-    lookups.sort_by_key(|lookup| lookup.location);
-
-    let mut findings: Vec<Finding> = Vec::new();
-    for finding in resolver.findings {
-        if !findings.contains(&finding) {
-            findings.push(finding);
-        }
-    }
-
-    Resolution {
-        findings,
-        database_only: supports_database_check(params.stmt) && resolver.database_only,
-        references: resolver.references.unwrap_or_default(),
-        lookups,
-        output,
-    }
+    resolver.into_resolution(output, supports_database_check(params.stmt))
 }
 
 /// The output columns of `query`, like the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
