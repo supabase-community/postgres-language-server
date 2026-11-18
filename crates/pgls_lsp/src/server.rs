@@ -105,7 +105,10 @@ impl LSPServer {
 }
 
 impl LanguageServer for LSPServer {
-    #[allow(deprecated)]
+    #[allow(
+        deprecated,
+        reason = "reads `root_uri` of clients that send no workspace folders"
+    )]
     #[tracing::instrument(
         level = "info",
         skip_all,
@@ -205,6 +208,11 @@ impl LanguageServer for LSPServer {
         if let Err(e) = handlers::text_document::did_change(&self.session, params).await {
             error!("{}", e);
         };
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        handlers::text_document::did_save(&self.session, params);
     }
 
     #[tracing::instrument(level = "trace", skip_all)]

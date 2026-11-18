@@ -7,7 +7,7 @@ use pgls_query_ext::utils::{qualified_name, type_name};
 use super::alter_function_stmt::volatility_option;
 use crate::Behavior;
 use crate::catalog::{Catalog, overlay::function_info};
-use crate::lookup::{CatalogView, ColumnInfo, FunctionKind};
+use crate::lookup::{ColumnInfo, FunctionKind};
 use crate::typing::{Decision, Polymorphic, TypeId, is_valid_polymorphic_signature};
 
 /// `CREATE FUNCTION` and `CREATE PROCEDURE` add an overload. Models [`CreateFunction`], with the parameter

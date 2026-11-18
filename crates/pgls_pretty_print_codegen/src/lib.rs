@@ -3,8 +3,6 @@ mod node_location;
 mod proto_analyser;
 mod token_kind;
 
-use std::path;
-
 use proto_analyser::ProtoAnalyzer;
 use token_kind::token_kind_mod;
 
@@ -15,10 +13,8 @@ pub fn token_kind_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenS
 
 #[proc_macro]
 pub fn node_location_codegen(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let analyser = ProtoAnalyzer::from(&proto_file_path()).unwrap();
-    node_location::node_location_mod(analyser).into()
-}
-
-fn proto_file_path() -> path::PathBuf {
-    path::PathBuf::from(env!("PG_QUERY_PROTO_PATH"))
+    match ProtoAnalyzer::load() {
+        Ok(analyser) => node_location::node_location_mod(analyser).into(),
+        Err(error) => error,
+    }
 }

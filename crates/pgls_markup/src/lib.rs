@@ -1,6 +1,3 @@
-// A panic in a proc macro is a compile error without a location; `abort!` points at the input.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use proc_macro_error3::*;
 use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
 use quote::{ToTokens, quote};

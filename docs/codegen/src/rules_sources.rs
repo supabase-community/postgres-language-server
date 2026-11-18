@@ -138,7 +138,7 @@ pub fn generate_database_rule_sources(docs_dir: &Path) -> anyhow::Result<()> {
 
     let file_content = fs::read_to_string(&rule_sources_file)?;
 
-    let new_content = utils::replace_section(&file_content, "DATABASE_RULE_SOURCES", &new_content);
+    let new_content = utils::replace_section(&file_content, "DATABASE_RULE_SOURCES", &new_content)?;
 
     fs::write(rule_sources_file, new_content)?;
 

@@ -194,12 +194,19 @@ fn setup_tracing_subscriber(
 
     let appender_builder = tracing_appender::rolling::RollingFileAppender::builder();
 
-    let file_appender = appender_builder
+    // Without a log file the server runs without logs, rather than not at all.
+    let file_appender = match appender_builder
         .filename_prefix(log_file_name_prefix.unwrap_or(String::from("server.log")))
         .max_log_files(7)
         .rotation(Rotation::HOURLY)
         .build(pgls_log_path)
-        .expect("Failed to start the logger for the daemon.");
+    {
+        Ok(file_appender) => file_appender,
+        Err(error) => {
+            eprintln!("Failed to start the logger for the daemon: {error}");
+            return;
+        }
+    };
 
     let filter = LoggingFilter::new(log_level);
 
@@ -234,7 +241,7 @@ fn setup_tracing_subscriber(
     }
 }
 
-pub fn default_pgls_log_path() -> PathBuf {
+pub(crate) fn default_pgls_log_path() -> PathBuf {
     let env = pgls_env::pgls_env();
     match env
         .pgls_log_path

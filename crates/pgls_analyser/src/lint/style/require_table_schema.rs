@@ -1,7 +1,6 @@
 use crate::fix::StatementTokens;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::CatalogView;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{Node, ObjectType, RangeVar, Token};

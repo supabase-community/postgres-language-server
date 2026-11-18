@@ -14,23 +14,20 @@ version              = "0.0.0"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-pgls_analyse            = { workspace = true }
-pgls_catalog            = { workspace = true }
-pgls_completions        = { workspace = true }
-pgls_configuration      = { workspace = true }
-pgls_diagnostics        = { workspace = true }
-pgls_env                = { workspace = true }
-pgls_fs                 = { workspace = true, features = ["serde"] }
-pgls_line_index         = { workspace = true }
-pgls_query              = { workspace = true }
-pgls_text_size          = { workspace = true }
-pgls_treesitter_grammar = { workspace = true }
-pgls_workspace          = { path = "../pgls_workspace", default-features = false }
+pgls_analyse       = { workspace = true }
+pgls_completions   = { workspace = true }
+pgls_configuration = { workspace = true }
+pgls_diagnostics   = { workspace = true }
+pgls_env           = { workspace = true }
+pgls_fs            = { workspace = true, features = ["serde"] }
+pgls_line_index    = { workspace = true }
+pgls_query         = { workspace = true }
+pgls_text_size     = { workspace = true }
+pgls_workspace     = { path = "../pgls_workspace", default-features = false }
 
-lsp-types   = "0.97"
-serde       = { workspace = true, features = ["derive"] }
-serde_json  = { workspace = true }
-tree-sitter = { workspace = true }
+lsp-types  = "0.97"
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

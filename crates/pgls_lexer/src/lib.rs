@@ -1,7 +1,3 @@
-// The lexer splits the client's SQL on every change, so a panic on unexpected input takes down
-// the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 mod codegen;
 mod lexed;
 mod lexer;
@@ -125,6 +121,19 @@ mod tests {
         assert_eq!(lexed.kind(eof + 1), SyntaxKind::EOF);
         assert_eq!(lexed.text(eof + 1), "");
         assert_eq!(lexed.range(eof + 1), TextRange::empty(6.into()));
+    }
+
+    #[test]
+    fn descriptions_name_tokens_for_messages() {
+        for (kind, description) in [
+            (SyntaxKind::AS_KW, "\"AS\""),
+            (SyntaxKind::L_PAREN, "\"(\""),
+            (SyntaxKind::BACKSLASH, "\"\\\""),
+            (SyntaxKind::IDENT, "an identifier"),
+            (SyntaxKind::EOF, "the end of the input"),
+        ] {
+            assert_eq!(kind.description(), description, "{kind:?}");
+        }
     }
 
     #[test]

@@ -85,14 +85,15 @@ impl pgls_console::fmt::Display for MessageAndDescription {
 }
 
 /// Utility function to transform a [MarkupBuf] into a [String]
-pub fn markup_to_string(markup: &MarkupBuf) -> String {
+pub(super) fn markup_to_string(markup: &MarkupBuf) -> String {
     let mut buffer = Vec::new();
     let mut write = Termcolor(NoColor::new(&mut buffer));
     let mut fmt = Formatter::new(&mut write);
-    fmt.write_markup(markup! { {markup} })
-        .expect("to have written in the buffer");
+    let written = fmt.write_markup(markup! { {markup} });
+    debug_assert!(written.is_ok(), "writing to a Vec never fails");
 
-    String::from_utf8(buffer).expect("to have convert a buffer into a String")
+    // The markup is text, so the buffer is UTF-8.
+    String::from_utf8_lossy(&buffer).into_owned()
 }
 
 #[cfg(test)]

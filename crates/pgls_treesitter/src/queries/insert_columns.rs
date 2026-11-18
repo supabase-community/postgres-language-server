@@ -5,14 +5,15 @@ use crate::queries::{Query, QueryResult};
 
 use super::QueryTryFrom;
 
-static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static TS_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (insert_columns
         (column_identifier) @column
     )
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 #[derive(Debug)]
@@ -24,7 +25,8 @@ impl InsertColumnMatch<'_> {
     pub fn get_column(&self, sql: &str) -> String {
         self.column
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get column from ColumnMatch")
+            // A node of `sql` is UTF-8, unless the tree is stale.
+            .unwrap_or_default()
             .to_string()
     }
 }
@@ -36,7 +38,6 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a InsertColumnMatch<'a> {
         match q {
             QueryResult::InsertClauseColumns(c) => Ok(c),
 
-            #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
         }
     }
@@ -50,15 +51,17 @@ impl<'a> Query<'a> for InsertColumnMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
-        let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
+        let Some(query) = TS_QUERY.as_ref() else {
+            return vec![];
+        };
+        let matches = cursor.matches(query, root_node, stmt.as_bytes());
 
         let mut to_return = vec![];
 
         matches.for_each(|m| {
-            if m.captures.len() == 1 {
-                let capture = m.captures[0].node;
+            if let [capture] = m.captures {
                 to_return.push(QueryResult::InsertClauseColumns(InsertColumnMatch {
-                    column: capture,
+                    column: capture.node,
                 }));
             }
         });

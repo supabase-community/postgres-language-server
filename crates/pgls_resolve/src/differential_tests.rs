@@ -869,8 +869,8 @@ async fn check_cases(pool: &PgPool, cases: &[(&str, Expect)]) {
     )));
 
     let search_path = vec!["public".to_owned()];
-    let in_snapshot = Catalog::new(Some(after));
-    let mut in_file = Catalog::new(Some(before));
+    let in_snapshot = Catalog::from_base(after);
+    let mut in_file = Catalog::from_base(before);
     for stmt in pgls_query::parse(SETUP).unwrap().stmts() {
         crate::apply_resolved(&mut in_file, stmt, &search_path);
     }

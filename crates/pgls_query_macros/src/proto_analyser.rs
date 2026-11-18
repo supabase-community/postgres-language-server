@@ -14,6 +14,8 @@ use prost_reflect::{
 
 pub(crate) struct ProtoAnalyzer {
     pool: DescriptorPool,
+    /// The `Node` message, whose oneof lists every node type.
+    node: MessageDescriptor,
     message_graph: HashMap<String, Vec<String>>,
 }
 
@@ -38,29 +40,41 @@ pub(crate) struct Field {
 }
 
 pub(crate) struct Node {
-    #[allow(dead_code)]
-    pub name: String,
     pub enum_variant_name: String,
     pub fields: Vec<Field>,
 }
 
 impl ProtoAnalyzer {
-    pub fn from(proto_file: &Path) -> Result<Self, DescriptorError> {
+    /// Reads `pg_query.proto` at the path the build script sets. A failure is a `compile_error!`
+    /// for the macro to return.
+    pub(crate) fn load() -> Result<Self, proc_macro::TokenStream> {
+        Self::from(Path::new(env!("PG_QUERY_PROTO_PATH"))).map_err(|error| {
+            let message = format!("failed to read pg_query.proto: {error}");
+            quote::quote! { compile_error!(#message); }.into()
+        })
+    }
+
+    fn from(proto_file: &Path) -> Result<Self, String> {
         let include_path = proto_file
             .parent()
-            .expect("Proto file must have a parent directory");
+            .ok_or("the proto file has no parent directory")?;
 
         // protox::compile expects the proto file to be relative to the include path
         let file_name = proto_file
             .file_name()
-            .expect("Proto file must have a file name");
+            .ok_or("the proto file has no file name")?;
 
-        let pool = DescriptorPool::from_file_descriptor_set(
-            protox::compile([file_name], [include_path]).expect("unable to parse"),
-        )?;
+        let file_descriptor_set =
+            protox::compile([file_name], [include_path]).map_err(|error| error.to_string())?;
+        let pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)
+            .map_err(|error: DescriptorError| error.to_string())?;
+        let node = pool
+            .get_message_by_name(".pg_query.Node")
+            .ok_or("the Node message is missing")?;
 
         let mut analyzer = ProtoAnalyzer {
             pool,
+            node,
             message_graph: HashMap::new(),
         };
 
@@ -70,15 +84,13 @@ impl ProtoAnalyzer {
         Ok(analyzer)
     }
 
-    pub fn nodes(&self) -> Vec<Node> {
+    pub(crate) fn nodes(&self) -> Vec<Node> {
         let mut nodes = Vec::new();
 
         // Only the message types of the `Node` oneof are nodes. The rest are results and their
         // parts (`ParseResult`, `ScanToken`, `SummaryResult`, ...).
         let node_types: HashSet<String> = self
-            .pool
-            .get_message_by_name(".pg_query.Node")
-            .expect("Node message not found")
+            .node
             .fields()
             .map(|f| f.field_descriptor_proto().type_name().to_string())
             .collect();
@@ -116,7 +128,6 @@ impl ProtoAnalyzer {
                 .collect();
 
             nodes.push(Node {
-                name: msg.name().to_string(),
                 enum_variant_name: msg.name().to_case(Case::Pascal), // Convert to PascalCase for enum variant name
                 fields,
             });
@@ -125,14 +136,9 @@ impl ProtoAnalyzer {
         nodes
     }
 
-    pub fn enum_variants(&self) -> Vec<EnumVariant> {
-        let node = self
-            .pool
-            .get_message_by_name(".pg_query.Node")
-            .expect("Node message not found");
-
+    pub(crate) fn enum_variants(&self) -> Vec<EnumVariant> {
         let mut variants = Vec::new();
-        for field in node.fields() {
+        for field in self.node.fields() {
             // The prost-generated variant name is derived from the field name using snake_case to PascalCase conversion
             // For example: ctesearch_clause -> CtesearchClause
             let field_name = field.name();
@@ -150,7 +156,7 @@ impl ProtoAnalyzer {
             // For example: CTESearchClause -> CteSearchClause
             let type_name = proto_type_name.to_case(Case::Pascal);
 
-            let boxed = self.is_field_boxed(&field, &node);
+            let boxed = self.is_field_boxed(&field, &self.node);
 
             variants.push(EnumVariant {
                 name: variant_name,

@@ -263,7 +263,7 @@ impl File for OsFile {
 }
 
 #[repr(transparent)]
-pub struct OsTraversalScope<'scope> {
+pub(super) struct OsTraversalScope<'scope> {
     scope: Scope<'scope>,
 }
 

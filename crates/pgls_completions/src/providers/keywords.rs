@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
-pub struct SqlKeyword {
+pub(crate) struct SqlKeyword {
     pub name: &'static str,
     pub require_prefix: bool,
     pub starts_statement: bool,
@@ -34,7 +34,7 @@ impl SqlKeyword {
     }
 }
 
-pub static ALL_KEYWORDS: &[SqlKeyword] = &[
+pub(crate) static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("action"),
     SqlKeyword::new("add"),
     SqlKeyword::new("admin"),
@@ -391,7 +391,7 @@ pub static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("zone"),
 ];
 
-pub fn complete_keywords<'a>(
+pub(crate) fn complete_keywords<'a>(
     ctx: &TreesitterContext<'a>,
     builder: &mut CompletionBuilder<'a>,
     use_upper_case: bool,

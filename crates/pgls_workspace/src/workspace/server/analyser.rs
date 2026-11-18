@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use pgls_analyse::{GroupCategory, RegistryVisitor, RuleCategory, RuleFilter, RuleGroup, RuleMeta};
 use pgls_configuration::RuleSelector;
 use rustc_hash::FxHashSet;
@@ -6,6 +8,10 @@ use crate::settings::Settings;
 
 pub(crate) struct AnalyserVisitorBuilder<'a> {
     lint: Option<RuleSelection<'a>>,
+    /// Whether the lint rules run on the file, see [`LinterSettings::is_linted`].
+    ///
+    /// [`LinterSettings::is_linted`]: crate::settings::LinterSettings::is_linted
+    linted: bool,
     #[cfg(feature = "db")]
     splinter: Option<RuleSelection<'a>>,
     settings: &'a Settings,
@@ -17,6 +23,7 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         Self {
             settings,
             lint: None,
+            linted: false,
             splinter: None,
         }
     }
@@ -26,16 +33,20 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         Self {
             settings,
             lint: None,
+            linted: false,
         }
     }
 
+    /// The lint and typecheck rules for the file at `path`.
     #[must_use]
     pub(crate) fn with_linter_rules(
         mut self,
+        path: &Path,
         only: &'a [RuleSelector],
         skip: &'a [RuleSelector],
     ) -> Self {
         self.lint = Some(RuleSelection::new(only, skip));
+        self.linted = self.settings.linter.is_linted(path);
         self
     }
 
@@ -62,9 +73,9 @@ impl<'a> AnalyserVisitorBuilder<'a> {
                     .map(|rules| (rules.as_enabled_rules(), rules.as_disabled_rules())),
             );
 
-            // `linter.enabled` switches the lint rules, and `typecheck.enabled` the typecheck
-            // rules.
-            let linter_enabled = self.settings.linter.enabled;
+            // `linter.enabled`, `linter.include` and `linter.ignore` switch the lint rules, and
+            // `typecheck.enabled` the typecheck rules.
+            let linter_enabled = self.linted;
             let typecheck_enabled = self.settings.typecheck.enabled;
             linter_enabled_rules.retain(|filter| {
                 let group = match filter {
@@ -210,7 +221,7 @@ mod tests {
         };
 
         let (_, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
-            .with_linter_rules(&[], &[])
+            .with_linter_rules(std::path::Path::new("test.sql"), &[], &[])
             .finish();
 
         assert_eq!(
@@ -287,7 +298,7 @@ mod tests {
         };
 
         let (_, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
-            .with_linter_rules(&[], &[])
+            .with_linter_rules(std::path::Path::new("test.sql"), &[], &[])
             .with_splinter_rules(&[], &[])
             .finish();
 

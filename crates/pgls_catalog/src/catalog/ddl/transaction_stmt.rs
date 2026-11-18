@@ -27,9 +27,11 @@ pub(super) fn apply_transaction_stmt(c: &mut Catalog, n: &TransactionStmt) {
             }
         }
         Kind::TransStmtRollbackTo => {
-            if let Some(position) = savepoint_position(c, &n.savepoint_name) {
-                let savepoints = c.savepoints[..=position].to_vec();
-                *c = *savepoints[position].catalog.clone();
+            if let Some(position) = savepoint_position(c, &n.savepoint_name)
+                && let Some(savepoints) = c.savepoints.get(..=position).map(<[_]>::to_vec)
+                && let Some(savepoint) = savepoints.last()
+            {
+                *c = *savepoint.catalog.clone();
                 c.savepoints = savepoints;
             }
         }

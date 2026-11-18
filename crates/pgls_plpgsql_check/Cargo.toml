@@ -23,12 +23,9 @@ regex            = { workspace = true }
 serde            = { workspace = true }
 serde_json       = { workspace = true }
 sqlx             = { workspace = true }
-tree-sitter      = { workspace = true }
 
 [dev-dependencies]
 pgls_test_utils = { workspace = true }
-
-[lib]
 
 [lints]
 workspace = true
