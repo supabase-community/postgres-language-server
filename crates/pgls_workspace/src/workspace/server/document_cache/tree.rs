@@ -34,9 +34,9 @@ impl TreeSitterStore {
         self.db.lock().len()
     }
 
-    /// Drops every cached tree, and the memory of the map.
-    pub(super) fn clear(&self) {
-        drop(std::mem::take(&mut *self.db.lock()));
+    /// Takes every cached tree out, with the memory of the map, for the caller to drop.
+    pub(super) fn take(&self) -> FxHashMap<StatementId, Arc<tree_sitter::Tree>> {
+        std::mem::take(&mut *self.db.lock())
     }
 
     /// Drops the tree of `statement`.
@@ -124,7 +124,7 @@ mod tests {
         assert!(store.capacity() < 64, "{}", store.capacity());
 
         fill();
-        store.clear();
+        assert_eq!(store.take().len(), statements.len());
         assert_eq!(store.capacity(), 0);
     }
 }

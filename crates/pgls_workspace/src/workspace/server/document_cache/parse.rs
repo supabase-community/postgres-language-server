@@ -24,6 +24,20 @@ pub(super) struct PgQueryStore {
     embedded_db: Mutex<FxHashMap<StatementId, Arc<[EmbeddedStatement]>>>,
 }
 
+/// The results that [`PgQueryStore::take`] took out of a store, for the caller to drop.
+#[derive(Default)]
+pub(super) struct ParseEntries {
+    ast_db: FxHashMap<StatementId, Arc<ParseResult>>,
+    plpgsql_db: FxHashMap<StatementId, Result<(), SyntaxDiagnostic>>,
+    embedded_db: FxHashMap<StatementId, Arc<[EmbeddedStatement]>>,
+}
+
+impl ParseEntries {
+    pub(super) fn is_empty(&self) -> bool {
+        self.ast_db.is_empty() && self.plpgsql_db.is_empty() && self.embedded_db.is_empty()
+    }
+}
+
 impl PgQueryStore {
     pub(super) fn new() -> PgQueryStore {
         PgQueryStore {
@@ -46,11 +60,13 @@ impl PgQueryStore {
         self.ast_db.lock().len()
     }
 
-    /// Drops every cached result, and the memory of the maps.
-    pub(super) fn clear(&self) {
-        drop(std::mem::take(&mut *self.ast_db.lock()));
-        drop(std::mem::take(&mut *self.plpgsql_db.lock()));
-        drop(std::mem::take(&mut *self.embedded_db.lock()));
+    /// Takes every cached result out, with the memory of the maps, for the caller to drop.
+    pub(super) fn take(&self) -> ParseEntries {
+        ParseEntries {
+            ast_db: std::mem::take(&mut *self.ast_db.lock()),
+            plpgsql_db: std::mem::take(&mut *self.plpgsql_db.lock()),
+            embedded_db: std::mem::take(&mut *self.embedded_db.lock()),
+        }
     }
 
     /// Drops the results of the top-level statement `statement` and of its embedded statements.
@@ -235,7 +251,7 @@ mod tests {
         assert!(store.capacity() < 3 * 64, "{}", store.capacity());
 
         fill();
-        store.clear();
+        assert!(!store.take().is_empty());
         assert_eq!(store.capacity(), 0);
     }
 
