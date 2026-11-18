@@ -19,6 +19,7 @@ use crate::{
     FindingKind, MergeError,
     expr::{check_assignment, infer_expr},
     output::QueryOutput,
+    resolver::Context,
     scope::{Item, Level},
     utils::{node_location, ref_name, resolve_expr},
 };
@@ -28,19 +29,18 @@ use crate::{
 ///
 /// [`transformMergeStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L107
 pub(super) fn resolve_merge_stmt(r: &mut Resolver, n: &MergeStmt) -> Option<QueryOutput> {
-    let ctes = r.ctes.len();
-    if let Some(with) = &n.with_clause {
-        if with.recursive {
-            r.report(
-                FindingKind::InvalidMerge(MergeError::RecursiveWith),
-                with.location,
-            );
+    r.with_ctes(|r| {
+        if let Some(with) = &n.with_clause {
+            if with.recursive {
+                r.report(
+                    FindingKind::InvalidMerge(MergeError::RecursiveWith),
+                    with.location,
+                );
+            }
+            resolve_with_clause(r, with);
         }
-        resolve_with_clause(r, with);
-    }
-    let output = resolve_merge(r, n);
-    r.ctes.truncate(ctes);
-    output
+        resolve_merge(r, n)
+    })
 }
 
 fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Option<QueryOutput> {
@@ -72,9 +72,7 @@ fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Option<QueryOutput> {
 
     // The join condition sees the source and the target.
     if let Some(condition) = n.join_condition.as_deref() {
-        r.enter_level(both);
-        resolve_expr(r, condition);
-        r.exit_level();
+        r.in_level(both, |r| resolve_expr(r, condition));
     }
 
     for clause in &n.merge_when_clauses {
@@ -90,10 +88,13 @@ fn resolve_merge(r: &mut Resolver, n: &MergeStmt) -> Option<QueryOutput> {
     // target is added to the namespace after the source, so `*` expands the source first.
     let mut returning = source;
     returning.extend(Level::with_item(target.clone()));
-    let in_merge_returning = std::mem::replace(&mut r.in_merge_returning, true);
-    let output = resolve_returning_clause(r, n.returning_clause.as_ref(), &target, returning);
-    r.in_merge_returning = in_merge_returning;
-    output
+    let context = Context {
+        merge_returning: true,
+        ..r.context()
+    };
+    r.with_context(context, |r| {
+        resolve_returning_clause(r, n.returning_clause.as_ref(), &target, returning)
+    })
 }
 
 /// What `NOT MATCHED BY SOURCE` sees of the source. [`setNamespaceForMergeWhen`] hides only the
@@ -186,7 +187,7 @@ pub(super) fn check_merge_action(r: &mut Resolver, n: &MergeSupportFunc) {
     {
         return;
     }
-    if !r.in_merge_returning {
+    if !r.context().merge_returning {
         r.report(
             FindingKind::InvalidMerge(MergeError::MergeActionOutsideReturning),
             n.location,
@@ -225,19 +226,17 @@ fn resolve_when_clause(
             return;
         }
     };
-    r.enter_level(level);
-
-    if let Some(condition) = n.condition.as_deref() {
-        resolve_expr(r, condition);
-    }
-    match n.command_type() {
-        CmdType::CmdInsert => resolve_insert_action(r, n, target),
-        CmdType::CmdUpdate => resolve_set_clause(r, target, &n.target_list),
-        CmdType::CmdDelete | CmdType::CmdNothing => {}
-        _ => r.depends_on_file(),
-    }
-
-    r.exit_level();
+    r.in_level(level, |r| {
+        if let Some(condition) = n.condition.as_deref() {
+            resolve_expr(r, condition);
+        }
+        match n.command_type() {
+            CmdType::CmdInsert => resolve_insert_action(r, n, target),
+            CmdType::CmdUpdate => resolve_set_clause(r, target, &n.target_list),
+            CmdType::CmdDelete | CmdType::CmdNothing => {}
+            _ => r.depends_on_file(),
+        }
+    });
 }
 
 /// `INSERT [(columns)] [OVERRIDING ...] VALUES (...)` or `INSERT DEFAULT VALUES`, like the
