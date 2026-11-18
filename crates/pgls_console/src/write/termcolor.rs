@@ -150,10 +150,9 @@ where
             // A control character like the `ESC` that starts an escape sequence would let the
             // text, e.g. a quoted identifier, control the terminal.
             if !is_whitespace && (width == 0 || grapheme.chars().any(char::is_control)) {
-                let char_to_write = char::REPLACEMENT_CHARACTER;
-                char_to_write.encode_utf8(&mut buffer);
+                let encoded = char::REPLACEMENT_CHARACTER.encode_utf8(&mut buffer);
 
-                if let Err(err) = self.writer.write_all(&buffer[..char_to_write.len_utf8()]) {
+                if let Err(err) = self.writer.write_all(encoded.as_bytes()) {
                     self.error = Err(err);
                     return Err(fmt::Error);
                 }
@@ -166,12 +165,10 @@ where
             if cfg!(windows) || !self.writer.supports_color() {
                 let is_ascii = grapheme.is_ascii();
 
-                if !is_ascii {
-                    let replacement = unicode_to_ascii(grapheme.chars().nth(0).unwrap());
+                if !is_ascii && let Some(first) = grapheme.chars().next() {
+                    let encoded = unicode_to_ascii(first).encode_utf8(&mut buffer);
 
-                    replacement.encode_utf8(&mut buffer);
-
-                    if let Err(err) = self.writer.write_all(&buffer[..replacement.len_utf8()]) {
+                    if let Err(err) = self.writer.write_all(encoded.as_bytes()) {
                         self.error = Err(err);
                         return Err(fmt::Error);
                     }
@@ -181,9 +178,9 @@ where
             };
 
             for char in grapheme.chars() {
-                char.encode_utf8(&mut buffer);
+                let encoded = char.encode_utf8(&mut buffer);
 
-                if let Err(err) = self.writer.write_all(&buffer[..char.len_utf8()]) {
+                if let Err(err) = self.writer.write_all(encoded.as_bytes()) {
                     self.error = Err(err);
                     return Err(fmt::Error);
                 }

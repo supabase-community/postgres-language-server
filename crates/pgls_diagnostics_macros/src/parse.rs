@@ -9,7 +9,10 @@ use syn::{
     token::Paren,
 };
 
-#[allow(clippy::large_enum_variant)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "one value per derive, so boxing the struct variant saves nothing"
+)]
 pub(crate) enum DeriveInput {
     DeriveStructInput(DeriveStructInput),
     DeriveEnumInput(DeriveEnumInput),

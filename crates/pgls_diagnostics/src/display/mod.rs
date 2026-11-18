@@ -484,12 +484,12 @@ impl Visit for PrintAdvices<'_, '_> {
             "headers and columns must have the same number length"
         );
 
-        if columns.is_empty() {
+        let Some(first_column) = columns.first() else {
             return Ok(());
-        }
+        };
 
         let mut headers_iter = headers.iter().enumerate();
-        let rows_number = columns[0].len();
+        let rows_number = first_column.len();
         let columns_number = columns.len();
 
         let mut longest_cell = 0;

@@ -83,7 +83,8 @@ impl Advices for SplinterAdvices {
 
 #[cfg(test)]
 mod tests {
-    use pgls_diagnostics::{Error, Severity, print_diagnostic_to_string};
+    use pgls_console::markup;
+    use pgls_diagnostics::{PrintDiagnostic, Severity};
 
     use super::{SplinterAdvices, SplinterDiagnostic};
 
@@ -101,7 +102,12 @@ mod tests {
                 additional_metadata: None,
             },
         };
-        print_diagnostic_to_string(&Error::from(diagnostic))
+        markup!({ PrintDiagnostic::verbose(&diagnostic) })
+            .to_owned()
+            .0
+            .into_iter()
+            .map(|node| node.content)
+            .collect()
     }
 
     #[test]

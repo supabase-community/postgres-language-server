@@ -10,7 +10,6 @@ use std::{fmt, path};
 
 /// A pattern parsing error.
 #[derive(Debug)]
-#[allow(missing_copy_implementations)]
 pub struct PatternError {
     /// The approximate character index of where the error occurred.
     pub pos: usize,
@@ -161,8 +160,8 @@ impl Pattern {
             }
         }
 
-        while i < chars.len() {
-            match chars[i] {
+        while let Some(&c) = chars.get(i) {
+            match c {
                 '?' => {
                     tokens.push(AnyChar);
                     i += 1;
@@ -170,7 +169,7 @@ impl Pattern {
                 '*' => {
                     let old = i;
 
-                    while i < chars.len() && chars[i] == '*' {
+                    while chars.get(i) == Some(&'*') {
                         i += 1;
                     }
 
@@ -183,13 +182,17 @@ impl Pattern {
                                 msg: ERROR_WILDCARDS,
                             });
                         }
-                        count if count == 2 => {
+                        2 => {
                             // ** can only be an entire path component
                             // i.e. a/**/b is valid, but a**/b or a/**b is not
                             // invalid matches are treated literally
-                            let is_valid = if i == 2 || path::is_separator(chars[i - count - 1]) {
+                            let follows_separator = old
+                                .checked_sub(1)
+                                .and_then(|before| chars.get(before))
+                                .is_some_and(|&c| path::is_separator(c));
+                            let is_valid = if i == 2 || follows_separator {
                                 // it ends in a '/'
-                                if i < chars.len() && path::is_separator(chars[i]) {
+                                if chars.get(i).is_some_and(|&c| path::is_separator(c)) {
                                     i += 1;
                                     true
                                     // or the pattern ends here
@@ -215,10 +218,8 @@ impl Pattern {
                                 // collapse consecutive AnyRecursiveSequence to a
                                 // single one
 
-                                let tokens_len = tokens.len();
-
-                                if !(tokens_len > 1
-                                    && tokens[tokens_len - 1] == AnyRecursiveSequence)
+                                if !(tokens.len() > 1
+                                    && tokens.last() == Some(&AnyRecursiveSequence))
                                 {
                                     is_recursive = true;
                                     tokens.push(AnyRecursiveSequence);
@@ -231,26 +232,27 @@ impl Pattern {
                     }
                 }
                 '[' => {
-                    if i + 4 <= chars.len() && chars[i + 1] == '!' {
-                        match chars[i + 3..].iter().position(|x| *x == ']') {
-                            None => (),
-                            Some(j) => {
-                                let chars = &chars[i + 2..i + 3 + j];
-                                let cs = parse_char_specifiers(chars);
-                                tokens.push(AnyExcept(cs));
-                                i += j + 4;
-                                continue;
-                            }
+                    if i + 4 <= chars.len() && chars.get(i + 1) == Some(&'!') {
+                        // `[!` + at least one character + `]`
+                        if let Some(specifiers) = chars
+                            .get(i + 3..)
+                            .and_then(|rest| rest.iter().position(|x| *x == ']'))
+                            .and_then(|j| chars.get(i + 2..i + 3 + j))
+                        {
+                            tokens.push(AnyExcept(parse_char_specifiers(specifiers)));
+                            i += specifiers.len() + 3;
+                            continue;
                         }
-                    } else if i + 3 <= chars.len() && chars[i + 1] != '!' {
-                        match chars[i + 2..].iter().position(|x| *x == ']') {
-                            None => (),
-                            Some(j) => {
-                                let cs = parse_char_specifiers(&chars[i + 1..i + 2 + j]);
-                                tokens.push(AnyWithin(cs));
-                                i += j + 3;
-                                continue;
-                            }
+                    } else if i + 3 <= chars.len() && chars.get(i + 1) != Some(&'!') {
+                        // `[` + at least one character + `]`
+                        if let Some(specifiers) = chars
+                            .get(i + 2..)
+                            .and_then(|rest| rest.iter().position(|x| *x == ']'))
+                            .and_then(|j| chars.get(i + 1..i + 2 + j))
+                        {
+                            tokens.push(AnyWithin(parse_char_specifiers(specifiers)));
+                            i += specifiers.len() + 2;
+                            continue;
                         }
                     }
 
@@ -263,8 +265,8 @@ impl Pattern {
                 '{' if is_editorconfig => {
                     let mut depth = 1;
                     let mut j = i + 1;
-                    while j < chars.len() {
-                        match chars[j] {
+                    while let Some(&c) = chars.get(j) {
+                        match c {
                             '{' => depth += 1,
                             '}' => depth -= 1,
                             _ => (),
@@ -394,7 +396,7 @@ impl Pattern {
         i: usize,
         options: MatchOptions,
     ) -> MatchResult {
-        for (ti, token) in self.tokens[i..].iter().enumerate() {
+        for (ti, token) in self.tokens.get(i..).unwrap_or_default().iter().enumerate() {
             match token {
                 AnySequence | AnyRecursiveSequence => {
                     // ** must be at the start.
@@ -437,7 +439,7 @@ impl Pattern {
                 AnyPattern(patterns) => {
                     for pattern in patterns.iter() {
                         let mut tokens = pattern.tokens.clone();
-                        tokens.extend_from_slice(&self.tokens[(i + ti + 1)..]);
+                        tokens.extend_from_slice(self.tokens.get(i + ti + 1..).unwrap_or_default());
                         let new_pattern = Pattern::from_tokens(
                             tokens,
                             pattern.original.clone(),
@@ -492,17 +494,20 @@ impl Pattern {
 
 fn parse_char_specifiers(s: &[char]) -> Vec<CharSpecifier> {
     let mut cs = Vec::new();
-    let mut i = 0;
-    while i < s.len() {
-        if i + 3 <= s.len() && s[i + 1] == '-' {
-            cs.push(CharRange(s[i], s[i + 2]));
-            i += 3;
-        } else {
-            cs.push(SingleChar(s[i]));
-            i += 1;
-        }
+    let mut rest = s;
+    loop {
+        rest = match rest {
+            [start, '-', end, rest @ ..] => {
+                cs.push(CharRange(*start, *end));
+                rest
+            }
+            [c, rest @ ..] => {
+                cs.push(SingleChar(*c));
+                rest
+            }
+            [] => return cs,
+        };
     }
-    cs
 }
 
 fn in_char_specifiers(specifiers: &[CharSpecifier], c: char, options: MatchOptions) -> bool {
@@ -519,8 +524,8 @@ fn in_char_specifiers(specifiers: &[CharSpecifier], c: char, options: MatchOptio
                     let start = start.to_ascii_lowercase();
                     let end = end.to_ascii_lowercase();
 
-                    let start_up = start.to_uppercase().next().unwrap();
-                    let end_up = end.to_uppercase().next().unwrap();
+                    let start_up = start.to_ascii_uppercase();
+                    let end_up = end.to_ascii_uppercase();
 
                     // only allow case insensitive matching when
                     // both start and end are within a-z or A-Z
@@ -555,7 +560,6 @@ fn chars_eq(a: char, b: char, case_sensitive: bool) -> bool {
 }
 
 /// Configuration options to modify the behaviour of `Pattern::matches_with(..)`.
-#[allow(missing_copy_implementations)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct MatchOptions {
     /// Whether or not patterns should be matched in a case-sensitive manner.

@@ -21,7 +21,6 @@ pgls_query.workspace              = true
 pgls_text_size.workspace          = true
 pgls_treesitter_grammar.workspace = true
 sqlx.workspace                    = true
-tokio.workspace                   = true
 tree-sitter.workspace             = true
 
 [dev-dependencies]

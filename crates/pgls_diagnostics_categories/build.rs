@@ -125,7 +125,7 @@ pub fn main() -> io::Result<()> {
         }
     };
 
-    let out_dir = env::var("OUT_DIR").unwrap();
+    let out_dir = env::var("OUT_DIR").map_err(io::Error::other)?;
     fs::write(
         PathBuf::from(out_dir).join("categories.rs"),
         tokens.to_string(),
