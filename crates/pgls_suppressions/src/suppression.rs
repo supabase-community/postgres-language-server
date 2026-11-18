@@ -1,4 +1,4 @@
-use pgls_analyse::RuleFilter;
+use pgls_analyse::{RegistryVisitor, RuleFilter, RuleGroup, RuleMeta};
 use pgls_diagnostics::{Category, Diagnostic, MessageAndDescription};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -36,6 +36,25 @@ pub(crate) enum RuleSpecifier {
     Rule(String, String, String),
 }
 
+/// Whether the analyser has a group named `name`. It visits the groups but not their rules, and
+/// doesn't allocate.
+struct GroupLookup<'a> {
+    name: &'a str,
+    found: bool,
+}
+
+impl RegistryVisitor for GroupLookup<'_> {
+    fn record_group<G: RuleGroup>(&mut self) {
+        self.found |= G::NAME == self.name;
+    }
+
+    fn record_rule<R>(&mut self)
+    where
+        R: RuleMeta + 'static,
+    {
+    }
+}
+
 impl RuleSpecifier {
     /// The rule specifier of a diagnostic's category, if it has one that a suppression can name.
     pub(crate) fn of<D: Diagnostic>(diagnostic: &D) -> Option<Self> {
@@ -43,8 +62,12 @@ impl RuleSpecifier {
     }
 
     fn is_lint_group(group: &str) -> bool {
-        pgls_analyser::METADATA.find_group(group).is_some()
-            || matches!(group, "typecheck" | "nursery")
+        let mut lookup = GroupLookup {
+            name: group,
+            found: false,
+        };
+        pgls_analyser::visit_registry(&mut lookup);
+        lookup.found || matches!(group, "typecheck" | "nursery")
     }
 
     pub(crate) fn category(&self) -> &str {
