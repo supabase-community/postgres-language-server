@@ -134,7 +134,7 @@ pub(super) fn create_table(
         c.children_with_own_columns.insert(new_key.clone());
     }
     for parent in parents {
-        c.children.entry(parent).or_default().push(new_key.clone());
+        c.children.push(parent, new_key.clone());
     }
 
     let kind = if n.partspec.is_some() {

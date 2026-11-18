@@ -740,6 +740,115 @@ fn rollback_restores_the_catalog() {
 }
 
 #[test]
+fn rollback_to_nested_savepoints_undoes_their_changes() {
+    let search_path = path(&["public"]);
+    let exists = |catalog: &Catalog, name: &str| {
+        catalog.relation(None, name, &search_path).found().is_some()
+    };
+    let catalog = catalog_after(
+        "begin;
+         create table a (id int);
+         savepoint s1;
+         create table b (id int);
+         savepoint s2;
+         create table c (id int);
+         alter table a rename to a2;
+         rollback to savepoint s1;
+         create table d (id int);
+         rollback to savepoint s1;
+         create table e (id int);
+         release savepoint s1;
+         commit;
+         rollback;",
+        &search_path,
+    );
+    // `ROLLBACK TO` keeps the savepoint, so the second one undoes `d`. `ROLLBACK` after `COMMIT`
+    // undoes nothing.
+    assert!(exists(&catalog, "a"));
+    assert!(exists(&catalog, "e"));
+    for name in ["a2", "b", "c", "d"] {
+        assert!(!exists(&catalog, name), "{name} survived the rollback");
+    }
+
+    // `ROLLBACK` returns to `BEGIN` through every savepoint, and restores the flags and the
+    // dropped schemas.
+    let catalog = catalog_after(
+        "begin;
+         create table x (id int);
+         savepoint s;
+         do $$ begin null; end $$;
+         drop schema public cascade;
+         rollback;",
+        &search_path,
+    );
+    assert!(!catalog.is_tainted());
+    assert!(exists(&catalog, "users"));
+    assert!(!exists(&catalog, "x"));
+
+    // A rename inside the transaction moves the inheritance edges, and the rollback moves them
+    // back: the child still gets the parent's new column.
+    let catalog = catalog_after(
+        "create table parent (id int);
+         create table child () inherits (parent);
+         begin;
+         alter table parent rename to renamed;
+         rollback;
+         alter table parent add column extra int;",
+        &search_path,
+    );
+    assert_eq!(
+        column_names(&catalog, None, "child", &search_path).unwrap(),
+        ["id", "extra"]
+    );
+}
+
+#[test]
+fn rollback_restores_every_inheritance_edge() {
+    let search_path = path(&["public"]);
+    // Each kind of edge change, rolled back: the parents' later column changes reach exactly the
+    // children they had before the transaction.
+    let catalog = catalog_after(
+        "create table parent (id int);
+         create table kept () inherits (parent);
+         create table detached () inherits (parent);
+         create table dropped () inherits (parent);
+         create table renamed () inherits (parent);
+         create table other (id int);
+         create table dropped_parent (id int);
+         create table orphan () inherits (dropped_parent);
+         begin;
+         create table added () inherits (parent);
+         alter table detached no inherit parent;
+         drop table dropped;
+         alter table renamed rename to renamed_child;
+         alter table other inherit parent;
+         drop table dropped_parent cascade;
+         rollback;
+         alter table parent add column extra int;
+         alter table dropped_parent add column extra int;",
+        &search_path,
+    );
+    for child in ["kept", "detached", "dropped", "renamed", "orphan"] {
+        assert_eq!(
+            column_names(&catalog, None, child, &search_path).unwrap(),
+            ["id", "extra"],
+            "{child}"
+        );
+    }
+    assert_eq!(
+        column_names(&catalog, None, "other", &search_path).unwrap(),
+        ["id"]
+    );
+    for gone in ["added", "renamed_child"] {
+        assert_eq!(
+            catalog.relation(None, gone, &search_path),
+            Lookup::Missing,
+            "{gone}"
+        );
+    }
+}
+
+#[test]
 fn column_changes_make_database_children_unknown() {
     let search_path = path(&["public"]);
     let tables = ["events", "events_2024"]
