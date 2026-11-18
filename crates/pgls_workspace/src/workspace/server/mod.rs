@@ -24,8 +24,6 @@ use analysis::DocumentAnalysis;
 #[cfg(feature = "db")]
 use connection_manager::ConnectionManager;
 use document::Document;
-#[cfg(feature = "db")]
-use document::{ExecuteStatementMapper, TypecheckDiagnosticsMapper};
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
@@ -75,7 +73,6 @@ use crate::{
         semantic_tokens::{PullSemanticTokensParams, PullSemanticTokensResult, SemanticToken},
     },
     settings::{Settings, WorkspaceSettings, WorkspaceSettingsHandle, WorkspaceSettingsHandleMut},
-    workspace::WithCSTMapper,
 };
 
 #[cfg(feature = "db")]
@@ -513,12 +510,16 @@ impl WorkspaceServer {
             // Only top-level statements are checked: the static typecheck rules cover the
             // statements of SQL function bodies, whose parameters they resolve.
             let input = doc
-                .iter(TypecheckDiagnosticsMapper)
-                .filter(|(id, range, ..)| !id.is_child() && !analysis.is_skipped(range.start()))
-                .map(|(id, range, ast, cst)| {
+                .statements()
+                .filter(|stmt| !analysis.is_skipped(stmt.range().start()))
+                .map(|stmt| {
+                    let range = stmt.range();
+                    let ast = doc.parse(&stmt).as_ref().as_ref().ok().cloned();
+                    let cst = doc.tree(&stmt);
                     let statement = analysis.statement(range).cloned();
-                    (id, range, ast, cst, statement)
+                    (stmt.id().clone(), range, ast, cst, statement)
                 })
+                .filter(|(id, ..)| !id.is_child())
                 .collect::<Vec<_>>();
             let pool = pool.clone();
             let path = path.clone();
@@ -987,11 +988,18 @@ impl Workspace for WorkspaceServer {
                 doc,
                 AnalysisRequest::all(&params.only, &params.skip, &should_stop),
             ) {
+                // Only the diagnostics at the cursor, before the suppressions look at them.
                 let suppressions = doc.suppressions();
                 actions.extend(code_actions::lint::lint_actions(
                     analysis
                         .lint_diagnostics()
                         .iter()
+                        .filter(|diagnostic| {
+                            diagnostic
+                                .location()
+                                .span
+                                .is_some_and(|span| span.contains_inclusive(params.cursor_position))
+                        })
                         .filter(|diagnostic| !suppressions.is_suppressed(*diagnostic)),
                     doc,
                     params.cursor_position,
@@ -1080,17 +1088,20 @@ impl Workspace for WorkspaceServer {
         let document = self.document(&params.path)?;
         let doc = &*document;
 
-        let stmt = doc.find(params.statement_id.clone(), ExecuteStatementMapper);
-        // Finding the statement parsed the statements before it.
+        let stmt = doc.statement(&params.statement_id).map(|stmt| {
+            let ast = doc.parse(&stmt).as_ref().as_ref().ok().cloned();
+            (stmt.range(), doc.sql(&stmt).to_owned(), ast)
+        });
+        // Finding the statement parsed it, or the statement it is embedded in.
         self.charge_document_caches(&params.path, doc);
         // The content is the analysed text, which is the statement as written outside of the
         // parts that the migration tool replaces. With such parts, neither is what it runs.
         let touches_placeholder = stmt
             .as_ref()
-            .is_some_and(|(_, range, _, _)| doc.touches_placeholder(*range));
+            .is_some_and(|(range, _, _)| doc.touches_placeholder(*range));
         // Files can change while the statement runs, so don't keep the version it is in.
         drop(document);
-        let Some((_id, range, content, ast)) = stmt else {
+        let Some((range, content, ast)) = stmt else {
             return Ok(ExecuteStatementResult {
                 message: "Statement was not found in document.".into(),
                 ..Default::default()
@@ -1660,7 +1671,7 @@ impl Workspace for WorkspaceServer {
                     position,
                     schema: snapshot.as_ref(),
                     tree: &cst,
-                    text: stmt.id.content().to_string(),
+                    text: doc.sql(&stmt).to_string(),
                 });
 
                 self.charge_document_caches(&params.path, doc);
@@ -1701,8 +1712,9 @@ impl Workspace for WorkspaceServer {
         };
 
         // The innermost statement: the body of a SQL function rather than its `CREATE FUNCTION`.
-        match doc.iter_at(WithCSTMapper, params.position).last() {
-            Some((stmt, ts_tree)) => {
+        match doc.statements_at(params.position).last() {
+            Some(stmt) => {
+                let ts_tree = doc.tree(&stmt);
                 let position_in_stmt = stmt.statement_offset(params.position);
                 let request =
                     self.editor_request(params.project_key, &params.path, settings, snapshot, doc);
@@ -1713,7 +1725,7 @@ impl Workspace for WorkspaceServer {
                     ts_tree: &ts_tree,
                     snapshot: &snapshot,
                     position: position_in_stmt,
-                    stmt_sql: stmt.id.content(),
+                    stmt_sql: doc.sql(&stmt),
                     references: &references,
                 })
                 .unwrap_or_default();

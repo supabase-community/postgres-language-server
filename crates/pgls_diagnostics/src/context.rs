@@ -1,9 +1,9 @@
 use pgls_console::fmt;
 
 use crate::{
-    Category, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
+    Category, DiagnosticTags, Error, Resource, Severity,
     diagnostic::internal::AsDiagnostic,
-    location::{AsResource, AsSpan},
+    location::{AsResource, AsSpan, IntoSharedSourceCode},
 };
 
 /// This trait is implemented for all types implementing [Diagnostic](super::Diagnostic)
@@ -38,11 +38,11 @@ pub trait DiagnosticExt: internal::Sealed + Sized {
         Error: From<internal::Decorated<Self>>;
 
     /// Returns a new diagnostic using the provided `source_code` if `self`
-    /// doesn't already have one.
+    /// doesn't already have one. `None` adds no source code.
     ///
-    /// Pass the same [SharedSourceCode] to all the diagnostics of a file: from a `&str`, every
-    /// diagnostic gets a copy of the text and a line index of its own.
-    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
+    /// Pass the same [SharedSourceCode](crate::SharedSourceCode) to all the diagnostics of a file:
+    /// from a `&str`, every diagnostic gets a copy of the text and a line index of its own.
+    fn with_file_source_code(self, source_code: impl IntoSharedSourceCode) -> Error
     where
         Error: From<internal::Decorated<Self>>;
 
@@ -102,12 +102,12 @@ impl<E: AsDiagnostic> DiagnosticExt for E {
         })
     }
 
-    fn with_file_source_code(self, source_code: impl Into<SharedSourceCode>) -> Error
+    fn with_file_source_code(self, source_code: impl IntoSharedSourceCode) -> Error
     where
         Error: From<internal::Decorated<Self>>,
     {
         Error::from(internal::Decorated {
-            source_code: Some(source_code.into()),
+            source_code: source_code.into_shared_source_code(),
             ..internal::Decorated::new(self)
         })
     }
