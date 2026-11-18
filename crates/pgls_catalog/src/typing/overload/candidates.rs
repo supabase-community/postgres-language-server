@@ -50,7 +50,14 @@ pub(super) fn expand_candidates(
             }
             if variadic {
                 let element = signature.variadic_element.clone()?;
-                let mut full = params[..pronargs - 1].to_vec();
+                // A variadic function has the variadic parameter last.
+                let Some(fixed) = pronargs
+                    .checked_sub(1)
+                    .and_then(|fixed| params.get(..fixed))
+                else {
+                    continue;
+                };
+                let mut full = fixed.to_vec();
                 full.resize(nargs, element);
                 full
             } else {
@@ -69,15 +76,22 @@ pub(super) fn expand_candidates(
             let Some(order) = match_named_call(&names_of, nargs, names, defaults) else {
                 continue;
             };
-            order
+            let Some(full) = order
                 .iter()
-                .map(|&position| params[position].clone())
-                .collect()
+                .map(|&position| params.get(position).cloned())
+                .collect::<Option<Vec<_>>>()
+            else {
+                continue;
+            };
+            full
         };
 
+        let Some(args) = full.get(..nargs) else {
+            continue;
+        };
         let candidate = Candidate {
             item: function,
-            args: full[..nargs].to_vec(),
+            args: args.to_vec(),
             ambiguous: false,
         };
         // Candidates with the same types for the call's arguments: one earlier in the search
@@ -86,8 +100,8 @@ pub(super) fn expand_candidates(
         if let Some(index) = expanded
             .iter()
             .position(|(previous, _)| previous.args == candidate.args)
+            && let Some((previous, previous_variadic)) = expanded.get_mut(index)
         {
-            let (previous, previous_variadic) = &mut expanded[index];
             if previous.item.schema != candidate.item.schema || (variadic && !*previous_variadic) {
                 continue;
             }
@@ -128,15 +142,16 @@ pub(super) fn match_named_call(
     }
     let mut given = vec![false; pronargs];
     let mut order: Vec<usize> = (0..positional).collect();
-    given[..positional].fill(true);
+    given.get_mut(..positional)?.fill(true);
     for name in names {
         let position = params
             .iter()
             .position(|param| *param == Some(name.as_str()))?;
-        if given[position] {
+        let given = given.get_mut(position)?;
+        if *given {
             return None;
         }
-        given[position] = true;
+        *given = true;
         order.push(position);
     }
     let first_default = pronargs - defaults.min(pronargs);

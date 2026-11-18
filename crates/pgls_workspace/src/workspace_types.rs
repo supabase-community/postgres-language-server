@@ -1,4 +1,4 @@
-//! Utility functions to help with generating bindings for the [Workspace] API
+//! Utility functions to help with generating bindings for the [Workspace](crate::Workspace) API
 
 use std::collections::VecDeque;
 
@@ -9,8 +9,6 @@ use schemars::{
     schema::{InstanceType, RootSchema, Schema, SchemaObject, SingleOrVec},
 };
 use serde_json::Value;
-
-use crate::{WorkspaceError, workspace::*};
 
 /// Manages a queue of type definitions that need to be generated
 #[derive(Default)]
@@ -84,8 +82,12 @@ fn instance_type<'a>(
             match items {
                 SingleOrVec::Single(schema) => {
                     let (ts_type, optional, _) = schema_type(queue, root_schema, schema);
-                    assert!(!optional, "optional nested types are not supported");
-                    format!("{ts_type}[]")
+                    // Items that can be `null`, like the values of a row.
+                    if optional {
+                        format!("({ts_type} | null)[]")
+                    } else {
+                        format!("{ts_type}[]")
+                    }
                 }
                 SingleOrVec::Vec(items) => {
                     let elements: Vec<String> = items
@@ -346,7 +348,17 @@ pub fn generate_type<'a>(
             // If the schema for this type is not an object, emit it as a type alias
             let (ts_type, optional, description) = schema_object_type(queue, root_schema, schema);
 
-            assert!(!optional, "optional nested types are not supported");
+            // The root type of a method, like the `Option` that `find_project` returns, can be
+            // `null`.
+            assert!(
+                !optional || name == root_name,
+                "optional nested types are not supported"
+            );
+            let ts_type = if optional {
+                format!("{ts_type} | null")
+            } else {
+                ts_type
+            };
 
             // For multi-line union types, don't add space after =
             let decl = if ts_type.starts_with('\n') {
@@ -361,7 +373,7 @@ pub fn generate_type<'a>(
     root_name.to_string()
 }
 
-/// Signature metadata for a [Workspace] method
+/// Signature metadata for a [Workspace](crate::Workspace) method
 pub struct WorkspaceMethod {
     /// Name of the method
     pub name: &'static str,
@@ -386,43 +398,17 @@ impl WorkspaceMethod {
             result,
         }
     }
-
-    /// Construct a [WorkspaceMethod] from a name and a function pointer
-    fn from_method<T, P, R>(
-        name: &'static str,
-        _func: fn(T, P) -> Result<R, WorkspaceError>,
-    ) -> Self
-    where
-        P: JsonSchema,
-        R: JsonSchema,
-    {
-        Self::of::<P, R>(name)
-    }
 }
 
-/// Helper macro for generated an OpenAPI schema for a type implementing JsonSchema
-macro_rules! workspace_method {
-    ($name:ident) => {
-        WorkspaceMethod::from_method(stringify!($name), <dyn Workspace>::$name)
+macro_rules! workspace_method_schemas {
+    ($($(#[$attr:meta])* fn $name:ident($params:ty) -> $result:ty;)*) => {
+        vec![$(WorkspaceMethod::of::<$params, $result>(stringify!($name)),)*]
     };
 }
 
-/// Returns a list of signature for all the methods in the [Workspace] trait
-pub fn methods() -> [WorkspaceMethod; 12] {
-    [
-        workspace_method!(is_path_ignored),
-        workspace_method!(register_project_folder),
-        workspace_method!(get_file_content),
-        workspace_method!(pull_file_diagnostics),
-        workspace_method!(pull_code_actions),
-        workspace_method!(fix_file),
-        workspace_method!(get_completions),
-        workspace_method!(update_settings),
-        workspace_method!(check_database_connection),
-        workspace_method!(open_file),
-        workspace_method!(change_file),
-        workspace_method!(close_file),
-    ]
+/// Returns a list of signature for all the methods in the [Workspace](crate::Workspace) trait
+pub fn methods() -> Vec<WorkspaceMethod> {
+    crate::for_each_workspace_method!(workspace_method_schemas)
 }
 
 #[cfg(test)]
@@ -432,7 +418,7 @@ mod tests {
     use super::*;
 
     #[derive(JsonSchema)]
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "only its JSON schema is used")]
     struct MapHolder {
         values: BTreeMap<String, u8>,
     }

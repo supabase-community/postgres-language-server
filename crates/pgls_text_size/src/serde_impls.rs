@@ -31,13 +31,12 @@ impl Serialize for TextRange {
 }
 
 impl<'de> Deserialize<'de> for TextRange {
-    #[allow(clippy::nonminimal_bool)]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let (start, end) = Deserialize::deserialize(deserializer)?;
-        if !(start <= end) {
+        if start > end {
             return Err(de::Error::custom(format!(
                 "invalid range: {start:?}..{end:?}"
             )));

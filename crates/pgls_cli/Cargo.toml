@@ -60,6 +60,7 @@ tikv-jemallocator = "0.6.0"
 assert_cmd      = "2.1.2"
 insta           = { workspace = true, features = ["yaml"] }
 pgls_test_utils = { workspace = true }
+pgls_text_size  = { workspace = true }
 sqlx            = { workspace = true }
 tempfile        = "3.15.0"
 

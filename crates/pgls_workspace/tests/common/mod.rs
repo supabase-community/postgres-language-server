@@ -7,8 +7,7 @@
 //! parser also allocates in C, but only while it parses: the parse results that are cached are
 //! Rust values.
 
-// Each test binary uses a different part of it.
-#![allow(dead_code)]
+#![allow(dead_code, reason = "each test binary uses a different part of it")]
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ffi::c_void;
@@ -17,8 +16,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 struct Counting;
 
-pub static CURRENT: AtomicUsize = AtomicUsize::new(0);
-pub static PEAK: AtomicUsize = AtomicUsize::new(0);
+pub(crate) static CURRENT: AtomicUsize = AtomicUsize::new(0);
+pub(crate) static PEAK: AtomicUsize = AtomicUsize::new(0);
 
 unsafe impl GlobalAlloc for Counting {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
@@ -53,32 +52,32 @@ unsafe impl GlobalAlloc for Counting {
 #[global_allocator]
 static ALLOCATOR: Counting = Counting;
 
-pub const MIB: usize = 1024 * 1024;
+pub(crate) const MIB: usize = 1024 * 1024;
 
-pub fn mib(bytes: usize) -> f64 {
+pub(crate) fn mib(bytes: usize) -> f64 {
     bytes as f64 / MIB as f64
 }
 
 /// Resets the peak to the current usage and returns it.
-pub fn reset_peak() -> usize {
+pub(crate) fn reset_peak() -> usize {
     let current = CURRENT.load(Ordering::Relaxed);
     PEAK.store(current, Ordering::Relaxed);
     current
 }
 
 /// The bytes allocated right now.
-pub fn current() -> usize {
+pub(crate) fn current() -> usize {
     CURRENT.load(Ordering::Relaxed)
 }
 
 /// The most bytes allocated at once since the last [`reset_peak`].
-pub fn peak() -> usize {
+pub(crate) fn peak() -> usize {
     PEAK.load(Ordering::Relaxed)
 }
 
 /// Makes tree-sitter allocate through the counting allocator. Call it before anything uses
 /// tree-sitter: memory that it allocated before can't be freed with the new functions.
-pub fn count_native_allocations() {
+pub(crate) fn count_native_allocations() {
     static SET: Once = Once::new();
     // SAFETY: called before any tree-sitter allocation of the test, and the functions are a
     // complete malloc/calloc/realloc/free family.

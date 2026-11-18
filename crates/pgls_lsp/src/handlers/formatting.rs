@@ -11,7 +11,7 @@ use crate::{
     session::Session,
 };
 
-pub fn formatting(
+pub(crate) fn formatting(
     session: &Session,
     params: DocumentFormattingParams,
 ) -> Result<Option<Vec<TextEdit>>, LspError> {
@@ -30,7 +30,7 @@ pub fn formatting(
     result_to_edits(result, session.position_encoding())
 }
 
-pub fn range_formatting(
+pub(crate) fn range_formatting(
     session: &Session,
     params: DocumentRangeFormattingParams,
 ) -> Result<Option<Vec<TextEdit>>, LspError> {

@@ -24,24 +24,6 @@ fn get_socket_name() -> PathBuf {
     pgls_fs::ensure_cache_dir().join(format!("pgls-socket-{}", pgls_configuration::VERSION))
 }
 
-#[allow(dead_code)]
-pub(crate) fn enumerate_pipes() -> io::Result<impl Iterator<Item = String>> {
-    fs::read_dir(pgls_fs::ensure_cache_dir()).map(|iter| {
-        iter.filter_map(|entry| {
-            let entry = entry.ok()?.path();
-            let file_name = entry.file_name()?;
-            let file_name = file_name.to_str()?;
-
-            let version = file_name.strip_prefix("pgls-socket")?;
-            if version.is_empty() {
-                Some(String::new())
-            } else {
-                Some(version.strip_prefix('-')?.to_string())
-            }
-        })
-    })
-}
-
 /// Try to connect to the global socket and wait for the connection to become ready
 async fn try_connect() -> io::Result<UnixStream> {
     let socket_name = get_socket_name();

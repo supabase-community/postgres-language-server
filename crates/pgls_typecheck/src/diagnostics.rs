@@ -1,14 +1,10 @@
 use std::io;
 
-use once_cell::sync::Lazy;
 use pgls_console::markup;
 use pgls_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
 use pgls_line_index::offset_of_char_position;
 use pgls_text_size::{TextRange, TextSize};
-use regex::Regex;
 use sqlx::postgres::{PgDatabaseError, PgSeverity};
-
-use crate::typed_identifier::{IdentifierReplacement, TypedReplacement};
 
 /// A specialized diagnostic for the typechecker.
 ///
@@ -38,13 +34,6 @@ struct TypecheckAdvices {
     detail: Option<String>,
     where_: Option<String>,
     hint: Option<String>,
-
-    #[allow(unused)]
-    line: Option<usize>,
-    #[allow(unused)]
-    file: Option<String>,
-    #[allow(unused)]
-    routine: Option<String>,
 }
 
 impl Advices for TypecheckAdvices {
@@ -99,81 +88,18 @@ impl Advices for TypecheckAdvices {
     }
 }
 
-/// Pattern and rewrite rule for error messages
-struct ErrorRewriteRule {
-    pattern: Regex,
-    rewrite: fn(&regex::Captures, &IdentifierReplacement) -> String,
-}
-
-#[expect(
-    clippy::unwrap_used,
-    reason = "the patterns are constants, which the tests of the rewritten messages compile"
-)]
-static ERROR_REWRITE_RULES: Lazy<Vec<ErrorRewriteRule>> = Lazy::new(|| {
-    vec![
-        ErrorRewriteRule {
-            pattern: Regex::new(r#"invalid input syntax for type ([\w\s]+): "([^"]*)""#).unwrap(),
-            rewrite: |caps, replacement| {
-                let expected_type = &caps[1];
-                format!(
-                    "`{}` is of type {}, not {}",
-                    replacement.original_name, replacement.type_name, expected_type
-                )
-            },
-        },
-        ErrorRewriteRule {
-            pattern: Regex::new(r#"operator does not exist: (.+)"#).unwrap(),
-            rewrite: |caps, replacement| {
-                let operator_expr = &caps[1];
-                format!(
-                    "operator does not exist: {} (parameter `{}` is of type {})",
-                    operator_expr, replacement.original_name, replacement.type_name
-                )
-            },
-        },
-    ]
-});
-
-/// Rewrites Postgres error messages to be more user-friendly
-pub fn rewrite_error_message(
-    pg_error_message: &str,
-    replacement: &IdentifierReplacement,
-) -> String {
-    for rule in ERROR_REWRITE_RULES.iter() {
-        if let Some(caps) = rule.pattern.captures(pg_error_message) {
-            return (rule.rewrite)(&caps, replacement);
-        }
-    }
-
-    // if we don't have a matching error-rewrite-rule,
-    // we'll fallback to replacing default values with their types,
-    // e.g. `""` is replaced with `text`.
-    let unquoted_default = replacement.default_value.trim_matches('\'');
-    pg_error_message
-        .replace(&format!("\"{unquoted_default}\""), &replacement.type_name)
-        .replace(&format!("'{unquoted_default}'"), &replacement.type_name)
-}
-
 pub(crate) fn create_type_error(
     pg_err: &PgDatabaseError,
     ts: &tree_sitter::Tree,
-    typed_replacement: TypedReplacement,
+    sql: &str,
     source_offset: TextSize,
 ) -> TypecheckDiagnostic {
     let position = pg_err.position().and_then(|pos| match pos {
-        sqlx::postgres::PgErrorPosition::Original(pos) => {
-            offset_of_char_position(typed_replacement.text_replacement().text(), pos)
-        }
+        sqlx::postgres::PgErrorPosition::Original(pos) => offset_of_char_position(sql, pos),
         _ => None,
     });
 
-    let original_position = position.map(|pos| {
-        typed_replacement
-            .text_replacement()
-            .to_original_position(pos)
-    });
-
-    let range = original_position.and_then(|pos| {
+    let range = position.and_then(|pos| {
         ts.root_node()
             .named_descendant_for_byte_range(pos.into(), pos.into())
             .and_then(|node| {
@@ -210,18 +136,8 @@ pub(crate) fn create_type_error(
         PgSeverity::Log => Severity::Information,
     };
 
-    let message = if let Some(pos) = original_position {
-        if let Some(replacement) = typed_replacement.find_type_at_position(pos) {
-            rewrite_error_message(pg_err.message(), replacement)
-        } else {
-            pg_err.to_string()
-        }
-    } else {
-        pg_err.to_string()
-    };
-
     TypecheckDiagnostic {
-        message: message.into(),
+        message: pg_err.to_string().into(),
         severity,
         span: range,
         advices: TypecheckAdvices {
@@ -269,21 +185,6 @@ pub(crate) fn create_type_error(
                 }
             }),
             constraint: pg_err.constraint().and_then(|s| {
-                if !s.is_empty() {
-                    Some(s.to_string())
-                } else {
-                    None
-                }
-            }),
-            line: pg_err.line(),
-            file: pg_err.file().and_then(|s| {
-                if !s.is_empty() {
-                    Some(s.to_string())
-                } else {
-                    None
-                }
-            }),
-            routine: pg_err.routine().and_then(|s| {
                 if !s.is_empty() {
                     Some(s.to_string())
                 } else {

@@ -1,48 +1,48 @@
-14:1 accepted
-22:1 accepted
-29:1 accepted
-53:1 accepted
-60:1 accepted
-66:1 accepted
-69:1 accepted
-75:1 accepted
-99:1 accepted
-106:1 rejected 22023
-107:1 rejected 22023
-108:1 rejected 22023
-109:1 rejected 22023
-110:1 rejected 22023
-111:1 rejected 22023
-112:1 rejected 22023
-115:1 accepted
-116:1 accepted
-117:1 accepted
-124:1 accepted
-130:1 accepted
-136:1 accepted
-143:1 accepted
-147:1 accepted
-152:1 accepted
-157:1 accepted
-163:1 accepted
-171:1 accepted
-174:1 accepted
-178:1 accepted
-183:1 accepted
-204:1 accepted
-208:1 accepted
-229:1 accepted
-233:1 accepted
-254:1 accepted
-260:1 accepted
-262:1 accepted
-267:1 accepted
-269:1 accepted
-270:1 accepted
-273:1 accepted
-274:1 accepted
-275:1 accepted
-276:1 accepted
-277:1 accepted
-278:1 accepted
-279:1 accepted
+472..580 accepted
+770..1011 accepted
+1083..1571 accepted
+1765..1878 accepted
+1984..2099 accepted
+2238..2337 accepted
+2338..2438 accepted
+2514..3033 accepted
+3162..3280 accepted
+3332..3352 rejected 22023
+3353..3397 rejected 22023
+3398..3424 rejected 22023
+3425..3459 rejected 22023
+3460..3494 rejected 22023
+3495..3528 rejected 22023
+3529..3562 rejected 22023
+3585..3609 accepted
+3610..3654 accepted
+3655..3681 accepted
+4005..4142 accepted
+4220..4382 accepted
+4459..4592 accepted
+4695..4908 accepted
+4910..5205 accepted
+5207..5462 accepted
+5464..5801 accepted
+5803..6092 accepted
+6218..6324 accepted
+6326..6453 accepted
+6455..6564 accepted
+6636..7158 accepted
+7160..7316 accepted
+7318..7855 accepted
+7857..8025 accepted
+8027..8543 accepted
+8545..8717 accepted
+8790..8810 accepted
+8812..8856 accepted
+9083..9111 accepted
+9113..9164 accepted
+9165..9242 accepted
+9285..9333 accepted
+9334..9401 accepted
+9402..9487 accepted
+9488..9543 accepted
+9544..9597 accepted
+9598..9654 accepted
+9655..9739 accepted

@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-use pgls_analyse::{ActionCategory, Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyse::Applicability;
 use pgls_analyser::{LinterDiagnostic, RuleFix};
 use pgls_configuration::RuleSelector;
 use pgls_diagnostics::Diagnostic;
@@ -12,7 +12,9 @@ use pgls_line_index::{LineBreak, Lines};
 use pgls_text_size::{TextRange, TextSize};
 use tracing::warn;
 
-use super::{CodeAction, CodeActionKind, EditAction, TextEdit};
+use super::{
+    ActionCategory, CodeAction, CodeActionKind, EditAction, SUPPRESSION_ACTION_CATEGORY, TextEdit,
+};
 use crate::workspace::Document;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -64,11 +66,13 @@ pub(crate) fn lint_actions<'a>(
         let category = diagnostic.get_category_name();
         let rule = category.strip_prefix("lint/").unwrap_or(category);
 
-        // A fix must not write the placeholder of an `ENVSUB` expansion into the file.
+        // A fix must not write the placeholder of an `ENVSUB` expansion into the file, and must
+        // keep the SQL valid.
         if let Some(fix) = diagnostic.get_fix().filter(|fix| {
             !fix.edits
                 .iter()
                 .any(|edit| doc.touches_placeholder(edit.range))
+                && fix.keeps_sql_valid(doc.text(), doc.statement_ranges())
         }) {
             actions.push(CodeAction {
                 title: fix.message.clone(),
@@ -105,12 +109,15 @@ pub(crate) fn lint_actions<'a>(
 
 /// Applies the fixes of the lint diagnostics to `code`, the content of the file at `path`, until
 /// no fix is left. `open` is the open document of the file, whose migration tool the
-/// intermediate documents keep. `lint` returns the lint diagnostics of a document that are not
+/// intermediate document keeps. `lint` returns the lint diagnostics of a document that are not
 /// suppressed.
+///
+/// Cost: a split and a parse of every statement for the first pass. Each further pass applies
+/// its fixes to the same document, which splits and parses only the statements around them.
 pub(crate) fn fix_file(
     path: &PgLSPath,
     open: &Document,
-    mut code: String,
+    code: String,
     mode: FixFileMode,
     mut lint: impl FnMut(&Document) -> Vec<LinterDiagnostic>,
 ) -> FixFileResult {
@@ -121,14 +128,17 @@ pub(crate) fn fix_file(
     let mut fixes_applied = 0;
     let mut skipped_suggested_fixes = 0;
     let mut converged = false;
-    for _ in 0..MAX_PASSES {
-        let doc = Document::open(
-            open.project_key(),
-            open.settings_version(),
-            open.migration_tool(),
-            code.clone(),
-            0,
-        );
+    // Not the open document itself: it shares its cache with its clones, and the passes would
+    // drop what the cache keeps for the open content.
+    let mut doc = Document::open(
+        open.project_key(),
+        open.settings_version(),
+        open.migration_tool(),
+        open.max_size(),
+        code,
+        0,
+    );
+    for pass in 1..=MAX_PASSES {
         let diagnostics = lint(&doc);
 
         skipped_suggested_fixes = 0;
@@ -140,6 +150,7 @@ pub(crate) fn fix_file(
                 !fix.edits
                     .iter()
                     .any(|edit| doc.touches_placeholder(edit.range))
+                    && fix.keeps_sql_valid(doc.text(), doc.statement_ranges())
             })
         {
             if fix.applicability == Applicability::Always || mode == FixFileMode::SafeAndUnsafeFixes
@@ -171,8 +182,11 @@ pub(crate) fn fix_file(
             converged = true;
             break;
         }
-        code = combined.apply(&code);
+        let code = combined.apply(doc.get_document_content());
         fixes_applied += applied;
+        // `pass` is at most `MAX_PASSES`.
+        let version = i32::try_from(pass).unwrap_or(i32::MAX);
+        doc.update_content(code, version).drop_in_background();
     }
     if !converged {
         warn!(
@@ -182,7 +196,7 @@ pub(crate) fn fix_file(
     }
 
     FixFileResult {
-        code,
+        code: doc.get_document_content().to_owned(),
         fixes_applied,
         skipped_suggested_fixes,
     }

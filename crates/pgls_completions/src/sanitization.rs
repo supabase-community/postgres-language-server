@@ -58,9 +58,9 @@ where
 {
     fn from(mut params: CompletionParams<'larger>) -> Self {
         while !params.text.is_char_boundary(params.position.into())
-            && params.position < TextSize::new(params.text.len().try_into().unwrap())
+            && params.position < TextSize::of(params.text.as_str())
         {
-            params.position = params.position.checked_add(1.into()).unwrap();
+            params.position += TextSize::from(1);
         }
 
         if cursor_inbetween_nodes(&params.text, params.position)
@@ -126,10 +126,15 @@ where
         }
 
         let mut parser = tree_sitter::Parser::new();
-        parser
+        // tree-sitter returns no tree only when the parse is cancelled; then the completions use
+        // the text as it is.
+        let Some(tree) = parser
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
-            .expect("Error loading sql language");
-        let tree = parser.parse(sql.clone(), None).unwrap();
+            .ok()
+            .and_then(|()| parser.parse(sql.clone(), None))
+        else {
+            return Self::unadjusted(params);
+        };
 
         Self {
             position: params.position,

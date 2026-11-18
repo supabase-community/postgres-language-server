@@ -1,5 +1,5 @@
 use pgls_diagnostics::adapters::{IoError, StdError};
-use pgls_diagnostics::{Category, Diagnostic, DiagnosticExt, DiagnosticTags, Error};
+use pgls_diagnostics::{Category, Diagnostic, DiagnosticExt, Error};
 use std::io;
 
 #[derive(Debug, Diagnostic)]
@@ -10,6 +10,15 @@ pub(crate) struct PanicDiagnostic {
     pub(crate) message: String,
 }
 
+/// A file that `--skip-errors` skipped.
+#[derive(Debug, Diagnostic)]
+#[diagnostic(
+    category = "syntax",
+    message = "Skipped file with syntax errors",
+    severity = Information
+)]
+pub(crate) struct SkippedDiagnostic;
+
 /// Extension trait for turning [Display]-able error types into [TraversalError]
 pub(crate) trait ResultExt {
     type Result;
@@ -18,14 +27,6 @@ pub(crate) trait ResultExt {
         file_path: String,
         code: &'static Category,
     ) -> Result<Self::Result, Error>;
-
-    #[allow(unused)]
-    fn with_file_path_and_code_and_tags(
-        self,
-        file_path: String,
-        code: &'static Category,
-        tags: DiagnosticTags,
-    ) -> Result<Self::Result, Error>;
 }
 
 impl<T, E> ResultExt for Result<T, E>
@@ -33,20 +34,6 @@ where
     E: std::error::Error + Send + Sync + 'static,
 {
     type Result = T;
-
-    fn with_file_path_and_code_and_tags(
-        self,
-        file_path: String,
-        code: &'static Category,
-        diagnostic_tags: DiagnosticTags,
-    ) -> Result<Self::Result, Error> {
-        self.map_err(move |err| {
-            StdError::from(err)
-                .with_category(code)
-                .with_file_path(file_path)
-                .with_tags(diagnostic_tags)
-        })
-    }
 
     fn with_file_path_and_code(
         self,

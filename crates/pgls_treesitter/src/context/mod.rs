@@ -151,6 +151,9 @@ pub struct TreesitterContext<'a> {
     pub tree: &'a tree_sitter::Tree,
     pub text: &'a str,
     pub position: usize,
+    /// The byte offset of the cursor as requested. `position` is moved onto the node before the
+    /// cursor when the cursor is between nodes or at the end of the text.
+    cursor: usize,
     /// See [`TreeSitterContextParams::server_version_num`].
     server_version_num: Option<i64>,
 
@@ -197,6 +200,7 @@ impl<'a> TreesitterContext<'a> {
             tree: params.tree,
             text: params.text,
             position: usize::from(params.position),
+            cursor: usize::from(params.position),
             server_version_num: params.server_version_num,
             node_under_cursor: params.tree.root_node(),
             identifier_qualifiers: (None, None),
@@ -348,6 +352,16 @@ impl<'a> TreesitterContext<'a> {
             .map(|txt| txt.into())
     }
 
+    /// Whether the node under the cursor is a closed quoted identifier and the cursor follows its
+    /// closing quote, as in `select "na"| from t`.
+    pub fn cursor_after_closing_quote(&self) -> bool {
+        self.cursor >= self.node_under_cursor.end_byte()
+            && self
+                .node_under_cursor
+                .utf8_text(self.text.as_bytes())
+                .is_ok_and(|text| text.len() > 1 && text.starts_with('"') && text.ends_with('"'))
+    }
+
     pub fn get_node_under_cursor_content(&self) -> Option<String> {
         self.get_ts_node_content(&self.node_under_cursor)
     }
@@ -369,11 +383,13 @@ impl<'a> TreesitterContext<'a> {
          */
         let current_node = cursor.node();
 
-        let mut chars = self.text.chars();
-
-        if chars
-            .nth(self.position)
-            .is_some_and(|c| c.is_ascii_whitespace() || [';', ')', ',', '('].contains(&c))
+        // The position is a byte offset. The characters we look for are ASCII, and no byte of a
+        // multibyte character is ASCII, so comparing the byte is enough.
+        if self
+            .text
+            .as_bytes()
+            .get(self.position)
+            .is_some_and(|b| b.is_ascii_whitespace() || b";),(".contains(b))
         {
             self.position = cmp::min(
                 self.position.saturating_sub(1),
@@ -533,14 +549,9 @@ impl<'a> TreesitterContext<'a> {
     }
 
     fn gather_possible_keywords_at_position(&mut self) {
-        let parse_state = if self.node_under_cursor.kind() == "ERROR" {
-            if self.node_under_cursor.child_count() > 0 {
-                self.node_under_cursor.child(0).unwrap().parse_state()
-            } else {
-                self.node_under_cursor.parse_state()
-            }
-        } else {
-            self.node_under_cursor.parse_state()
+        let parse_state = match self.node_under_cursor.child(0) {
+            Some(first) if self.node_under_cursor.kind() == "ERROR" => first.parse_state(),
+            _ => self.node_under_cursor.parse_state(),
         };
 
         let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
@@ -556,8 +567,10 @@ impl<'a> TreesitterContext<'a> {
         let mut current = self.node_under_cursor;
 
         // move up to the parent until we're at top OR we have a prev sibling
-        while current.prev_sibling().is_none() && current.parent().is_some() {
-            current = current.parent().unwrap();
+        while current.prev_sibling().is_none()
+            && let Some(parent) = current.parent()
+        {
+            current = parent;
         }
 
         current

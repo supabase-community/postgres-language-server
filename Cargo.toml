@@ -13,10 +13,21 @@ repository   = "https://github.com/supabase-community/postgres-language-server"
 rust-version = "1.86.0"
 
 # Lints for every crate of the workspace. Each member opts in with `lints.workspace = true`.
+[workspace.lints.rust]
+unreachable_pub = "warn"
+
 [workspace.lints.clippy]
-dbg_macro     = "deny"
-todo          = "deny"
-unimplemented = "deny"
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+# The engineering rules: no `unwrap`, `expect` or indexing on external data. `clippy.toml`
+# allows them in `#[test]` functions; test and bench helpers allow them at their crate root.
+expect_used      = "warn"
+indexing_slicing = "warn"
+unwrap_used      = "warn"
+# We use `mod.rs` for modules with submodules.
+self_named_module_files = "warn"
+todo                    = "deny"
+unimplemented           = "deny"
 
 [workspace.dependencies]
 # supporting crates unrelated to postgres
@@ -31,7 +42,7 @@ indexmap            = { version = "2.6.0", features = ["serde"] }
 insta               = "1.31.0"
 json-strip-comments = "3.1.0"
 oxc_resolver        = "1.12.0"
-pg_query            = "6.1.0"
+proc-macro-error3   = { version = "3.1.1", default-features = false }
 proc-macro2         = "1.0.66"
 proptest            = { version = "1.12.0", default-features = false, features = ["std"] }
 quote               = "1.0.33"
@@ -53,9 +64,8 @@ prost                    = "0.13.5"
 prost-reflect            = "0.15.3"
 protox                   = "0.8.0"
 sqlx                     = { version = "0.8.2", features = ["runtime-tokio-rustls", "runtime-async-std-rustls", "postgres", "json"] }
-syn                      = { version = "1.0.109", features = ["full"] }
+syn                      = { version = "2.0.106", features = ["full"] }
 termcolor                = "1.4.1"
-test-log                 = "0.2.17"
 thiserror                = "1.0.31"
 tokio                    = { version = "1.40.0", features = ["full"] }
 toml                     = "0.9"
@@ -108,7 +118,6 @@ pgls_treesitter             = { path = "./crates/pgls_treesitter", version = "0.
 pgls_treesitter_grammar     = { path = "./crates/pgls_treesitter_grammar", version = "0.0.0" }
 pgls_typecheck              = { path = "./crates/pgls_typecheck", version = "0.0.0" }
 pgls_walk                   = { path = "./crates/pgls_walk", version = "0.0.0" }
-pgls_wasm                   = { path = "./crates/pgls_wasm", version = "0.0.0" }
 pgls_workspace              = { path = "./crates/pgls_workspace", version = "0.0.0" }
 pgls_workspace_macros       = { path = "./crates/pgls_workspace_macros", version = "0.0.0" }
 

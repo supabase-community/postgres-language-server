@@ -907,7 +907,6 @@ dependencies = [
  "pulldown-cmark",
  "regex",
  "schemars",
- "serde",
  "serde_json",
 ]
 
@@ -974,27 +973,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.114",
-]
-
-[[package]]
-name = "env_filter"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bf3c259d255ca70051b30e2e95b5446cdb8949ac4cd22c0d7fd634d89f568e2"
-dependencies = [
- "log",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.11.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
-dependencies = [
- "anstream",
- "anstyle",
- "env_filter",
- "log",
 ]
 
 [[package]]
@@ -1366,17 +1344,6 @@ dependencies = [
  "log",
  "regex-automata",
  "regex-syntax",
-]
-
-[[package]]
-name = "globwalk"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bf760ebf69878d9fd8f110c89703d90ce35095324d1f1edcb595c63945ee757"
-dependencies = [
- "bitflags 2.10.0",
- "ignore",
- "walkdir",
 ]
 
 [[package]]
@@ -2300,20 +2267,18 @@ name = "pgls_analyse"
 version = "0.0.0"
 dependencies = [
  "enumflags2",
- "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_query",
- "pgls_text_size",
- "rustc-hash",
  "schemars",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
 name = "pgls_analyser"
 version = "0.0.0"
 dependencies = [
+ "dir-test",
  "insta",
  "pgls_analyse",
  "pgls_catalog",
@@ -2327,7 +2292,6 @@ dependencies = [
  "pgls_query_ext",
  "pgls_resolve",
  "pgls_statement_splitter",
- "pgls_test_macros",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_walk",
@@ -2349,11 +2313,9 @@ dependencies = [
  "globset",
  "insta",
  "pgls_lexer",
- "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
  "pgls_test_utils",
- "pgls_text_size",
  "rustc-hash",
  "schemars",
  "serde",
@@ -2391,6 +2353,7 @@ dependencies = [
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_edit",
+ "pgls_text_size",
  "pgls_workspace",
  "prost",
  "quick-junit",
@@ -2425,7 +2388,6 @@ dependencies = [
  "regex",
  "schemars",
  "serde",
- "serde_json",
  "sqlx",
  "tracing",
  "tree-sitter",
@@ -2445,6 +2407,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_env",
+ "pgls_line_index",
  "pgls_matcher",
  "pgls_migrations",
  "pgls_pretty_print",
@@ -2459,10 +2422,10 @@ dependencies = [
 name = "pgls_configuration_macros"
 version = "0.0.0"
 dependencies = [
- "proc-macro-error",
+ "proc-macro-error3",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -2504,7 +2467,6 @@ dependencies = [
 name = "pgls_diagnostics_categories"
 version = "0.0.0"
 dependencies = [
- "pgls_env",
  "quote",
  "schemars",
  "serde",
@@ -2514,10 +2476,10 @@ dependencies = [
 name = "pgls_diagnostics_macros"
 version = "0.0.0"
 dependencies = [
- "proc-macro-error",
+ "proc-macro-error3",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -2560,9 +2522,6 @@ dependencies = [
  "pgls_text_size",
  "pgls_treesitter",
  "pgls_treesitter_grammar",
- "schemars",
- "serde",
- "serde_json",
  "sqlx",
  "tracing",
  "tree-sitter",
@@ -2584,7 +2543,6 @@ dependencies = [
 name = "pgls_lexer"
 version = "0.0.0"
 dependencies = [
- "insta",
  "pgls_diagnostics",
  "pgls_lexer_codegen",
  "pgls_text_size",
@@ -2598,8 +2556,6 @@ dependencies = [
  "anyhow",
  "convert_case",
  "proc-macro2",
- "prost-reflect",
- "protox",
  "quote",
  "ureq",
 ]
@@ -2636,7 +2592,6 @@ dependencies = [
  "sqlx",
  "strum",
  "tempfile",
- "test-log",
  "tokio",
  "tower",
  "tower-lsp-server",
@@ -2647,7 +2602,7 @@ dependencies = [
 name = "pgls_markup"
 version = "0.0.0"
 dependencies = [
- "proc-macro-error",
+ "proc-macro-error3",
  "proc-macro2",
  "quote",
 ]
@@ -2658,7 +2613,6 @@ version = "0.0.0"
 dependencies = [
  "pgls_console",
  "pgls_diagnostics",
- "rustc-hash",
 ]
 
 [[package]]
@@ -2685,11 +2639,9 @@ dependencies = [
  "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_diagnostics_categories",
  "pgls_test_utils",
  "rustc-hash",
  "serde",
- "serde_json",
  "sqlx",
  "ureq",
 ]
@@ -2710,7 +2662,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "tree-sitter",
 ]
 
 [[package]]
@@ -2831,9 +2782,7 @@ dependencies = [
  "pgls_configuration",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_matcher",
  "pgls_test_utils",
- "serde",
  "serde_json",
  "sqlx",
  "ureq",
@@ -2849,7 +2798,6 @@ dependencies = [
  "pgls_lexer",
  "pgls_query",
  "pgls_text_size",
- "regex",
 ]
 
 [[package]]
@@ -2861,25 +2809,21 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_line_index",
  "pgls_text_size",
- "tracing",
 ]
 
 [[package]]
 name = "pgls_test_macros"
 version = "0.0.0"
 dependencies = [
- "globwalk",
- "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.114",
 ]
 
 [[package]]
 name = "pgls_test_utils"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "clap",
  "dotenv",
  "pgls_test_macros",
@@ -2887,7 +2831,6 @@ dependencies = [
  "sqlx",
  "tokio",
  "tree-sitter",
- "uuid",
 ]
 
 [[package]]
@@ -2921,7 +2864,6 @@ dependencies = [
 name = "pgls_treesitter"
 version = "0.0.0"
 dependencies = [
- "clap",
  "pgls_catalog",
  "pgls_test_utils",
  "pgls_text_size",
@@ -2946,10 +2888,8 @@ dependencies = [
 name = "pgls_typecheck"
 version = "0.0.0"
 dependencies = [
- "criterion",
  "insta",
  "itertools 0.14.0",
- "once_cell",
  "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
@@ -2957,13 +2897,9 @@ dependencies = [
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
- "pgls_treesitter",
  "pgls_treesitter_grammar",
- "regex",
  "sqlx",
- "tokio",
  "tree-sitter",
- "uuid",
 ]
 
 [[package]]
@@ -2987,19 +2923,17 @@ version = "0.0.0"
 dependencies = [
  "lsp-types",
  "pgls_analyse",
- "pgls_catalog",
  "pgls_completions",
  "pgls_configuration",
  "pgls_diagnostics",
+ "pgls_env",
  "pgls_fs",
  "pgls_line_index",
  "pgls_query",
  "pgls_text_size",
- "pgls_treesitter_grammar",
  "pgls_workspace",
  "serde",
  "serde_json",
- "tree-sitter",
 ]
 
 [[package]]
@@ -3037,9 +2971,7 @@ dependencies = [
  "pgls_statement_splitter",
  "pgls_suppressions",
  "pgls_test_utils",
- "pgls_text_edit",
  "pgls_text_size",
- "pgls_tokenizer",
  "pgls_treesitter_grammar",
  "pgls_typecheck",
  "pgls_walk",
@@ -3063,9 +2995,8 @@ dependencies = [
 name = "pgls_workspace_macros"
 version = "0.0.0"
 dependencies = [
- "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -3247,27 +3178,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-error"
-version = "1.0.4"
+name = "proc-macro-error-attr3"
+version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
+checksum = "9e564d14133360e1ae169ffde5da25881b5fa47261665b8e5713c212c27799da"
 dependencies = [
- "proc-macro-error-attr",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
- "version_check",
 ]
 
 [[package]]
-name = "proc-macro-error-attr"
-version = "1.0.4"
+name = "proc-macro-error3"
+version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
+checksum = "8f0d4471b3436c22106b21913b1dda531558918ae9b7ec55d58aa84b43552233"
 dependencies = [
+ "proc-macro-error-attr3",
  "proc-macro2",
  "quote",
- "version_check",
 ]
 
 [[package]]
@@ -4388,28 +4316,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
 
 [[package]]
-name = "test-log"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d53ac171c92a39e4769491c4b4dde7022c60042254b5fc044ae409d34a24d4"
-dependencies = [
- "env_logger",
- "test-log-macros",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "test-log-macros"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be35209fd0781c5401458ab66e4f98accf63553e8fae7425503e92fdd319783b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.114",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4989,7 +4895,6 @@ version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee48d38b119b0cd71fe4141b30f5ba9c7c5d9f4e7a3a8b4a674e4b6ef789976f"
 dependencies = [
- "getrandom 0.3.4",
  "js-sys",
  "wasm-bindgen",
 ]

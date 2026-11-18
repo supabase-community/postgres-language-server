@@ -1,11 +1,11 @@
-6:1 accepted
-7:1 accepted
-8:1 accepted
-11:1 rejected 22023
-12:1 rejected 22023
-13:1 rejected 22023
-16:1 accepted
-17:1 accepted
-18:1 accepted
-19:1 accepted
-23:1 accepted
+77..129 accepted
+130..167 accepted
+168..207 accepted
+274..313 rejected 22023
+314..355 rejected 22023
+356..459 rejected 22023
+514..535 accepted
+536..557 accepted
+558..581 accepted
+582..593 accepted
+729..766 accepted

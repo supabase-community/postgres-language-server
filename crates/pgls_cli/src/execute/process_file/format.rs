@@ -26,6 +26,11 @@ fn format_with_guard<'ctx>(
 
     let format_result = format_result.map_err(Message::from)?;
 
+    // `--skip-errors` leaves a file with syntax errors as it is.
+    if ctx.config.skips(&format_result.diagnostics) {
+        return Ok(ctx.skip_file(&path));
+    }
+
     let mut diagnostics: Vec<pgls_diagnostics::Error> = format_result
         .diagnostics
         .into_iter()

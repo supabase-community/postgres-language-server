@@ -274,12 +274,11 @@ pub(super) fn print_backtrace(
                 let mut text = filename.display().to_string();
 
                 if let Some(lineno) = symbol.lineno() {
-                    // SAFETY: Writing a `u32` to a string should not fail
-                    write!(text, ":{lineno}").unwrap();
+                    // Writing to a `String` can't fail.
+                    let _ = write!(text, ":{lineno}");
 
                     if let Some(colno) = symbol.colno() {
-                        // SAFETY: Writing a `u32` to a string should not fail
-                        write!(text, ":{colno}").unwrap();
+                        let _ = write!(text, ":{colno}");
                     }
                 }
 

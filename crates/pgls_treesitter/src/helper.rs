@@ -44,10 +44,11 @@ pub fn goto_node_at_position(tree: &Tree, position: usize) -> Option<Node<'_>> {
 pub fn goto_previous_leaf(node: Node<'_>) -> Option<Node<'_>> {
     let mut node_with_sibs = Some(node);
 
-    while node_with_sibs
-        .is_some_and(|node| node.kind() != "program" && node.prev_sibling().is_none())
+    while let Some(node) = node_with_sibs
+        && node.kind() != "program"
+        && node.prev_sibling().is_none()
     {
-        node_with_sibs = node_with_sibs.unwrap().parent();
+        node_with_sibs = node.parent();
     }
 
     node_with_sibs.and_then(|node| {

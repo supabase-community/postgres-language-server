@@ -6,12 +6,13 @@ use tree_sitter::StreamingIterator;
 
 use super::QueryTryFrom;
 
-static TS_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static TS_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (table_reference) @ref
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 #[derive(Debug)]
@@ -26,7 +27,7 @@ impl RelationMatch<'_> {
             self.schema
                 .as_ref()?
                 .utf8_text(sql.as_bytes())
-                .expect("Failed to get schema from RelationMatch")
+                .ok()?
                 .to_string(),
         )
     }
@@ -34,7 +35,8 @@ impl RelationMatch<'_> {
     pub fn get_table(&self, sql: &str) -> String {
         self.table
             .utf8_text(sql.as_bytes())
-            .expect("Failed to get table from RelationMatch")
+            // A node of `sql` is UTF-8, unless the tree is stale.
+            .unwrap_or_default()
             .to_string()
     }
 }
@@ -46,7 +48,6 @@ impl<'a> TryFrom<&'a QueryResult<'a>> for &'a RelationMatch<'a> {
         match q {
             QueryResult::Relation(r) => Ok(r),
 
-            #[allow(unreachable_patterns)]
             _ => Err("Invalid QueryResult type".into()),
         }
     }
@@ -60,7 +61,10 @@ impl<'a> Query<'a> for RelationMatch<'a> {
     fn execute(root_node: tree_sitter::Node<'a>, stmt: &'a str) -> Vec<QueryResult<'a>> {
         let mut cursor = tree_sitter::QueryCursor::new();
 
-        let matches = cursor.matches(&TS_QUERY, root_node, stmt.as_bytes());
+        let Some(query) = TS_QUERY.as_ref() else {
+            return vec![];
+        };
+        let matches = cursor.matches(query, root_node, stmt.as_bytes());
 
         let mut to_return = vec![];
 

@@ -1,24 +1,26 @@
 use super::config::ExecutionConfig;
 use super::process_file::{FileStatus, Message, process_file};
-use crate::execute::diagnostics::PanicDiagnostic;
+use crate::execute::diagnostics::{PanicDiagnostic, SkippedDiagnostic};
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgls_diagnostics::{DiagnosticExt, DiagnosticTags, Error, Resource, Severity};
+use pgls_diagnostics::{
+    DiagnosticExt, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
+};
 use pgls_fs::{FileSystem, PathInterner, PgLSPath};
 use pgls_fs::{TraversalContext, TraversalScope};
+use pgls_workspace::Workspace;
 use pgls_workspace::dome::Dome;
 use pgls_workspace::workspace::{IsPathIgnoredParams, ProjectKey};
-use pgls_workspace::{Workspace, WorkspaceError};
 use rustc_hash::FxHashSet;
 use std::collections::BTreeSet;
-use std::sync::RwLock;
 use std::sync::atomic::AtomicU32;
+use std::sync::{PoisonError, RwLock};
 use std::{
     env::current_dir,
     ffi::OsString,
     panic::catch_unwind,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Once,
         atomic::{AtomicUsize, Ordering},
@@ -46,7 +48,6 @@ pub(crate) fn traverse(
 
     let changed = AtomicUsize::new(0);
     let unchanged = AtomicUsize::new(0);
-    let matches = AtomicUsize::new(0);
     let skipped = AtomicUsize::new(0);
 
     let fs = &**session.fs();
@@ -54,7 +55,6 @@ pub(crate) fn traverse(
     let project_key = session.project_key();
 
     let max_diagnostics = config.max_diagnostics();
-    let remaining_diagnostics = AtomicU32::new(max_diagnostics);
 
     let printer = DiagnosticsPrinter::new(config).with_max_diagnostics(max_diagnostics);
 
@@ -62,7 +62,7 @@ pub(crate) fn traverse(
         let handler = thread::Builder::new()
             .name(String::from("pgls::console"))
             .spawn_scoped(s, || printer.run(receiver, recv_files))
-            .expect("failed to spawn console thread");
+            .map_err(CliDiagnostic::io_error)?;
 
         // The traversal context is scoped to ensure all the channels it
         // contains are properly closed once the traversal finishes
@@ -75,24 +75,23 @@ pub(crate) fn traverse(
                 project_key,
                 config,
                 interner,
-                matches: &matches,
                 changed: &changed,
                 unchanged: &unchanged,
                 skipped: &skipped,
                 messages: sender,
-                remaining_diagnostics: &remaining_diagnostics,
                 evaluated_paths: RwLock::default(),
             },
         );
-        // wait for the main thread to finish
-        let diagnostics = handler.join().unwrap();
+        // wait for the main thread to finish; a panic of the console thread goes on here
+        let diagnostics = handler
+            .join()
+            .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
 
-        (elapsed, evaluated_paths, diagnostics)
-    });
+        Ok::<_, CliDiagnostic>((elapsed, evaluated_paths, diagnostics))
+    })?;
 
     let changed = changed.load(Ordering::Relaxed);
     let unchanged = unchanged.load(Ordering::Relaxed);
-    let matches = matches.load(Ordering::Relaxed);
     let skipped = skipped.load(Ordering::Relaxed);
     let suggested_fixes_skipped = printer.skipped_fixes();
     let fixable_diagnostics = printer.fixable_diagnostics.load(Ordering::Relaxed);
@@ -104,7 +103,6 @@ pub(crate) fn traverse(
         evaluated_paths,
         changed,
         unchanged,
-        matches,
         skipped,
         suggested_fixes_skipped,
         fixable_diagnostics,
@@ -133,11 +131,14 @@ pub(crate) fn traverse(
 fn init_thread_pool() {
     static INIT_ONCE: Once = Once::new();
     INIT_ONCE.call_once(|| {
-        rayon::ThreadPoolBuilder::new()
+        // Fails only if a global pool exists already, which the traversal then uses.
+        if let Err(error) = rayon::ThreadPoolBuilder::new()
             .thread_name(|index| format!("pgls::worker_{index}"))
             .stack_size(crate::WORKER_STACK_SIZE_BYTES)
             .build_global()
-            .expect("failed to initialize the global thread pool");
+        {
+            tracing::warn!("failed to initialize the global thread pool: {error}");
+        }
     });
 }
 
@@ -177,7 +178,6 @@ struct DiagnosticsPrinter<'ctx> {
     _config: &'ctx ExecutionConfig,
     /// The maximum number of diagnostics the console thread is allowed to print
     max_diagnostics: u32,
-    remaining_diagnostics: AtomicU32,
     /// Count of diagnostics that exceeded max_diagnostics and weren't printed
     not_printed_diagnostics: AtomicU32,
     printed_diagnostics: AtomicU32,
@@ -195,7 +195,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         Self {
             _config: config,
             max_diagnostics: 20,
-            remaining_diagnostics: AtomicU32::new(0),
             not_printed_diagnostics: AtomicU32::new(0),
             printed_diagnostics: AtomicU32::new(0),
             total_skipped_suggested_fixes: AtomicU32::new(0),
@@ -233,10 +232,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         let should_print = printed_diagnostics < self.max_diagnostics;
         if should_print {
             self.printed_diagnostics.fetch_add(1, Ordering::Relaxed);
-            self.remaining_diagnostics.store(
-                self.max_diagnostics.saturating_sub(printed_diagnostics),
-                Ordering::Relaxed,
-            );
         } else {
             self.not_printed_diagnostics.fetch_add(1, Ordering::Relaxed);
         }
@@ -256,7 +251,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.total_skipped_suggested_fixes
                         .fetch_add(skipped_suggested_fixes, Ordering::Relaxed);
                 }
-                Message::Failure => {}
                 Message::Error(mut err) => {
                     self.count_severity(err.severity());
                     if let Some(Resource::File(file_path)) = err.location().resource.as_ref() {
@@ -293,13 +287,17 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.not_printed_diagnostics
                         .fetch_add(skipped_diagnostics, Ordering::Relaxed);
 
+                    // One copy of the file and one line index for all its diagnostics.
+                    let source_code = SharedSourceCode::new(content);
                     for diag in diag_list {
                         self.count_severity(diag.severity());
                         if diag.tags().contains(DiagnosticTags::FIXABLE) {
                             self.fixable_diagnostics.fetch_add(1, Ordering::Relaxed);
                         }
                         if self.should_store() {
-                            let diag = diag.with_file_path(&name).with_file_source_code(&content);
+                            let diag = diag
+                                .with_file_path(&name)
+                                .with_file_source_code(&source_code);
                             diagnostics.push(diag);
                         }
                     }
@@ -328,14 +326,10 @@ pub(crate) struct TraversalOptions<'ctx, 'app> {
     /// Shared atomic counter storing the number of unchanged files
     unchanged: &'ctx AtomicUsize,
     /// Shared atomic counter storing the number of unchanged files
-    matches: &'ctx AtomicUsize,
     /// Shared atomic counter storing the number of skipped files
     skipped: &'ctx AtomicUsize,
     /// Channel sending messages to the display thread
     pub(crate) messages: Sender<Message>,
-    /// The approximate number of diagnostics the console will print before
-    /// folding the rest into the "skipped diagnostics" counter
-    pub(crate) remaining_diagnostics: &'ctx AtomicU32,
 
     /// List of paths that should be processed
     pub(crate) evaluated_paths: RwLock<BTreeSet<PgLSPath>>,
@@ -346,20 +340,24 @@ impl TraversalOptions<'_, '_> {
         self.changed.fetch_add(1, Ordering::Relaxed);
         self.evaluated_paths
             .write()
-            .unwrap()
+            .unwrap_or_else(PoisonError::into_inner)
             .replace(path.to_written());
     }
     pub(crate) fn increment_unchanged(&self) {
         self.unchanged.fetch_add(1, Ordering::Relaxed);
     }
 
-    pub(crate) fn increment_matches(&self, num_matches: usize) {
-        self.matches.fetch_add(num_matches, Ordering::Relaxed);
-    }
-
     /// Send a message to the display thread
     pub(crate) fn push_message(&self, msg: impl Into<Message>) {
         self.messages.send(msg.into()).ok();
+    }
+
+    /// Skips the file at `path` for `--skip-errors` because of its syntax errors: reports that it
+    /// skipped the file instead of its diagnostics. The file counts as processed, so a run that
+    /// skips every file succeeds.
+    pub(crate) fn skip_file(&self, path: &Path) -> FileStatus {
+        self.push_message(SkippedDiagnostic.with_file_path(path.display().to_string()));
+        FileStatus::Unchanged
     }
 }
 
@@ -369,7 +367,10 @@ impl TraversalContext for TraversalOptions<'_, '_> {
     }
 
     fn evaluated_paths(&self) -> BTreeSet<PgLSPath> {
-        self.evaluated_paths.read().unwrap().clone()
+        self.evaluated_paths
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     fn push_diagnostic(&self, error: Error) {
@@ -419,7 +420,7 @@ impl TraversalContext for TraversalOptions<'_, '_> {
     fn store_path(&self, path: PgLSPath) {
         self.evaluated_paths
             .write()
-            .unwrap()
+            .unwrap_or_else(PoisonError::into_inner)
             .insert(PgLSPath::new(path.as_path()));
     }
 }
@@ -435,20 +436,10 @@ fn handle_file(ctx: &TraversalOptions, path: &PgLSPath) {
         Ok(Ok(FileStatus::Unchanged)) => {
             ctx.increment_unchanged();
         }
-        Ok(Ok(FileStatus::SearchResult(num_matches, msg))) => {
-            ctx.increment_unchanged();
-            ctx.increment_matches(num_matches);
-            ctx.push_message(msg);
-        }
         Ok(Ok(FileStatus::Message(msg))) => {
             ctx.increment_unchanged();
             ctx.push_message(msg);
         }
-        Ok(Ok(FileStatus::Protected(file_path))) => {
-            ctx.increment_unchanged();
-            ctx.push_diagnostic(WorkspaceError::protected_file(file_path).into());
-        }
-        Ok(Ok(FileStatus::Ignored)) => {}
         Ok(Err(err)) => {
             ctx.increment_unchanged();
             ctx.skipped.fetch_add(1, Ordering::Relaxed);

@@ -14,7 +14,6 @@ version              = "0.0.0"
 doctest = false
 
 [dependencies]
-clap                              = { version = "4.5.23", features = ["derive"] }
 pgls_catalog                      = { workspace = true }
 pgls_text_size.workspace          = true
 pgls_treesitter_grammar.workspace = true

@@ -29,17 +29,18 @@ pub enum Mode {
 }
 
 pub fn project_root() -> PathBuf {
-    Path::new(
-        &env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_owned()),
-    )
-    .ancestors()
-    .nth(2)
-    .unwrap()
-    .to_path_buf()
+    let manifest_dir =
+        env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_owned());
+    // `xtask/codegen` is two levels below the root.
+    Path::new(&manifest_dir)
+        .ancestors()
+        .nth(2)
+        .unwrap_or(Path::new(&manifest_dir))
+        .to_path_buf()
 }
 
 pub fn run_rustfmt(mode: Mode) -> Result<()> {
-    let _dir = pushd(project_root());
+    let _dir = pushd(project_root())?;
     // Only set RUSTUP_TOOLCHAIN if nightly isn't already on PATH (e.g., in Nix)
     let _e = if !is_nightly_rustfmt_available() {
         Some(pushenv("RUSTUP_TOOLCHAIN", "nightly"))

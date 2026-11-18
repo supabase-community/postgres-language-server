@@ -1,13 +1,15 @@
 //! The refactor that replaces a `*` in a select list with the columns it expands to.
 
-use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
+use pgls_analyse::Applicability;
 use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_line_index::Lines;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
 
-use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, TextEdit};
+use crate::features::code_actions::{
+    ActionCategory, CodeAction, CodeActionKind, EditAction, RefactorKind, TextEdit,
+};
 
 /// The action that replaces the `*` or `t.*` of `reference` with its columns. `content` is the
 /// text of the file, and the statement of the reference starts at `stmt_start`. `None` if a

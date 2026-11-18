@@ -7,7 +7,7 @@ use crate::{
 use pgls_catalog::{NamePosition, Snapshot};
 use pgls_treesitter::TreesitterContext;
 
-pub fn complete_schemas<'a>(
+pub(crate) fn complete_schemas<'a>(
     ctx: &'a TreesitterContext,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,

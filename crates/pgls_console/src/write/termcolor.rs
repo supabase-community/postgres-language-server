@@ -147,11 +147,12 @@ where
             let width = UnicodeWidthStr::width(grapheme);
             let is_whitespace = grapheme_is_whitespace(grapheme);
 
-            if !is_whitespace && width == 0 {
-                let char_to_write = char::REPLACEMENT_CHARACTER;
-                char_to_write.encode_utf8(&mut buffer);
+            // A control character like the `ESC` that starts an escape sequence would let the
+            // text, e.g. a quoted identifier, control the terminal.
+            if !is_whitespace && (width == 0 || grapheme.chars().any(char::is_control)) {
+                let encoded = char::REPLACEMENT_CHARACTER.encode_utf8(&mut buffer);
 
-                if let Err(err) = self.writer.write_all(&buffer[..char_to_write.len_utf8()]) {
+                if let Err(err) = self.writer.write_all(encoded.as_bytes()) {
                     self.error = Err(err);
                     return Err(fmt::Error);
                 }
@@ -164,12 +165,10 @@ where
             if cfg!(windows) || !self.writer.supports_color() {
                 let is_ascii = grapheme.is_ascii();
 
-                if !is_ascii {
-                    let replacement = unicode_to_ascii(grapheme.chars().nth(0).unwrap());
+                if !is_ascii && let Some(first) = grapheme.chars().next() {
+                    let encoded = unicode_to_ascii(first).encode_utf8(&mut buffer);
 
-                    replacement.encode_utf8(&mut buffer);
-
-                    if let Err(err) = self.writer.write_all(&buffer[..replacement.len_utf8()]) {
+                    if let Err(err) = self.writer.write_all(encoded.as_bytes()) {
                         self.error = Err(err);
                         return Err(fmt::Error);
                     }
@@ -179,9 +178,9 @@ where
             };
 
             for char in grapheme.chars() {
-                char.encode_utf8(&mut buffer);
+                let encoded = char.encode_utf8(&mut buffer);
 
-                if let Err(err) = self.writer.write_all(&buffer[..char.len_utf8()]) {
+                if let Err(err) = self.writer.write_all(encoded.as_bytes()) {
                     self.error = Err(err);
                     return Err(fmt::Error);
                 }
@@ -240,5 +239,26 @@ mod tests {
         } else {
             assert_eq!(from_utf8(&buffer).unwrap(), OUTPUT);
         }
+    }
+
+    #[test]
+    fn test_replacing_control_characters() {
+        const INPUT: &str = "\"a\x1b[2J\x1b]8;;x\x07\u{9b}31m\u{7f}\"\tb\r\nc";
+        const OUTPUT: &str = "\"a\u{fffd}[2J\u{fffd}]8;;x\u{fffd}\u{fffd}31m\u{fffd}\"\tb\r\nc";
+
+        let mut buffer = Vec::new();
+
+        {
+            let writer = termcolor::Ansi::new(&mut buffer);
+            let mut adapter = SanitizeAdapter {
+                writer,
+                error: Ok(()),
+            };
+
+            adapter.write_str(INPUT).unwrap();
+            adapter.error.unwrap();
+        }
+
+        assert_eq!(from_utf8(&buffer).unwrap(), OUTPUT);
     }
 }

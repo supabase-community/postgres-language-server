@@ -63,28 +63,28 @@ pub(crate) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
                 // AS can have a list (for C functions with library and symbol)
                 // or a single string (for SQL/plpgsql functions)
                 if let Some(pgls_query::NodeEnum::List(list)) = &arg.node {
-                    if list.items.len() == 1 {
+                    if let [first] = list.items.as_slice() {
                         // Single item: either library name (C) or SQL body (SQL/plpgsql)
-                        if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
+                        if let Some(pgls_query::NodeEnum::String(s)) = &first.node {
                             // Use dollar quotes for function bodies (they handle embedded quotes better)
                             emit_body_literal(e, &s.sval);
                         } else {
-                            emit_node(e, &list.items[0]);
+                            emit_node(e, first);
                         }
-                    } else if list.items.len() == 2 {
+                    } else if let [first, second] = list.items.as_slice() {
                         // Two items: library and symbol for C functions
                         // C functions use regular string literals for library paths
-                        if let Some(pgls_query::NodeEnum::String(s)) = &list.items[0].node {
+                        if let Some(pgls_query::NodeEnum::String(s)) = &first.node {
                             emit_string_literal(e, s);
                         } else {
-                            emit_node(e, &list.items[0]);
+                            emit_node(e, first);
                         }
                         e.token(TokenKind::COMMA);
                         e.space();
-                        if let Some(pgls_query::NodeEnum::String(s)) = &list.items[1].node {
+                        if let Some(pgls_query::NodeEnum::String(s)) = &second.node {
                             emit_string_literal(e, s);
                         } else {
-                            emit_node(e, &list.items[1]);
+                            emit_node(e, second);
                         }
                     } else {
                         // Fallback: emit the list as-is

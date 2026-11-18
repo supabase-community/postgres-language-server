@@ -153,7 +153,7 @@ fn message_with_detail_and_hint(issue: &PlpgSqlCheckIssue) -> MessageAndDescript
 }
 
 /// Convert plpgsql_check results into diagnostics with optional relation info for triggers
-pub fn create_diagnostics_from_check_result(
+pub(crate) fn create_diagnostics_from_check_result(
     result: &PlpgSqlCheckResult,
     fn_body: &str,
     offset: usize,

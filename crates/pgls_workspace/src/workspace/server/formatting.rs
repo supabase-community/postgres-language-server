@@ -8,11 +8,7 @@ use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::FormatConfig;
 use pgls_text_size::TextRange;
 
-use super::{
-    StatementId,
-    document::{Document, FormatStatementMapper},
-    sql_function,
-};
+use super::{StatementId, document::Document, sql_function};
 use crate::{
     WorkspaceError,
     features::format::{PullFormattingResult, StatementFormatResult},
@@ -67,11 +63,12 @@ pub(super) fn format_document(
     let mut formatted_output = String::new();
 
     let mut format_candidates = Vec::new();
-    for candidate in doc.iter(FormatStatementMapper) {
+    for stmt in doc.statements() {
         if stops() {
             return None;
         }
-        format_candidates.push(candidate);
+        let ast_result = doc.parse(&stmt);
+        format_candidates.push((stmt, ast_result));
     }
     let mut formatted_sql_fn_bodies = HashMap::new();
 
@@ -79,17 +76,13 @@ pub(super) fn format_document(
     // statements is left as written.
     if !settings.skip_fn_bodies {
         let mut statements_per_body: HashMap<StatementId, usize> = HashMap::new();
-        for (id, ..) in &format_candidates {
-            if let Some(parent_id) = id.parent() {
+        for (stmt, _) in &format_candidates {
+            if let Some(parent_id) = stmt.id().parent() {
                 *statements_per_body.entry(parent_id).or_default() += 1;
             }
         }
-        for (id, _stmt_range, text, ast_result) in &format_candidates {
-            if !id.is_child() {
-                continue;
-            }
-
-            let Some(parent_id) = id.parent() else {
+        for (stmt, ast_result) in &format_candidates {
+            let Some(parent_id) = stmt.id().parent() else {
                 continue;
             };
 
@@ -100,10 +93,11 @@ pub(super) fn format_document(
                 return None;
             }
 
-            let Ok(ast) = ast_result else {
+            let Ok(ast) = &**ast_result else {
                 continue;
             };
 
+            let text = doc.sql(stmt);
             let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
                 continue;
             };
@@ -126,10 +120,11 @@ pub(super) fn format_document(
     // Formatting a range leaves everything outside its statements as written.
     let collapses_blank_lines = range.is_none();
 
-    for (id, stmt_range, text, ast_result) in format_candidates {
-        if id.is_child() {
+    for (stmt, ast_result) in &format_candidates {
+        if stmt.is_embedded() {
             continue;
         }
+        let (stmt_range, text) = (stmt.range(), doc.sql(stmt));
         if stops() {
             return None;
         }
@@ -161,10 +156,10 @@ pub(super) fn format_document(
             continue;
         }
 
-        match ast_result {
+        match &**ast_result {
             Ok(ast) => {
-                let mut ast = ast;
-                if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(&id) {
+                let mut ast = Arc::clone(ast);
+                if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(stmt.id()) {
                     // Copies the tree only for the functions whose body is replaced.
                     sql_function::set_formatted_sql_fn_body(
                         Arc::make_mut(&mut ast),
@@ -172,12 +167,12 @@ pub(super) fn format_document(
                     );
                 }
 
-                match pgls_pretty_print::format_statement(&ast, &text, &config) {
-                    Ok(result) => match restore_named_parameters(&text, &result.formatted, &ast) {
+                match pgls_pretty_print::format_statement(&ast, text, &config) {
+                    Ok(result) => match restore_named_parameters(text, &result.formatted, &ast) {
                         Some(formatted) => {
                             if text != formatted {
                                 statements.push(StatementFormatResult {
-                                    original: text.clone(),
+                                    original: text.to_owned(),
                                     formatted: formatted.clone(),
                                     range: stmt_range,
                                 });
@@ -195,7 +190,7 @@ pub(super) fn format_document(
                                 .with_file_span(stmt_range),
                             ));
 
-                            formatted_output.push_str(&text);
+                            formatted_output.push_str(text);
                         }
                     },
                     Err(err) => {
@@ -207,16 +202,17 @@ pub(super) fn format_document(
                             .with_file_span(stmt_range),
                         ));
 
-                        formatted_output.push_str(&text);
+                        formatted_output.push_str(text);
                     }
                 }
             }
             Err(syntax_err) => {
                 diagnostics.push(SDiagnostic::new(
-                    pgls_diagnostics::Error::from(syntax_err).with_file_path(path),
+                    pgls_diagnostics::Error::from(syntax_err.clone().span(stmt_range))
+                        .with_file_path(path),
                 ));
 
-                formatted_output.push_str(&text);
+                formatted_output.push_str(text);
             }
         }
     }

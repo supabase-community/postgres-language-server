@@ -1,44 +1,44 @@
-3:1 accepted
-8:1 accepted
-16:1 rejected 22P02
-18:1 rejected 22P02
-20:1 rejected 22P02
-21:1 rejected 22P02
-23:1 rejected 22P02
-24:1 rejected 22P02
-27:1 accepted
-28:1 accepted
-31:1 accepted
-32:1 accepted
-33:1 accepted
-36:1 accepted
-39:1 accepted
-40:1 accepted
-43:1 accepted
-46:1 accepted
-49:1 accepted
-52:1 accepted
-55:1 accepted
-58:1 accepted
-61:1 accepted
-62:1 accepted
-65:1 accepted
-67:1 rejected 23505
-70:1 accepted
-73:1 accepted
-74:1 accepted
-75:1 accepted
-76:1 accepted
-79:1 accepted
-80:1 accepted
-83:1 accepted
-84:1 accepted
-85:1 accepted
-86:1 accepted
-92:1 accepted
-93:1 accepted
-94:1 accepted
-97:1 accepted
-98:1 accepted
-99:1 accepted
-103:1 accepted
+65..138 accepted
+139..212 accepted
+258..336 rejected 22P02
+350..428 rejected 22P02
+462..540 rejected 22P02
+541..620 rejected 22P02
+637..714 rejected 22P02
+715..792 rejected 22P02
+825..864 accepted
+865..913 accepted
+947..1024 accepted
+1025..1104 accepted
+1105..1178 accepted
+1212..1241 accepted
+1260..1313 accepted
+1314..1368 accepted
+1389..1474 accepted
+1496..1578 accepted
+1599..1684 accepted
+1706..1792 accepted
+1813..1898 accepted
+1920..2006 accepted
+2046..2105 accepted
+2106..2165 accepted
+2188..2261 accepted
+2277..2354 rejected 23505
+2415..2488 accepted
+2544..2621 accepted
+2622..2699 accepted
+2700..2779 accepted
+2780..2853 accepted
+2868..2951 accepted
+2952..3062 accepted
+3083..3098 accepted
+3099..3157 accepted
+3158..3216 accepted
+3217..3262 accepted
+3298..3366 accepted
+3373..3420 accepted
+3427..3495 accepted
+3519..3644 accepted
+3673..3722 accepted
+3732..3802 accepted
+3826..3858 accepted

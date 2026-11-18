@@ -493,8 +493,8 @@ impl Add<TextSize> for TextRange {
     type Output = TextRange;
     #[inline]
     fn add(self, offset: TextSize) -> TextRange {
-        self.checked_add(offset)
-            .expect("TextRange +offset overflowed")
+        // Overflows like the `TextSize` arithmetic it's made of.
+        TextRange::new(self.start() + offset, self.end() + offset)
     }
 }
 
@@ -502,8 +502,8 @@ impl Sub<TextSize> for TextRange {
     type Output = TextRange;
     #[inline]
     fn sub(self, offset: TextSize) -> TextRange {
-        self.checked_sub(offset)
-            .expect("TextRange -offset overflowed")
+        // Overflows like the `TextSize` arithmetic it's made of.
+        TextRange::new(self.start() - offset, self.end() - offset)
     }
 }
 

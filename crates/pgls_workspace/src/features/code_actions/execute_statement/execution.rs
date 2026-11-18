@@ -124,7 +124,7 @@ async fn execute_on_own_connection(
     let backend_pid = prepare_session(conn, options.timeout).await?;
 
     // Boxing the future pins down the lifetime of the borrowed connection, which the `Send`
-    // check of `run_async` can't infer otherwise.
+    // check of `WorkspaceRuntime::run` can't infer otherwise.
     let result = match future::select(run(conn, sql, options.is_query).boxed(), cancel).await {
         future::Either::Left((result, _)) => result,
         future::Either::Right((cancelled, run)) => {

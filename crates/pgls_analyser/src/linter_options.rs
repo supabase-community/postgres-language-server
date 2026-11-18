@@ -15,15 +15,13 @@ impl RuleOptions {
         Self(TypeId::of::<O>(), Box::new(options))
     }
 
-    /// It returns the deserialized rule option
-    pub fn value<O: 'static>(&self) -> &O {
+    /// It returns the deserialized rule option, or `None` if the options are of another type.
+    pub fn value<O: 'static>(&self) -> Option<&O> {
         let RuleOptions(type_id, value) = &self;
         let current_id = TypeId::of::<O>();
+        // A rule tested with its options never asks for another type.
         debug_assert_eq!(type_id, &current_id);
-        // SAFETY: the code should fail when asserting the types.
-        // If the code throws an error here, it means that the developer didn't test
-        // the rule with the options
-        value.downcast_ref::<O>().unwrap()
+        value.downcast_ref::<O>()
     }
 }
 
@@ -39,7 +37,7 @@ impl LinterRules {
 
     /// It retrieves the options of a stored rule, given its name
     pub fn get_rule_options<O: 'static>(&self, rule_key: &RuleKey) -> Option<&O> {
-        self.0.get(rule_key).map(|o| o.value::<O>())
+        self.0.get(rule_key).and_then(RuleOptions::value::<O>)
     }
 }
 

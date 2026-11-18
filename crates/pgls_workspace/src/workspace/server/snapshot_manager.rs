@@ -14,7 +14,10 @@ use std::collections::HashMap;
 
 #[cfg(feature = "db")]
 use super::{
-    async_helper::run_async, backoff::Backoff, connection_key::ConnectionKey, last_used::LastUsed,
+    backoff::Backoff,
+    connection_key::ConnectionKey,
+    last_used::LastUsed,
+    runtime::{Clock, WorkspaceRuntime},
 };
 #[cfg(feature = "db")]
 use crate::diagnostics::DatabaseConnectionError;
@@ -33,10 +36,19 @@ const IDLE_SWEEP_INTERVAL: Duration = Duration::from_secs(60);
 
 /// The snapshot of a connection, once it loaded.
 #[cfg(feature = "db")]
-#[derive(Default)]
 struct SnapshotSlot {
     state: Mutex<SlotState>,
     last_used: LastUsed,
+}
+
+#[cfg(feature = "db")]
+impl SnapshotSlot {
+    fn new(clock: &Clock) -> Self {
+        Self {
+            state: Mutex::default(),
+            last_used: LastUsed::now(clock),
+        }
+    }
 }
 
 #[cfg(feature = "db")]
@@ -83,7 +95,7 @@ impl LoadFailure {
 /// DB-only API:
 /// - `load()` - Load schema from database connection
 /// - `clear_all_connections()` - Clear the schemas of all connections
-pub struct SnapshotManager {
+pub(super) struct SnapshotManager {
     /// Connection-based snapshots (db mode only). Each connection has its own lock, held while
     /// its snapshot loads, so that a slow or unreachable database doesn't block the others.
     #[cfg(feature = "db")]
@@ -93,23 +105,23 @@ pub struct SnapshotManager {
     #[cfg(feature = "db")]
     last_idle_sweep: LastUsed,
 
+    /// Where the snapshot queries run, and the clock of the backoffs and idle timeouts.
+    #[cfg(feature = "db")]
+    runtime: Arc<WorkspaceRuntime>,
+
     /// JSON-loaded schema (available in both modes)
     schema: RwLock<Option<Arc<Snapshot>>>,
 }
 
-impl Default for SnapshotManager {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl SnapshotManager {
-    pub fn new() -> Self {
+    pub(crate) fn new(#[cfg(feature = "db")] runtime: Arc<WorkspaceRuntime>) -> Self {
         Self {
             #[cfg(feature = "db")]
             db_schemas: RwLock::new(HashMap::new()),
             #[cfg(feature = "db")]
-            last_idle_sweep: LastUsed::now(),
+            last_idle_sweep: LastUsed::now(runtime.clock()),
+            #[cfg(feature = "db")]
+            runtime,
             schema: RwLock::new(None),
         }
     }
@@ -117,7 +129,7 @@ impl SnapshotManager {
     // ==================== Common API (both modes) ====================
 
     /// Set schema from JSON string.
-    pub fn set(&self, json: &str) -> Result<(), WorkspaceError> {
+    pub(super) fn set(&self, json: &str) -> Result<(), WorkspaceError> {
         let schema: Snapshot = serde_json::from_str(json)
             .map_err(|e| WorkspaceError::runtime(&format!("Invalid schema JSON: {e}")))?;
         *self.schema.write() = Some(Arc::new(schema));
@@ -125,12 +137,12 @@ impl SnapshotManager {
     }
 
     /// Get the current schema if available.
-    pub fn get(&self) -> Option<Arc<Snapshot>> {
+    pub(super) fn get(&self) -> Option<Arc<Snapshot>> {
         self.schema.read().clone()
     }
 
     /// Clear the current schema.
-    pub fn clear(&self) {
+    pub(super) fn clear(&self) {
         *self.schema.write() = None;
     }
 
@@ -139,17 +151,23 @@ impl SnapshotManager {
     /// Load schema from a database connection.
     /// Returns cached schema if available, otherwise loads from database.
     #[cfg(feature = "db")]
-    pub fn load(&self, pool: &PgPool) -> Result<Arc<Snapshot>, WorkspaceError> {
+    pub(super) fn load(&self, pool: &PgPool) -> Result<Arc<Snapshot>, WorkspaceError> {
         let key: ConnectionKey = pool.into();
+        let clock = self.runtime.clock();
 
         // The map is only locked to find the connection's slot, never during network I/O.
         let existing = self.db_schemas.read().get(&key).cloned();
         let slot = match existing {
             Some(slot) => slot,
-            None => Arc::clone(self.db_schemas.write().entry(key).or_default()),
+            None => Arc::clone(
+                self.db_schemas
+                    .write()
+                    .entry(key)
+                    .or_insert_with(|| Arc::new(SnapshotSlot::new(clock))),
+            ),
         };
 
-        slot.last_used.touch();
+        slot.last_used.touch(clock);
         self.drop_idle_snapshots();
 
         // Callers for the same connection wait for one load instead of starting their own.
@@ -166,7 +184,7 @@ impl SnapshotManager {
             state.failure = None;
         }
         if let Some(failure) = state.failure.as_ref()
-            && failure.backoff.is_active()
+            && failure.backoff.is_active(clock)
         {
             tracing::debug!(
                 "Skipping the schema snapshot during backoff until {:?}: {}",
@@ -181,7 +199,10 @@ impl SnapshotManager {
         // Load the snapshot from the database. A failure leaves the slot empty, to retry after a
         // connection failure right away and after a failing query once its backoff ends.
         let pool_clone = pool.clone();
-        let loaded = match run_async(async move { Snapshot::load(&pool_clone).await })? {
+        let loaded = match self
+            .runtime
+            .run(async move { Snapshot::load(&pool_clone).await })?
+        {
             Ok(snapshot) => Arc::new(snapshot),
             Err(err) => {
                 let err = WorkspaceError::from(err);
@@ -191,6 +212,7 @@ impl SnapshotManager {
                 {
                     let backoff = Backoff::after_failure(
                         state.failure.as_ref().map(|failure| &failure.backoff),
+                        clock,
                     );
                     tracing::warn!(
                         "Failed to load the schema snapshot. Retrying after {:?}: {}",
@@ -239,11 +261,12 @@ impl SnapshotManager {
     /// per [`IDLE_SWEEP_INTERVAL`]. They are loaded again on the next use.
     #[cfg(feature = "db")]
     fn drop_idle_snapshots(&self) {
-        if self.last_idle_sweep.idle_for() < IDLE_SWEEP_INTERVAL {
+        let clock = self.runtime.clock();
+        if self.last_idle_sweep.idle_for(clock) < IDLE_SWEEP_INTERVAL {
             return;
         }
-        self.last_idle_sweep.touch();
-        let is_idle = |slot: &SnapshotSlot| slot.last_used.idle_for() > SNAPSHOT_IDLE_TIMEOUT;
+        self.last_idle_sweep.touch(clock);
+        let is_idle = |slot: &SnapshotSlot| slot.last_used.idle_for(clock) > SNAPSHOT_IDLE_TIMEOUT;
         if !self.db_schemas.read().values().any(|slot| is_idle(slot)) {
             return;
         }
@@ -255,7 +278,7 @@ impl SnapshotManager {
                     key.host,
                     key.port,
                     key.database,
-                    slot.last_used.idle_for()
+                    slot.last_used.idle_for(clock)
                 );
             }
             !idle
@@ -264,7 +287,7 @@ impl SnapshotManager {
 
     /// Clear the snapshot for a specific connection.
     #[cfg(feature = "db")]
-    pub fn clear_connection(&self, pool: &PgPool) {
+    pub(super) fn clear_connection(&self, pool: &PgPool) {
         let key: ConnectionKey = pool.into();
         let mut schemas = self.db_schemas.write();
         schemas.remove(&key);
@@ -272,13 +295,13 @@ impl SnapshotManager {
 
     /// Clear all connection-based snapshots.
     #[cfg(feature = "db")]
-    pub fn clear_all_connections(&self) {
+    pub(super) fn clear_all_connections(&self) {
         let mut schemas = self.db_schemas.write();
         schemas.clear();
     }
 
     /// Clear everything (both JSON schema and all db connections in db mode).
-    pub fn clear_all(&self) {
+    pub(super) fn clear_all(&self) {
         self.clear();
         #[cfg(feature = "db")]
         self.clear_all_connections();
@@ -301,7 +324,7 @@ mod tests {
     }
 
     fn insert(manager: &SnapshotManager, database: &str) {
-        let slot = SnapshotSlot::default();
+        let slot = SnapshotSlot::new(manager.runtime.clock());
         slot.state.lock().snapshot = Some(Arc::new(Snapshot::default()));
         manager
             .db_schemas
@@ -322,7 +345,7 @@ mod tests {
 
     #[test]
     fn unused_snapshots_are_dropped() {
-        let manager = SnapshotManager::new();
+        let manager = SnapshotManager::new(Arc::default());
         insert(&manager, "one");
         insert(&manager, "two");
 
@@ -332,7 +355,7 @@ mod tests {
 
     #[test]
     fn idle_snapshots_are_dropped() {
-        let manager = SnapshotManager::new();
+        let manager = SnapshotManager::new(Arc::default());
         insert(&manager, "idle");
         insert(&manager, "busy");
         manager.db_schemas.read()[&key("idle")]
@@ -366,7 +389,7 @@ mod tests {
             .clone()
             .options([("role", "test_login")]);
         let pool = sqlx::PgPool::connect_lazy_with(options);
-        let manager = SnapshotManager::new();
+        let manager = SnapshotManager::new(Arc::default());
 
         let permission_denied = |result: Result<Arc<Snapshot>, WorkspaceError>| {
             matches!(
@@ -391,7 +414,7 @@ mod tests {
             .as_mut()
             .unwrap()
             .backoff
-            .expire();
+            .expire(manager.runtime.clock());
         assert!(manager.load(&pool).is_ok());
         assert!(
             manager.db_schemas.read()[&ConnectionKey::from(&pool)]
@@ -419,7 +442,7 @@ mod tests {
                 .clone()
                 .options([("role", "test_login")]),
         );
-        let manager = SnapshotManager::new();
+        let manager = SnapshotManager::new(Arc::default());
         assert!(matches!(
             manager.load(&restricted),
             Err(WorkspaceError::DatabaseConnectionError(error)) if !error.connection_failure
@@ -436,13 +459,18 @@ mod tests {
 
     /// A pool for `database` on port `port` of localhost that waits at most `timeout` for a
     /// connection. It only connects when it's used.
-    fn lazy_pool(port: u16, database: &str, timeout: Duration) -> Result<PgPool, WorkspaceError> {
+    fn lazy_pool(
+        manager: &SnapshotManager,
+        port: u16,
+        database: &str,
+        timeout: Duration,
+    ) -> Result<PgPool, WorkspaceError> {
         let options = PgConnectOptions::new()
             .host("127.0.0.1")
             .port(port)
             .username("postgres")
             .database(database);
-        run_async(async move {
+        manager.runtime.run(async move {
             PgPoolOptions::new()
                 .acquire_timeout(timeout)
                 .connect_lazy_with(options)
@@ -457,10 +485,16 @@ mod tests {
         let hanging = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         hanging.set_nonblocking(true).unwrap();
         let timeout = Duration::from_secs(3);
-        let slow = lazy_pool(hanging.local_addr().unwrap().port(), "slow", timeout).unwrap();
-        let manager = SnapshotManager::new();
+        let manager = SnapshotManager::new(Arc::default());
+        let slow = lazy_pool(
+            &manager,
+            hanging.local_addr().unwrap().port(),
+            "slow",
+            timeout,
+        )
+        .unwrap();
         insert(&manager, "cached");
-        let cached = lazy_pool(key("cached").port, "cached", timeout).unwrap();
+        let cached = lazy_pool(&manager, key("cached").port, "cached", timeout).unwrap();
 
         std::thread::scope(|scope| {
             let slow_load = scope.spawn(|| manager.load(&slow));

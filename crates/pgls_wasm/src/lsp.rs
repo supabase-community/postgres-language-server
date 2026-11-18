@@ -28,7 +28,7 @@ use crate::{WasmError, Workspace};
 /// JSON-RPC request/notification structure
 #[derive(Debug, Deserialize)]
 struct JsonRpcMessage {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "required by JSON-RPC; its value isn't checked")]
     jsonrpc: String,
     id: Option<Value>,
     method: String,
@@ -46,6 +46,34 @@ struct JsonRpcResponse {
     error: Option<JsonRpcError>,
 }
 
+impl JsonRpcResponse {
+    /// A successful response with `result`, or an internal error if `result` doesn't serialize.
+    fn success(id: Value, result: impl Serialize) -> Self {
+        match serde_json::to_value(result) {
+            Ok(result) => Self {
+                jsonrpc: "2.0".into(),
+                id,
+                result: Some(result),
+                error: None,
+            },
+            Err(e) => Self::error(id, -32603, &format!("Internal error: {e}")),
+        }
+    }
+
+    fn error(id: Value, code: i32, message: &str) -> Self {
+        Self {
+            jsonrpc: "2.0".into(),
+            id,
+            result: None,
+            error: Some(JsonRpcError {
+                code,
+                message: message.into(),
+                data: None,
+            }),
+        }
+    }
+}
+
 /// JSON-RPC error structure
 #[derive(Debug, Serialize)]
 struct JsonRpcError {
@@ -61,6 +89,17 @@ struct JsonRpcNotification {
     jsonrpc: String,
     method: String,
     params: Value,
+}
+
+impl JsonRpcNotification {
+    /// A notification with `params`, or `None` if `params` doesn't serialize.
+    fn new(method: &str, params: impl Serialize) -> Option<Self> {
+        Some(Self {
+            jsonrpc: "2.0".into(),
+            method: method.into(),
+            params: serde_json::to_value(params).ok()?,
+        })
+    }
 }
 
 /// Document state stored in the handler
@@ -135,24 +174,31 @@ impl LspHandler {
             Ok(r) => r,
             Err(e) => {
                 let error_response =
-                    self.error_response(Value::Null, -32700, &format!("Parse error: {e}"));
-                return serde_json::to_string(&vec![error_response]).unwrap();
+                    JsonRpcResponse::error(Value::Null, -32700, &format!("Parse error: {e}"));
+                outgoing.extend(serde_json::to_value(error_response).ok());
+                return Self::to_json(&outgoing);
             }
         };
 
         if let Some(id) = req.id {
             // Request → Response
             let response = self.handle_request(&req.method, req.params, id);
-            outgoing.push(serde_json::to_value(response).unwrap());
+            outgoing.extend(serde_json::to_value(response).ok());
         } else {
             // Notification → may trigger notifications back
             let notifications = self.handle_notification(&req.method, req.params);
             for n in notifications {
-                outgoing.push(serde_json::to_value(n).unwrap());
+                outgoing.extend(serde_json::to_value(n).ok());
             }
         }
 
-        serde_json::to_string(&outgoing).unwrap()
+        Self::to_json(&outgoing)
+    }
+
+    /// The JSON array of the outgoing messages. A `Value` always serializes, but if it didn't,
+    /// the client gets no messages rather than a string that isn't JSON.
+    fn to_json(outgoing: &[Value]) -> String {
+        serde_json::to_string(outgoing).unwrap_or_else(|_| "[]".into())
     }
 
     fn handle_request(
@@ -167,7 +213,7 @@ impl LspHandler {
             "textDocument/completion" => self.completion(params, id),
             "textDocument/hover" => self.hover(params, id),
             "textDocument/codeAction" => self.code_action(params, id),
-            _ => self.error_response(id, -32601, &format!("Method not found: {method}")),
+            _ => JsonRpcResponse::error(id, -32601, &format!("Method not found: {method}")),
         }
     }
 
@@ -204,7 +250,7 @@ impl LspHandler {
             .filter(|options| !options.is_null())
             && let Err(e) = self.configure(options)
         {
-            return self.error_response(id, -32602, &e.to_string());
+            return JsonRpcResponse::error(id, -32602, &e.to_string());
         }
         self.versioned_edits = params
             .and_then(|params| params.capabilities.workspace)
@@ -226,32 +272,22 @@ impl LspHandler {
             },
             server_info: Some(ServerInfo {
                 name: "pgls-wasm".into(),
-                version: Some(env!("CARGO_PKG_VERSION").into()),
+                version: Some(pgls_env::VERSION.into()),
             }),
         };
 
-        JsonRpcResponse {
-            jsonrpc: "2.0".into(),
-            id,
-            result: Some(serde_json::to_value(capabilities).unwrap()),
-            error: None,
-        }
+        JsonRpcResponse::success(id, capabilities)
     }
 
     fn shutdown(&self, id: Value) -> JsonRpcResponse {
-        JsonRpcResponse {
-            jsonrpc: "2.0".into(),
-            id,
-            result: Some(Value::Null),
-            error: None,
-        }
+        JsonRpcResponse::success(id, Value::Null)
     }
 
     fn completion(&mut self, params: Option<Value>, id: Value) -> JsonRpcResponse {
         let params: CompletionParams = match params.and_then(|p| serde_json::from_value(p).ok()) {
             Some(p) => p,
             None => {
-                return self.error_response(id, -32602, "Invalid params for completion");
+                return JsonRpcResponse::error(id, -32602, "Invalid params for completion");
             }
         };
 
@@ -261,7 +297,7 @@ impl LspHandler {
         let line_index = match self.documents.get(&uri) {
             Some(doc) => &doc.line_index,
             None => {
-                return self.error_response(id, -32002, &format!("Document not found: {uri}"));
+                return JsonRpcResponse::error(id, -32002, &format!("Document not found: {uri}"));
             }
         };
 
@@ -287,19 +323,14 @@ impl LspHandler {
             })
             .collect();
 
-        JsonRpcResponse {
-            jsonrpc: "2.0".into(),
-            id,
-            result: Some(serde_json::to_value(lsp_completions).unwrap()),
-            error: None,
-        }
+        JsonRpcResponse::success(id, lsp_completions)
     }
 
     fn hover(&mut self, params: Option<Value>, id: Value) -> JsonRpcResponse {
         let params: HoverParams = match params.and_then(|p| serde_json::from_value(p).ok()) {
             Some(p) => p,
             None => {
-                return self.error_response(id, -32602, "Invalid params for hover");
+                return JsonRpcResponse::error(id, -32602, "Invalid params for hover");
             }
         };
 
@@ -313,30 +344,22 @@ impl LspHandler {
         let line_index = match self.documents.get(&uri) {
             Some(doc) => &doc.line_index,
             None => {
-                return self.error_response(id, -32002, &format!("Document not found: {uri}"));
+                return JsonRpcResponse::error(id, -32002, &format!("Document not found: {uri}"));
             }
         };
 
         let offset = position_to_offset(line_index, position);
         let hover_text = self.workspace.hover(&uri, offset as u32).ok().flatten();
 
-        let result = hover_text.map(|text| {
-            serde_json::to_value(Hover {
-                contents: HoverContents::Markup(MarkupContent {
-                    kind: MarkupKind::Markdown,
-                    value: text,
-                }),
-                range: None,
-            })
-            .unwrap()
+        let hover = hover_text.map(|text| Hover {
+            contents: HoverContents::Markup(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value: text,
+            }),
+            range: None,
         });
 
-        JsonRpcResponse {
-            jsonrpc: "2.0".into(),
-            id,
-            result,
-            error: None,
-        }
+        JsonRpcResponse::success(id, hover)
     }
 
     /// The fixes and suppressions of the lint diagnostics at the start of the range, like the
@@ -346,13 +369,13 @@ impl LspHandler {
         let params: CodeActionParams = match params.and_then(|p| serde_json::from_value(p).ok()) {
             Some(p) => p,
             None => {
-                return self.error_response(id, -32602, "Invalid params for codeAction");
+                return JsonRpcResponse::error(id, -32602, "Invalid params for codeAction");
             }
         };
 
         let uri = params.text_document.uri.to_string();
         let Some(doc) = self.documents.get(&uri) else {
-            return self.error_response(id, -32002, &format!("Document not found: {uri}"));
+            return JsonRpcResponse::error(id, -32002, &format!("Document not found: {uri}"));
         };
 
         let requested = params
@@ -375,23 +398,30 @@ impl LspHandler {
                 else {
                     continue;
                 };
-                let edits = edit
+                // An edit with a position outside the document drops the whole action:
+                // applying only some of its edits would leave the SQL half changed.
+                let Some(edits) = edit
                     .edits
                     .iter()
-                    .map(|text_edit| TextEdit {
-                        range: Range {
-                            start: offset_to_position(
-                                &doc.line_index,
-                                usize::from(text_edit.range.start()),
-                            ),
-                            end: offset_to_position(
-                                &doc.line_index,
-                                usize::from(text_edit.range.end()),
-                            ),
-                        },
-                        new_text: text_edit.new_text.clone(),
+                    .map(|text_edit| {
+                        Some(TextEdit {
+                            range: Range {
+                                start: offset_to_position(
+                                    &doc.line_index,
+                                    usize::from(text_edit.range.start()),
+                                )?,
+                                end: offset_to_position(
+                                    &doc.line_index,
+                                    usize::from(text_edit.range.end()),
+                                )?,
+                            },
+                            new_text: text_edit.new_text.clone(),
+                        })
                     })
-                    .collect();
+                    .collect::<Option<Vec<_>>>()
+                else {
+                    continue;
+                };
                 let diagnostics: Vec<Diagnostic> = params
                     .context
                     .diagnostics
@@ -404,9 +434,9 @@ impl LspHandler {
                     .cloned()
                     .collect();
                 let is_fix = edit.rule.is_some()
-                    && !edit
-                        .category
-                        .matches(pgls_analyse::SUPPRESSION_ACTION_CATEGORY);
+                    && !edit.category.matches(
+                        pgls_workspace::features::code_actions::SUPPRESSION_ACTION_CATEGORY,
+                    );
                 actions.push(CodeAction {
                     title: action.title,
                     kind: Some(CodeActionKind::from(edit.category.to_str().into_owned())),
@@ -435,12 +465,7 @@ impl LspHandler {
             });
         }
 
-        JsonRpcResponse {
-            jsonrpc: "2.0".into(),
-            id,
-            result: Some(serde_json::to_value(actions).unwrap()),
-            error: None,
-        }
+        JsonRpcResponse::success(id, actions)
     }
 
     /// An edit of the document, with its version if the client accepts versioned edits.
@@ -521,16 +546,16 @@ impl LspHandler {
         self.workspace.remove_file(&uri);
 
         // Send empty diagnostics to clear them
-        vec![JsonRpcNotification {
-            jsonrpc: "2.0".into(),
-            method: "textDocument/publishDiagnostics".into(),
-            params: serde_json::to_value(PublishDiagnosticsParams {
+        JsonRpcNotification::new(
+            "textDocument/publishDiagnostics",
+            PublishDiagnosticsParams {
                 uri: params.text_document.uri,
                 diagnostics: vec![],
                 version: None,
-            })
-            .unwrap(),
-        }]
+            },
+        )
+        .into_iter()
+        .collect()
     }
 
     fn set_schema_notification(&mut self, params: Option<Value>) -> Vec<JsonRpcNotification> {
@@ -564,15 +589,15 @@ impl LspHandler {
         };
 
         if let Err(e) = self.configure(settings) {
-            return vec![JsonRpcNotification {
-                jsonrpc: "2.0".into(),
-                method: "window/showMessage".into(),
-                params: serde_json::to_value(ShowMessageParams {
+            return JsonRpcNotification::new(
+                "window/showMessage",
+                ShowMessageParams {
                     typ: MessageType::WARNING,
                     message: e.to_string(),
-                })
-                .unwrap(),
-            }];
+                },
+            )
+            .into_iter()
+            .collect();
         }
 
         self.publish_all_diagnostics()
@@ -610,50 +635,43 @@ impl LspHandler {
         };
 
         let diagnostics = self.workspace.lint(uri).unwrap_or_default();
+        // A diagnostic with a position outside the document is skipped, not moved to the start.
         let lsp_diagnostics: Vec<Diagnostic> = diagnostics
             .into_iter()
-            .map(|d| Diagnostic {
-                range: Range {
-                    start: offset_to_position(line_index, d.start as usize),
-                    end: offset_to_position(line_index, d.end as usize),
-                },
-                severity: Some(match d.severity.as_str() {
-                    "error" => DiagnosticSeverity::ERROR,
-                    "warning" => DiagnosticSeverity::WARNING,
-                    "hint" => DiagnosticSeverity::HINT,
-                    _ => DiagnosticSeverity::INFORMATION,
-                }),
-                message: d.message,
-                code: (!d.category.is_empty()).then_some(NumberOrString::String(d.category)),
-                source: Some("pgls".into()),
-                ..Default::default()
+            .filter_map(|d| {
+                Some(Diagnostic {
+                    range: Range {
+                        start: offset_to_position(line_index, d.start as usize)?,
+                        end: offset_to_position(line_index, d.end as usize)?,
+                    },
+                    severity: Some(match d.severity.as_str() {
+                        "error" => DiagnosticSeverity::ERROR,
+                        "warning" => DiagnosticSeverity::WARNING,
+                        "hint" => DiagnosticSeverity::HINT,
+                        _ => DiagnosticSeverity::INFORMATION,
+                    }),
+                    message: d.message,
+                    code: (!d.category.is_empty()).then_some(NumberOrString::String(d.category)),
+                    source: Some("pgls".into()),
+                    ..Default::default()
+                })
             })
             .collect();
 
-        vec![JsonRpcNotification {
-            jsonrpc: "2.0".into(),
-            method: "textDocument/publishDiagnostics".into(),
-            params: serde_json::to_value(PublishDiagnosticsParams {
-                uri: Uri::from_str(uri)
-                    .unwrap_or_else(|_| Uri::from_str("file:///unknown").unwrap()),
+        // The document was stored under the string of a parsed `Uri`, so it parses again.
+        let Ok(uri) = Uri::from_str(uri) else {
+            return vec![];
+        };
+        JsonRpcNotification::new(
+            "textDocument/publishDiagnostics",
+            PublishDiagnosticsParams {
+                uri,
                 diagnostics: lsp_diagnostics,
                 version: None,
-            })
-            .unwrap(),
-        }]
-    }
-
-    fn error_response(&self, id: Value, code: i32, message: &str) -> JsonRpcResponse {
-        JsonRpcResponse {
-            jsonrpc: "2.0".into(),
-            id,
-            result: None,
-            error: Some(JsonRpcError {
-                code,
-                message: message.into(),
-                data: None,
-            }),
-        }
+            },
+        )
+        .into_iter()
+        .collect()
     }
 }
 
@@ -671,13 +689,14 @@ fn covers(requested: &CodeActionKind, kind: &str) -> bool {
 }
 
 /// The edit that turns `old` into `new`, replacing only what changed, so that the editor keeps
-/// the cursor and the folds. `None` if `old` is too large for a `TextSize`.
+/// the cursor and the folds. `None` if `old` is too large for a `TextSize`, or if the changed
+/// range has no position in `old_index`.
 fn fix_all_edit(old: &str, old_index: &LineIndex, new: &str) -> Option<TextEdit> {
     let (range, new_text) = changed_range(old, new)?;
     Some(TextEdit {
         range: Range {
-            start: offset_to_position(old_index, range.start().into()),
-            end: offset_to_position(old_index, range.end().into()),
+            start: offset_to_position(old_index, range.start().into())?,
+            end: offset_to_position(old_index, range.end().into())?,
         },
         new_text: new_text.to_string(),
     })
@@ -699,15 +718,14 @@ fn position_to_offset(line_index: &LineIndex, pos: Position) -> usize {
     line_index.offset_clamped(line_col).into()
 }
 
-/// Convert byte offset to LSP Position (line:character in UTF-16).
-fn offset_to_position(line_index: &LineIndex, offset: usize) -> Position {
-    let offset = TextSize::try_from(offset).unwrap_or(TextSize::from(u32::MAX));
-    line_index
-        .line_col(offset)
-        .and_then(|line_col| line_index.to_wide(WideEncoding::Utf16, line_col))
-        .map_or_else(Position::default, |line_col| {
-            Position::new(line_col.line, line_col.col)
-        })
+/// Convert byte offset to LSP Position (line:character in UTF-16). An offset past the end of the
+/// text is the end. `None` if the offset or the column doesn't fit in a `u32`, instead of a
+/// position at the start of the document.
+fn offset_to_position(line_index: &LineIndex, offset: usize) -> Option<Position> {
+    let offset = TextSize::try_from(offset).ok()?;
+    let line_col = line_index.line_col(offset)?;
+    let wide = line_index.to_wide(WideEncoding::Utf16, line_col)?;
+    Some(Position::new(wide.line, wide.col))
 }
 
 // =============================================================================
@@ -1214,10 +1232,10 @@ mod tests {
         assert_eq!(position_to_offset(&index, Position::new(1, 2)), 9);
 
         // Offset 0 -> line 0, char 0
-        assert_eq!(offset_to_position(&index, 0), Position::new(0, 0));
+        assert_eq!(offset_to_position(&index, 0), Some(Position::new(0, 0)));
 
         // Offset 9 -> line 1, char 2
-        assert_eq!(offset_to_position(&index, 9), Position::new(1, 2));
+        assert_eq!(offset_to_position(&index, 9), Some(Position::new(1, 2)));
     }
 
     #[test]
@@ -1230,7 +1248,7 @@ mod tests {
 
         // Position at the end of '日本語'
         // Byte offset of ';' is 17
-        let pos = offset_to_position(&index, 17);
+        let pos = offset_to_position(&index, 17).unwrap();
         assert_eq!(pos.line, 0);
         assert_eq!(pos.character, 11); // 8 + 3 = 11 UTF-16 units
         assert_eq!(position_to_offset(&index, pos), 17);
@@ -1245,9 +1263,9 @@ mod tests {
         assert_eq!(position_to_offset(&index, Position::new(2, 0)), 20);
         assert_eq!(position_to_offset(&index, Position::new(5, 3)), 20);
 
-        assert_eq!(offset_to_position(&index, 9), Position::new(0, 9));
-        assert_eq!(offset_to_position(&index, 10), Position::new(1, 0));
-        assert_eq!(offset_to_position(&index, 20), Position::new(2, 0));
+        assert_eq!(offset_to_position(&index, 9), Some(Position::new(0, 9)));
+        assert_eq!(offset_to_position(&index, 10), Some(Position::new(1, 0)));
+        assert_eq!(offset_to_position(&index, 20), Some(Position::new(2, 0)));
     }
 
     #[test]
@@ -1258,14 +1276,14 @@ mod tests {
         assert_eq!(position_to_offset(&index, Position::new(1, 0)), 11);
         assert_eq!(position_to_offset(&index, Position::new(1, 11)), 28);
         assert_eq!(position_to_offset(&index, Position::new(2, 7)), 39);
-        assert_eq!(offset_to_position(&index, 39), Position::new(2, 7));
-        assert_eq!(offset_to_position(&index, 28), Position::new(1, 11));
+        assert_eq!(offset_to_position(&index, 39), Some(Position::new(2, 7)));
+        assert_eq!(offset_to_position(&index, 28), Some(Position::new(1, 11)));
 
         // The `\r` is part of the line break, not of the line.
         assert_eq!(position_to_offset(&index, Position::new(0, 100)), 9);
-        assert_eq!(offset_to_position(&index, 9), Position::new(0, 9));
-        assert_eq!(offset_to_position(&index, 10), Position::new(0, 9));
-        assert_eq!(offset_to_position(&index, 11), Position::new(1, 0));
+        assert_eq!(offset_to_position(&index, 9), Some(Position::new(0, 9)));
+        assert_eq!(offset_to_position(&index, 10), Some(Position::new(0, 9)));
+        assert_eq!(offset_to_position(&index, 11), Some(Position::new(1, 0)));
     }
 
     #[test]
@@ -1273,9 +1291,9 @@ mod tests {
         // '😀' is 4 bytes in UTF-8 and a surrogate pair, 2 units, in UTF-16.
         let index = LineIndex::new("select '😀😀';\r\nselect 2;");
 
-        assert_eq!(offset_to_position(&index, 12), Position::new(0, 10));
+        assert_eq!(offset_to_position(&index, 12), Some(Position::new(0, 10)));
         assert_eq!(position_to_offset(&index, Position::new(0, 10)), 12);
-        assert_eq!(offset_to_position(&index, 16), Position::new(0, 12));
+        assert_eq!(offset_to_position(&index, 16), Some(Position::new(0, 12)));
         assert_eq!(position_to_offset(&index, Position::new(0, 14)), 18);
         assert_eq!(position_to_offset(&index, Position::new(1, 7)), 27);
 
@@ -1288,11 +1306,11 @@ mod tests {
         // A lone `\r` ends a line, as in the LSP and the native language server.
         let index = LineIndex::new("select '\r';\nselect 2;");
 
-        assert_eq!(offset_to_position(&index, 8), Position::new(0, 8));
+        assert_eq!(offset_to_position(&index, 8), Some(Position::new(0, 8)));
         assert_eq!(position_to_offset(&index, Position::new(0, 100)), 8);
-        assert_eq!(offset_to_position(&index, 9), Position::new(1, 0));
+        assert_eq!(offset_to_position(&index, 9), Some(Position::new(1, 0)));
         assert_eq!(position_to_offset(&index, Position::new(1, 100)), 11);
-        assert_eq!(offset_to_position(&index, 12), Position::new(2, 0));
+        assert_eq!(offset_to_position(&index, 12), Some(Position::new(2, 0)));
         assert_eq!(position_to_offset(&index, Position::new(2, 0)), 12);
     }
 

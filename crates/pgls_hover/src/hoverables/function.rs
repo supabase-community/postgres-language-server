@@ -42,6 +42,7 @@ impl ToHoverMarkdown for Function {
             pgls_catalog::ProcKind::Procedure => "Procedure",
             pgls_catalog::ProcKind::Aggregate => "Aggregate",
             pgls_catalog::ProcKind::Window => "Window",
+            pgls_catalog::ProcKind::Unknown => "Routine",
         };
 
         write!(writer, "{kind_text}")?;
@@ -136,7 +137,7 @@ impl ContextualPriority for Function {
             pgls_catalog::ProcKind::Aggregate => score += 20.0,
             pgls_catalog::ProcKind::Window => score += 15.0,
             pgls_catalog::ProcKind::Function => score += 10.0,
-            pgls_catalog::ProcKind::Procedure => score += 5.0,
+            pgls_catalog::ProcKind::Procedure | pgls_catalog::ProcKind::Unknown => score += 5.0,
         }
 
         score

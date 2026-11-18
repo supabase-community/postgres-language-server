@@ -24,7 +24,10 @@ pub(crate) mod version;
 
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options, version(VERSION))]
-#[allow(clippy::large_enum_variant)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "parsed once per run, so boxing the large commands saves nothing"
+)]
 /// Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
 pub enum PgLSCommand {
     /// Shows the version information and quit.
@@ -282,10 +285,11 @@ pub enum PgLSCommand {
             env("PGLS_LOG_LEVEL"),
             env("PGT_LOG_LEVEL"),
             long("log-level"),
-            argument("trace|debug|info|warn|error|none"),
-            fallback(String::from("debug"))
+            argument("none|trace|debug|info|warn|error"),
+            fallback(LoggingLevel::Debug),
+            display_fallback
         )]
-        log_level: String,
+        log_level: LoggingLevel,
 
         /// Allows to change the logging format kind. Default is hierarchical.
         #[bpaf(
@@ -510,7 +514,7 @@ pub(crate) fn read_stdin_payload(
     console: &mut dyn Console,
     subcommand: &str,
 ) -> Result<StdinPayload, CliDiagnostic> {
-    match console.read() {
+    match console.read()? {
         Some(content) => Ok(StdinPayload {
             path: path.into(),
             content,
@@ -552,7 +556,6 @@ mod tests {
             evaluated_paths: BTreeSet::new(),
             changed: 0,
             unchanged,
-            matches: 0,
             skipped: 0,
             suggested_fixes_skipped: 0,
             fixable_diagnostics: 0,

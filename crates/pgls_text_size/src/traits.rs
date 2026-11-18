@@ -1,4 +1,4 @@
-use {crate::TextSize, std::convert::TryInto};
+use crate::TextSize;
 
 use priv_in_pub::Sealed;
 mod priv_in_pub {
@@ -15,7 +15,9 @@ impl Sealed for &'_ str {}
 impl TextLen for &'_ str {
     #[inline]
     fn text_len(self) -> TextSize {
-        self.len().try_into().unwrap()
+        // Texts are limited to 4 GiB (`files.maxSize` rejects much smaller files).
+        debug_assert!(u32::try_from(self.len()).is_ok(), "text longer than 4 GiB");
+        TextSize::new(u32::try_from(self.len()).unwrap_or(u32::MAX))
     }
 }
 
