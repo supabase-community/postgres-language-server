@@ -112,13 +112,13 @@ fn may_be_field_access(r: &Resolver, n: &FuncCall) -> bool {
         {
             // A whole row, a function parameter, or a column that may be composite.
             Some([name]) => {
-                find_item(&r.levels, name).is_some()
+                find_item(r.levels(), name).is_some()
                     || r.function_param(name).is_some()
-                    || may_be_composite(r, find_column_type(&r.levels, name))
+                    || may_be_composite(r, find_column_type(r.levels(), name))
             }
             Some([table, name]) => may_be_composite(
                 r,
-                find_item(&r.levels, table).and_then(|item| item.type_of(name).flatten()),
+                find_item(r.levels(), table).and_then(|item| item.type_of(name).flatten()),
             ),
             _ => true,
         },
