@@ -16,8 +16,10 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_workspace::{
     Workspace,
     features::{
-        code_actions::CodeActionsParams, diagnostics::PullFileDiagnosticsParams,
-        inlay_hints::PullInlayHintsParams, on_hover::OnHoverParams,
+        code_actions::CodeActionsParams,
+        diagnostics::{DatabaseChecks, PullFileDiagnosticsParams},
+        inlay_hints::PullInlayHintsParams,
+        on_hover::OnHoverParams,
     },
     workspace::server::DOCUMENT_CACHE_ENTRIES_MAX,
     workspace::{
@@ -96,6 +98,7 @@ fn use_document(
             max_diagnostics: u32::MAX,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .unwrap();
     let last = TextSize::try_from(content.rfind("select t.id").unwrap()).unwrap();
@@ -208,6 +211,7 @@ async fn open_documents_stay_within_the_budget(test_db: PgPool) {
                 max_diagnostics: u32::MAX,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .unwrap();
         workspace

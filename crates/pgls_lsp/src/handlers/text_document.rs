@@ -1,7 +1,8 @@
 use crate::{documents::Document, session::SessionHandle, utils::apply_document_changes};
 use anyhow::Result;
-use pgls_workspace::workspace::{
-    ChangeFileParams, CloseFileParams, GetFileContentParams, OpenFileParams,
+use pgls_workspace::{
+    features::diagnostics::DatabaseChecks,
+    workspace::{ChangeFileParams, CloseFileParams, GetFileContentParams, OpenFileParams},
 };
 use tower_lsp_server::ls_types;
 use tracing::{error, field};
@@ -29,7 +30,7 @@ pub(crate) async fn did_open(
 
     session.insert_document(url.clone(), doc);
 
-    if let Err(err) = session.update_diagnostics(url).await {
+    if let Err(err) = session.update_diagnostics(url, DatabaseChecks::Run).await {
         error!("Failed to update diagnostics: {}", err);
     }
 
@@ -80,9 +81,19 @@ pub(crate) async fn did_change(
 
     // Schedule debounced diagnostics instead of running immediately.
     // This prevents a keystroke burst from queuing one analysis per change.
-    session.schedule_diagnostics(url);
+    // The checks against the database wait for the next save.
+    session.schedule_diagnostics(url, DatabaseChecks::Reuse);
 
     Ok(())
+}
+
+/// Handler for `textDocument/didSave` LSP notification
+///
+/// Checks the document against the database, which a change doesn't, see
+/// [`SessionHandle::schedule_diagnostics`].
+#[tracing::instrument(level = "debug", skip_all, fields(url = field::display(params.text_document.uri.as_str())))]
+pub(crate) fn did_save(session: &SessionHandle, params: ls_types::DidSaveTextDocumentParams) {
+    session.schedule_diagnostics(params.text_document.uri, DatabaseChecks::Run);
 }
 
 /// Handler for `textDocument/didClose` LSP notification

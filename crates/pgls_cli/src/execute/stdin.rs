@@ -57,10 +57,12 @@ fn check(
                 content: payload.content.clone(),
             },
         )?;
+        // Every diagnostic is printed, and `--skip-errors` looks for syntax errors among all of
+        // them.
         let pull_diagnostics = || {
             guard.pull_file_diagnostics(
                 RuleCategoriesBuilder::default().all().build(),
-                config.max_diagnostics(),
+                u32::MAX,
                 only.clone(),
                 skip.clone(),
             )

@@ -1,11 +1,12 @@
 //! Whether a value of one type can become another: Postgres' coercion rules.
 
 use crate::CastMethod;
+use crate::Catalog;
 use crate::typing::types::{
     array_element, base_type, info, is_array, lookup_builtin, type_category,
 };
 use crate::typing::{CoercionContext, Decision, Polymorphic, Type, TypeId};
-use crate::{CatalogView, Lookup, TypeKind};
+use crate::{Lookup, TypeKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CoercionPathway {
@@ -20,7 +21,7 @@ pub(crate) enum CoercionPathway {
 ///
 /// [`find_coercion_pathway`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3156
 pub(crate) fn find_coercion_pathway(
-    c: &dyn CatalogView,
+    c: &Catalog,
     source: &TypeId,
     target: &TypeId,
     context: CoercionContext,
@@ -87,10 +88,10 @@ pub(crate) fn find_coercion_pathway(
     }
 }
 
-fn is_named(c: &dyn CatalogView, id: &TypeId, name: &str) -> Decision<bool> {
+fn is_named(c: &Catalog, id: &TypeId, name: &str) -> Decision<bool> {
     lookup_builtin(c, name).map(|expected| expected.as_ref() == Some(id))
 }
-fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<Polymorphic>> {
+fn target_pseudo(c: &Catalog, id: &TypeId) -> Decision<Option<Polymorphic>> {
     let t = match info(c, id) {
         Decision::Known(t) => t,
         Decision::Unknown => return Decision::Unknown,
@@ -116,7 +117,7 @@ fn target_pseudo(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<Polymorphi
 ///
 /// [`can_coerce_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557
 pub fn can_coerce(
-    c: &dyn CatalogView,
+    c: &Catalog,
     from: &Type,
     to: &TypeId,
     context: CoercionContext,
@@ -184,7 +185,7 @@ pub fn can_coerce(
 /// `can_coerce_type` also accepts a `record` for a composite type, which is checked at
 /// runtime, and a composite type for a composite type it inherits from. Neither is modelled,
 /// so both are unknown.
-fn row_coercion(c: &dyn CatalogView, source: &TypeId, target: &TypeId) -> Decision<bool> {
+fn row_coercion(c: &Catalog, source: &TypeId, target: &TypeId) -> Decision<bool> {
     let (source, target) = match (info(c, source), info(c, target)) {
         (Decision::Known(source), Decision::Known(target)) => (source, target),
         _ => return Decision::Unknown,
@@ -202,11 +203,7 @@ fn row_coercion(c: &dyn CatalogView, source: &TypeId, target: &TypeId) -> Decisi
 ///
 /// [`IsBinaryCoercible`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3033
 /// [`IsBinaryCoercibleWithCast`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L3048
-pub fn is_binary_coercible(
-    c: &dyn CatalogView,
-    source: &TypeId,
-    target: &TypeId,
-) -> Decision<bool> {
+pub fn is_binary_coercible(c: &Catalog, source: &TypeId, target: &TypeId) -> Decision<bool> {
     if source == target {
         return Decision::Known(true);
     }
@@ -258,14 +255,14 @@ pub fn is_binary_coercible(
 #[cfg(all(test, feature = "db"))]
 mod tests {
     use super::*;
-    use crate::{Catalog, CatalogBase, Snapshot};
+    use crate::{Catalog, Snapshot};
     use sqlx::PgPool;
     use std::sync::Arc;
 
     #[pgls_test_utils::db_test]
     async fn postgres_cast_pathways(test_db: PgPool) {
         let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+        let catalog = Catalog::from_snapshot(snapshot);
         let int4 = TypeId::Snapshot(23);
         let int8 = TypeId::Snapshot(20);
         let text = TypeId::Snapshot(25);

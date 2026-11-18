@@ -8,7 +8,7 @@
 //!   result back into a [`Snapshot`] for completions and hover.
 //! - [`Session`] (`session/`): the search path and role that names are resolved with, and the
 //!   lock and timeout state that the safety rules check.
-//! - [`CatalogView`] (`lookup.rs`): the lookups the resolver makes. [`Catalog`] implements it.
+//! - `lookup.rs`: what the lookups of [`Catalog`] return.
 //! - [`typing`] (`typing/`): Postgres' type rules, which the resolver of `pgls_resolve` asks.
 //! - [`identifier_name`] (`identifier.rs`): the name an identifier in SQL text stands for, and
 //!   [`quote_identifier`] the identifier to write for a name.
@@ -33,9 +33,9 @@ pub use identifier::{
     unicode_identifier_name, untruncated_identifier_name,
 };
 pub use lookup::{
-    Candidates, CastInfo, CastMethod, CatalogView, ColumnInfo, FunctionArgument,
-    FunctionArgumentMode, FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup,
-    OperatorInfo, OperatorKind, Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
+    Candidates, CastInfo, CastMethod, ColumnInfo, FunctionArgument, FunctionArgumentMode,
+    FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup, OperatorInfo, OperatorKind,
+    Origin, RelationInfo, RelationKind, TypeInfo, TypeKind,
 };
 pub use session::{
     LockMode, NonTransactional, Session, TableLock, TransactionMode, alter_table_cmd_lock,
