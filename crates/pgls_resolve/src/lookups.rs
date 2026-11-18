@@ -310,7 +310,7 @@ pub(super) fn record_unresolved(r: &mut Resolver, node: NodeRef, in_query: bool)
             NodeRef::RangeVar(n)
                 if in_query
                     && !r
-                        .ctes
+                        .ctes()
                         .iter()
                         .any(|cte| n.schemaname.is_empty() && cte.name == n.relname) =>
             {

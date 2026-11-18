@@ -81,9 +81,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     }
 
     if let Some(quals) = n.quals.as_deref() {
-        r.enter_level(joined);
-        resolve_expr(r, quals);
-        joined = r.exit_level();
+        ((), joined) = r.in_level(joined, |r| resolve_expr(r, quals));
     }
 
     if let Some(alias) = &n.alias {
