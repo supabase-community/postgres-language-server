@@ -1033,6 +1033,80 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
     assert_eq!(diagnostics[0].category().map(|c| c.name()), Some("syntax"));
 }
 
+/// With several functions and broken statements, each syntax error is matched with the function
+/// that plpgsql_check checked around it, and the others stay.
+#[cfg(all(test, not(target_os = "windows")))]
+#[pgls_test_utils::db_test]
+async fn test_plpgsql_syntax_errors_of_several_functions(test_db: PgPool) {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+
+    let path = PgLSPath::new("test.sql");
+
+    let setup_sql = "CREATE EXTENSION IF NOT EXISTS plpgsql_check;";
+    test_db.execute(setup_sql).await.expect("setup sql failed");
+
+    let function = |name: &str| {
+        format!(
+            "CREATE OR REPLACE FUNCTION public.{name}()\nRETURNS void\nLANGUAGE plpgsql\nAS $function$\ndecare r text;\nBEGIN\nEND;\n$function$;\n"
+        )
+    };
+    let content = format!(
+        "selec 1;\n{}selec 2;\n{}selec 3;\n",
+        function("f1"),
+        function("f2")
+    );
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.clone(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+            database_checks: DatabaseChecks::Run,
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+
+    let texts = |category: &str| {
+        let mut texts: Vec<&str> = diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.category().map(|c| c.name()) == Some(category))
+            .map(|diagnostic| &content[diagnostic.location().span.expect("Expected a span")])
+            .collect();
+        texts.sort_unstable();
+        texts
+    };
+    assert_eq!(texts("plpgsql_check"), ["decare", "decare"]);
+    assert_eq!(texts("syntax"), ["selec 1;", "selec 2;", "selec 3;"]);
+}
+
 #[pgls_test_utils::db_test]
 async fn test_plpgsql_assign_composite_types(test_db: PgPool) {
     let conf = PartialConfiguration::init();

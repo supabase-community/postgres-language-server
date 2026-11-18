@@ -1363,23 +1363,38 @@ impl Workspace for WorkspaceServer {
             Vec<PendingDiagnostic>,
         ) = (Vec::new(), Vec::new());
 
+        // Ignore a syntax error if we already have more specialized diagnostics for the same
+        // statement, e.g. from plpgsql_check for CREATE FUNCTION statements. The spans are sorted
+        // by their start, so that each syntax error only looks at the diagnostics that start in
+        // it. The syntax errors are of different statements and don't overlap, so the ones added
+        // below don't cover each other.
+        let mut covering: Vec<TextRange> = diagnostics
+            .iter()
+            .filter_map(|d| d.location().span)
+            .collect();
+        covering.sort_unstable_by_key(|span| (span.start(), span.end()));
+        // The PL/pgSQL functions that plpgsql_check checked, which don't overlap.
+        let mut plpgsql_checked = plpgsql_checked;
+        plpgsql_checked.sort_unstable_by_key(|range| range.start());
         for diagnostic in analysis.syntax_diagnostics() {
-            // Ignore the syntax error if we already have more specialized diagnostics for the
-            // same statement, e.g. from plpgsql_check for CREATE FUNCTION statements.
-            let covered = diagnostics.iter().any(|d| {
-                d.location().span.is_some_and(|span| {
-                    diagnostic
-                        .location()
-                        .span
-                        .is_some_and(|syntax_span| syntax_span.contains_range(span))
-                })
+            let covered = diagnostic.location().span.is_some_and(|syntax_span| {
+                let first = covering.partition_point(|span| span.start() < syntax_span.start());
+                covering
+                    .get(first..)
+                    .unwrap_or_default()
+                    .iter()
+                    .take_while(|span| span.start() <= syntax_span.end())
+                    .any(|span| span.end() <= syntax_span.end())
             });
             // plpgsql_check compiles the function with the PL/pgSQL compiler and locates its
-            // syntax errors, while the error of libpg_query spans the whole function body.
+            // syntax errors, while the error of libpg_query spans the whole function body. Only
+            // the last function that starts before the error can contain it.
             let checked = diagnostic.location().span.is_some_and(|syntax_span| {
                 plpgsql_checked
-                    .iter()
-                    .any(|range| range.contains_range(syntax_span))
+                    .partition_point(|range| range.start() <= syntax_span.start())
+                    .checked_sub(1)
+                    .and_then(|last| plpgsql_checked.get(last))
+                    .is_some_and(|range| range.contains_range(syntax_span))
             });
             if !covered && !checked {
                 diagnostics.push(SDiagnostic::new(
