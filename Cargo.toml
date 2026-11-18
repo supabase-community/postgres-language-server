@@ -13,10 +13,21 @@ repository   = "https://github.com/supabase-community/postgres-language-server"
 rust-version = "1.86.0"
 
 # Lints for every crate of the workspace. Each member opts in with `lints.workspace = true`.
+[workspace.lints.rust]
+unreachable_pub = "warn"
+
 [workspace.lints.clippy]
-dbg_macro     = "deny"
-todo          = "deny"
-unimplemented = "deny"
+allow_attributes_without_reason = "warn"
+dbg_macro                       = "deny"
+# The engineering rules: no `unwrap`, `expect` or indexing on external data. `clippy.toml`
+# allows them in `#[test]` functions; test and bench helpers allow them at their crate root.
+expect_used      = "warn"
+indexing_slicing = "warn"
+unwrap_used      = "warn"
+# We use `mod.rs` for modules with submodules.
+self_named_module_files = "warn"
+todo                    = "deny"
+unimplemented           = "deny"
 
 [workspace.dependencies]
 # supporting crates unrelated to postgres

@@ -20,8 +20,6 @@
 //! const errors = workspace.parse("SELECT * FROM users;");
 //! ```
 
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
 use std::path::PathBuf;
 
 use pgls_analyse::RuleCategories;
