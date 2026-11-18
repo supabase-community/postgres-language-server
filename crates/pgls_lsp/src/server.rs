@@ -208,6 +208,11 @@ impl LanguageServer for LSPServer {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
+    async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        handlers::text_document::did_save(&self.session, params);
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         handlers::text_document::did_close(&self.session, params)
             .await

@@ -1,7 +1,7 @@
 use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
-use pgls_catalog::{CatalogView, Decision};
+use pgls_catalog::Decision;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_resolve::contains_volatile_functions;

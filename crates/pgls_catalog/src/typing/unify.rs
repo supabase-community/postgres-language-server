@@ -1,11 +1,12 @@
 //! Which type several inputs agree on: the common type of `UNION`, `CASE`, `COALESCE`, and
 //! `VALUES` columns, and the actual types behind polymorphic arguments and results.
 
+use crate::Catalog;
+use crate::Lookup;
 use crate::typing::coerce::can_coerce;
 use crate::typing::pseudo::{Polymorphic, PolymorphicFamily, PolymorphicIds};
 use crate::typing::types::{array_element, base_type, type_category};
 use crate::typing::{CoercionContext, Decision, Selection, Type, TypeId};
-use crate::{CatalogView, Lookup};
 
 // ----- common type -----
 
@@ -16,7 +17,7 @@ use crate::{CatalogView, Lookup};
 /// [`select_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1345
 /// [`verify_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1609
 /// [`coerce_to_common_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1575
-pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type> {
+pub fn select_common_type(c: &Catalog, types: &[Type]) -> Selection<Type> {
     let Some(first) = types.first() else {
         return Selection::Unknown;
     };
@@ -99,7 +100,7 @@ pub fn select_common_type(c: &dyn CatalogView, types: &[Type]) -> Selection<Type
 ///
 /// [`check_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L1740
 pub(crate) fn check_generic_type_consistency(
-    c: &dyn CatalogView,
+    c: &Catalog,
     actual: &[Type],
     declared: &[TypeId],
 ) -> Decision<bool> {
@@ -232,7 +233,7 @@ pub(crate) fn check_generic_type_consistency(
 ///
 /// [`enforce_generic_type_consistency`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2134
 pub(crate) fn resolve_polymorphic_result(
-    c: &dyn CatalogView,
+    c: &Catalog,
     actual: &[Type],
     declared: &[TypeId],
     result: &TypeId,
@@ -361,7 +362,7 @@ pub(crate) fn resolve_polymorphic_result(
 ///
 /// [`check_valid_polymorphic_signature`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2878
 pub(crate) fn is_valid_polymorphic_signature(
-    c: &dyn CatalogView,
+    c: &Catalog,
     result: &TypeId,
     inputs: &[Option<TypeId>],
 ) -> Decision<bool> {
@@ -388,7 +389,7 @@ pub(crate) fn is_valid_polymorphic_signature(
 
 /// Which polymorphic type a type is, `Some(None)` if it is not polymorphic, and `None` if the
 /// type is unknown.
-fn polymorphic(c: &dyn CatalogView, id: &TypeId) -> Option<Option<Polymorphic>> {
+fn polymorphic(c: &Catalog, id: &TypeId) -> Option<Option<Polymorphic>> {
     let info = c.type_by_id(id).found()?;
     Some(Polymorphic::from_type(&info).filter(|p| p.is_polymorphic()))
 }
@@ -396,7 +397,7 @@ fn polymorphic(c: &dyn CatalogView, id: &TypeId) -> Option<Option<Polymorphic>> 
 #[cfg(all(test, feature = "db"))]
 mod common_type_tests {
     use super::*;
-    use crate::{Catalog, CatalogBase, CatalogView, Lookup, Snapshot};
+    use crate::{Catalog, Lookup, Snapshot};
     use sqlx::{Executor, PgPool};
     use std::sync::Arc;
 
@@ -407,7 +408,7 @@ mod common_type_tests {
             .await
             .unwrap();
         let snapshot = Arc::new(Snapshot::load(&test_db).await.unwrap());
-        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+        let catalog = Catalog::from_snapshot(snapshot);
         assert_eq!(
             select_common_type(
                 &catalog,
@@ -486,16 +487,14 @@ mod common_type_tests {
 #[cfg(all(test, feature = "db"))]
 mod polymorphic_tests {
     use super::{check_generic_type_consistency, resolve_polymorphic_result};
-    use crate::lookup::CatalogView;
     use crate::typing::{Decision, Type};
-    use crate::{Catalog, CatalogBase, Snapshot};
+    use crate::{Catalog, Snapshot};
     use sqlx::PgPool;
-    use std::sync::Arc;
 
     #[pgls_test_utils::db_test]
     async fn resolves_builtin_polymorphic_families(test_db: PgPool) {
         let snapshot = Snapshot::load(&test_db).await.expect("snapshot");
-        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+        let catalog = Catalog::from_snapshot(snapshot);
         let path = vec!["public".to_owned()];
         let id = |name: &str| {
             catalog

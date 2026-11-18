@@ -487,7 +487,6 @@ fn splits_into_valid_statements(fragment: &str, pieces: &[TextRange]) -> bool {
 mod tests {
     use diagnostics::SplitDiagnostic;
     use ntest::timeout;
-    use pgls_lexer::SyntaxKind;
     use pgls_text_size::TextRange;
 
     use super::*;
@@ -832,7 +831,7 @@ SELECT 1",
         Tester::from("\ninsert select 1\n\nselect 3")
             .expect_statements(vec!["insert select 1", "select 3"])
             .expect_errors(vec![SplitDiagnostic::new(
-                format!("Expected {:?}", SyntaxKind::INTO_KW),
+                "Expected \"INTO\"",
                 TextRange::new(8.into(), 14.into()),
             )]);
     }
@@ -1097,7 +1096,7 @@ SELECT * FROM constraints, indexes, comments, functions;",
             assert_eq!(
                 result.errors.first(),
                 Some(&SplitDiagnostic::new(
-                    "Expected IDENT",
+                    "Expected an identifier",
                     TextRange::new(name.start.into(), name.end.into())
                 )),
                 "{stmt}"
@@ -1352,7 +1351,7 @@ VALUES
     #[test]
     fn does_not_panic_on_eof_expectation() {
         Tester::from("insert").expect_errors(vec![SplitDiagnostic::new(
-            "Expected INTO_KW".to_string(),
+            "Expected \"INTO\"".to_string(),
             TextRange::new(0.into(), 6.into()),
         )]);
     }

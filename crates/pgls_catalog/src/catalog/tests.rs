@@ -6,7 +6,7 @@ use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
 use crate::Behavior;
-use crate::lookup::{CatalogView, FunctionKind, Lookup, Origin, RelationKind};
+use crate::lookup::{FunctionKind, Lookup, Origin, RelationKind};
 
 fn schema(name: &str) -> crate::Schema {
     crate::Schema {
@@ -92,7 +92,7 @@ fn path(schemas: &[&str]) -> Vec<String> {
 }
 
 fn catalog_after(sql: &str, search_path: &[String]) -> Catalog {
-    let mut catalog = Catalog::new(Some(base()));
+    let mut catalog = Catalog::from_base(base());
     let parsed = pgls_query::parse(sql).expect("valid sql");
     for stmt in parsed.stmts() {
         catalog.apply(stmt, search_path, None);
@@ -116,7 +116,7 @@ fn column_names(
 #[test]
 fn database_objects_are_found() {
     let search_path = path(&["public"]);
-    let catalog = Catalog::new(Some(base()));
+    let catalog = Catalog::from_base(base());
 
     let users = catalog
         .relation(None, "users", &search_path)
@@ -146,7 +146,7 @@ fn database_objects_are_found() {
 
 #[test]
 fn without_database_everything_is_unknown() {
-    let catalog = Catalog::new(None);
+    let catalog = Catalog::without_database();
     assert_eq!(
         catalog.relation(Some("public"), "users", &[]),
         Lookup::Unknown
@@ -401,7 +401,7 @@ fn identities_after<const N: usize>(
         },
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
         catalog.apply(stmt, &search_path, None);
     }
@@ -758,7 +758,7 @@ fn column_changes_make_database_children_unknown() {
         tables,
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
+    let mut catalog = Catalog::from_snapshot(cache);
     let parsed = pgls_query::parse("alter table events add column at timestamptz").unwrap();
     catalog.apply(parsed.stmts()[0], &search_path, None);
     let child = catalog
@@ -812,7 +812,7 @@ fn column_of_looks_up_the_column_of_a_range_var() {
     assert_eq!(generated("items", "missing"), Lookup::Missing);
     assert_eq!(generated("missing", "total"), Lookup::Missing);
     assert_eq!(
-        Catalog::new(None)
+        Catalog::without_database()
             .column_of(&range_var("items"), "total", &search_path)
             .map(|column| column.generated),
         Lookup::Unknown
@@ -937,9 +937,9 @@ fn table_columns(snapshot: &Snapshot, schema: &str, table: &str) -> Vec<String> 
 #[test]
 fn snapshot_without_changes_is_the_database_snapshot() {
     let base = base();
-    let catalog = Catalog::new(Some(Arc::clone(&base)));
+    let catalog = Catalog::from_base(Arc::clone(&base));
     assert!(Arc::ptr_eq(&catalog.snapshot().unwrap(), base.snapshot()));
-    assert!(Catalog::new(None).snapshot().is_none());
+    assert!(Catalog::without_database().snapshot().is_none());
 }
 
 #[test]
@@ -1029,7 +1029,7 @@ fn sequence_columns_have_types() {
         ..Default::default()
     };
     let search_path = path(&["public"]);
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let parsed = pgls_query::parse("create sequence file_seq;").expect("valid sql");
     for stmt in parsed.stmts() {
         catalog.apply(stmt, &search_path, None);
@@ -1101,7 +1101,7 @@ fn indexes_are_in_the_schema_of_their_table() {
         Lookup::Unknown
     );
 
-    let catalog = Catalog::new(None);
+    let catalog = Catalog::without_database();
     assert_eq!(
         catalog.index(None, "users_name_idx", &search_path),
         Lookup::Unknown
@@ -1517,7 +1517,7 @@ fn snapshot_includes_indexes_of_the_file() {
         columns,
         [("users_name_idx", Some(vec!["renamed".to_owned()]))]
     );
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
     for stmt in parsed.stmts() {
         catalog.apply(stmt, &search_path, None);
@@ -1542,7 +1542,7 @@ fn snapshot_lists_changed_database_functions_once() {
     });
     let base = Arc::new(CatalogBase::new(Arc::new(snapshot)));
     let snapshot_after = |sql: &str| {
-        let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+        let mut catalog = Catalog::from_base(Arc::clone(&base));
         for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
             catalog.apply(stmt, &search_path, None);
         }
@@ -1642,7 +1642,7 @@ fn snapshot_drops_the_expression_of_a_generated_column() {
         typing_metadata: true,
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
+    let mut catalog = Catalog::from_snapshot(cache);
     let parsed =
         pgls_query::parse("alter table orders alter column total drop expression").unwrap();
     catalog.apply(parsed.stmts()[0], &search_path, None);
@@ -1763,7 +1763,7 @@ fn snapshot_of_a_file_with_many_changes() {
     }
     sql.push_str("drop table users; create table users (id text, point point2);");
 
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(database)))));
+    let mut catalog = Catalog::from_snapshot(database);
     let search_path = path(&["public"]);
     for stmt in pgls_query::parse(&sql).expect("valid sql").stmts() {
         // The output columns that the resolution of `create view v{i} as select id, name from
@@ -1853,7 +1853,7 @@ fn snapshot_of_a_file_with_many_changes() {
 mod typing_overlay_tests {
     use super::path;
     use crate::TypeKind;
-    use crate::lookup::{CatalogView, Lookup};
+    use crate::lookup::Lookup;
     use crate::typing::{Type, TypeId};
     use crate::{Catalog, CatalogBase, Snapshot};
     use sqlx::PgPool;
@@ -1861,7 +1861,7 @@ mod typing_overlay_tests {
 
     async fn database_catalog(test_db: &PgPool) -> Catalog {
         let snapshot = Snapshot::load(test_db).await.expect("load snapshot");
-        Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))))
+        Catalog::from_snapshot(snapshot)
     }
 
     fn apply(catalog: &mut Catalog, sql: &str, search_path: &[String]) {
@@ -2129,7 +2129,7 @@ mod typing_overlay_tests {
         )));
         let path = path(&["public"]);
         let state = |sql: &str, index: &str| {
-            let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+            let mut catalog = Catalog::from_base(Arc::clone(&base));
             apply(&mut catalog, sql, &path);
             match catalog.index(None, index, &path) {
                 Lookup::Found(_) => "found",
@@ -2261,9 +2261,7 @@ fn snapshot_with_unknown_codes() -> Snapshot {
 fn unknown_codes_are_unknown_not_missing() {
     use crate::typing::{CoercionContext, Decision, Type, TypeId, base_type, format_type};
 
-    let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(
-        snapshot_with_unknown_codes(),
-    )))));
+    let catalog = Catalog::from_snapshot(snapshot_with_unknown_codes());
     let search_path = path(&["public"]);
     let id = TypeId::Snapshot;
 

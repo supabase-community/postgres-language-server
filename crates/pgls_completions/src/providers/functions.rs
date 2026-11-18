@@ -51,7 +51,12 @@ fn get_completion_text(ctx: &TreesitterContext, func: &Function) -> CompletionTe
             is_snippet: false,
         }
     } else {
-        if node_text_surrounded_by_quotes(ctx) && !only_leading_quote(ctx) {
+        // The closing quote goes before the parentheses. If the cursor follows it, the range and
+        // the name already include it.
+        if node_text_surrounded_by_quotes(ctx)
+            && !only_leading_quote(ctx)
+            && !ctx.cursor_after_closing_quote()
+        {
             text.push('"');
             range = range.checked_expand_end(1.into()).unwrap_or(range);
         }

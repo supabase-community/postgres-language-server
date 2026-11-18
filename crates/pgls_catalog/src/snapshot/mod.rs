@@ -214,8 +214,8 @@ mod tests {
 
     use super::Snapshot;
     use crate::OperatorKind;
-    use crate::catalog::{Catalog, CatalogBase};
-    use crate::lookup::{CatalogView, Lookup};
+    use crate::catalog::Catalog;
+    use crate::lookup::Lookup;
     use crate::typing::TypeId;
     use std::sync::Arc;
 
@@ -237,7 +237,7 @@ mod tests {
         assert_eq!(array.typelem, scalar.id);
         assert_eq!(scalar.typarray, array.id);
 
-        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+        let catalog = Catalog::from_snapshot(snapshot);
         assert!(matches!(
             catalog.cast(&TypeId::Snapshot(23), &TypeId::Snapshot(20)),
             Lookup::Found(_)
