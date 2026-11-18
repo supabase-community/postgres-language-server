@@ -438,13 +438,16 @@ fn split_pass(
 ///
 /// Named parameters are normalized to positional ones first: libpg_query reads
 /// `$id` as an unterminated dollar-quote and rejects it, so the workspace
-/// applies the same normalization before parsing.
+/// applies the same normalization before parsing. If the normalized fragment
+/// doesn't parse, the fragment as written is tried too: what the lexer takes
+/// for a named parameter can be an operator, e.g. the `@` in `a 'x' @b`.
 ///
 /// `split_with_parser` runs the raw parser without deserializing the protobuf
 /// AST, which is all that is needed to answer this question.
 fn parses(fragment: &str) -> bool {
     let normalized = convert_to_positional_params(fragment);
     pgls_query::split_with_parser(&normalized).is_ok()
+        || (normalized != fragment && pgls_query::split_with_parser(fragment).is_ok())
 }
 
 /// Whether the first of the `pieces` of `fragment` is a `CREATE SCHEMA` that already has schema
@@ -1545,6 +1548,15 @@ VALUES
     #[test]
     fn blank_line_with_named_param() {
         Tester::from("select id\nfrom t\n\nwhere id = $some_id;")
+            .assert_single_statement()
+            .assert_no_errors();
+    }
+
+    /// `@b` is an operator and a name to Postgres, not a named parameter, so `a 'x' @b` is a
+    /// typed literal and an operator: the fragment parses as written.
+    #[test]
+    fn blank_line_with_at_operator() {
+        Tester::from("select a\n\n'x' @b;")
             .assert_single_statement()
             .assert_no_errors();
     }
