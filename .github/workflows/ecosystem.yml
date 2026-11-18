@@ -1,0 +1,120 @@
+# Runs `check` and `format` of two builds of the CLI over real-world SQL (`xtask/corpus/corpus.toml`)
+# and writes what changed into the job summary: on a pull request the base against the head, every
+# week the last release against `main`. The report is information, not a gate.
+name: Ecosystem Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+  pull_request:
+    paths:
+      - "crates/pgls_analyse/**"
+      - "crates/pgls_analyser/**"
+      - "crates/pgls_catalog/**"
+      - "crates/pgls_cli/**"
+      - "crates/pgls_configuration/**"
+      - "crates/pgls_lexer/**"
+      - "crates/pgls_plpgsql_check/**"
+      - "crates/pgls_pretty_print/**"
+      - "crates/pgls_pretty_print_codegen/**"
+      - "crates/pgls_query/**"
+      - "crates/pgls_query_ext/**"
+      - "crates/pgls_resolve/**"
+      - "crates/pgls_statement_splitter/**"
+      - "crates/pgls_suppressions/**"
+      - "crates/pgls_walk/**"
+      - "crates/pgls_workspace/**"
+      - "xtask/corpus/**"
+      - ".github/workflows/ecosystem.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  ecosystem:
+    name: Ecosystem Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
+
+      # The corpus is pinned, so the cache only changes with the manifest. It stays outside the
+      # checkout.
+      - name: Locate the corpus cache
+        run: echo "PGLS_CORPUS_CACHE=$HOME/.cache/pgls-corpus" >> "$GITHUB_ENV"
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pgls-corpus
+          key: pgls-corpus-${{ hashFiles('xtask/corpus/corpus.toml') }}
+      - name: Fetch the corpus
+        run: cargo run -p xtask_corpus -- fetch
+
+      - name: Build the head
+        run: |
+          cargo build -p pgls_cli --release
+          cp target/release/postgres-language-server "$RUNNER_TEMP/head"
+          echo "HEAD_LABEL=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      # A worktree of the base commit, built into the same target directory: the dependencies
+      # are built already, only the workspace crates compile again.
+      - name: Build the base
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git worktree add --detach "$RUNNER_TEMP/base-src" "$BASE_SHA"
+          git -C "$RUNNER_TEMP/base-src" submodule update --init --depth=1
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo build --manifest-path "$RUNNER_TEMP/base-src/Cargo.toml" -p pgls_cli --release
+          cp target/release/postgres-language-server "$RUNNER_TEMP/base"
+          echo "BASE_LABEL=${BASE_SHA:0:9}" >> "$GITHUB_ENV"
+
+      - name: Download the last release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
+            --pattern postgres-language-server_x86_64-unknown-linux-gnu --output "$RUNNER_TEMP/base"
+          chmod +x "$RUNNER_TEMP/base"
+          echo "BASE_LABEL=$tag" >> "$GITHUB_ENV"
+
+      - name: Run both
+        run: |
+          cargo run -p xtask_corpus -- run --binary "$RUNNER_TEMP/base" --out "$RUNNER_TEMP/base-run"
+          cargo run -p xtask_corpus -- run --binary "$RUNNER_TEMP/head" --out "$RUNNER_TEMP/head-run"
+
+      - name: Report
+        run: |
+          cargo run -p xtask_corpus -- diff \
+            --base "$RUNNER_TEMP/base-run" --head "$RUNNER_TEMP/head-run" \
+            --base-label "$BASE_LABEL" --head-label "$HEAD_LABEL" >> "$GITHUB_STEP_SUMMARY"

@@ -48,6 +48,7 @@ just test-doc               # doc tests
 - Linter rules are tested with the SQL specs in `crates/pgls_analyser/tests/specs/<group>/<rule>/`.
 - Statement splitter cases live in `crates/pgls_statement_splitter/tests/data/`.
 - `crates/pgls_analyser/tests/postgres_regress.rs` runs the analyser over Postgres' own regression suite for versions 15–18 (fixtures in `crates/pgls_postgres_regress/data/<major>/`) and fails on any finding on a statement Postgres accepted. Re-record a version with `just record-regress <major>` (needs Docker).
+- `just ecosystem <base-binary> <head-binary>` runs `check` and `format` of two builds over real-world SQL and prints what changed: findings per rule, formatted output and crashes. The sources are pinned in `xtask/corpus/corpus.toml` and downloaded into `~/.cache/pgls-corpus`; third-party SQL is never committed, and only permissively licensed sources are accepted. CI runs it on pull requests that touch the analyser, formatter or parser (base against head) and weekly (last release against `main`), and writes the report into the job summary. A repro taken from the corpus becomes a test only after it is minimised and its names are rewritten.
 
 ## Common tasks
 

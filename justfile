@@ -74,6 +74,17 @@ _touch file:
 record-regress major *args:
 	cargo run -p pgls_postgres_regress --features record --bin record -- {{major}} {{args}}
 
+# Compares two CLI binaries on the real-world corpus (xtask/corpus/corpus.toml) and prints the changes as Markdown, e.g. just ecosystem ./postgres-language-server-0.28.2 target/release/postgres-language-server
+ecosystem base head:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	out=$(mktemp -d)
+	cargo run -q -p xtask_corpus -- fetch
+	cargo run -q -p xtask_corpus -- run --binary "{{base}}" --out "$out/base"
+	cargo run -q -p xtask_corpus -- run --binary "{{head}}" --out "$out/head"
+	cargo run -q -p xtask_corpus -- diff --base "$out/base" --head "$out/head"
+	rm -rf "$out"
+
 # Starts the test database and waits until it accepts connections. Rebuilds the image first; with the Docker build cache, that takes seconds unless the Dockerfile changed.
 db:
 	docker compose up -d --build --wait

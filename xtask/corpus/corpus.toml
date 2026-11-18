@@ -1,0 +1,66 @@
+# The real-world SQL of the ecosystem check (`cargo run -p xtask_corpus -- --help`).
+#
+# Only this manifest is committed. `fetch` downloads each `git` source at its pinned `rev` into a
+# cache outside the repository (`~/.cache/pgls-corpus`), keeping the files that match `include`
+# (gitignore patterns, as in `git sparse-checkout --no-cone`). A `path` source is a directory of
+# the repository. `bump` moves every pin to the head of its `branch`.
+#
+# Only permissive licences are accepted (MIT, Apache-2.0, BSD, ISC, PostgreSQL), so a repro
+# minimised from a source can become a test. Copyleft sources (Cal.com, Discourse, ...) need their
+# repros rewritten first and stay out until that step exists.
+
+[[source]]
+branch  = "main"
+git     = "https://github.com/sqlfluff/sqlfluff.git"
+include = ["/test/fixtures/dialects/postgres/*.sql"]
+licence = "MIT"
+name    = "sqlfluff-postgres"
+rev     = "63534d45a4abf5bf29934748d7039843e326bf0d"
+
+[[source]]
+branch  = "master"
+git     = "https://github.com/supabase/supabase.git"
+include = ["/supabase/migrations/*.sql", "/examples/**/supabase/migrations/*.sql", "/docker/volumes/db/*.sql"]
+licence = "Apache-2.0"
+name    = "supabase"
+rev     = "cf37022b6b0a6c5634431138b1c25b94f317b8eb"
+
+[[source]]
+branch  = "develop"
+git     = "https://github.com/supabase/postgres.git"
+include = ["/migrations/**/*.sql", "/nix/tests/sql/*.sql"]
+licence = "PostgreSQL"
+name    = "supabase-postgres"
+rev     = "f0ae55d70b1f4a1a3085a3e002acc5fbb1e00d43"
+
+# Postgres' own regression suite is already in `crates/pgls_postgres_regress`.
+[[source]]
+branch  = "18-latest"
+git     = "https://github.com/pganalyze/libpg_query.git"
+include = ["/test/sql/plpgsql_regress/*.sql", "/test/sql/deparse/*.sql", "/test/sql/deparse-depesz/**/*.sql"]
+licence = "BSD-3-Clause"
+name    = "libpg_query"
+rev     = "27112f8af5de70368319a12c346c2fb37cd74476"
+
+# The schema files only: the data files are mostly COPY rows.
+[[source]]
+branch  = "master"
+git     = "https://github.com/devrimgunduz/pagila.git"
+include = ["/pagila-schema.sql", "/pagila-schema-jsonb.sql", "/pagila-temporal-setup.sql", "/pg_partman-setup.sql"]
+licence = "PostgreSQL"
+name    = "pagila"
+rev     = "6ea53f812254c91a602f61c0ef62beca3fa676b1"
+
+# GitLab's schema dump, about 3 MiB. MIT outside `ee/`, `jh/` and `doc/`.
+[[source]]
+branch  = "master"
+git     = "https://github.com/gitlabhq/gitlabhq.git"
+include = ["/db/structure.sql"]
+licence = "MIT"
+name    = "gitlab"
+rev     = "d7b9a6176ab4e279465ba3ee09922cde2b74de47"
+
+[[source]]
+licence = "PostgreSQL"
+name    = "postgres-regress-18"
+path    = "crates/pgls_postgres_regress/data/18/sql"

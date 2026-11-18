@@ -1,0 +1,16 @@
+[package]
+description = "The ecosystem check: runs two builds of the CLI over real-world SQL and reports what changed"
+edition     = "2024"
+name        = "xtask_corpus"
+publish     = false
+version     = "0.0.0"
+
+[dependencies]
+anyhow     = { workspace = true }
+bpaf       = { workspace = true, features = ["derive"] }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+toml       = { workspace = true }
+
+[lints]
+workspace = true
