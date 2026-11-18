@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use pgls_catalog::{Catalog, Snapshot};
 use pgls_resolve::{FunctionContext, FunctionParam};
 use pgls_semantic_tokens::{SemanticTokenKind, SemanticTokensParams, semantic_tokens};

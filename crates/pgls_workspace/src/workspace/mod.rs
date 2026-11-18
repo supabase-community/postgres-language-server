@@ -409,7 +409,10 @@ new_key_type! {
 /// Identifies a project of the workspace. [ProjectKey] is serialized like this.
 #[cfg(feature = "schema")]
 #[derive(JsonSchema)]
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "only describes the serialized form for the JSON schema"
+)]
 struct SerializedProjectKey {
     idx: u32,
     version: u32,

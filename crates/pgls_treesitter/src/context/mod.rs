@@ -549,14 +549,9 @@ impl<'a> TreesitterContext<'a> {
     }
 
     fn gather_possible_keywords_at_position(&mut self) {
-        let parse_state = if self.node_under_cursor.kind() == "ERROR" {
-            if self.node_under_cursor.child_count() > 0 {
-                self.node_under_cursor.child(0).unwrap().parse_state()
-            } else {
-                self.node_under_cursor.parse_state()
-            }
-        } else {
-            self.node_under_cursor.parse_state()
+        let parse_state = match self.node_under_cursor.child(0) {
+            Some(first) if self.node_under_cursor.kind() == "ERROR" => first.parse_state(),
+            _ => self.node_under_cursor.parse_state(),
         };
 
         let language: Language = pgls_treesitter_grammar::LANGUAGE.into();
@@ -572,8 +567,10 @@ impl<'a> TreesitterContext<'a> {
         let mut current = self.node_under_cursor;
 
         // move up to the parent until we're at top OR we have a prev sibling
-        while current.prev_sibling().is_none() && current.parent().is_some() {
-            current = current.parent().unwrap();
+        while current.prev_sibling().is_none()
+            && let Some(parent) = current.parent()
+        {
+            current = parent;
         }
 
         current

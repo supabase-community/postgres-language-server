@@ -329,7 +329,6 @@ impl WorkspaceServer {
     }
 
     /// Split raw SQL into byte ranges of individual statements.
-    #[allow(clippy::unused_self)]
     pub fn split_statements(&self, sql: &str) -> Vec<TextRange> {
         pgls_statement_splitter::split(sql).ranges
     }
@@ -1198,7 +1197,6 @@ impl Workspace for WorkspaceServer {
 
     #[cfg(not(feature = "db"))]
     #[ignored_path(project=params.project_key, path=&params.path)]
-    #[allow(unused_variables)]
     fn execute_statement(
         &self,
         params: ExecuteStatementParams,
@@ -1219,10 +1217,9 @@ impl Workspace for WorkspaceServer {
     }
 
     #[cfg(not(feature = "db"))]
-    #[allow(unused_variables)]
     fn cancel_statement_execution(
         &self,
-        params: ExecuteStatementParams,
+        _params: ExecuteStatementParams,
     ) -> Result<(), WorkspaceError> {
         Ok(())
     }
@@ -1918,5 +1915,4 @@ fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> 
 // Two attributes, because clippy only exempts tests from the panic lints under a plain `cfg(test)`.
 #[cfg(test)]
 #[cfg(feature = "db")]
-#[path = "server.tests.rs"]
 mod tests;

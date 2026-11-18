@@ -22,7 +22,7 @@ use crate::CliDiagnostic;
 /// # Arguments
 /// * `input` - SQL text to parse
 /// * `path` - path of the SQL file, used for diagnostics only
-pub fn run_parse(input: &str, path: Option<&Path>) -> Result<(), CliDiagnostic> {
+pub(crate) fn run_parse(input: &str, path: Option<&Path>) -> Result<(), CliDiagnostic> {
     let mut console = EnvConsole::default();
 
     let normalized = pgls_lexer::convert_to_positional_params(input);
@@ -49,7 +49,7 @@ pub fn run_parse(input: &str, path: Option<&Path>) -> Result<(), CliDiagnostic> 
 }
 
 /// Read the SQL to parse from a file or standard input.
-pub fn read_input(path: Option<&Path>) -> Result<String, CliDiagnostic> {
+pub(crate) fn read_input(path: Option<&Path>) -> Result<String, CliDiagnostic> {
     match path {
         Some(path) => std::fs::read_to_string(path).map_err(|error| {
             CliDiagnostic::parse_sql_error(format!(

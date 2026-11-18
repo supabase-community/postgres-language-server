@@ -21,7 +21,10 @@ impl ReportWriter for JunitReportWriter {
         junit.errors = report.errors as usize;
         append_diagnostics(&mut junit, config, &report.diagnostics)?;
 
-        console.log(markup! {{junit.to_string().unwrap()}});
+        let junit = junit
+            .to_string()
+            .map_err(|error| CliDiagnostic::io_error(std::io::Error::other(error)))?;
+        console.log(markup! {{junit}});
         Ok(())
     }
 }

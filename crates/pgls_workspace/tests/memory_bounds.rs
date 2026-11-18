@@ -6,6 +6,13 @@
 //! workload, e.g. `MEMORY_DOCUMENTS=20 MEMORY_GROUPS=1250` for 20 documents with 5,000
 //! statements each. Run it in a release build for numbers that match what users see.
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 mod common;
 
 use common::{MIB, count_native_allocations, current, mib, peak, reset_peak};

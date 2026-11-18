@@ -22,10 +22,7 @@ use pgls_workspace::{
     workspace::{TransportRequest, WorkspaceTransport},
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_json::{
-    Value, from_slice, from_str, to_vec,
-    value::{RawValue, to_raw_value},
-};
+use serde_json::{from_slice, from_str, to_vec, value::RawValue};
 use tokio::{
     io::{
         AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt,
@@ -300,10 +297,7 @@ where
                 // Both result and error will be None if the request
                 // returns a null-ish result, in this case create a
                 // "null" RawValue as the result
-                //
-                // SAFETY: Calling `to_raw_value` with a static "null"
-                // JSON Value will always succeed
-                (None, None) => Ok(to_raw_value(&Value::Null).unwrap()),
+                (None, None) => Ok(RawValue::NULL.to_owned()),
 
                 _ => {
                     let message = if let Ok(message) = from_utf8(&message) {
@@ -442,7 +436,7 @@ struct JsonRpcRequest<P> {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct JsonRpcResponse {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "required by JSON-RPC; its value isn't checked")]
     jsonrpc: Cow<'static, str>,
     id: u64,
     result: Option<Box<RawValue>>,
@@ -451,10 +445,10 @@ struct JsonRpcResponse {
 
 #[derive(Debug, Deserialize)]
 struct JsonRpcError {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "the message is reported, the code isn't")]
     code: i64,
     message: String,
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "the message is reported, the data isn't")]
     data: Option<Box<RawValue>>,
 }
 

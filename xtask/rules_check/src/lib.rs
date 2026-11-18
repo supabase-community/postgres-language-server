@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::{fmt::Write, slice};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use pgls_analyse::{
     AnalysisFilter, GroupCategory, RegistryVisitor, RuleCategory, RuleFilter, RuleGroup, RuleMeta,
     RuleMetadata,
@@ -161,10 +161,10 @@ fn assert_lint(
     for rule_diag in diagnostics {
         let diag = pgls_diagnostics::serde::Diagnostic::new(rule_diag);
 
-        let category = diag.category().expect("linter diagnostic has no code");
-        let severity = settings
-            .get_severity_from_rule_code(category)
-            .expect("If you see this error, it means you need to run cargo codegen-configuration");
+        let category = diag.category().context("linter diagnostic has no code")?;
+        let severity = settings.get_severity_from_rule_code(category).context(
+            "If you see this error, it means you need to run cargo codegen-configuration",
+        )?;
 
         let error = diag
             .with_severity(severity)

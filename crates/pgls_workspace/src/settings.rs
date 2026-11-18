@@ -931,6 +931,13 @@ impl Default for DatabaseSettings {
 }
 
 impl From<PartialDatabaseConfiguration> for DatabaseSettings {
+    #[cfg_attr(
+        not(feature = "db"),
+        allow(
+            unused_mut,
+            reason = "only the `db` feature reads the connection string"
+        )
+    )]
     fn from(value: PartialDatabaseConfiguration) -> Self {
         let d = DatabaseSettings::default();
 
@@ -944,20 +951,15 @@ impl From<PartialDatabaseConfiguration> for DatabaseSettings {
         });
 
         let has_host = value.host.is_some();
-        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut database = value.database.unwrap_or(d.database);
-        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut host = value.host.unwrap_or(d.host);
-        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut port = value.port.unwrap_or(d.port);
-        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut username = value.username.unwrap_or(d.username);
 
         let disable_connection = value.disable_connection.is_some_and(|disabled| disabled);
 
         // Parse connection string to extract host/port/username/database (DB mode only). An
         // invalid one disables the connection instead of failing the whole configuration.
-        #[cfg_attr(not(feature = "db"), allow(unused_mut))]
         let mut connection_string_error: Option<String> = None;
         #[cfg(feature = "db")]
         if let Some(uri) = connection_string.as_ref() {

@@ -9,7 +9,7 @@ use crate::{
 
 use super::helper::{get_range_to_replace, with_schema_or_alias};
 
-pub fn complete_policies<'a>(
+pub(crate) fn complete_policies<'a>(
     ctx: &TreesitterContext<'a>,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,

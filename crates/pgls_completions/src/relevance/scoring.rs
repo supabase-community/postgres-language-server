@@ -25,15 +25,15 @@ impl<'a> From<CompletionRelevanceData<'a>> for CompletionScore<'a> {
 }
 
 impl CompletionScore<'_> {
-    pub fn should_skip(&self) -> bool {
+    pub(crate) fn should_skip(&self) -> bool {
         self.skip
     }
 
-    pub fn get_score(&self) -> i32 {
+    pub(crate) fn get_score(&self) -> i32 {
         self.score
     }
 
-    pub fn calc_score(&mut self, ctx: &TreesitterContext) {
+    pub(crate) fn calc_score(&mut self, ctx: &TreesitterContext) {
         self.check_is_keyword();
         self.check_is_user_defined();
         self.check_matches_schema(ctx);
@@ -127,14 +127,12 @@ impl CompletionScore<'_> {
 
         match fz_matcher.fuzzy_match(check_against_lower.as_str(), content_lower.as_str()) {
             Some(score) => {
-                let mut scorei32: i32 = score
-                    .try_into()
-                    .expect("The length of the input exceeds i32 capacity");
+                let mut scorei32 = i32::try_from(score).unwrap_or(i32::MAX);
 
                 // give a significant bonus for prefix matches since these are much more
                 // likely what the user is looking for
                 if check_against_lower.starts_with(&content_lower) {
-                    scorei32 += 20;
+                    scorei32 = scorei32.saturating_add(20);
                 }
 
                 // the scoring value isn't linear.
@@ -298,11 +296,9 @@ impl CompletionScore<'_> {
             | CompletionRelevanceData::Keyword(_) => None,
         };
 
-        if schema_from_qualifier.is_none() {
+        let Some(schema_from_qualifier) = schema_from_qualifier else {
             return;
-        }
-
-        let schema_from_qualifier = schema_from_qualifier.unwrap();
+        };
 
         let data_schema = match self.get_schema_name() {
             Some(s) => s,

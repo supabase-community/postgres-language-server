@@ -418,7 +418,7 @@ mod tests {
     use super::*;
 
     #[derive(JsonSchema)]
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "only its JSON schema is used")]
     struct MapHolder {
         values: BTreeMap<String, u8>,
     }

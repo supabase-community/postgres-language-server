@@ -25,7 +25,7 @@ use super::{
 /// An open document. Clones share the cache, which is keyed so that each clone only sees what
 /// was cached for its own content.
 #[derive(Clone)]
-pub struct Document {
+pub(crate) struct Document {
     content: String,
     /// Changes on every change of the content or of the migration tool, see
     /// [`Document::generation`].
@@ -63,7 +63,7 @@ fn next_generation() -> u64 {
 impl Document {
     /// A document without a project, and so without a migration tool: it is one migration.
     #[cfg(test)]
-    pub fn new(content: String, version: i32) -> Document {
+    pub(crate) fn new(content: String, version: i32) -> Document {
         Self::open(
             ProjectKey::default(),
             0,
@@ -163,7 +163,7 @@ impl Document {
 
     /// Replaces the content of the document. Returns what the change invalidated in its cache,
     /// for the caller to drop, see [`StaleEntries::drop_in_background`].
-    pub fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
+    pub(crate) fn update_content(&mut self, content: String, version: i32) -> StaleEntries {
         // A content larger than `max_size` has no statements to split the other version from.
         if self.too_large || self.exceeds_max_size(&content) {
             let old_content = std::mem::replace(&mut self.content, content);
@@ -247,12 +247,12 @@ impl Document {
     /// Which version of the content this is. Unlike the client's version, it is unique across
     /// all documents: it changes on every change, also of the migration tool, and a document that
     /// is closed and opened again gets a new one.
-    pub fn generation(&self) -> u64 {
+    pub(crate) fn generation(&self) -> u64 {
         self.generation
     }
 
     /// Where the last change of the content starts.
-    pub fn edited_at(&self) -> Option<TextSize> {
+    pub(crate) fn edited_at(&self) -> Option<TextSize> {
         self.edited_at
     }
 
@@ -354,7 +354,7 @@ impl Document {
 
     /// The migration sections of the document, like the up and down migrations of dbmate and
     /// goose. A tool without section markers has none.
-    pub fn migration_sections(&self) -> &[Unit] {
+    pub(crate) fn migration_sections(&self) -> &[Unit] {
         &self.migration_script.units
     }
 
@@ -369,12 +369,12 @@ impl Document {
         self.cache.stats(&statements)
     }
 
-    pub fn suppressions(&self) -> &Suppressions {
+    pub(crate) fn suppressions(&self) -> &Suppressions {
         &self.suppressions
     }
 
     /// The ranges of the top-level statements, in file order.
-    pub fn statement_ranges(&self) -> &[TextRange] {
+    pub(crate) fn statement_ranges(&self) -> &[TextRange] {
         &self.split.ranges
     }
 
@@ -388,7 +388,7 @@ impl Document {
             .filter_map(|range| Some((text.get(std::ops::Range::<usize>::from(*range))?, *range)))
     }
 
-    pub fn get_document_content(&self) -> &str {
+    pub(crate) fn get_document_content(&self) -> &str {
         &self.content
     }
 
@@ -400,7 +400,7 @@ impl Document {
 
     /// Whether `range` overlaps a part of the content that the migration tool replaces, like a
     /// goose `ENVSUB` expansion. Edits there would write the placeholder into the file.
-    pub fn touches_placeholder(&self, range: TextRange) -> bool {
+    pub(crate) fn touches_placeholder(&self, range: TextRange) -> bool {
         self.migration_script
             .preprocessed
             .as_ref()
@@ -416,7 +416,7 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_unknown_value(range))
     }
 
-    pub fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
+    pub(crate) fn document_diagnostics(&self) -> &Vec<SDiagnostic> {
         &self.diagnostics
     }
 
@@ -424,12 +424,12 @@ impl Document {
     /// the statements embedded in it, like the statements of a SQL function body.
     ///
     /// Cost: finding the embedded statements parses each top-level statement on a cold cache.
-    pub fn statements(&self) -> impl Iterator<Item = DocumentStatement> + '_ {
+    pub(crate) fn statements(&self) -> impl Iterator<Item = DocumentStatement> + '_ {
         self.statements_in(&self.split.ranges)
     }
 
     /// The statements from the first top-level statement that starts at or after `offset` on.
-    pub fn statements_from(
+    pub(crate) fn statements_from(
         &self,
         offset: TextSize,
     ) -> impl Iterator<Item = DocumentStatement> + '_ {
@@ -443,7 +443,7 @@ impl Document {
     /// The statements that contain `position`, outermost first: the top-level statement, and the
     /// body of a SQL function if `position` is in it. Only the top-level statement at `position`
     /// is looked at.
-    pub fn statements_at(
+    pub(crate) fn statements_at(
         &self,
         position: TextSize,
     ) -> impl Iterator<Item = DocumentStatement> + '_ {
@@ -460,7 +460,7 @@ impl Document {
     /// The statements that a completion at `position` can be in, see
     /// [`DocumentStatement::completes_at`]. Only the top-level statements near `position` are
     /// looked at.
-    pub fn statements_near(
+    pub(crate) fn statements_near(
         &self,
         position: TextSize,
     ) -> impl Iterator<Item = DocumentStatement> + '_ {
@@ -482,7 +482,7 @@ impl Document {
     /// Cost: a comparison of the text of each top-level statement of the same length as the
     /// id's top-level statement.
     #[cfg(feature = "db")]
-    pub fn statement(&self, id: &StatementId) -> Option<DocumentStatement> {
+    pub(crate) fn statement(&self, id: &StatementId) -> Option<DocumentStatement> {
         let root = id.parent_content().unwrap_or(id.content());
         let text = self.text();
         let range = *self
@@ -517,7 +517,7 @@ impl Document {
 
     /// The text of `stmt`. For an embedded statement, it can differ from the source text, like
     /// a function body with escaped quotes, see [`DocumentStatement::offsets`].
-    pub fn sql<'a>(&'a self, stmt: &'a DocumentStatement) -> &'a str {
+    pub(crate) fn sql<'a>(&'a self, stmt: &'a DocumentStatement) -> &'a str {
         stmt.id.content()
     }
 
@@ -527,13 +527,13 @@ impl Document {
     }
 
     /// The tree-sitter tree of `stmt`.
-    pub fn tree(&self, stmt: &DocumentStatement) -> Arc<tree_sitter::Tree> {
+    pub(crate) fn tree(&self, stmt: &DocumentStatement) -> Arc<tree_sitter::Tree> {
         self.cache.tree(&stmt.id, self.generation)
     }
 
     /// What the walk takes of `stmt`: the statement if it parses, its syntax error, and the
     /// statement again if it is a top-level statement that doesn't parse.
-    pub fn walk_input(&self, stmt: DocumentStatement) -> StatementWalkInput {
+    pub(crate) fn walk_input(&self, stmt: DocumentStatement) -> StatementWalkInput {
         let DocumentStatement { id, range, offsets } = stmt;
         let maybe_node = self.cache.parse(&id, self.generation);
 
@@ -587,7 +587,7 @@ impl Document {
 }
 
 /// What the walk takes of a statement, see [`Document::walk_input`].
-pub struct StatementWalkInput {
+pub(crate) struct StatementWalkInput {
     /// The statement, if it parses.
     pub analysable: Option<AnalysableStatement>,
     /// Why the statement doesn't parse, or why the PL/pgSQL body of the function it creates
@@ -601,7 +601,7 @@ pub struct StatementWalkInput {
 /// statement of a SQL function body. Its text, tree and parse result are read from the
 /// [`Document`].
 #[derive(Debug, Clone)]
-pub struct DocumentStatement {
+pub(crate) struct DocumentStatement {
     id: StatementId,
     /// Where the statement is in the document.
     range: TextRange,
@@ -621,43 +621,43 @@ impl DocumentStatement {
     }
 
     /// The id of the statement, which clients pass back to execute it.
-    pub fn id(&self) -> &StatementId {
+    pub(crate) fn id(&self) -> &StatementId {
         &self.id
     }
 
     /// Where the statement is in the document.
-    pub fn range(&self) -> TextRange {
+    pub(crate) fn range(&self) -> TextRange {
         self.range
     }
 
     /// Maps offsets in the statement text to offsets in the document, relative to the start of
     /// [`Self::range`]. They only differ for embedded statements whose text isn't the source
     /// text, like a function body with escaped quotes.
-    pub fn offsets(&self) -> &OffsetMap {
+    pub(crate) fn offsets(&self) -> &OffsetMap {
         &self.offsets
     }
 
     /// Whether the statement is embedded in a top-level statement, like a statement of a SQL
     /// function body.
-    pub fn is_embedded(&self) -> bool {
+    pub(crate) fn is_embedded(&self) -> bool {
         self.id.is_child()
     }
 
     /// Whether the statement is embedded in the top-level statement `other`.
-    pub fn is_embedded_in(&self, other: &DocumentStatement) -> bool {
+    pub(crate) fn is_embedded_in(&self, other: &DocumentStatement) -> bool {
         self.id.is_child_of(&other.id)
     }
 
     /// The range in the document of `range` in the statement text. Like [`Self::statement_offset`],
     /// it can end after the statement text.
-    pub fn document_range(&self, range: TextRange) -> TextRange {
+    pub(crate) fn document_range(&self, range: TextRange) -> TextRange {
         self.offsets.range_to_source(range) + self.range.start()
     }
 
     /// The offset in the statement text of `offset` in the document, which is in the
     /// statement's range, or up to two bytes after the end of an unterminated statement, where
     /// [`Self::completes_at`] finds the cursor of a completion.
-    pub fn statement_offset(&self, offset: TextSize) -> TextSize {
+    pub(crate) fn statement_offset(&self, offset: TextSize) -> TextSize {
         debug_assert!(self.range.start() <= offset);
         self.offsets
             .to_statement(offset.checked_sub(self.range.start()).unwrap_or_default())

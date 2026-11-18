@@ -1235,7 +1235,7 @@ impl Session {
             .store(true, Ordering::Relaxed);
     }
 
-    pub fn position_encoding(&self) -> PositionEncoding {
+    pub(crate) fn position_encoding(&self) -> PositionEncoding {
         self.client_capabilities().map_or(
             PositionEncoding::Wide(WideEncoding::Utf16),
             negotiated_encoding,
