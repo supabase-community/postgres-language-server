@@ -2,7 +2,7 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{FuncCall, RangeFunction},
 };
-use pgls_query_ext::utils::{QualifiedName, qualified_name, string_value, string_values};
+use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name, string_value};
 
 use super::{
     Resolver, alias::apply_alias, func_call::resolve_func_call, record_unresolved_node,
@@ -170,8 +170,7 @@ fn multi_argument_unnest(entry: &Node) -> Option<&FuncCall> {
     else {
         return None;
     };
-    let is_unnest =
-        matches!(string_values(&call.funcname).as_deref(), Some([name]) if name == "unnest");
+    let is_unnest = matches!(NameParts::of(&call.funcname).as_ref().map(NameParts::as_slice), Some([name]) if *name == "unnest");
     (is_unnest
         && !has_column_definitions
         && call.args.len() > 1

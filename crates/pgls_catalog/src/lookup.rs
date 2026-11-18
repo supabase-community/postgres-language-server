@@ -1,8 +1,4 @@
-//! The lookups that name resolution makes against the catalog.
-//!
-//! [`crate::Catalog`] implements [`CatalogView`] for the real database snapshot plus the
-//! changes of the current file. The resolver only depends on this trait, so it can be tested
-//! against small in-memory catalogs.
+//! The results of the lookups that name resolution makes against the [`crate::Catalog`].
 
 use std::borrow::Cow;
 
@@ -200,97 +196,6 @@ pub struct TypeInfo {
     pub base: Option<TypeId>,
     /// Relation identity for composite types.
     pub relation: Option<i64>,
-}
-
-/// Read-only access to the catalog as it is before the statement being analysed.
-///
-/// All `search_path` arguments are the explicit search path of the session. Implementations
-/// apply Postgres' implicit rules on top of it: `pg_catalog` is searched first unless it is
-/// listed explicitly, and `pg_temp` is searched first for relations and types (never for
-/// functions) unless it is listed explicitly ([`finalNamespacePath`], [`FuncnameGetCandidates`]).
-///
-/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
-/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
-pub trait CatalogView {
-    /// Looks up a relation. With `schema: None`, the search path is used.
-    fn relation(
-        &self,
-        schema: Option<&str>,
-        name: &str,
-        search_path: &[String],
-    ) -> Lookup<RelationInfo>;
-
-    /// Looks up a schema. `pg_temp` and `pg_catalog` always exist.
-    fn schema(&self, name: &str) -> Lookup<()>;
-
-    /// Looks up a role. Never `Missing`, since roles that the file creates aren't followed.
-    fn role(&self, _: &str) -> Lookup<()> {
-        Lookup::Unknown
-    }
-
-    /// Returns all overloads with this name that are visible. With `schema: None`, all schemas
-    /// on the search path are considered.
-    fn functions(
-        &self,
-        schema: Option<&str>,
-        name: &str,
-        search_path: &[String],
-    ) -> Lookup<Vec<FunctionInfo>>;
-
-    /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
-    /// the search path is used.
-    fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo>;
-
-    /// The identity of the builtin type `pg_catalog.<name>`, if it is known.
-    fn builtin_type(&self, name: &str) -> Option<TypeId> {
-        self.type_(Some("pg_catalog"), name, &[]).found()?.id
-    }
-
-    /// Looks up a type by identity.
-    fn type_by_id(&self, _: &TypeId) -> Lookup<TypeInfo> {
-        Lookup::Unknown
-    }
-    /// Looks up a direct cast.
-    fn cast(&self, _: &TypeId, _: &TypeId) -> Lookup<CastInfo> {
-        Lookup::Unknown
-    }
-    /// Returns function candidates; the default catalog has no complete candidate list.
-    fn function_candidates(
-        &self,
-        _: Option<&str>,
-        _: &str,
-        _: &[String],
-    ) -> Candidates<FunctionInfo> {
-        Candidates {
-            items: vec![],
-            complete: false,
-        }
-    }
-    /// Returns operator candidates; the default catalog has no complete candidate list.
-    fn operator_candidates(
-        &self,
-        _: Option<&str>,
-        _: &str,
-        _: crate::OperatorKind,
-        _: &[String],
-    ) -> Candidates<OperatorInfo> {
-        Candidates {
-            items: vec![],
-            complete: false,
-        }
-    }
-    /// Returns the server version when available.
-    fn server_version_num(&self) -> Option<i64> {
-        None
-    }
-
-    /// Whether the server runs Postgres `major` or later, like `server_version_at_least(12)`.
-    /// `None` when the version is not known. Since Postgres 10, `server_version_num` is the major
-    /// version times 10000 plus the minor version.
-    fn server_version_at_least(&self, major: i64) -> Option<bool> {
-        self.server_version_num()
-            .map(|version| version >= major * 10_000)
-    }
 }
 
 // ----- facts for typing -----

@@ -25,7 +25,7 @@ pub(crate) fn complete_policies<'a>(
         let range = get_range_to_replace(ctx);
 
         let item = PossibleCompletionItem {
-            label: pol.name.chars().take(35).collect::<String>(),
+            label: pol.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             description: pol.table_name.to_string(),
@@ -112,6 +112,54 @@ mod tests {
             .as_str(),
             vec![CompletionAssertion::Label(
                 "write for public users allowed".into(),
+            )],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    /// Long names are offered in full, also once the typed text is longer than 35 characters,
+    /// and two names that share their first 35 characters are two items.
+    #[pgls_test_utils::db_test]
+    async fn completes_long_policy_names(pool: PgPool) {
+        let setup = r#"
+            create table public.users (id serial primary key);
+
+            create policy "users can read the rows of their own organisation" on public.users
+                for select using (true);
+
+            create policy "users can read the rows of their own team only" on public.users
+                for select using (true);
+        "#;
+
+        pool.execute(setup).await.unwrap();
+
+        assert_complete_results(
+            format!(
+                "alter policy \"{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![
+                CompletionAssertion::Label(
+                    "users can read the rows of their own organisation".into(),
+                ),
+                CompletionAssertion::Label("users can read the rows of their own team only".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!(
+                "alter policy \"users can read the rows of their own t{}",
+                QueryWithCursorPosition::cursor_marker()
+            )
+            .as_str(),
+            vec![CompletionAssertion::Label(
+                "users can read the rows of their own team only".into(),
             )],
             None,
             &pool,

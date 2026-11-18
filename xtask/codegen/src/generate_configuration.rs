@@ -801,11 +801,11 @@ fn generate_lint_rules_file(
         #[cfg_attr(feature = "schema", schemars(rename = #rules_schema_name_lit))]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
         pub struct Rules {
-            /// It enables the lint rules recommended by Postgres Language Server. `true` by default.
+            /// It enables the recommended rules. `true` by default.
             #[serde(skip_serializing_if = "Option::is_none")]
             pub recommended: Option<bool>,
 
-            /// It enables ALL rules. The rules that belong to `nursery` won't be enabled.
+            /// It enables all rules.
             #[serde(skip_serializing_if = "Option::is_none")]
             pub all: Option<bool>,
 
