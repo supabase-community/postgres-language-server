@@ -1,15 +1,13 @@
 pub mod diagnostics;
-pub mod typed_identifier;
 
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
 use itertools::Itertools;
+use pgls_catalog::NamePosition;
 use pgls_text_size::TextSize;
 use sqlx::postgres::PgDatabaseError;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::{Executor, PgPool};
-use typed_identifier::apply_identifiers;
-pub use typed_identifier::{IdentifierReplacement, IdentifierType, TypedIdentifier};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
@@ -17,8 +15,6 @@ pub struct TypecheckParams<'a> {
     pub sql: &'a str,
     pub ast: &'a pgls_query::NodeEnum,
     pub tree: &'a tree_sitter::Tree,
-    pub snapshot: &'a pgls_catalog::Snapshot,
-    pub identifiers: Vec<TypedIdentifier>,
     /// The explicit search path of the session at this statement.
     pub search_path: &'a [String],
     /// Set when `banDuplicateColumnAssignments` already reported the statement, so Postgres'
@@ -61,21 +57,17 @@ pub async fn check_sql(
     // each typecheck operation.
     conn.close_on_drop();
 
-    let typed_replacement = apply_identifiers(params.identifiers, params.snapshot, tree, sql);
-
     if !params.search_path.is_empty() {
         let schemas = params
             .search_path
             .iter()
-            .map(|schema| quote_identifier(schema))
+            .map(|schema| pgls_catalog::quote_identifier(schema, NamePosition::ColId))
             .join(", ");
         conn.execute(&*format!("SET search_path TO {schemas};"))
             .await?;
     }
 
-    let res = conn
-        .prepare(typed_replacement.text_replacement().text())
-        .await;
+    let res = conn.prepare(sql).await;
 
     match res {
         Ok(_) => Ok(None),
@@ -84,12 +76,7 @@ pub async fn check_sql(
             if params.duplicate_assignments_reported && is_multiple_assignments(pg_err) {
                 return Ok(None);
             }
-            Ok(Some(create_type_error(
-                pg_err,
-                tree,
-                typed_replacement,
-                source_offset,
-            )))
+            Ok(Some(create_type_error(pg_err, tree, sql, source_offset)))
         }
         Err(err) => Err(err),
     }
@@ -150,10 +137,6 @@ fn find_create_query(node: tree_sitter::Node<'_>) -> Option<tree_sitter::Node<'_
 
     let mut cursor = node.walk();
     node.children(&mut cursor).find_map(find_create_query)
-}
-
-fn quote_identifier(identifier: &str) -> String {
-    format!("\"{}\"", identifier.replace('"', "\"\""))
 }
 
 #[cfg(test)]

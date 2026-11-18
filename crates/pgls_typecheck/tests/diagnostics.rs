@@ -7,7 +7,7 @@
 
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::Diagnostic;
-use pgls_typecheck::{IdentifierType, TypecheckParams, TypedIdentifier, check_sql};
+use pgls_typecheck::{TypecheckParams, check_sql};
 use sqlx::{Executor, PgPool};
 use std::fmt::Write;
 
@@ -16,7 +16,6 @@ struct TestSetup<'a> {
     query: &'a str,
     setup: Option<&'a str>,
     test_db: &'a PgPool,
-    typed_identifiers: Vec<TypedIdentifier>,
 }
 
 impl TestSetup<'_> {
@@ -33,10 +32,6 @@ impl TestSetup<'_> {
             .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
             .expect("Error loading sql language");
 
-        let snapshot = pgls_catalog::Snapshot::load(self.test_db)
-            .await
-            .expect("Failed to load snapshot");
-
         let root = pgls_query::parse(self.query)
             .unwrap()
             .into_root()
@@ -48,8 +43,6 @@ impl TestSetup<'_> {
             sql: self.query,
             ast: &root,
             tree: &tree,
-            snapshot: &snapshot,
-            identifiers: self.typed_identifiers,
             search_path: &[],
             duplicate_assignments_reported: false,
         })
@@ -108,71 +101,6 @@ impl TestSetup<'_> {
 }
 
 #[pgls_test_utils::db_test]
-async fn function_arg_row_type(test_db: PgPool) {
-    // A SQL function whose argument is a table's row type, e.g.
-    // create function get_tbl_name(row_arg public.tbl) returns text
-    // language sql as $$ select row_arg.name $$;
-    // Accessing a field of the row argument must not raise a false-positive
-    // "missing FROM-clause entry" diagnostic.
-    let setup = r#"
-        create table public.tbl (
-            id serial primary key,
-            name text not null
-        );
-    "#;
-
-    TestSetup {
-        name: "function_arg_row_type",
-        setup: Some(setup),
-        query: r#"select row_arg.name"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "get_tbl_name".to_string(),
-            name: Some("row_arg".to_string()),
-            type_: IdentifierType {
-                schema: Some("public".to_string()),
-                name: "tbl".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-}
-
-#[pgls_test_utils::db_test]
-async fn function_arg_view_row_type(test_db: PgPool) {
-    // A view (like a table) exposes a composite row type, so a function
-    // argument typed as the view must also resolve field access without a
-    // false-positive diagnostic.
-    let setup = r#"
-        create table public.tbl (
-            id serial primary key,
-            name text not null
-        );
-        create view public.tbl_view as select id, name from public.tbl;
-    "#;
-
-    TestSetup {
-        name: "function_arg_view_row_type",
-        setup: Some(setup),
-        query: r#"select row_arg.name"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "get_view_name".to_string(),
-            name: Some("row_arg".to_string()),
-            type_: IdentifierType {
-                schema: Some("public".to_string()),
-                name: "tbl_view".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-}
-
-#[pgls_test_utils::db_test]
 async fn invalid_column(test_db: PgPool) {
     TestSetup {
         name: "invalid_column",
@@ -188,7 +116,6 @@ async fn invalid_column(test_db: PgPool) {
     "#,
         ),
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -201,7 +128,6 @@ async fn create_table_as_invalid_column(test_db: PgPool) {
         query: "CREATE TABLE t2 AS SELECT t.nope FROM t;",
         setup: Some("CREATE TABLE t (a INT);"),
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -214,7 +140,6 @@ async fn create_table_as_invalid_relation(test_db: PgPool) {
         query: "CREATE TABLE t3 AS SELECT t.a FROM nonexistent_table AS t;",
         setup: Some("CREATE TABLE t (a INT);"),
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -227,7 +152,6 @@ async fn create_materialized_view_as_invalid_column(test_db: PgPool) {
         query: "CREATE MATERIALIZED VIEW mv1 AS SELECT t.nope FROM t;",
         setup: Some("CREATE TABLE t (a INT);"),
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -240,7 +164,6 @@ async fn create_view_as_invalid_column(test_db: PgPool) {
         query: "CREATE VIEW v1 AS SELECT t.nope FROM t;",
         setup: Some("CREATE TABLE t (a INT);"),
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -272,7 +195,6 @@ async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
             query,
             setup: None,
             test_db: &test_db,
-            typed_identifiers: vec![],
         }
         .test()
         .await;
@@ -289,141 +211,6 @@ async fn create_as_valid_queries_do_not_execute_ddl(test_db: PgPool) {
 }
 
 #[pgls_test_utils::db_test]
-async fn invalid_type_in_function(test_db: PgPool) {
-    // create or replace function clean_up(uid uuid)
-    // returns void
-    // language sql
-    // as $$
-    //     delete from public.contacts where id = uid;
-    // $$;
-
-    let setup = r#"
-        create table public.contacts (
-            id serial primary key,
-            name text not null,
-            is_vegetarian bool default false,
-            middle_name varchar(255)
-        );
-    "#;
-
-    /* NOTE: The replaced type default value is *longer* than the param name. */
-    TestSetup {
-        name: "invalid_type_in_function_longer_default",
-        setup: Some(setup),
-        query: r#"delete from public.contacts where id = uid;"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "clean_up".to_string(),
-            name: Some("uid".to_string()),
-            type_: IdentifierType {
-                schema: None,
-                name: "uuid".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-
-    /* NOTE: The replaced type default value is *shorter* than the param name. */
-    TestSetup {
-        name: "invalid_type_in_function_shorter_default",
-        setup: None,
-        query: r#"delete from public.contacts where id = contact_name;"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "clean_up".to_string(),
-            name: Some("contact_name".to_string()),
-            type_: IdentifierType {
-                schema: None,
-                name: "text".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-}
-
-#[pgls_test_utils::db_test]
-async fn operator_does_not_exist(test_db: PgPool) {
-    // tests the pattern: operator does not exist: X + Y
-    // use boolean type which doesn't have + operator with text
-    let setup = r#"
-        create table public.products (
-            id serial primary key,
-            is_active boolean not null,
-            product_name text not null
-        );
-    "#;
-
-    TestSetup {
-        name: "operator_does_not_exist",
-        setup: Some(setup),
-        query: r#"select is_active + product_name from public.products;"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "calculate_total".to_string(),
-            name: Some("product_name".to_string()),
-            type_: IdentifierType {
-                schema: None,
-                name: "text".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-}
-
-#[pgls_test_utils::db_test]
-async fn function_parameter_type_with_multiple_words(test_db: PgPool) {
-    // the type "timestamp with time zone" has multiple words
-    let setup = r#"
-        create table public.products (
-            id serial primary key,
-            released timestamp with time zone not null
-        );
-    "#;
-
-    TestSetup {
-        name: "testing_type_with_multiple_words",
-        setup: Some(setup),
-        query: r#"select * from public.products where released = pid;"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "delete_product".to_string(),
-            name: Some("pid".to_string()),
-            type_: IdentifierType {
-                schema: None,
-                name: "uuid".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-
-    TestSetup {
-        name: "testing_operator_type_with_multiple_words",
-        setup: None,
-        query: r#"delete from public.products where released > pid;"#,
-        test_db: &test_db,
-        typed_identifiers: vec![TypedIdentifier {
-            path: "delete_product".to_string(),
-            name: Some("pid".to_string()),
-            type_: IdentifierType {
-                schema: None,
-                name: "numeric".to_string(),
-                is_array: false,
-            },
-        }],
-    }
-    .test()
-    .await;
-}
-
-#[pgls_test_utils::db_test]
 async fn merge_invalid_column(test_db: PgPool) {
     TestSetup {
         name: "merge_invalid_column",
@@ -435,7 +222,6 @@ async fn merge_invalid_column(test_db: PgPool) {
     "#,
         ),
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -459,7 +245,6 @@ async fn merge_is_not_executed(test_db: PgPool) {
                 when not matched then insert values (i.id, i.name);",
         setup: None,
         test_db: &test_db,
-        typed_identifiers: vec![],
     }
     .test()
     .await;
@@ -482,28 +267,24 @@ async fn duplicate_assignments_are_reported_once(test_db: PgPool) {
         )
         .await
         .expect("Failed to set up the tables");
-    let snapshot = pgls_catalog::Snapshot::load(&test_db)
-        .await
-        .expect("Failed to load snapshot");
 
     for sql in [
         "merge into users u using imports i on u.id = i.id \
          when matched then update set name = i.name, name = 'again'",
         "update users set name = 'a', name = 'b'",
     ] {
-        let reported = check(&test_db, &snapshot, sql, false).await;
+        let reported = check(&test_db, sql, false).await;
         assert!(
             reported
                 .as_deref()
                 .is_some_and(|message| message.contains("multiple assignments to same column")),
             "{sql}: {reported:?}"
         );
-        assert_eq!(check(&test_db, &snapshot, sql, true).await, None, "{sql}");
+        assert_eq!(check(&test_db, sql, true).await, None, "{sql}");
     }
     // Other errors of the statement are still reported.
     let other = check(
         &test_db,
-        &snapshot,
         "merge into users u using imports i on u.id = i.id \
          when matched then update set name = i.nope, name = 'again'",
         true,
@@ -520,7 +301,6 @@ async fn duplicate_assignments_are_reported_once(test_db: PgPool) {
 /// The message of the error of `sql`, if any.
 async fn check(
     test_db: &PgPool,
-    snapshot: &pgls_catalog::Snapshot,
     sql: &str,
     duplicate_assignments_reported: bool,
 ) -> Option<String> {
@@ -535,8 +315,6 @@ async fn check(
         sql,
         ast: &root,
         tree: &tree,
-        snapshot,
-        identifiers: vec![],
         search_path: &[],
         duplicate_assignments_reported,
     })

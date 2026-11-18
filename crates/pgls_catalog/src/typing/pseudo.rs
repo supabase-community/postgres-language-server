@@ -1,8 +1,9 @@
 //! The pseudo-types that stand for the type of an argument: `"any"` and the polymorphic types.
 
+use crate::Catalog;
+use crate::TypeInfo;
 use crate::typing::types::lookup_builtin;
 use crate::typing::{Decision, TypeId};
-use crate::{CatalogView, TypeInfo};
 
 /// `"any"` and the polymorphic pseudo-types of [`IsPolymorphicType`]. `"any"` accepts every type
 /// too, but Postgres doesn't count it as polymorphic: it binds nothing, so its
@@ -131,7 +132,7 @@ impl Polymorphic {
     }
 
     /// The identity of the type, if it is known.
-    pub fn type_id(self, c: &dyn CatalogView) -> Option<TypeId> {
+    pub fn type_id(self, c: &Catalog) -> Option<TypeId> {
         c.builtin_type(self.name())
     }
 }
@@ -142,13 +143,13 @@ pub(crate) struct PolymorphicIds([Option<TypeId>; 12]);
 
 impl PolymorphicIds {
     /// Looks up every type. A type that is missing or unknown has no identity.
-    pub(crate) fn load(c: &dyn CatalogView) -> Self {
+    pub(crate) fn load(c: &Catalog) -> Self {
         Self(Polymorphic::ALL.map(|p| p.type_id(c)))
     }
 
     /// Looks up every type, and is unknown if any of the lookups is. A missing type has no
     /// identity.
-    pub(crate) fn try_load(c: &dyn CatalogView) -> Decision<Self> {
+    pub(crate) fn try_load(c: &Catalog) -> Decision<Self> {
         let mut ids: [Option<TypeId>; 12] = Default::default();
         for (id, p) in ids.iter_mut().zip(Polymorphic::ALL) {
             match lookup_builtin(c, p.name()) {

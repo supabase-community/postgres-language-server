@@ -1,5 +1,5 @@
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{QualifiedName, qualified_name, string_values};
+use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name};
 
 use super::infer_expr;
 use crate::{
@@ -70,10 +70,10 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                 let (Some(left), Some(element)) = (left, element) else {
                     return named(r, "bool");
                 };
-                let op = string_values(&n.name)?.last()?.clone();
+                let op = NameParts::last(&n.name)?;
                 // An unknown literal array, like `'{happy,sad}'`, becomes an array of the type
                 // that the operator resolves its element to (`make_scalar_array_op`).
-                if let Some(operator) = check_operator(r, &op, Some(&left), &element, n.location) {
+                if let Some(operator) = check_operator(r, op, Some(&left), &element, n.location) {
                     record_enum_operands(r, &operator, (lexpr, &left), (rexpr, &element));
                 }
                 return named(r, "bool");
@@ -96,7 +96,7 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     Some(node) => vec![node],
                     None => Vec::new(),
                 };
-                let name = if string_values(&n.name)?.last()?.as_str() == "<>" {
+                let name = if NameParts::last(&n.name)? == "<>" {
                     "<>"
                 } else {
                     "="
@@ -219,10 +219,7 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
                     .and_then(|x| x.node.as_ref())
                     .and_then(|x| infer_expr(r, x));
                 if let (Some(left), Some(right)) = (left.as_ref(), right.as_ref()) {
-                    let negated = string_values(&n.name)
-                        .and_then(|v| v.last().cloned())
-                        .as_deref()
-                        == Some("!~~");
+                    let negated = NameParts::last(&n.name) == Some("!~~");
                     let op = match Kind::try_from(n.kind).ok()? {
                         Kind::AexprLike => {
                             if negated {

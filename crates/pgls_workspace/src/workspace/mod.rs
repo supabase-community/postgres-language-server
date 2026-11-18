@@ -376,6 +376,7 @@ impl<'app, W: Workspace + ?Sized> FileGuard<'app, W> {
                 max_diagnostics,
                 only,
                 skip,
+                database_checks: crate::features::diagnostics::DatabaseChecks::Run,
             })
     }
 

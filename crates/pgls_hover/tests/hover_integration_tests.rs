@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use pgls_catalog::{Catalog, CatalogBase, Snapshot};
+use pgls_catalog::{Catalog, Snapshot};
 use pgls_hover::{OnHoverParams, on_hover};
 use pgls_resolve::{ResolveParams, resolve};
 use pgls_test_utils::QueryWithCursorPosition;
@@ -58,7 +58,7 @@ async fn test_hover_at_cursor_on(
     let references = ast
         .as_ref()
         .map(|stmt| {
-            let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::clone(&snapshot)))));
+            let catalog = Catalog::from_snapshot(Arc::clone(&snapshot));
             resolve(ResolveParams {
                 stmt,
                 catalog: &catalog,

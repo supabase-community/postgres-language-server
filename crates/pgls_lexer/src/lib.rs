@@ -124,6 +124,19 @@ mod tests {
     }
 
     #[test]
+    fn descriptions_name_tokens_for_messages() {
+        for (kind, description) in [
+            (SyntaxKind::AS_KW, "\"AS\""),
+            (SyntaxKind::L_PAREN, "\"(\""),
+            (SyntaxKind::BACKSLASH, "\"\\\""),
+            (SyntaxKind::IDENT, "an identifier"),
+            (SyntaxKind::EOF, "the end of the input"),
+        ] {
+            assert_eq!(kind.description(), description, "{kind:?}");
+        }
+    }
+
+    #[test]
     fn test_empty_input() {
         let input = "";
         let lexed = lex(input);

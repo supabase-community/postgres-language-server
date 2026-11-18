@@ -4,12 +4,14 @@ use quote::{format_ident, quote};
 
 use crate::keywords::{KeywordKinds, keyword_kinds};
 
-const WHITESPACE: &[&str] = &[
-    "SPACE",        // " "
-    "TAB",          // "\t"
-    "VERTICAL_TAB", // "\x0B"
-    "FORM_FEED",    // "\x0C"
-    "LINE_ENDING",  // "\n" or "\r" in any combination
+/// The whitespace kinds and how a message names them.
+const WHITESPACE: &[(&str, &str)] = &[
+    ("SPACE", "a space"),
+    ("TAB", "a tab"),
+    ("VERTICAL_TAB", "a vertical tab"),
+    ("FORM_FEED", "a form feed"),
+    // "\n" or "\r" in any combination
+    ("LINE_ENDING", "a line break"),
 ];
 
 const PUNCT: &[(&str, &str)] = &[
@@ -44,18 +46,26 @@ const PUNCT: &[(&str, &str)] = &[
     ("`", "BACKTICK"),
 ];
 
-const EXTRA: &[&str] = &["POSITIONAL_PARAM", "NAMED_PARAM", "ERROR", "COMMENT", "EOF"];
+/// The other kinds of tokens and how a message names them.
+const EXTRA: &[(&str, &str)] = &[
+    ("POSITIONAL_PARAM", "a positional parameter"),
+    ("NAMED_PARAM", "a named parameter"),
+    ("ERROR", "an invalid token"),
+    ("COMMENT", "a comment"),
+    ("EOF", "the end of the input"),
+];
 
-const LITERALS: &[&str] = &[
-    "BIT_STRING",
-    "BYTE_STRING",
-    "DOLLAR_QUOTED_STRING",
-    "ESC_STRING",
-    "FLOAT_NUMBER",
-    "INT_NUMBER",
-    "NULL",
-    "STRING",
-    "IDENT",
+/// The literal kinds and how a message names them.
+const LITERALS: &[(&str, &str)] = &[
+    ("BIT_STRING", "a bit string"),
+    ("BYTE_STRING", "a hexadecimal string"),
+    ("DOLLAR_QUOTED_STRING", "a dollar-quoted string"),
+    ("ESC_STRING", "an escape string"),
+    ("FLOAT_NUMBER", "a number"),
+    ("INT_NUMBER", "an integer"),
+    ("NULL", "\"NULL\""),
+    ("STRING", "a string"),
+    ("IDENT", "an identifier"),
 ];
 
 pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
@@ -75,6 +85,7 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
     let mut keyword_category_match_arms: Vec<TokenStream> = Vec::new();
 
     let mut is_trivia_match_arms: Vec<TokenStream> = Vec::new();
+    let mut description_match_arms: Vec<TokenStream> = Vec::new();
 
     // collect keywords
     for kw in &all_keywords {
@@ -102,12 +113,19 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
         keyword_category_match_arms.push(quote! {
             SyntaxKind::#kind_ident => Some(KeywordCategory::#category)
         });
+        let description = format!("\"{}\"", name.to_uppercase());
+        description_match_arms.push(quote! {
+            SyntaxKind::#kind_ident => #description
+        });
     }
 
     // collect extra keywords
-    EXTRA.iter().for_each(|&name| {
+    EXTRA.iter().for_each(|&(name, description)| {
         let variant_name = format_ident!("{}", name);
         enum_variants.push(quote! { #variant_name });
+        description_match_arms.push(quote! {
+            SyntaxKind::#variant_name => #description
+        });
 
         if name == "COMMENT" {
             is_trivia_match_arms.push(quote! {
@@ -117,24 +135,34 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
     });
 
     // collect whitespace variants
-    WHITESPACE.iter().for_each(|&name| {
+    WHITESPACE.iter().for_each(|&(name, description)| {
         let variant_name = format_ident!("{}", name);
         enum_variants.push(quote! { #variant_name });
+        description_match_arms.push(quote! {
+            SyntaxKind::#variant_name => #description
+        });
         is_trivia_match_arms.push(quote! {
             SyntaxKind::#variant_name => true
         });
     });
 
     // collect punctuations
-    PUNCT.iter().for_each(|&(_ascii_name, variant)| {
+    PUNCT.iter().for_each(|&(ascii_name, variant)| {
         let variant_name = format_ident!("{}", variant);
         enum_variants.push(quote! { #variant_name });
+        let description = format!("\"{ascii_name}\"");
+        description_match_arms.push(quote! {
+            SyntaxKind::#variant_name => #description
+        });
     });
 
     // collect literals
-    LITERALS.iter().for_each(|&name| {
+    LITERALS.iter().for_each(|&(name, description)| {
         let variant_name = format_ident!("{}", name);
         enum_variants.push(quote! { #variant_name });
+        description_match_arms.push(quote! {
+            SyntaxKind::#variant_name => #description
+        });
     });
 
     quote! {
@@ -188,6 +216,14 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
                 match self {
                     #(#is_trivia_match_arms),*,
                     _ => false
+                }
+            }
+
+            /// How a message names the token: a keyword or punctuation mark in quotes, like
+            /// `"AS"` or `"("`, or what any other token is, like `an identifier`.
+            pub fn description(&self) -> &'static str {
+                match self {
+                    #(#description_match_arms),*
                 }
             }
         }

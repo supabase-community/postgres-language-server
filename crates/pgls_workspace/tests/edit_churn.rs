@@ -23,8 +23,10 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_workspace::{
     Workspace,
     features::{
-        code_actions::CodeActionsParams, diagnostics::PullFileDiagnosticsParams,
-        inlay_hints::PullInlayHintsParams, on_hover::OnHoverParams,
+        code_actions::CodeActionsParams,
+        diagnostics::{DatabaseChecks, PullFileDiagnosticsParams},
+        inlay_hints::PullInlayHintsParams,
+        on_hover::OnHoverParams,
         semantic_tokens::PullSemanticTokensParams,
     },
     workspace::{
@@ -213,6 +215,7 @@ fn diagnostics_and_code_actions(
             max_diagnostics: u32::MAX,
             only: vec![],
             skip: vec![],
+            database_checks: DatabaseChecks::Run,
         })
         .unwrap();
     workspace

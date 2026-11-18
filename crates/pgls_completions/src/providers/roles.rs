@@ -19,7 +19,7 @@ pub(crate) fn complete_roles<'a>(
         let relevance = CompletionRelevanceData::Role(role);
 
         let item = PossibleCompletionItem {
-            label: role.name.chars().take(35).collect::<String>(),
+            label: role.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
             description: role.name.clone(),

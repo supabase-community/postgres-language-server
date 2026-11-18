@@ -5,7 +5,7 @@
 //! resolution. Calls with unknown argument types, or that match no function or more than one,
 //! get none.
 
-use pgls_catalog::{CatalogView, identifier_name};
+use pgls_catalog::{Catalog, identifier_name};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{ScanToken, Token};
 use pgls_resolve::{FunctionContext, Reference, ResolveParams, resolve};
@@ -15,7 +15,7 @@ pub struct InlayHintsParams<'a> {
     pub stmt: &'a NodeEnum,
     /// The statement text. The AST's locations point into it.
     pub sql: &'a str,
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     /// The explicit search path of the session.
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.

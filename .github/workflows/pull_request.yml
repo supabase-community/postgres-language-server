@@ -276,6 +276,9 @@ jobs:
         run: |
           just lint-ci
 
+      - name: Lint other feature sets
+        run: just lint-features
+
       - name: Check for changes
         run: |
           if [[ $(git status --porcelain) ]]; then

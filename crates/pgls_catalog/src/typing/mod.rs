@@ -2,7 +2,7 @@
 //! another, which type several inputs agree on, and which function or operator a call picks.
 //!
 //! The functions here only answer questions about types. The facts they need come from
-//! [`crate::CatalogView`], and the resolver of `pgls_resolve` walks statements and asks them. Every
+//! [`crate::Catalog`], and the resolver of `pgls_resolve` walks statements and asks them. Every
 //! answer can be unknown, and unknown never proves an error.
 //!
 //! The algorithms are ported from the latest supported Postgres, [`REL_18_6`], and each port

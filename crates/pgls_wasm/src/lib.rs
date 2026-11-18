@@ -32,7 +32,7 @@ use pgls_workspace::features::code_actions::{
     CodeAction, CodeActionsParams, FixFileMode, FixFileParams, FixFileResult,
 };
 use pgls_workspace::features::completions::GetCompletionsParams;
-use pgls_workspace::features::diagnostics::PullFileDiagnosticsParams;
+use pgls_workspace::features::diagnostics::{DatabaseChecks, PullFileDiagnosticsParams};
 use pgls_workspace::features::format::PullFileFormattingParams;
 use pgls_workspace::features::on_hover::OnHoverParams;
 use pgls_workspace::workspace::{
@@ -376,9 +376,10 @@ impl Workspace {
                 project_key: self.project_key,
                 path: pgls_path,
                 categories: RuleCategories::all(),
-                max_diagnostics: 100,
+                max_diagnostics: u32::MAX,
                 only: vec![],
                 skip: vec![],
+                database_checks: DatabaseChecks::Run,
             })
             .map_err(|e| WasmError::ParseError(format!("Lint failed: {e}")))?;
 
