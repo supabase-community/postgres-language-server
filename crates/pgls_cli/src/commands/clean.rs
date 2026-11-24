@@ -5,7 +5,7 @@ use std::fs::{create_dir, remove_dir_all};
 use std::path::PathBuf;
 
 /// Runs the clean command
-pub fn clean(_cli_session: CliSession) -> Result<(), CliDiagnostic> {
+pub(crate) fn clean(_cli_session: CliSession) -> Result<(), CliDiagnostic> {
     let logs_path = pgls_env()
         .pgls_log_path
         .value()

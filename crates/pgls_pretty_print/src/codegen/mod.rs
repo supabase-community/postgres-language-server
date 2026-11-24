@@ -1,5 +1,5 @@
-pub mod node_location;
-pub mod token_kind;
+pub(crate) mod node_location;
+pub(crate) mod token_kind;
 
 #[cfg(test)]
 mod tests {

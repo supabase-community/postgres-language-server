@@ -6,10 +6,10 @@ use tower_lsp_server::ls_types::{ClientCapabilities, Position, PositionEncodingK
 
 use crate::session::Session;
 
-pub mod from_lsp;
-pub mod to_lsp;
+pub(crate) mod from_lsp;
+pub(crate) mod to_lsp;
 
-pub fn negotiated_encoding(capabilities: &ClientCapabilities) -> PositionEncoding {
+pub(crate) fn negotiated_encoding(capabilities: &ClientCapabilities) -> PositionEncoding {
     let client_encodings = match &capabilities.general {
         Some(general) => general.position_encodings.as_deref().unwrap_or_default(),
         None => &[],
@@ -27,7 +27,7 @@ pub fn negotiated_encoding(capabilities: &ClientCapabilities) -> PositionEncodin
     PositionEncoding::Wide(WideEncoding::Utf16)
 }
 
-pub fn get_cursor_position(
+pub(crate) fn get_cursor_position(
     session: &Session,
     url: &Uri,
     position: Position,
@@ -42,7 +42,7 @@ pub fn get_cursor_position(
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum PositionEncoding {
+pub(crate) enum PositionEncoding {
     Utf8,
     Wide(WideEncoding),
 }

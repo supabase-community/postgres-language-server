@@ -18,19 +18,22 @@ pub(crate) fn replace_section(
     content: &str,
     section_identifier: &str,
     replacement: &str,
-) -> String {
+) -> anyhow::Result<String> {
     // Markdown formatters rewrite `(BEGIN X)` to `"BEGIN X"`, so accept both.
     let pattern = format!(
         r#"(\[//\]: # [("]BEGIN {section_identifier}[)"]\n)(?s).*?(\n\[//\]: # [("]END {section_identifier}[)"])"#
     );
-    let re = Regex::new(&pattern).unwrap();
+    let re = Regex::new(&pattern)?;
 
     // Use a replacement function instead of a replacement string to avoid
     // issues with special characters like $ in the replacement text
-    re.replace_all(content, |caps: &regex::Captures| {
-        format!("{}{}{}", &caps[1], replacement, &caps[2])
-    })
-    .to_string()
+    // The pattern has two groups, neither optional.
+    Ok(re
+        .replace_all(content, |caps: &regex::Captures| {
+            let (_, [begin, end]) = caps.extract();
+            format!("{begin}{replacement}{end}")
+        })
+        .to_string())
 }
 
 #[derive(Default)]

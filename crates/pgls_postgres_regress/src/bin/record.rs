@@ -11,6 +11,7 @@
 
 use std::{
     collections::HashMap,
+    error::Error,
     fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -32,8 +33,10 @@ const PASSWORD: &str = "postgres";
 /// statement after 5 seconds, so a statement that takes longer hangs on the client side.
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(30);
 
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let mut args = std::env::args().skip(1).collect::<Vec<_>>();
     let catalog_only = args.iter().any(|x| x == "--catalog-only");
     args.retain(|x| x != "--catalog-only");
@@ -63,10 +66,10 @@ async fn main() {
         });
 
     if !catalog_only {
-        copy_upstream(&tag, &dir);
+        copy_upstream(&tag, &dir)?;
     }
 
-    let container = Container::start(&format!("postgres:{version}"));
+    let container = Container::start(&format!("postgres:{version}"))?;
     let ctrl_c_id = container.id.clone();
     tokio::spawn(async move {
         tokio::signal::ctrl_c().await.ok();
@@ -77,23 +80,22 @@ async fn main() {
         "postgresql://postgres:{PASSWORD}@127.0.0.1:{}",
         container.port
     );
-    let mut admin = connect_with_retry(&format!("{base_url}/postgres")).await;
+    let mut admin = connect_with_retry(&format!("{base_url}/postgres")).await?;
     let server_version: String = sqlx::query_scalar("SHOW server_version")
         .fetch_one(&mut admin)
         .await
-        .expect("query server version");
+        .map_err(|e| format!("query server version: {e}"))?;
     let matches = server_version
         .strip_prefix(&version)
         .is_some_and(|rest| !rest.starts_with(|c: char| c.is_ascii_digit() || c == '.'));
-    assert!(
-        matches,
-        "server version {server_version} doesn't match {tag}"
-    );
+    if !matches {
+        return Err(format!("server version {server_version} doesn't match {tag}").into());
+    }
 
     // Before the regression files run, the `postgres` database is still fresh.
-    record_catalog(&format!("{base_url}/postgres"), &dir).await;
+    record_catalog(&format!("{base_url}/postgres"), &dir).await?;
     if catalog_only {
-        return;
+        return Ok(());
     }
 
     let sql_dir = dir.join("sql");
@@ -101,18 +103,23 @@ async fn main() {
     let output_types_dir = dir.join(OUTPUT_TYPES_DIR);
     let objects_dir = dir.join(OBJECTS_DIR);
     for sub in [&verdicts_dir, &output_types_dir, &objects_dir] {
-        fs::create_dir_all(sub).expect("create fixture directory");
+        fs::create_dir_all(sub).map_err(|e| format!("create {}: {e}", sub.display()))?;
     }
     let builtin_types = TypeNames::fetch(&mut admin, &format!("t.oid < {FIRST_NORMAL_OBJECT_ID}"))
         .await
-        .expect("look up the built-in types");
-    let files = sql_files(&sql_dir);
+        .ok_or("look up the built-in types")?;
+    let files = sql_files(&sql_dir)?;
     let mut totals = Totals::default();
     for (file_no, path) in files.iter().enumerate() {
-        let name = path.file_stem().unwrap().to_string_lossy();
-        let source = preprocess(&fs::read_to_string(path).expect("read SQL file"));
+        let name = path
+            .file_stem()
+            .ok_or_else(|| format!("no file name: {}", path.display()))?
+            .to_string_lossy();
+        let source = preprocess(
+            &fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?,
+        );
         let (statements, objects) =
-            record_file(&mut admin, &base_url, file_no, &source, &builtin_types).await;
+            record_file(&mut admin, &base_url, file_no, &source, &builtin_types).await?;
         let counts = Totals::of(&statements);
         eprintln!(
             "[{}/{}] {name}: {} accepted, {} rejected, {} skipped",
@@ -130,7 +137,7 @@ async fn main() {
                 .map(|statement| format!("{statement}\n"))
                 .collect::<String>(),
         )
-        .expect("write verdict file");
+        .map_err(|e| format!("write verdict file of {name}: {e}"))?;
         fs::write(
             output_types_dir.join(format!("{name}.txt")),
             statements
@@ -139,7 +146,7 @@ async fn main() {
                 .map(|line| format!("{line}\n"))
                 .collect::<String>(),
         )
-        .expect("write output types file");
+        .map_err(|e| format!("write output types file of {name}: {e}"))?;
         fs::write(
             objects_dir.join(format!("{name}.txt")),
             objects
@@ -147,29 +154,32 @@ async fn main() {
                 .map(|line| format!("{line}\n"))
                 .collect::<String>(),
         )
-        .expect("write objects file");
+        .map_err(|e| format!("write objects file of {name}: {e}"))?;
     }
     eprintln!(
         "Postgres {server_version}: {} accepted, {} rejected, {} skipped",
         totals.accepted, totals.rejected, totals.skipped
     );
+    Ok(())
 }
 
 /// Writes the catalog of the database at `url` as gzipped `pgls_catalog::Snapshot` JSON.
-async fn record_catalog(url: &str, dir: &Path) {
+async fn record_catalog(url: &str, dir: &Path) -> Result<()> {
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(1)
         .connect(url)
         .await
-        .expect("connect to Postgres");
+        .map_err(|e| format!("connect to Postgres: {e}"))?;
     let snapshot = pgls_catalog::Snapshot::load(&pool)
         .await
-        .expect("load the catalog");
+        .map_err(|e| format!("load the catalog: {e}"))?;
     pool.close().await;
-    let file = fs::File::create(dir.join(CATALOG_FILE)).expect("create catalog file");
+    let file = fs::File::create(dir.join(CATALOG_FILE))
+        .map_err(|e| format!("create catalog file: {e}"))?;
     let mut gz = flate2::write::GzEncoder::new(file, flate2::Compression::best());
-    serde_json::to_writer(&mut gz, &snapshot).expect("write catalog");
-    gz.finish().expect("finish catalog file");
+    serde_json::to_writer(&mut gz, &snapshot).map_err(|e| format!("write catalog: {e}"))?;
+    gz.finish()
+        .map_err(|e| format!("finish catalog file: {e}"))?;
     eprintln!(
         "Recorded the catalog: {} types, {} functions, {} operators, {} casts",
         snapshot.types.len(),
@@ -177,10 +187,11 @@ async fn record_catalog(url: &str, dir: &Path) {
         snapshot.operators.len(),
         snapshot.casts.len()
     );
+    Ok(())
 }
 
 /// Replaces `data/<major>` with the regression SQL of `tag`.
-fn copy_upstream(tag: &str, dir: &Path) {
+fn copy_upstream(tag: &str, dir: &Path) -> Result<()> {
     let checkout = std::env::temp_dir().join(format!("pgls-regress-{tag}-{}", std::process::id()));
     let _ = fs::remove_dir_all(&checkout);
     eprintln!("Fetching src/test/regress/sql of {tag}");
@@ -195,30 +206,33 @@ fn copy_upstream(tag: &str, dir: &Path) {
         ])
         .args(["--branch", tag, "--filter=blob:none", "--sparse"])
         .arg("https://github.com/postgres/postgres")
-        .arg(&checkout));
+        .arg(&checkout))?;
     run(Command::new("git").arg("-C").arg(&checkout).args([
         "sparse-checkout",
         "set",
         "src/test/regress/sql",
-    ]));
+    ]))?;
 
     for sub in ["sql", VERDICTS_DIR, OUTPUT_TYPES_DIR, OBJECTS_DIR] {
         let _ = fs::remove_dir_all(dir.join(sub));
     }
     let sql_dir = dir.join("sql");
-    fs::create_dir_all(&sql_dir).expect("create sql directory");
-    for path in sql_files(&checkout.join("src/test/regress/sql")) {
-        let bytes = fs::read(&path).expect("read upstream SQL file");
-        let name = path.file_name().unwrap();
+    fs::create_dir_all(&sql_dir).map_err(|e| format!("create sql directory: {e}"))?;
+    for path in sql_files(&checkout.join("src/test/regress/sql"))? {
+        let bytes = fs::read(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
+        let name = path
+            .file_name()
+            .ok_or_else(|| format!("no file name: {}", path.display()))?;
         // The loader works on text; such files only matter on Windows anyway.
         if std::str::from_utf8(&bytes).is_err() {
             eprintln!("Leaving out {}: not UTF-8", name.to_string_lossy());
             continue;
         }
-        fs::write(sql_dir.join(name), bytes).expect("write SQL file");
+        fs::write(sql_dir.join(name), bytes).map_err(|e| format!("write SQL file: {e}"))?;
     }
-    fs::write(dir.join("SOURCE"), format!("{tag}\n")).expect("write SOURCE");
+    fs::write(dir.join("SOURCE"), format!("{tag}\n")).map_err(|e| format!("write SOURCE: {e}"))?;
     let _ = fs::remove_dir_all(&checkout);
+    Ok(())
 }
 
 /// Runs the statements of one file in a fresh database. Returns them with their verdicts, and the
@@ -229,19 +243,19 @@ async fn record_file(
     file_no: usize,
     source: &str,
     builtin_types: &TypeNames,
-) -> (Vec<Statement>, Vec<String>) {
+) -> Result<(Vec<Statement>, Vec<String>)> {
     let db = format!("regress_{file_no}");
     // A database left over from an interrupted run.
     sqlx::raw_sql(&format!("DROP DATABASE IF EXISTS {db} WITH (FORCE)"))
         .execute(&mut *admin)
         .await
-        .unwrap_or_else(|e| panic!("drop {db}: {e}"));
+        .map_err(|e| format!("drop {db}: {e}"))?;
     sqlx::raw_sql(&format!("CREATE DATABASE {db}"))
         .execute(&mut *admin)
         .await
-        .unwrap_or_else(|e| panic!("create {db}: {e}"));
+        .map_err(|e| format!("create {db}: {e}"))?;
     let url = format!("{base_url}/{db}");
-    let mut client = Client::connect(&url).await;
+    let mut client = Client::connect(&url).await?;
     let mut statements = Vec::new();
     for range in split(source) {
         let sql = &source[range];
@@ -259,10 +273,10 @@ async fn record_file(
         });
     }
     let _ = tokio::time::timeout(Duration::from_secs(5), client.conn.close()).await;
-    let objects = DatabaseObjects::fetch(&url).await;
+    let objects = DatabaseObjects::fetch(&url).await?;
 
     // Roles are shared by all databases.
-    let roles = regress_roles(admin).await;
+    let roles = regress_roles(admin).await?;
     if !roles.is_empty()
         && let Ok(mut conn) = PgConnection::connect(&url).await
     {
@@ -272,7 +286,7 @@ async fn record_file(
     sqlx::raw_sql(&format!("DROP DATABASE {db} WITH (FORCE)"))
         .execute(&mut *admin)
         .await
-        .unwrap_or_else(|e| panic!("drop {db}: {e}"));
+        .map_err(|e| format!("drop {db}: {e}"))?;
     drop_owned(admin, &roles).await;
     for role in &roles {
         sqlx::raw_sql(&format!("DROP ROLE IF EXISTS {role}"))
@@ -280,7 +294,7 @@ async fn record_file(
             .await
             .ok();
     }
-    (statements, objects)
+    Ok((statements, objects))
 }
 
 /// The objects of a database, as the lines of an objects file (see
@@ -337,16 +351,16 @@ impl DatabaseObjects {
         order by 1
     "#;
 
-    async fn fetch(url: &str) -> Vec<String> {
+    async fn fetch(url: &str) -> Result<Vec<String>> {
         let mut conn = PgConnection::connect(url)
             .await
-            .unwrap_or_else(|e| panic!("connect to {url}: {e}"));
+            .map_err(|e| format!("connect to {url}: {e}"))?;
         let lines = sqlx::query_scalar(Self::QUERY)
             .fetch_all(&mut conn)
             .await
-            .unwrap_or_else(|e| panic!("list the objects of {url}: {e}"));
+            .map_err(|e| format!("list the objects of {url}: {e}"))?;
         conn.close().await.ok();
-        lines
+        Ok(lines)
     }
 }
 
@@ -358,21 +372,21 @@ struct Client {
 }
 
 impl Client {
-    async fn connect(url: &str) -> Self {
+    async fn connect(url: &str) -> Result<Self> {
         let options = url
             .parse::<PgConnectOptions>()
-            .unwrap_or_else(|e| panic!("parse {url}: {e}"))
+            .map_err(|e| format!("parse {url}: {e}"))?
             // A cached statement would keep the columns it had before the file changed the tables
             // it reads.
             .statement_cache_capacity(0);
         let mut conn = options
             .connect()
             .await
-            .unwrap_or_else(|e| panic!("connect to {url}: {e}"));
+            .map_err(|e| format!("connect to {url}: {e}"))?;
         conn.execute("SET statement_timeout = '5s'")
             .await
-            .expect("set statement timeout");
-        Client { conn, stuck: false }
+            .map_err(|e| format!("set statement timeout: {e}"))?;
+        Ok(Client { conn, stuck: false })
     }
 
     /// The types of the columns of the rows that a statement returns, as Postgres describes
@@ -478,11 +492,13 @@ impl TypeNames {
 }
 
 /// The roles the regression tests create; they are all named `regress_*`.
-async fn regress_roles(conn: &mut PgConnection) -> Vec<String> {
-    sqlx::query_scalar("select quote_ident(rolname) from pg_roles where rolname like 'regress\\_%'")
-        .fetch_all(conn)
-        .await
-        .expect("list regression roles")
+async fn regress_roles(conn: &mut PgConnection) -> Result<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "select quote_ident(rolname) from pg_roles where rolname like 'regress\\_%'",
+    )
+    .fetch_all(conn)
+    .await
+    .map_err(|e| format!("list regression roles: {e}"))?)
 }
 
 async fn drop_owned(conn: &mut PgConnection, roles: &[String]) {
@@ -516,14 +532,18 @@ fn transaction_control(sql: &str) -> bool {
     .any(|x| normalized.starts_with(x))
 }
 
-fn sql_files(dir: &Path) -> Vec<PathBuf> {
-    let mut files = fs::read_dir(dir)
-        .unwrap_or_else(|e| panic!("read {}: {e}", dir.display()))
-        .map(|entry| entry.expect("read directory entry").path())
-        .filter(|path| path.extension().is_some_and(|x| x == "sql"))
-        .collect::<Vec<_>>();
+fn sql_files(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    for entry in fs::read_dir(dir).map_err(|e| format!("read {}: {e}", dir.display()))? {
+        let path = entry
+            .map_err(|e| format!("read an entry of {}: {e}", dir.display()))?
+            .path();
+        if path.extension().is_some_and(|x| x == "sql") {
+            files.push(path);
+        }
+    }
     files.sort();
-    files
+    Ok(files)
 }
 
 struct Container {
@@ -532,27 +552,27 @@ struct Container {
 }
 
 impl Container {
-    fn start(image: &str) -> Self {
+    fn start(image: &str) -> Result<Self> {
         eprintln!("Starting {image}");
         let id = output(
             Command::new("docker")
                 .args(["run", "--detach", "--rm", "--publish", "127.0.0.1::5432"])
                 .args(["--env", &format!("POSTGRES_PASSWORD={PASSWORD}")])
                 .arg(image),
-        );
+        )?;
         // Removes the container if anything below fails.
         let mut container = Container {
             id,
             port: String::new(),
         };
-        let address = output(Command::new("docker").args(["port", &container.id, "5432/tcp"]));
+        let address = output(Command::new("docker").args(["port", &container.id, "5432/tcp"]))?;
         container.port = address
             .lines()
             .next()
             .and_then(|x| x.rsplit_once(':'))
             .map(|(_, port)| port.to_owned())
-            .unwrap_or_else(|| panic!("unexpected `docker port` output: {address}"));
-        container
+            .ok_or_else(|| format!("unexpected `docker port` output: {address}"))?;
+        Ok(container)
     }
 }
 
@@ -569,11 +589,11 @@ fn remove_container(id: &str) {
         .status();
 }
 
-async fn connect_with_retry(url: &str) -> PgConnection {
+async fn connect_with_retry(url: &str) -> Result<PgConnection> {
     let mut attempts = 0;
     loop {
         match PgConnection::connect(url).await {
-            Ok(conn) => return conn,
+            Ok(conn) => return Ok(conn),
             Err(e) if attempts < 120 => {
                 attempts += 1;
                 if attempts % 20 == 0 {
@@ -581,7 +601,7 @@ async fn connect_with_retry(url: &str) -> PgConnection {
                 }
                 tokio::time::sleep(Duration::from_millis(500)).await;
             }
-            Err(e) => panic!("connect to Postgres: {e}"),
+            Err(e) => return Err(format!("connect to Postgres: {e}").into()),
         }
     }
 }
@@ -613,28 +633,31 @@ impl Totals {
     }
 }
 
-fn run(command: &mut Command) {
-    let status = command.status().expect("spawn command");
-    assert!(status.success(), "{command:?} failed with {status}");
+fn run(command: &mut Command) -> Result<()> {
+    let status = command
+        .status()
+        .map_err(|e| format!("spawn {command:?}: {e}"))?;
+    if !status.success() {
+        return Err(format!("{command:?} failed with {status}").into());
+    }
+    Ok(())
 }
 
-fn output(command: &mut Command) -> String {
+fn output(command: &mut Command) -> Result<String> {
     let output = command
         .stderr(Stdio::inherit())
         .output()
-        .expect("spawn command");
-    assert!(
-        output.status.success(),
-        "{command:?} failed with {}",
-        output.status
-    );
-    String::from_utf8(output.stdout)
-        .expect("command output is UTF-8")
+        .map_err(|e| format!("spawn {command:?}: {e}"))?;
+    if !output.status.success() {
+        return Err(format!("{command:?} failed with {}", output.status).into());
+    }
+    Ok(String::from_utf8(output.stdout)
+        .map_err(|e| format!("output of {command:?} isn't UTF-8: {e}"))?
         .trim()
-        .to_owned()
+        .to_owned())
 }
 
-/// Exits on a usage error. Once the container runs, errors panic instead, so it gets removed.
+/// Exits on a usage error. Once the container runs, errors are returned instead, so it gets removed.
 fn fail(message: &str) -> ! {
     eprintln!("error: {message}");
     std::process::exit(1)

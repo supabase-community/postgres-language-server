@@ -211,7 +211,7 @@ impl<'a> AnalysedFileContext<'a> {
 fn creates_relation_from_query(stmt: &NodeEnum) -> bool {
     match stmt {
         NodeEnum::ViewStmt(_) | NodeEnum::CreateTableAsStmt(_) => true,
-        NodeEnum::SelectStmt(select) => select.into_clause.is_some(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_some(),
         _ => false,
     }
 }

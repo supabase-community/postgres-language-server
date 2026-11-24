@@ -29,6 +29,47 @@ pub fn string_values(nodes: &[Node]) -> Option<Vec<String>> {
         .collect()
 }
 
+/// The most parts a name has: `catalog.schema.table.column`.
+const NAME_PARTS_MAX: usize = 4;
+
+/// The parts of a name list, like `["public", "users"]`, borrowed from the parse tree. Unlike
+/// [`string_values`], reading them doesn't allocate.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NameParts<'a> {
+    parts: [&'a str; NAME_PARTS_MAX],
+    len: usize,
+}
+
+impl<'a> NameParts<'a> {
+    /// The parts of a list of `String` nodes. `None` if a node is not a string, and for lists
+    /// with more parts than a name can have, which Postgres rejects.
+    pub fn of(nodes: &'a [Node]) -> Option<Self> {
+        if nodes.len() > NAME_PARTS_MAX {
+            return None;
+        }
+        let mut parts = [""; NAME_PARTS_MAX];
+        for (part, node) in parts.iter_mut().zip(nodes) {
+            *part = string_value(node)?;
+        }
+        Some(Self {
+            parts,
+            len: nodes.len(),
+        })
+    }
+
+    /// The last part of a list of `String` nodes of any length, like the operator of
+    /// `OPERATOR(pg_catalog.=)`. `None` if the list is empty or a node is not a string.
+    pub fn last(nodes: &'a [Node]) -> Option<&'a str> {
+        nodes
+            .iter()
+            .try_fold(None, |_, node| string_value(node).map(Some))?
+    }
+
+    pub fn as_slice(&self) -> &[&'a str] {
+        self.parts.get(..self.len).unwrap_or_default()
+    }
+}
+
 /// A possibly qualified name, like `name`, `schema.name` or `catalog.schema.name`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QualifiedName<'a> {
@@ -46,7 +87,7 @@ pub struct QualifiedName<'a> {
 ///
 /// [`DeconstructQualifiedName`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L3304
 pub fn qualified_name(nodes: &[Node]) -> Option<QualifiedName<'_>> {
-    let names = nodes.iter().map(string_value).collect::<Option<Vec<_>>>()?;
+    let names = NameParts::of(nodes)?;
     let (catalog, schema, name) = match names.as_slice() {
         [name] => (None, None, *name),
         [schema, name] => (None, Some(*schema), *name),
@@ -174,8 +215,8 @@ mod tests {
     use pgls_query::NodeEnum;
 
     use crate::utils::{
-        QualifiedName, find_option_value, is_star, qualified_name, range_var_name, star_qualifier,
-        string_value,
+        NameParts, QualifiedName, find_option_value, is_star, qualified_name, range_var_name,
+        star_qualifier, string_value,
     };
 
     fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
@@ -227,6 +268,19 @@ mod tests {
 
         assert_eq!(find_option_value(&create_fn, "language"), Some("c"));
         assert_eq!(find_option_value(&create_fn, "as"), None);
+    }
+
+    #[test]
+    fn name_parts() {
+        let funcname = |sql: &str| create_function(sql).funcname;
+
+        let names = funcname("create function db.s.f() returns int return 1");
+        assert_eq!(
+            NameParts::of(&names).map(|parts| parts.as_slice().to_vec()),
+            Some(vec!["db", "s", "f"])
+        );
+        assert_eq!(NameParts::last(&names), Some("f"));
+        assert_eq!(NameParts::last(&[]), None);
     }
 
     #[test]

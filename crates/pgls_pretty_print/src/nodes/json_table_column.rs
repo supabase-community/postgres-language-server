@@ -158,10 +158,10 @@ fn emit_inline_type_name(e: &mut EventEmitter, type_name: &TypeName) -> bool {
         }
     }
 
-    if parts.len() != 1 {
+    let [part] = parts.as_slice() else {
         return false;
-    }
+    };
 
-    emit_identifier_maybe_quoted(e, parts[0]);
+    emit_identifier_maybe_quoted(e, part);
     true
 }

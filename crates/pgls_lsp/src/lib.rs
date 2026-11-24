@@ -1,16 +1,17 @@
-// The server handles data from the client, the database, the file system and config files, so a
-// panic on unexpected input takes down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
+mod activity;
 mod adapters;
-mod blocking;
 mod capabilities;
 mod diagnostics;
 mod documents;
 mod handlers;
 mod server;
 mod session;
+#[cfg(feature = "testing")]
+pub mod testing;
 mod utils;
 
-pub use crate::blocking::Blocking;
+pub use crate::activity::Activity;
+#[cfg(feature = "testing")]
+pub use crate::activity::Progress;
 pub use crate::server::{LSPServer, ServerConnection, ServerFactory};
+pub use crate::session::DebounceDurations;

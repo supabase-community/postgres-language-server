@@ -109,11 +109,15 @@ fn envsub(text: &str) -> Option<Preprocessed> {
         }
         // goose fails on a line that interpolate rejects, so it stays as written.
         for expansion in interpolate::expansions(line).unwrap_or_default() {
+            // The line is part of the file, so its offsets fit in a `TextSize`.
+            let (Ok(start), Ok(end)) = (
+                TextSize::try_from(expansion.range.start),
+                TextSize::try_from(expansion.range.end),
+            ) else {
+                continue;
+            };
             expansions.push(Expansion {
-                range: TextRange::new(
-                    range.start() + TextSize::try_from(expansion.range.start).unwrap(),
-                    range.start() + TextSize::try_from(expansion.range.end).unwrap(),
-                ),
+                range: TextRange::new(range.start() + start, range.start() + end),
                 name: expansion.name,
             });
         }

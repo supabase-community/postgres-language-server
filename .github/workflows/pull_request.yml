@@ -174,6 +174,23 @@ jobs:
         run: ${{ steps.get_actionlint.outputs.executable }} -color
         shell: bash
 
+  unused-dependencies:
+    name: Unused Dependencies
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR Branch
+        uses: actions/checkout@v4
+      - name: Install cargo-shear
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-shear
+      # A dependency that only enables a feature, or isn't used yet, is listed under
+      # `[package.metadata.cargo-shear]` in its crate's Cargo.toml, with the reason.
+      - name: Check for unused dependencies
+        run: cargo shear --deny-warnings
+
   lint:
     name: Lint Project
     needs: changes
@@ -259,6 +276,9 @@ jobs:
         run: |
           just lint-ci
 
+      - name: Lint other feature sets
+        run: just lint-features
+
       - name: Check for changes
         run: |
           if [[ $(git status --porcelain) ]]; then
@@ -290,6 +310,39 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run the option matrix
         run: cargo test -p pgls_pretty_print --release --test option_matrix -- --ignored
+
+  # Runs the CLI over real-world SQL (crates/pgls_cli/tests/corpus.toml) and compares a summary per
+  # source with its snapshot. In release, because `format` of GitLab's schema takes minutes in debug.
+  corpus:
+    name: Corpus
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
+      - name: Run the corpus check
+        run: cargo test -p pgls_cli --release --test corpus -- --ignored
 
   test:
     name: Test

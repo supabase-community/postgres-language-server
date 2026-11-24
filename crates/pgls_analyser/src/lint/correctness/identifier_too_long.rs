@@ -110,7 +110,7 @@ impl LinterRule for IdentifierTooLong {
                 let truncated = truncate_identifier(&identifier);
                 LinterDiagnostic::new(
                     rule_category!(),
-                    Some(occurrences[0].range),
+                    occurrences.first().map(|occurrence| occurrence.range),
                     markup! {
                         "Identifier "<Emphasis>{identifier}</Emphasis>" is longer than 63 bytes."
                     },
@@ -165,9 +165,13 @@ fn may_contain_long_identifier(sql: &str) -> bool {
     // The bytes since the last odd run of quotes, if there was one.
     let mut quoted: Option<usize> = None;
     let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'"' {
-            let quotes = bytes[i..].iter().take_while(|byte| **byte == b'"').count();
+    while let Some(&byte) = bytes.get(i) {
+        if byte == b'"' {
+            let quotes = bytes
+                .iter()
+                .skip(i)
+                .take_while(|byte| **byte == b'"')
+                .count();
             word = 0;
             i += quotes;
             if quotes % 2 == 0 {
@@ -181,7 +185,6 @@ fn may_contain_long_identifier(sql: &str) -> bool {
             }
             continue;
         }
-        let byte = bytes[i];
         word = if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$' || byte >= 0x80 {
             word + 1
         } else {

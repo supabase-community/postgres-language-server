@@ -1,5 +1,7 @@
 use pgls_text_size::{TextRange, TextSize};
 
+use crate::Lines;
+
 /// The range of `old` that differs from `new`, and the text of `new` that replaces it, so that an
 /// edit replaces only what changed and the editor keeps the cursor and the folds. `None` if `old`
 /// is too large for a `TextSize`.
@@ -20,12 +22,12 @@ pub fn changed_range<'a>(old: &str, new: &'a str) -> Option<(TextRange, &'a str)
         .take_while(|(a, b)| a == b)
         .map(|(a, _)| a.len_utf8())
         .sum::<usize>();
-    let prefix = if splits_crlf(old, prefix) {
+    let prefix = if Lines::splits_crlf(old, prefix) {
         prefix - 1
     } else {
         prefix
     };
-    let suffix = if splits_crlf(old, old.len() - suffix) {
+    let suffix = if Lines::splits_crlf(old, old.len() - suffix) {
         suffix - 1
     } else {
         suffix
@@ -33,9 +35,4 @@ pub fn changed_range<'a>(old: &str, new: &'a str) -> Option<(TextRange, &'a str)
     let start = TextSize::try_from(prefix).ok()?;
     let end = TextSize::try_from(old.len() - suffix).ok()?;
     Some((TextRange::new(start, end), &new[prefix..new.len() - suffix]))
-}
-
-/// Whether `offset` is between the `\r` and the `\n` of a line break.
-fn splits_crlf(text: &str, offset: usize) -> bool {
-    text[..offset].ends_with('\r') && text[offset..].starts_with('\n')
 }

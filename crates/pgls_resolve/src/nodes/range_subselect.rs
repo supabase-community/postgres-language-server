@@ -22,9 +22,7 @@ pub(super) fn resolve_range_subselect(
         if !n.lateral {
             resolve_node(r, query)
         } else {
-            r.enter_level(preceding.clone());
-            let output = resolve_node(r, query);
-            r.exit_level();
+            let (output, _) = r.in_level(preceding.clone(), |r| resolve_node(r, query));
             output
         }
     });

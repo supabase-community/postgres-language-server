@@ -199,12 +199,11 @@ pub(super) fn print_frame(fmt: &mut fmt::Formatter<'_>, location: Location<'_>) 
                 ))
             } else if is_last_line {
                 // Last line in selection
+                // The length of `line_text.trim_start()` is never larger than `line_text` itself.
                 let start_index = line_text
                     .text_len()
                     .checked_sub(line_text.trim_start().text_len())
-                    // SAFETY: The length of `line_text.trim_start()` should
-                    // never be larger than `line_text` itself
-                    .expect("integer overflow")
+                    .unwrap_or_default()
                     .min(end_index_relative_to_line);
                 Some(TextRange::new(start_index, end_index_relative_to_line))
             } else {
@@ -332,7 +331,7 @@ pub(super) fn calculate_print_width(mut value: OneIndexed) -> NonZeroUsize {
 
     while value >= TEN {
         value = OneIndexed::new(value.get() / 10).unwrap_or(OneIndexed::MIN);
-        width = width.checked_add(1).unwrap();
+        width = width.saturating_add(1);
     }
 
     width
@@ -541,11 +540,9 @@ impl<'diagnostic> SourceFile<'diagnostic> {
         use std::cmp::Ordering;
 
         match line_index.cmp(&self.line_starts.len()) {
-            Ordering::Less => Ok(self
-                .line_starts
-                .get(line_index)
-                .copied()
-                .expect("failed despite previous check")),
+            Ordering::Less => self.line_starts.get(line_index).copied().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidInput, "line index out of range")
+            }),
             Ordering::Equal => Ok(self.source.text_len()),
             Ordering::Greater => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -681,12 +678,12 @@ impl std::fmt::Display for OneIndexed {
 
 /// Adapter type implementing [Iterator] for ranges of [OneIndexed],
 /// since [std::iter::Step] is unstable
-pub struct IntoIter(std::ops::Range<usize>);
+pub(crate) struct IntoIter(std::ops::Range<usize>);
 
 impl IntoIter {
     /// Construct a new iterator over a range of [OneIndexed] of any kind
     /// (`..`, `a..`, `..b`, `..=c`, `d..e`, or `f..=g`)
-    pub fn new<R: RangeBounds<OneIndexed>>(range: R) -> Self {
+    pub(crate) fn new<R: RangeBounds<OneIndexed>>(range: R) -> Self {
         let start = match range.start_bound() {
             Bound::Included(value) => value.get(),
             Bound::Excluded(value) => value.get() + 1,
@@ -707,7 +704,8 @@ impl Iterator for IntoIter {
     type Item = OneIndexed;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|index| OneIndexed::new(index).unwrap())
+        // The range starts at one or later, so every index is non-zero.
+        self.0.next().and_then(OneIndexed::new)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -717,9 +715,7 @@ impl Iterator for IntoIter {
 
 impl DoubleEndedIterator for IntoIter {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0
-            .next_back()
-            .map(|index| OneIndexed::new(index).unwrap())
+        self.0.next_back().and_then(OneIndexed::new)
     }
 }
 
@@ -735,8 +731,8 @@ mod tests {
     use crate::SourceCode;
 
     #[test]
-    fn location_counts_lines_at_line_feeds_only() {
-        // A lone `\r` is a character of its line, the `\r` of a `\r\n` ends the line.
+    fn location_counts_lines_like_the_lsp() {
+        // A lone `\r` ends a line, and so does a `\r\n`, whose `\r` is the end of its line.
         let source = SourceFile::new(SourceCode {
             text: "a\rbé\r\nc",
             line_starts: None,
@@ -747,10 +743,11 @@ mod tests {
             column_number: OneIndexed::new(column).unwrap(),
         };
 
-        assert_eq!(location(2), at(1, 3));
-        assert_eq!(location(3), at(1, 4));
-        assert_eq!(location(5), at(1, 5));
-        assert_eq!(location(7), at(2, 1));
+        assert_eq!(location(1), at(1, 2));
+        assert_eq!(location(2), at(2, 1));
+        assert_eq!(location(3), at(2, 2));
+        assert_eq!(location(5), at(2, 3));
+        assert_eq!(location(7), at(3, 1));
     }
 
     #[test]

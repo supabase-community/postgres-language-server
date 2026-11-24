@@ -1,4 +1,4 @@
-//! Conservative name resolution of a single statement against a [`CatalogView`].
+//! Conservative name resolution of a single statement against a [`Catalog`].
 //!
 //! The resolver reports a [`Finding`] only when Postgres would certainly raise the error. Whenever
 //! something is not known with certainty (an unknown object, a relation whose columns are not
@@ -39,11 +39,10 @@ mod utils;
 mod volatility;
 pub use volatility::contains_volatile_functions;
 
+use pgls_catalog::Catalog;
+use pgls_catalog::typing::{TypedColumn, resolve_unknown_outputs};
 use pgls_query::{NodeEnum, protobuf};
 use pgls_text_size::TextRange;
-
-use pgls_catalog::CatalogView;
-use pgls_catalog::typing::{TypedColumn, resolve_unknown_outputs};
 use resolver::Resolver;
 
 /// A parameter of the SQL function whose body is being resolved.
@@ -64,7 +63,7 @@ pub struct FunctionContext {
 
 pub struct ResolveParams<'a> {
     pub stmt: &'a NodeEnum,
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     /// The explicit search path of the session.
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.
@@ -211,8 +210,7 @@ pub struct Resolution {
     /// Empty unless [`ResolveParams::collect_references`] is set.
     pub references: Vec<Reference>,
     /// The names that Postgres looks up through the search path, whether or not their objects
-    /// exist, in the order the resolver visits them. Empty unless
-    /// [`ResolveParams::collect_lookups`] is set.
+    /// exist, ordered by location. Empty unless [`ResolveParams::collect_lookups`] is set.
     pub lookups: Vec<SearchPathLookup>,
     /// The output of the statement's top-level query: of a SELECT, also with `INTO`, of the
     /// query of `CREATE VIEW` or `CREATE TABLE AS`, or of the RETURNING list of INSERT, UPDATE,
@@ -411,13 +409,8 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
         params.search_path,
         params.function,
         params.sql,
-    );
-    if params.collect_references {
-        resolver.references = Some(Vec::new());
-    }
-    if params.collect_lookups {
-        resolver.lookups = Some(Vec::new());
-    }
+    )
+    .collecting(params.collect_references, params.collect_lookups);
     let mut output = nodes::resolve_statement(&mut resolver, params.stmt);
     // Only the entries of a relation's columns need spans, and computing them scans the tokens
     // of the statement.
@@ -432,20 +425,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
     roles_and_schemas::record_roles_and_schemas(&mut resolver, params.stmt);
     resolver.check_function_params();
 
-    let mut findings: Vec<Finding> = Vec::new();
-    for finding in resolver.findings {
-        if !findings.contains(&finding) {
-            findings.push(finding);
-        }
-    }
-
-    Resolution {
-        findings,
-        database_only: supports_database_check(params.stmt) && resolver.database_only,
-        references: resolver.references.unwrap_or_default(),
-        lookups: resolver.lookups.unwrap_or_default(),
-        output,
-    }
+    resolver.into_resolution(output, supports_database_check(params.stmt))
 }
 
 /// The output columns of `query`, like the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
@@ -453,7 +433,7 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
 /// known with certainty.
 pub fn query_columns(
     query: &protobuf::Node,
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     search_path: &[String],
 ) -> Option<Vec<TypedColumn>> {
     let resolution = resolve(ResolveParams {
@@ -496,9 +476,7 @@ pub(crate) fn apply_resolved(
 fn creates_relation(stmt: &NodeEnum) -> bool {
     match stmt {
         NodeEnum::ViewStmt(_) | NodeEnum::CreateTableAsStmt(_) => true,
-        NodeEnum::SelectStmt(select) => {
-            column_name::leftmost_select(select).is_some_and(|select| select.into_clause.is_some())
-        }
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_some(),
         _ => false,
     }
 }
@@ -506,7 +484,7 @@ fn creates_relation(stmt: &NodeEnum) -> bool {
 /// Whether the statement kind can be checked against the database with `EXPLAIN`.
 fn supports_database_check(stmt: &NodeEnum) -> bool {
     match stmt {
-        NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_none(),
         NodeEnum::InsertStmt(_)
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)

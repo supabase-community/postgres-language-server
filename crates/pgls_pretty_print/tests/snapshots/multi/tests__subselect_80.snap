@@ -675,9 +675,9 @@ select (select (select view_a)) from view_a;
 
 select (select cast(a.* as text)) from view_a as a;
 
-select 1 = any (array_agg(f1)) = any (select false) from int4_tbl;
+select (1 = any (array_agg(f1))) = any (select false) from int4_tbl;
 
-select 1 = any (array_agg(f1)) = any (select false) from int4_tbl;
+select (1 = any (array_agg(f1))) = any (select false) from int4_tbl;
 
 select q from (select max(f1) from int4_tbl group by f1 order by f1) as q;
 

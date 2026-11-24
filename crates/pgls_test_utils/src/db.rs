@@ -32,15 +32,16 @@ pub const TEST_POOL_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(120);
 const REACHABLE_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The URL of the test database, from `DATABASE_URL` or the `.env` file.
-pub fn database_url() -> String {
-    dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set, see .env")
+pub fn database_url() -> Result<String, String> {
+    dotenv::var("DATABASE_URL")
+        .map_err(|error| format!("DATABASE_URL must be set, see .env ({error})"))
 }
 
 /// Panics with a clear message if the test database doesn't answer. Checks once per test binary.
 pub fn require_test_db() {
     static REACHABLE: OnceLock<Result<(), String>> = OnceLock::new();
 
-    if let Err(message) = REACHABLE.get_or_init(|| check_reachable(&database_url())) {
+    if let Err(message) = REACHABLE.get_or_init(|| check_reachable(&database_url()?)) {
         panic!("{message}");
     }
 }
@@ -52,7 +53,9 @@ fn check_reachable(url: &str) -> Result<(), String> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .expect("failed to start the runtime of the test database check");
+        .map_err(|error| {
+            format!("failed to start the runtime of the test database check ({error})")
+        })?;
 
     runtime.block_on(async {
         let not_reachable = |reason: String| {
@@ -84,13 +87,12 @@ fn check_reachable(url: &str) -> Result<(), String> {
 pub async fn connect_test_pool(
     pool_options: PoolOptions<Postgres>,
     connect_options: PgConnectOptions,
-) -> PgPool {
+) -> Result<PgPool, sqlx::Error> {
     pool_options
         .max_connections(TEST_POOL_CONNECTIONS_MAX)
         .acquire_timeout(TEST_POOL_ACQUIRE_TIMEOUT)
         .connect_with(connect_options)
         .await
-        .expect("failed to connect test pool")
 }
 
 /// Closes the pool of a test, so that sqlx can drop its database.

@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/variable_set_time_zone_interval.sql
+---
+set time zone interval '+02:00' hour to minute;

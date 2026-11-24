@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/between_lower_bound_b_expr.sql
+---
+select
+  true between ('foo' ~~ any (array['foo'])) and true,
+  a between (b is null) and c,
+  a between b + 1 and c
+from
+  t;

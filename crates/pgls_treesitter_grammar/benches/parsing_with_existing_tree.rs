@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a benchmark stops at a setup error; clippy exempts tests, but not benches"
+)]
+
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use tree_sitter::{InputEdit, Point, StreamingIterator};
 

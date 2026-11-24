@@ -3,7 +3,7 @@ use quote::{format_ident, quote};
 
 use crate::proto_analyser::{FieldType, Node, ProtoAnalyzer};
 
-pub fn iter_mut_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
+pub(crate) fn iter_mut_mod(analyser: ProtoAnalyzer) -> proc_macro2::TokenStream {
     let enum_variants = analyser.enum_variants();
     let nodes = analyser.nodes();
 

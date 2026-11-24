@@ -6,7 +6,7 @@ use crate::Snapshot;
 
 use super::{Catalog, CatalogBase};
 use crate::Behavior;
-use crate::lookup::{CatalogView, FunctionKind, Lookup, Origin, RelationKind};
+use crate::lookup::{FunctionKind, Lookup, Origin, RelationKind};
 
 fn schema(name: &str) -> crate::Schema {
     crate::Schema {
@@ -92,7 +92,7 @@ fn path(schemas: &[&str]) -> Vec<String> {
 }
 
 fn catalog_after(sql: &str, search_path: &[String]) -> Catalog {
-    let mut catalog = Catalog::new(Some(base()));
+    let mut catalog = Catalog::from_base(base());
     let parsed = pgls_query::parse(sql).expect("valid sql");
     for stmt in parsed.stmts() {
         catalog.apply(stmt, search_path, None);
@@ -116,7 +116,7 @@ fn column_names(
 #[test]
 fn database_objects_are_found() {
     let search_path = path(&["public"]);
-    let catalog = Catalog::new(Some(base()));
+    let catalog = Catalog::from_base(base());
 
     let users = catalog
         .relation(None, "users", &search_path)
@@ -146,7 +146,7 @@ fn database_objects_are_found() {
 
 #[test]
 fn without_database_everything_is_unknown() {
-    let catalog = Catalog::new(None);
+    let catalog = Catalog::without_database();
     assert_eq!(
         catalog.relation(Some("public"), "users", &[]),
         Lookup::Unknown
@@ -184,6 +184,26 @@ fn relation_at_creation_is_where_create_table_puts_it() {
     assert_eq!(
         state("create table pg_catalog.pg_class as select 1"),
         "unknown"
+    );
+}
+
+#[test]
+fn select_into_of_a_set_operation_creates_the_table() {
+    let search_path = path(&["public"]);
+    let mut catalog = Catalog::new(Some(base()));
+    // Postgres takes the `INTO` from the left-most select of the set operation.
+    let stmt = pgls_query::parse("select 1 as a into t union select 2")
+        .unwrap()
+        .into_root()
+        .unwrap();
+    let output = [crate::TypedColumn {
+        name: "a".into(),
+        ty: None,
+    }];
+    catalog.apply(&stmt, &search_path, Some(&output));
+    assert_eq!(
+        column_names(&catalog, None, "t", &search_path).unwrap(),
+        ["a"]
     );
 }
 
@@ -401,7 +421,7 @@ fn identities_after<const N: usize>(
         },
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
         catalog.apply(stmt, &search_path, None);
     }
@@ -740,6 +760,115 @@ fn rollback_restores_the_catalog() {
 }
 
 #[test]
+fn rollback_to_nested_savepoints_undoes_their_changes() {
+    let search_path = path(&["public"]);
+    let exists = |catalog: &Catalog, name: &str| {
+        catalog.relation(None, name, &search_path).found().is_some()
+    };
+    let catalog = catalog_after(
+        "begin;
+         create table a (id int);
+         savepoint s1;
+         create table b (id int);
+         savepoint s2;
+         create table c (id int);
+         alter table a rename to a2;
+         rollback to savepoint s1;
+         create table d (id int);
+         rollback to savepoint s1;
+         create table e (id int);
+         release savepoint s1;
+         commit;
+         rollback;",
+        &search_path,
+    );
+    // `ROLLBACK TO` keeps the savepoint, so the second one undoes `d`. `ROLLBACK` after `COMMIT`
+    // undoes nothing.
+    assert!(exists(&catalog, "a"));
+    assert!(exists(&catalog, "e"));
+    for name in ["a2", "b", "c", "d"] {
+        assert!(!exists(&catalog, name), "{name} survived the rollback");
+    }
+
+    // `ROLLBACK` returns to `BEGIN` through every savepoint, and restores the flags and the
+    // dropped schemas.
+    let catalog = catalog_after(
+        "begin;
+         create table x (id int);
+         savepoint s;
+         do $$ begin null; end $$;
+         drop schema public cascade;
+         rollback;",
+        &search_path,
+    );
+    assert!(!catalog.is_tainted());
+    assert!(exists(&catalog, "users"));
+    assert!(!exists(&catalog, "x"));
+
+    // A rename inside the transaction moves the inheritance edges, and the rollback moves them
+    // back: the child still gets the parent's new column.
+    let catalog = catalog_after(
+        "create table parent (id int);
+         create table child () inherits (parent);
+         begin;
+         alter table parent rename to renamed;
+         rollback;
+         alter table parent add column extra int;",
+        &search_path,
+    );
+    assert_eq!(
+        column_names(&catalog, None, "child", &search_path).unwrap(),
+        ["id", "extra"]
+    );
+}
+
+#[test]
+fn rollback_restores_every_inheritance_edge() {
+    let search_path = path(&["public"]);
+    // Each kind of edge change, rolled back: the parents' later column changes reach exactly the
+    // children they had before the transaction.
+    let catalog = catalog_after(
+        "create table parent (id int);
+         create table kept () inherits (parent);
+         create table detached () inherits (parent);
+         create table dropped () inherits (parent);
+         create table renamed () inherits (parent);
+         create table other (id int);
+         create table dropped_parent (id int);
+         create table orphan () inherits (dropped_parent);
+         begin;
+         create table added () inherits (parent);
+         alter table detached no inherit parent;
+         drop table dropped;
+         alter table renamed rename to renamed_child;
+         alter table other inherit parent;
+         drop table dropped_parent cascade;
+         rollback;
+         alter table parent add column extra int;
+         alter table dropped_parent add column extra int;",
+        &search_path,
+    );
+    for child in ["kept", "detached", "dropped", "renamed", "orphan"] {
+        assert_eq!(
+            column_names(&catalog, None, child, &search_path).unwrap(),
+            ["id", "extra"],
+            "{child}"
+        );
+    }
+    assert_eq!(
+        column_names(&catalog, None, "other", &search_path).unwrap(),
+        ["id"]
+    );
+    for gone in ["added", "renamed_child"] {
+        assert_eq!(
+            catalog.relation(None, gone, &search_path),
+            Lookup::Missing,
+            "{gone}"
+        );
+    }
+}
+
+#[test]
 fn column_changes_make_database_children_unknown() {
     let search_path = path(&["public"]);
     let tables = ["events", "events_2024"]
@@ -758,7 +887,7 @@ fn column_changes_make_database_children_unknown() {
         tables,
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
+    let mut catalog = Catalog::from_snapshot(cache);
     let parsed = pgls_query::parse("alter table events add column at timestamptz").unwrap();
     catalog.apply(parsed.stmts()[0], &search_path, None);
     let child = catalog
@@ -812,7 +941,7 @@ fn column_of_looks_up_the_column_of_a_range_var() {
     assert_eq!(generated("items", "missing"), Lookup::Missing);
     assert_eq!(generated("missing", "total"), Lookup::Missing);
     assert_eq!(
-        Catalog::new(None)
+        Catalog::without_database()
             .column_of(&range_var("items"), "total", &search_path)
             .map(|column| column.generated),
         Lookup::Unknown
@@ -937,9 +1066,9 @@ fn table_columns(snapshot: &Snapshot, schema: &str, table: &str) -> Vec<String> 
 #[test]
 fn snapshot_without_changes_is_the_database_snapshot() {
     let base = base();
-    let catalog = Catalog::new(Some(Arc::clone(&base)));
+    let catalog = Catalog::from_base(Arc::clone(&base));
     assert!(Arc::ptr_eq(&catalog.snapshot().unwrap(), base.snapshot()));
-    assert!(Catalog::new(None).snapshot().is_none());
+    assert!(Catalog::without_database().snapshot().is_none());
 }
 
 #[test]
@@ -1029,7 +1158,7 @@ fn sequence_columns_have_types() {
         ..Default::default()
     };
     let search_path = path(&["public"]);
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let parsed = pgls_query::parse("create sequence file_seq;").expect("valid sql");
     for stmt in parsed.stmts() {
         catalog.apply(stmt, &search_path, None);
@@ -1101,7 +1230,7 @@ fn indexes_are_in_the_schema_of_their_table() {
         Lookup::Unknown
     );
 
-    let catalog = Catalog::new(None);
+    let catalog = Catalog::without_database();
     assert_eq!(
         catalog.index(None, "users_name_idx", &search_path),
         Lookup::Unknown
@@ -1517,7 +1646,7 @@ fn snapshot_includes_indexes_of_the_file() {
         columns,
         [("users_name_idx", Some(vec!["renamed".to_owned()]))]
     );
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+    let mut catalog = Catalog::from_snapshot(snapshot);
     let parsed = pgls_query::parse("alter table users drop column renamed;").expect("valid sql");
     for stmt in parsed.stmts() {
         catalog.apply(stmt, &search_path, None);
@@ -1542,7 +1671,7 @@ fn snapshot_lists_changed_database_functions_once() {
     });
     let base = Arc::new(CatalogBase::new(Arc::new(snapshot)));
     let snapshot_after = |sql: &str| {
-        let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+        let mut catalog = Catalog::from_base(Arc::clone(&base));
         for stmt in pgls_query::parse(sql).expect("valid sql").stmts() {
             catalog.apply(stmt, &search_path, None);
         }
@@ -1642,7 +1771,7 @@ fn snapshot_drops_the_expression_of_a_generated_column() {
         typing_metadata: true,
         ..Default::default()
     };
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(cache)))));
+    let mut catalog = Catalog::from_snapshot(cache);
     let parsed =
         pgls_query::parse("alter table orders alter column total drop expression").unwrap();
     catalog.apply(parsed.stmts()[0], &search_path, None);
@@ -1763,7 +1892,7 @@ fn snapshot_of_a_file_with_many_changes() {
     }
     sql.push_str("drop table users; create table users (id text, point point2);");
 
-    let mut catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(database)))));
+    let mut catalog = Catalog::from_snapshot(database);
     let search_path = path(&["public"]);
     for stmt in pgls_query::parse(&sql).expect("valid sql").stmts() {
         // The output columns that the resolution of `create view v{i} as select id, name from
@@ -1853,7 +1982,7 @@ fn snapshot_of_a_file_with_many_changes() {
 mod typing_overlay_tests {
     use super::path;
     use crate::TypeKind;
-    use crate::lookup::{CatalogView, Lookup};
+    use crate::lookup::Lookup;
     use crate::typing::{Type, TypeId};
     use crate::{Catalog, CatalogBase, Snapshot};
     use sqlx::PgPool;
@@ -1861,7 +1990,7 @@ mod typing_overlay_tests {
 
     async fn database_catalog(test_db: &PgPool) -> Catalog {
         let snapshot = Snapshot::load(test_db).await.expect("load snapshot");
-        Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))))
+        Catalog::from_snapshot(snapshot)
     }
 
     fn apply(catalog: &mut Catalog, sql: &str, search_path: &[String]) {
@@ -2129,7 +2258,7 @@ mod typing_overlay_tests {
         )));
         let path = path(&["public"]);
         let state = |sql: &str, index: &str| {
-            let mut catalog = Catalog::new(Some(Arc::clone(&base)));
+            let mut catalog = Catalog::from_base(Arc::clone(&base));
             apply(&mut catalog, sql, &path);
             match catalog.index(None, index, &path) {
                 Lookup::Found(_) => "found",
@@ -2182,4 +2311,145 @@ mod typing_overlay_tests {
             "found"
         );
     }
+}
+
+/// A snapshot with codes we don't know, as a `SchemaCache` from a newer Postgres, or edited
+/// by hand, may have them.
+fn snapshot_with_unknown_codes() -> Snapshot {
+    let type_ = |id: i64, name: &str, typtype: &str| crate::PostgresType {
+        id,
+        schema: "pg_catalog".into(),
+        name: name.into(),
+        typtype: typtype.into(),
+        ..Default::default()
+    };
+    let argument = |mode: &str| crate::FunctionArg {
+        mode: mode.into(),
+        name: "x".into(),
+        type_id: 23,
+        has_default: Some(false),
+    };
+    let function = |name: &str, kind, mode: &str| crate::Function {
+        schema: "public".into(),
+        name: name.into(),
+        kind,
+        args: crate::FunctionArgs {
+            args: vec![argument(mode)],
+        },
+        ..Default::default()
+    };
+    let operator = |oid: i64, name: &str, kind: &str| crate::PostgresOperator {
+        oid,
+        schema: "pg_catalog".into(),
+        name: name.into(),
+        kind: kind.into(),
+        left: 23,
+        right: 23,
+        result: 23,
+    };
+    let cast = |source: i64, target: i64, context: &str| crate::PostgresCast {
+        source,
+        target,
+        context: context.into(),
+        method: "f".into(),
+    };
+    let mut cycle = type_(901, "d1", "d");
+    cycle.typbasetype = 902;
+    let mut other = type_(902, "d2", "d");
+    other.typbasetype = 901;
+    let mut array = type_(903, "_a", "b");
+    array.is_array = true;
+    array.typelem = 904;
+    let mut element = type_(904, "_b", "b");
+    element.is_array = true;
+    element.typelem = 903;
+    Snapshot {
+        schemas: vec![schema("public"), schema("pg_catalog")],
+        types: vec![
+            type_(23, "int4", "b"),
+            type_(25, "text", "b"),
+            type_(900, "future", "x"),
+            cycle,
+            other,
+            array,
+            element,
+        ],
+        functions: vec![
+            function("by_mode", crate::ProcKind::Function, "sideways"),
+            function("by_kind", crate::ProcKind::Unknown, "in"),
+            function("known", crate::ProcKind::Function, "in"),
+        ],
+        operators: vec![operator(1, "!", "r"), operator(2, "+", "infix")],
+        casts: vec![cast(23, 25, "q"), cast(25, 23, "e")],
+        typing_metadata: true,
+        ..Default::default()
+    }
+}
+
+#[test]
+fn unknown_codes_are_unknown_not_missing() {
+    use crate::typing::{CoercionContext, Decision, Type, TypeId, base_type, format_type};
+
+    let catalog = Catalog::from_snapshot(snapshot_with_unknown_codes());
+    let search_path = path(&["public"]);
+    let id = TypeId::Snapshot;
+
+    assert_eq!(catalog.cast(&id(23), &id(25)), Lookup::Unknown);
+    assert!(matches!(
+        catalog.cast(&id(25), &id(23)),
+        Lookup::Found(cast) if cast.context == CoercionContext::Explicit
+    ));
+    assert_eq!(catalog.cast(&id(23), &id(23)), Lookup::Missing);
+
+    let infix = crate::OperatorKind::Infix;
+    assert!(
+        !catalog
+            .operator_candidates(None, "!", infix, &search_path)
+            .complete
+    );
+    assert!(
+        catalog
+            .operator_candidates(None, "+", infix, &search_path)
+            .complete
+    );
+
+    assert_eq!(catalog.type_by_id(&id(900)).found().unwrap().kind, None);
+    assert_eq!(base_type(&catalog, &id(901)), Decision::Unknown);
+    assert_eq!(format_type(&catalog, &Type::Named(id(903))), None);
+
+    for name in ["by_mode", "by_kind"] {
+        let function = &catalog.functions(None, name, &search_path).found().unwrap()[0];
+        assert_eq!(function.signature, None, "{name}");
+        assert_eq!((function.min_args, function.max_args), (0, None), "{name}");
+    }
+    let known = &catalog
+        .functions(None, "known", &search_path)
+        .found()
+        .unwrap()[0];
+    assert_eq!((known.min_args, known.max_args), (1, Some(1)));
+}
+
+#[test]
+fn snapshot_json_keeps_its_codes() {
+    let json = serde_json::to_string(&snapshot_with_unknown_codes()).unwrap();
+    for code in [
+        r#""typtype":"d""#,
+        r#""context":"e""#,
+        r#""method":"f""#,
+        r#""kind":"infix""#,
+        r#""mode":"in""#,
+        r#""kind":"Function""#,
+    ] {
+        assert!(json.contains(code), "{code} in {json}");
+    }
+    let read: Snapshot = serde_json::from_str(&json).unwrap();
+    assert_eq!(serde_json::to_string(&read).unwrap(), json);
+
+    // Codes of a newer Postgres don't make the whole `SchemaCache` invalid.
+    let json = json
+        .replacen(r#""kind":"Function""#, r#""kind":"Routine""#, 1)
+        .replacen(r#""mode":"in""#, r#""mode":"sideways""#, 1);
+    let read: Snapshot = serde_json::from_str(&json).unwrap();
+    assert_eq!(read.functions[0].kind, crate::ProcKind::Unknown);
+    assert_eq!(read.functions[1].args.args[0].mode(), None);
 }

@@ -77,7 +77,7 @@ created_at - public.instruments.created_at (Column)
 cast - cast (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
+calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 
 --------------
 
@@ -161,7 +161,7 @@ created_at - public.instruments.created_at (Column)
 cast - cast (Keyword)
 cache_size - pg_catalog.pg_sequences.cache_size (Column)
 calls - pg_catalog.pg_stat_user_functions.calls (Column)
-castcontext - pg_catalog.pg_cast.castcontext (Column)
+calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 
 --------------
 

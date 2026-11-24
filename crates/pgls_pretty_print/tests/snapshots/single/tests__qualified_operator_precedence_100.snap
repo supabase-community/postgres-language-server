@@ -1,0 +1,11 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/qualified_operator_precedence.sql
+---
+select
+  (8 operator(pg_catalog.-) 3) + 2,
+  8 operator(pg_catalog.-) 3 + 2,
+  (operator(pg_catalog.-) a) * b,
+  (~a) + b
+from
+  t;

@@ -14,8 +14,9 @@ use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_text_size::{TextRange, TextSize};
 
 use super::{
-    WorkspaceServer, analyser::AnalyserVisitorBuilder, document::AnalyserDiagnosticsMapper,
-    document::Document,
+    WorkspaceServer,
+    analyser::AnalyserVisitorBuilder,
+    document::{Document, StatementWalkInput},
 };
 use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
 
@@ -157,7 +158,7 @@ impl WorkspaceServer {
             .map(|snapshot| self.catalog_base(snapshot));
 
         let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(only, skip)
+            .with_linter_rules(path.as_path(), only, skip)
             .finish();
 
         let options = LinterOptions {
@@ -174,6 +175,14 @@ impl WorkspaceServer {
             options: &options,
             filter,
         });
+        // Which rules a lint run spends its time in, with `--log-level=debug`. The clock isn't
+        // available in the browser.
+        let time_rules = !cfg!(target_family = "wasm") && tracing::enabled!(tracing::Level::DEBUG);
+        let analyser = if time_rules {
+            analyser.with_rule_timings()
+        } else {
+            analyser
+        };
 
         /*
          * Migration tools like dbmate and goose put the up and the down migration in one file.
@@ -201,14 +210,17 @@ impl WorkspaceServer {
         let mut analysable_stmts = vec![];
         let mut syntax_diagnostics = vec![];
         let mut unparsable = vec![];
-        for (i, (stmt, diagnostic, unparsable_stmt)) in
-            doc.iter(AnalyserDiagnosticsMapper).enumerate()
-        {
+        for (i, stmt) in doc.statements().enumerate() {
             if (i + 1).is_multiple_of(STOP_CHECK_INTERVAL) && should_stop() {
                 return None;
             }
-            analysable_stmts.extend(stmt.filter(|stmt| !is_skipped(stmt.range)));
-            syntax_diagnostics.extend(diagnostic);
+            let StatementWalkInput {
+                analysable,
+                syntax_error,
+                unparsable: unparsable_stmt,
+            } = doc.walk_input(stmt);
+            analysable_stmts.extend(analysable.filter(|stmt| !is_skipped(stmt.range)));
+            syntax_diagnostics.extend(syntax_error);
             unparsable.extend(unparsable_stmt.filter(|stmt| !is_skipped(stmt.range)));
         }
 
@@ -221,7 +233,6 @@ impl WorkspaceServer {
                 file_kind: self.file_kind(settings, path.as_path()),
                 sections: sections.to_vec(),
                 typecheck,
-                source: Some(doc.get_document_content().to_owned()),
             },
             should_stop,
         );
@@ -235,6 +246,21 @@ impl WorkspaceServer {
                 .is_sorted_by(|a, b| a.range.start() < b.range.start()),
             "the analysed statements are in the order of the document"
         );
+        if !result.rule_timings.is_empty() {
+            let mut timings: Vec<_> = result.rule_timings.iter().collect();
+            timings.sort_unstable_by_key(|timing| std::cmp::Reverse(timing.duration));
+            let timings = timings
+                .iter()
+                .map(|timing| {
+                    format!(
+                        "{}/{}: {} calls, {:?}",
+                        timing.group, timing.rule, timing.calls, timing.duration
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            tracing::debug!(path = %path.as_path().display(), "Rule timings:\n{timings}");
+        }
 
         Some(DocumentAnalysis {
             result,

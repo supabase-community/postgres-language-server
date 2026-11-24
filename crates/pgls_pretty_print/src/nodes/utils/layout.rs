@@ -8,7 +8,7 @@ use crate::nodes::{emit_node, emit_node_enum};
 use crate::{ClauseBodyStyle, Layout, TokenKind};
 
 use super::comments::emit_node_with;
-use super::predicates::breaks_only_inside_a_subquery;
+use super::predicates::{Position, breaks_only_inside_a_subquery, needs_parentheses};
 
 /// Opens the argument list of a call whose arguments the emitter writes itself: `(`, and when the
 /// call doesn't fit, a break and one more level of indent.
@@ -59,6 +59,17 @@ pub(crate) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &N
     }
 }
 
+/// Emits an expression where the grammar takes a `b_expr`, in parentheses unless it is one.
+pub(crate) fn emit_b_expr(e: &mut EventEmitter, node: &Node) {
+    if needs_parentheses(node, Position::BExpr) {
+        e.token(TokenKind::L_PAREN);
+        emit_node(e, node);
+        e.token(TokenKind::R_PAREN);
+    } else {
+        emit_node(e, node);
+    }
+}
+
 /// Emits a condition wrapped in parentheses, such as the `USING (...)` of a policy.
 ///
 /// It stays on the keyword line when it fits. Otherwise the condition breaks onto its own lines,
@@ -89,7 +100,6 @@ pub(crate) fn emit_parenthesized_condition_with(
 /// In expanded layout it is a `Hard` line, which `try_single_line` refuses to collapse, so the
 /// break propagates to every enclosing group and the whole statement opens up. That propagation is
 /// why expanded layout needs no renderer change.
-#[allow(dead_code)] // Consumed by the clause emitters introduced in task 3.
 pub(crate) fn emit_layout_break(e: &mut EventEmitter) {
     match e.config().layout {
         Layout::Expanded => e.line(LineType::Hard),

@@ -4,7 +4,7 @@ use crate::emitter::{LayoutEvent, LineType};
 use std::fmt::Write;
 
 #[derive(Debug, Clone)]
-pub struct RenderConfig {
+pub(crate) struct RenderConfig {
     pub max_line_length: usize,
     pub indent_size: usize,
     pub indent_style: IndentStyle,
@@ -39,7 +39,7 @@ struct Alignment {
     indent_level: usize,
 }
 
-pub struct Renderer<W: Write> {
+pub(crate) struct Renderer<W: Write> {
     config: RenderConfig,
     writer: W,
     current_line_length: usize,
@@ -53,7 +53,7 @@ pub struct Renderer<W: Write> {
 }
 
 impl<W: Write> Renderer<W> {
-    pub fn new(writer: W, config: RenderConfig) -> Self {
+    pub(crate) fn new(writer: W, config: RenderConfig) -> Self {
         Self {
             config,
             writer,
@@ -65,14 +65,14 @@ impl<W: Write> Renderer<W> {
         }
     }
 
-    pub fn render(&mut self, events: Vec<LayoutEvent>) -> Result<(), std::fmt::Error> {
+    pub(crate) fn render(&mut self, events: Vec<LayoutEvent>) -> Result<(), std::fmt::Error> {
         self.render_events(&events)
     }
 
     fn render_events(&mut self, events: &[LayoutEvent]) -> Result<(), std::fmt::Error> {
         let mut i = 0;
-        while i < events.len() {
-            match &events[i] {
+        while let Some(event) = events.get(i) {
+            match event {
                 LayoutEvent::Token(token) => {
                     let token_text = token.render(&self.config);
                     self.write_text(&token_text)?;
@@ -92,8 +92,12 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::GroupStart => {
                     let group_end = self.find_group_end(events, i);
-                    let trailing_width = self.trailing_width(&events[group_end + 1..], 0);
-                    self.render_group(&events[i..=group_end], trailing_width)?;
+                    let trailing_width =
+                        self.trailing_width(events.get(group_end + 1..).unwrap_or_default(), 0);
+                    self.render_group(
+                        events.get(i..=group_end).unwrap_or_default(),
+                        trailing_width,
+                    )?;
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {
@@ -140,7 +144,10 @@ impl<W: Write> Renderer<W> {
         }
 
         // Skip the GroupStart and GroupEnd markers.
-        self.render_events_with_breaks(&group_events[1..group_events.len() - 1], trailing_width)
+        let [_, inner @ .., _] = group_events else {
+            return Ok(());
+        };
+        self.render_events_with_breaks(inner, trailing_width)
     }
 
     /// The width of the text that follows a group without a break opportunity in between, such as
@@ -208,8 +215,8 @@ impl<W: Write> Renderer<W> {
         trailing_width: usize,
     ) -> Result<(), std::fmt::Error> {
         let mut i = 0;
-        while i < events.len() {
-            match &events[i] {
+        while let Some(event) = events.get(i) {
+            match event {
                 LayoutEvent::Token(token) => {
                     // This path is only taken when the enclosing group broke, so the statement
                     // already spans several lines and the terminator can stand alone. A statement
@@ -246,9 +253,14 @@ impl<W: Write> Renderer<W> {
                 }
                 LayoutEvent::GroupStart => {
                     let group_end = self.find_group_end(events, i);
-                    let group_trailing_width =
-                        self.trailing_width(&events[group_end + 1..], trailing_width);
-                    self.render_group(&events[i..=group_end], group_trailing_width)?;
+                    let group_trailing_width = self.trailing_width(
+                        events.get(group_end + 1..).unwrap_or_default(),
+                        trailing_width,
+                    );
+                    self.render_group(
+                        events.get(i..=group_end).unwrap_or_default(),
+                        group_trailing_width,
+                    )?;
                     i = group_end + 1;
                 }
                 LayoutEvent::GroupEnd => {

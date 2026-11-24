@@ -8,35 +8,37 @@
 mod base;
 mod ddl;
 mod derive;
+mod journal;
 mod materialize;
 mod overlay;
 #[cfg(test)]
 mod tests;
 
+use crate::Snapshot;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
 
 use pgls_query_ext::utils::{qualified_name, range_var_name};
-use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::Candidates;
 use crate::lookup::{
-    CatalogView, ColumnInfo, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
+    ColumnInfo, FunctionInfo, IndexInfo, Lookup, RelationInfo, RelationKind, TypeInfo,
 };
 use crate::typing::TypeId;
 use crate::{CastInfo, OperatorInfo, OperatorKind};
 
 pub use base::CatalogBase;
+use journal::{Journal, JournaledChildren, JournaledMap, JournaledSet};
 pub use overlay::rename;
 
 /// `(schema, name)` of a catalog object.
 type Key = (String, String);
 
 /// The state of an object that the file changed. Objects are shared between clones of the
-/// catalog, like the checkpoints of the editor walk and savepoints, and copied when one of them
-/// changes.
+/// catalog, like the checkpoints of the editor walk, and with the undo log of a transaction.
+/// They are copied when one of them changes.
 #[derive(Debug, Clone)]
 enum Entry<T> {
     /// Created or altered by the file.
@@ -59,20 +61,20 @@ impl<T> Entry<T> {
 pub struct Catalog {
     base: Option<Arc<CatalogBase>>,
     /// Schemas created (`true`) or dropped (`false`) by the file.
-    schemas: FxHashMap<String, bool>,
+    schemas: JournaledMap<String, bool>,
     /// Schemas dropped at some point of the file. The database objects in them are gone, even if
     /// the schema was created again afterwards.
-    dropped_schemas: FxHashSet<String>,
-    relations: FxHashMap<Key, Entry<RelationInfo>>,
-    types: FxHashMap<Key, Entry<TypeInfo>>,
+    dropped_schemas: JournaledSet<String>,
+    relations: JournaledMap<Key, Entry<RelationInfo>>,
+    types: JournaledMap<Key, Entry<TypeInfo>>,
     /// All overloads with a given name.
-    functions: FxHashMap<Key, Entry<Vec<FunctionInfo>>>,
+    functions: JournaledMap<Key, Entry<Vec<FunctionInfo>>>,
     /// Inheritance children and partitions created or attached by the file, by parent.
-    children: FxHashMap<Key, Vec<Key>>,
+    children: JournaledChildren,
     /// Inheritance children of [`Catalog::children`] whose inherited columns may also be their own,
     /// or inherited from another parent. They keep a column their parent drops.
-    children_with_own_columns: FxHashSet<Key>,
-    indexes: FxHashMap<Key, Entry<IndexInfo>>,
+    children_with_own_columns: JournaledSet<Key>,
+    indexes: JournaledMap<Key, Entry<IndexInfo>>,
     /// Set once the file may have created an index whose name we don't know: one with a
     /// generated name, or one that comes with a constraint or a partition. From then on, no
     /// index is known to be missing.
@@ -91,32 +93,64 @@ pub struct Catalog {
     best_effort: bool,
     casts_incomplete: bool,
     operators_incomplete: bool,
-    /// The catalog at the start of each open transaction and savepoint, restored on
-    /// `ROLLBACK`.
+    /// The open transaction and its savepoints, outermost first. While there is one, the maps
+    /// record an undo log, and `ROLLBACK` undoes their writes back to the savepoint.
     savepoints: Vec<Savepoint>,
-    /// Shared across savepoint snapshots so rolled-back type identities are never reused.
+    /// Shared across clones of the catalog so rolled-back type identities are never reused.
     next_file_type_id: Arc<AtomicU64>,
 }
 
-/// The catalog at `BEGIN` (`name: None`) or `SAVEPOINT`.
+/// How many maps [`Catalog::journals`] returns.
+const JOURNALS: usize = 8;
+
+/// `BEGIN` (`name: None`) or `SAVEPOINT`: the length of each map's undo log and the flags at
+/// that point.
 #[derive(Clone)]
 struct Savepoint {
     name: Option<String>,
-    catalog: Box<Catalog>,
+    undo_lens: [usize; JOURNALS],
+    flags: Flags,
+}
+
+/// The flags of [`Catalog`] that `ROLLBACK` restores.
+#[derive(Clone, Copy)]
+struct Flags {
+    indexes_incomplete: bool,
+    database_columns_changed: bool,
+    tainted: bool,
+    skipped_existing: bool,
+    casts_incomplete: bool,
+    operators_incomplete: bool,
 }
 
 impl Catalog {
-    pub fn new(base: Option<Arc<CatalogBase>>) -> Self {
+    /// The catalog of a database snapshot, before the file changed it.
+    pub fn from_snapshot(snapshot: impl Into<Arc<Snapshot>>) -> Self {
+        Self::from_base(Arc::new(CatalogBase::new(snapshot.into())))
+    }
+
+    /// The catalog of an indexed snapshot, which files share.
+    pub fn from_base(base: Arc<CatalogBase>) -> Self {
+        Self::new(Some(base))
+    }
+
+    /// A catalog without a database: every lookup of an object the file didn't create is
+    /// [`Lookup::Unknown`].
+    pub fn without_database() -> Self {
+        Self::new(None)
+    }
+
+    fn new(base: Option<Arc<CatalogBase>>) -> Self {
         Self {
             base,
-            schemas: FxHashMap::default(),
-            dropped_schemas: FxHashSet::default(),
-            relations: FxHashMap::default(),
-            types: FxHashMap::default(),
-            functions: FxHashMap::default(),
-            children: FxHashMap::default(),
-            children_with_own_columns: FxHashSet::default(),
-            indexes: FxHashMap::default(),
+            schemas: JournaledMap::default(),
+            dropped_schemas: JournaledSet::default(),
+            relations: JournaledMap::default(),
+            types: JournaledMap::default(),
+            functions: JournaledMap::default(),
+            children: JournaledChildren::default(),
+            children_with_own_columns: JournaledSet::default(),
+            indexes: JournaledMap::default(),
             indexes_incomplete: false,
             database_columns_changed: false,
             tainted: false,
@@ -127,6 +161,48 @@ impl Catalog {
             savepoints: Vec::new(),
             next_file_type_id: Arc::new(AtomicU64::new(1)),
         }
+    }
+
+    /// The maps of the overlay, whose writes a transaction can undo.
+    fn journals(&mut self) -> [&mut dyn Journal; JOURNALS] {
+        [
+            &mut self.schemas,
+            &mut self.dropped_schemas,
+            &mut self.relations,
+            &mut self.types,
+            &mut self.functions,
+            &mut self.children,
+            &mut self.children_with_own_columns,
+            &mut self.indexes,
+        ]
+    }
+
+    fn flags(&self) -> Flags {
+        Flags {
+            indexes_incomplete: self.indexes_incomplete,
+            database_columns_changed: self.database_columns_changed,
+            tainted: self.tainted,
+            skipped_existing: self.skipped_existing,
+            casts_incomplete: self.casts_incomplete,
+            operators_incomplete: self.operators_incomplete,
+        }
+    }
+
+    fn restore_flags(&mut self, flags: Flags) {
+        let Flags {
+            indexes_incomplete,
+            database_columns_changed,
+            tainted,
+            skipped_existing,
+            casts_incomplete,
+            operators_incomplete,
+        } = flags;
+        self.indexes_incomplete = indexes_incomplete;
+        self.database_columns_changed = database_columns_changed;
+        self.tainted = tainted;
+        self.skipped_existing = skipped_existing;
+        self.casts_incomplete = casts_incomplete;
+        self.operators_incomplete = operators_incomplete;
     }
 
     /// Whether the catalog starts from a database snapshot. Without one, every lookup is
@@ -499,8 +575,18 @@ fn explicit_schemas(search_path: &[String]) -> impl Iterator<Item = String> + '_
         .cloned()
 }
 
-impl CatalogView for Catalog {
-    fn relation(
+/// Read-only lookups in the catalog as it is before the statement being analysed.
+///
+/// All `search_path` arguments are the explicit search path of the session. The lookups
+/// apply Postgres' implicit rules on top of it: `pg_catalog` is searched first unless it is
+/// listed explicitly, and `pg_temp` is searched first for relations and types (never for
+/// functions) unless it is listed explicitly ([`finalNamespacePath`], [`FuncnameGetCandidates`]).
+///
+/// [`finalNamespacePath`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L4201
+/// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
+impl Catalog {
+    /// Looks up a relation. With `schema: None`, the search path is used.
+    pub fn relation(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -514,7 +600,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn role(&self, name: &str) -> Lookup<()> {
+    /// Looks up a role. Never `Missing`, since roles that the file creates aren't followed.
+    pub fn role(&self, name: &str) -> Lookup<()> {
         // The file can create and drop roles, which the catalog doesn't follow.
         match &self.base {
             Some(base) if base.has_role(name) => Lookup::Found(()),
@@ -522,7 +609,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn schema(&self, name: &str) -> Lookup<()> {
+    /// Looks up a schema. `pg_temp` and `pg_catalog` always exist.
+    pub fn schema(&self, name: &str) -> Lookup<()> {
         if name == "pg_catalog" || name == "pg_temp" {
             return Lookup::Found(());
         }
@@ -539,7 +627,9 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn functions(
+    /// Returns all overloads with this name that are visible. With `schema: None`, all schemas
+    /// on the search path are considered.
+    pub fn functions(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -569,7 +659,14 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn type_(&self, schema: Option<&str>, name: &str, search_path: &[String]) -> Lookup<TypeInfo> {
+    /// Looks up a type by its internal name (e.g. `int4`, not `integer`). With `schema: None`,
+    /// the search path is used.
+    pub fn type_(
+        &self,
+        schema: Option<&str>,
+        name: &str,
+        search_path: &[String],
+    ) -> Lookup<TypeInfo> {
         match schema {
             Some(schema) => self.type_in(schema, name),
             None => self.search(relation_search_path(search_path), |schema| {
@@ -578,7 +675,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn type_by_id(&self, id: &TypeId) -> Lookup<TypeInfo> {
+    /// Looks up a type by identity.
+    pub fn type_by_id(&self, id: &TypeId) -> Lookup<TypeInfo> {
         match id {
             TypeId::Snapshot(_) => self
                 .base
@@ -601,7 +699,8 @@ impl CatalogView for Catalog {
         }
     }
 
-    fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
+    /// Looks up a direct cast.
+    pub fn cast(&self, source: &TypeId, target: &TypeId) -> Lookup<CastInfo> {
         let Some(base) = self.base.as_ref() else {
             return Lookup::Unknown;
         };
@@ -609,18 +708,10 @@ impl CatalogView for Catalog {
             return Lookup::Unknown;
         }
         base.cast(source, target)
-            .cloned()
-            .map(Lookup::Found)
-            .unwrap_or_else(|| {
-                if base.snapshot().typing_metadata {
-                    Lookup::Missing
-                } else {
-                    Lookup::Unknown
-                }
-            })
     }
 
-    fn function_candidates(
+    /// The functions with this name that are visible, and whether they are all of them.
+    pub fn function_candidates(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -654,7 +745,9 @@ impl CatalogView for Catalog {
         Candidates { items, complete }
     }
 
-    fn operator_candidates(
+    /// The operators of this kind with this name that are visible, and whether they are all of
+    /// them.
+    pub fn operator_candidates(
         &self,
         schema: Option<&str>,
         name: &str,
@@ -682,13 +775,30 @@ impl CatalogView for Catalog {
             items,
             complete: !self.lookups_tainted()
                 && !self.operators_incomplete
-                && base.snapshot().typing_metadata,
+                && base.snapshot().typing_metadata
+                && !schemas
+                    .iter()
+                    .any(|s| base.has_operator_of_unknown_kind(s, name)),
         }
     }
 
-    fn server_version_num(&self) -> Option<i64> {
+    /// Returns the server version when available.
+    pub fn server_version_num(&self) -> Option<i64> {
         self.base
             .as_ref()
             .and_then(|b| b.snapshot().version.version_num)
+    }
+
+    /// The identity of the builtin type `pg_catalog.<name>`, if it is known.
+    pub fn builtin_type(&self, name: &str) -> Option<TypeId> {
+        self.type_(Some("pg_catalog"), name, &[]).found()?.id
+    }
+
+    /// Whether the server runs Postgres `major` or later, like `server_version_at_least(12)`.
+    /// `None` when the version is not known. Since Postgres 10, `server_version_num` is the major
+    /// version times 10000 plus the minor version.
+    pub fn server_version_at_least(&self, major: i64) -> Option<bool> {
+        self.server_version_num()
+            .map(|version| version >= major * 10_000)
     }
 }

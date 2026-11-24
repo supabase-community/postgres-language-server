@@ -56,8 +56,14 @@ const VARIANT_DATA: &[(&str, &str)] = &[
     ("WORD", "String"),                   // usage, maintain (rendered with the keyword case)
 ];
 
-pub fn token_kind_mod() -> proc_macro2::TokenStream {
-    let keywords = keyword_kinds().expect("Failed to get keyword kinds");
+pub(crate) fn token_kind_mod() -> proc_macro2::TokenStream {
+    let keywords = match keyword_kinds() {
+        Ok(keywords) => keywords,
+        Err(error) => {
+            let message = format!("failed to read the keywords of kwlist.h: {error}");
+            return quote! { compile_error!(#message); };
+        }
+    };
 
     let KeywordKinds {
         all_keywords,

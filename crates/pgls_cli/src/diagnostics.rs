@@ -183,7 +183,7 @@ pub struct CheckError {
 /// The configured database could not be used, so the checks that need it did not run.
 #[derive(Debug, Diagnostic)]
 #[diagnostic(category = "database/connection", severity = Error)]
-pub struct DatabaseUnavailable {
+pub(crate) struct DatabaseUnavailable {
     #[message]
     #[description]
     message: MessageAndDescription,
@@ -193,7 +193,7 @@ pub struct DatabaseUnavailable {
 }
 
 impl DatabaseUnavailable {
-    pub fn new(message: impl Into<String>) -> Self {
+    pub(crate) fn new(message: impl Into<String>) -> Self {
         Self {
             message: MessageAndDescription::from(message.into()),
             advice: DatabaseUnavailableAdvice,
@@ -518,7 +518,7 @@ impl Termination for CliDiagnostic {
 pub struct StdinDiagnostic {}
 
 #[derive(Debug)]
-pub struct FormatDiffDiagnostic {
+pub(crate) struct FormatDiffDiagnostic {
     pub file_name: String,
     pub diff: TextEdit,
     /// The zero-based line the diff starts at.

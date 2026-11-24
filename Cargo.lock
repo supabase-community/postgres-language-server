@@ -470,6 +470,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "chacha20"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.1",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -599,10 +610,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "core_detect"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "cpufeatures"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
 dependencies = [
  "libc",
 ]
@@ -881,7 +907,6 @@ dependencies = [
  "pulldown-cmark",
  "regex",
  "schemars",
- "serde",
  "serde_json",
 ]
 
@@ -948,27 +973,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.114",
-]
-
-[[package]]
-name = "env_filter"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bf3c259d255ca70051b30e2e95b5446cdb8949ac4cd22c0d7fd634d89f568e2"
-dependencies = [
- "log",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.11.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
-dependencies = [
- "anstream",
- "anstyle",
- "env_filter",
- "log",
 ]
 
 [[package]]
@@ -1312,6 +1316,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi",
+ "rand_core 0.10.1",
  "wasip2",
  "wasip3",
 ]
@@ -2076,7 +2081,7 @@ dependencies = [
  "num-integer",
  "num-iter",
  "num-traits",
- "rand",
+ "rand 0.8.6",
  "smallvec",
  "zeroize",
 ]
@@ -2262,14 +2267,11 @@ name = "pgls_analyse"
 version = "0.0.0"
 dependencies = [
  "enumflags2",
- "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_query",
- "pgls_text_size",
- "rustc-hash",
  "schemars",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2283,6 +2285,7 @@ dependencies = [
  "pgls_console",
  "pgls_diagnostics",
  "pgls_lexer",
+ "pgls_line_index",
  "pgls_migrations",
  "pgls_postgres_regress",
  "pgls_query",
@@ -2310,11 +2313,9 @@ dependencies = [
  "globset",
  "insta",
  "pgls_lexer",
- "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
  "pgls_test_utils",
- "pgls_text_size",
  "rustc-hash",
  "schemars",
  "serde",
@@ -2346,6 +2347,7 @@ dependencies = [
  "pgls_env",
  "pgls_fs",
  "pgls_lexer",
+ "pgls_line_index",
  "pgls_lsp",
  "pgls_migrations",
  "pgls_query",
@@ -2363,6 +2365,7 @@ dependencies = [
  "tempfile",
  "tikv-jemallocator",
  "tokio",
+ "toml",
  "tracing",
  "tracing-appender",
  "tracing-bunyan-formatter",
@@ -2386,7 +2389,6 @@ dependencies = [
  "regex",
  "schemars",
  "serde",
- "serde_json",
  "sqlx",
  "tracing",
  "tree-sitter",
@@ -2466,7 +2468,6 @@ dependencies = [
 name = "pgls_diagnostics_categories"
 version = "0.0.0"
 dependencies = [
- "pgls_env",
  "quote",
  "schemars",
  "serde",
@@ -2522,9 +2523,6 @@ dependencies = [
  "pgls_text_size",
  "pgls_treesitter",
  "pgls_treesitter_grammar",
- "schemars",
- "serde",
- "serde_json",
  "sqlx",
  "tracing",
  "tree-sitter",
@@ -2546,7 +2544,6 @@ dependencies = [
 name = "pgls_lexer"
 version = "0.0.0"
 dependencies = [
- "insta",
  "pgls_diagnostics",
  "pgls_lexer_codegen",
  "pgls_text_size",
@@ -2560,8 +2557,6 @@ dependencies = [
  "anyhow",
  "convert_case",
  "proc-macro2",
- "prost-reflect",
- "protox",
  "quote",
  "ureq",
 ]
@@ -2571,6 +2566,7 @@ name = "pgls_line_index"
 version = "0.0.0"
 dependencies = [
  "pgls_text_size",
+ "proptest",
  "rustc-hash",
 ]
 
@@ -2587,17 +2583,18 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_fs",
  "pgls_line_index",
+ "pgls_lsp",
  "pgls_test_utils",
  "pgls_text_edit",
  "pgls_text_size",
  "pgls_workspace",
+ "proptest",
  "rustc-hash",
  "serde",
  "serde_json",
  "sqlx",
  "strum",
  "tempfile",
- "test-log",
  "tokio",
  "tower",
  "tower-lsp-server",
@@ -2619,7 +2616,6 @@ version = "0.0.0"
 dependencies = [
  "pgls_console",
  "pgls_diagnostics",
- "rustc-hash",
 ]
 
 [[package]]
@@ -2646,11 +2642,9 @@ dependencies = [
  "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_diagnostics_categories",
  "pgls_test_utils",
  "rustc-hash",
  "serde",
- "serde_json",
  "sqlx",
  "ureq",
 ]
@@ -2671,7 +2665,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "tree-sitter",
 ]
 
 [[package]]
@@ -2730,6 +2723,7 @@ dependencies = [
  "prost",
  "prost-build",
  "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]
@@ -2774,6 +2768,7 @@ name = "pgls_semantic_tokens"
 version = "0.0.0"
 dependencies = [
  "pgls_catalog",
+ "pgls_line_index",
  "pgls_query",
  "pgls_resolve",
  "pgls_test_utils",
@@ -2791,9 +2786,7 @@ dependencies = [
  "pgls_configuration",
  "pgls_console",
  "pgls_diagnostics",
- "pgls_matcher",
  "pgls_test_utils",
- "serde",
  "serde_json",
  "sqlx",
  "ureq",
@@ -2809,7 +2802,6 @@ dependencies = [
  "pgls_lexer",
  "pgls_query",
  "pgls_text_size",
- "regex",
 ]
 
 [[package]]
@@ -2821,7 +2813,6 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_line_index",
  "pgls_text_size",
- "tracing",
 ]
 
 [[package]]
@@ -2837,7 +2828,6 @@ dependencies = [
 name = "pgls_test_utils"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "clap",
  "dotenv",
  "pgls_test_macros",
@@ -2845,7 +2835,6 @@ dependencies = [
  "sqlx",
  "tokio",
  "tree-sitter",
- "uuid",
 ]
 
 [[package]]
@@ -2879,7 +2868,6 @@ dependencies = [
 name = "pgls_treesitter"
 version = "0.0.0"
 dependencies = [
- "clap",
  "pgls_catalog",
  "pgls_test_utils",
  "pgls_text_size",
@@ -2904,10 +2892,8 @@ dependencies = [
 name = "pgls_typecheck"
 version = "0.0.0"
 dependencies = [
- "criterion",
  "insta",
  "itertools 0.14.0",
- "once_cell",
  "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
@@ -2915,13 +2901,9 @@ dependencies = [
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
- "pgls_treesitter",
  "pgls_treesitter_grammar",
- "regex",
  "sqlx",
- "tokio",
  "tree-sitter",
- "uuid",
 ]
 
 [[package]]
@@ -2945,7 +2927,6 @@ version = "0.0.0"
 dependencies = [
  "lsp-types",
  "pgls_analyse",
- "pgls_catalog",
  "pgls_completions",
  "pgls_configuration",
  "pgls_diagnostics",
@@ -2954,11 +2935,9 @@ dependencies = [
  "pgls_line_index",
  "pgls_query",
  "pgls_text_size",
- "pgls_treesitter_grammar",
  "pgls_workspace",
  "serde",
  "serde_json",
- "tree-sitter",
 ]
 
 [[package]]
@@ -2996,13 +2975,12 @@ dependencies = [
  "pgls_statement_splitter",
  "pgls_suppressions",
  "pgls_test_utils",
- "pgls_text_edit",
  "pgls_text_size",
- "pgls_tokenizer",
  "pgls_treesitter_grammar",
  "pgls_typecheck",
  "pgls_walk",
  "pgls_workspace_macros",
+ "proptest",
  "regex",
  "rustc-hash",
  "schemars",
@@ -3022,7 +3000,6 @@ dependencies = [
 name = "pgls_workspace_macros"
 version = "0.0.0"
 dependencies = [
- "proc-macro2",
  "quote",
  "syn 2.0.114",
 ]
@@ -3236,6 +3213,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "proptest"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8530004ccb15eae51c7e40009fbe317f341f804db54dc033eec1c50be28cfa0"
+dependencies = [
+ "bitflags 2.10.0",
+ "chacha20",
+ "core_detect",
+ "num-traits",
+ "rand 0.10.4",
+ "rand_xorshift",
+ "regex-syntax",
+ "unarray",
+]
+
+[[package]]
 name = "prost"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3392,7 +3385,17 @@ checksum = "5ca0ecfa931c29007047d1bc58e623ab12e5590e8c7cc53200d5202b69266d8a"
 dependencies = [
  "libc",
  "rand_chacha",
- "rand_core",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f6fa277c67e6ea590466f04c3fe82cb509f0864fe470643e5570de9514a9b11"
+dependencies = [
+ "getrandom 0.4.1",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -3402,7 +3405,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -3412,6 +3415,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.17",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
+
+[[package]]
+name = "rand_xorshift"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60aa6af80be32871323012e02e6e65f8a7cc7890931ae421d217ad8fe0df2ccf"
+dependencies = [
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -3539,7 +3557,7 @@ dependencies = [
  "num-traits",
  "pkcs1",
  "pkcs8",
- "rand_core",
+ "rand_core 0.6.4",
  "signature",
  "spki",
  "subtle",
@@ -3809,7 +3827,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3bf829a2d51ab4a5ddf1352d8470c140cadc8301b2ae1789db023f01cedd6ba"
 dependencies = [
  "cfg-if",
- "cpufeatures",
+ "cpufeatures 0.2.17",
  "digest",
 ]
 
@@ -3820,7 +3838,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
 dependencies = [
  "cfg-if",
- "cpufeatures",
+ "cpufeatures 0.2.17",
  "digest",
 ]
 
@@ -3856,7 +3874,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
  "digest",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -4064,7 +4082,7 @@ dependencies = [
  "memchr",
  "once_cell",
  "percent-encoding",
- "rand",
+ "rand 0.8.6",
  "rsa",
  "serde",
  "sha1",
@@ -4102,7 +4120,7 @@ dependencies = [
  "md-5",
  "memchr",
  "once_cell",
- "rand",
+ "rand 0.8.6",
  "serde",
  "serde_json",
  "sha2",
@@ -4301,28 +4319,6 @@ name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
-
-[[package]]
-name = "test-log"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d53ac171c92a39e4769491c4b4dde7022c60042254b5fc044ae409d34a24d4"
-dependencies = [
- "env_logger",
- "test-log-macros",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "test-log-macros"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be35209fd0781c5401458ab66e4f98accf63553e8fae7425503e92fdd319783b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.114",
-]
 
 [[package]]
 name = "thiserror"
@@ -4782,6 +4778,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
+name = "unarray"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
+
+[[package]]
 name = "unicase"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4898,7 +4900,6 @@ version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee48d38b119b0cd71fe4141b30f5ba9c7c5d9f4e7a3a8b4a674e4b6ef789976f"
 dependencies = [
- "getrandom 0.3.4",
  "js-sys",
  "wasm-bindgen",
 ]

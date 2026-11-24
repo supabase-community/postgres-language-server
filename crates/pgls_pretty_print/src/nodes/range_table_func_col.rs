@@ -31,14 +31,14 @@ pub(super) fn emit_range_table_func_col(e: &mut EventEmitter, col: &RangeTableFu
         e.space();
         e.token(TokenKind::PATH_KW);
         e.space();
-        emit_node(e, expr);
+        emit_b_expr(e, expr);
     }
 
     if let Some(expr) = col.coldefexpr.as_ref() {
         e.space();
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        emit_node(e, expr);
+        emit_b_expr(e, expr);
     }
 
     if col.is_not_null {

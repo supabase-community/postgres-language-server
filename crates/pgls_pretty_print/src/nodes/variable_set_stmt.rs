@@ -21,8 +21,9 @@ fn emit_set_arg(e: &mut EventEmitter, node: &Node) {
     }
 
     // For all other cases (numbers, actual string literals with special chars, etc.),
-    // use the normal emission
-    emit_node(e, node);
+    // use the normal emission. The value is a constant, so an interval is `interval '1' hour`.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1848
+    super::emit_constant(e, node);
 }
 
 /// Emit a dot-separated variable name, quoting parts that need it
@@ -223,8 +224,8 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             emit_keyword(e, "snapshot");
             e.space();
             // The snapshot id is in args as a string
-            if !n.args.is_empty() {
-                emit_node(e, &n.args[0]);
+            if let Some(first) = n.args.first() {
+                emit_node(e, first);
             }
         } else {
             // SET TRANSACTION

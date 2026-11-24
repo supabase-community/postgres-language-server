@@ -1,0 +1,60 @@
+---
+source: crates/pgls_cli/tests/corpus.rs
+expression: summary.to_string()
+---
+files: 60 (0 skipped)
+check:
+  lint/addingPrimaryKeyConstraint: 1
+  lint/avoidCreateTrigger: 4
+  lint/banCreateDomainWithConstraint: 10
+  lint/banDeleteWithoutWhere: 1
+  lint/banDropColumn: 4
+  lint/banDropFunction: 7
+  lint/banDropTable: 7
+  lint/banTruncate: 22
+  lint/banUncommittedTransaction: 20
+  lint/banUpdateWithoutWhere: 4
+  lint/creatingEnum: 1
+  lint/lockTimeoutWarning: 2
+  lint/multipleAlterTable: 3
+  lint/preferBigInt: 25
+  lint/preferIdentity: 1
+  lint/preferRobustStmts: 30
+  lint/preferTimestamptz: 1
+  lint/requireColumnQualifier: 54
+  lint/requireConcurrentIndexCreation: 1
+  lint/requireFunctionSchema: 243
+  lint/requireIdleInTransactionTimeout: 31
+  lint/requireOperatorSchema: 50
+  lint/requireRelationSchema: 100
+  lint/requireStatementTimeout: 31
+  lint/requireTableSchema: 30
+  lint/requireTypeSchema: 167
+  lint/transactionNesting: 34
+  syntax: 22
+format:
+  format: 491
+  syntax: 5
+reformatted files: 60
+  test/sql/deparse-depesz/12-explains.d/01-base.sql
+  test/sql/deparse-depesz/12-explains.d/02-analyze.sql
+  test/sql/deparse-depesz/12-explains.d/03-verbose.sql
+  test/sql/deparse-depesz/12-explains.d/04-analyze-verbose.sql
+  test/sql/deparse-depesz/12-explains.d/05-other.sql
+  test/sql/deparse-depesz/13-tablesample.d/01-system.sql
+  test/sql/deparse-depesz/13-tablesample.d/02-bernoulli.sql
+  test/sql/deparse-depesz/13-tablesample.d/03-repeatable.sql
+  test/sql/deparse-depesz/19-transactions.d/01-rollback.sql
+  test/sql/deparse-depesz/19-transactions.d/02-rollback_and_chain.sql
+  test/sql/deparse-depesz/19-transactions.d/03-commit.sql
+  test/sql/deparse-depesz/19-transactions.d/04-commit_and_chain.sql
+  test/sql/deparse-depesz/19-transactions.d/05-start_transaction.sql
+  test/sql/deparse-depesz/19-transactions.d/06-start_transaction_isolation_level_serializable.sql
+  test/sql/deparse-depesz/19-transactions.d/07-start_transaction_isolation_level_repeatable_read.sql
+  test/sql/deparse-depesz/19-transactions.d/08-start_transaction_isolation_level_read_committed.sql
+  test/sql/deparse-depesz/19-transactions.d/09-start_transaction_isolation_level_read_uncommitted.sql
+  test/sql/deparse-depesz/19-transactions.d/10-start_transaction_read_write.sql
+  test/sql/deparse-depesz/19-transactions.d/11-start_transaction_read_only.sql
+  test/sql/deparse-depesz/19-transactions.d/12-start_transaction_deferrable.sql
+  and 40 more
+crashes: 0

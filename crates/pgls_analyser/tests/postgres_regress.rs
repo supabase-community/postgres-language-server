@@ -14,6 +14,13 @@
 //! with the types Postgres described for them, see [`output_types_agree_with_postgres`], and the
 //! catalog after each file with the objects of the database, see [`catalog_agrees_with_postgres`].
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use std::{collections::BTreeMap, sync::Arc};
 
 use pgls_analyse::{AnalysisFilter, RuleFilter};
@@ -23,7 +30,8 @@ use pgls_analyser::{
     walk_statements,
 };
 use pgls_catalog::{
-    Catalog, CatalogBase, CatalogView, Decision, FunctionKind, Lookup, RelationKind, Snapshot, Type,
+    Catalog, CatalogBase, CatalogCode, Decision, FunctionKind, Lookup, RelationKind, Snapshot,
+    Type, TypeKind,
 };
 use pgls_console::StdDisplay;
 use pgls_diagnostics::{Diagnostic, PrintDiagnostic};
@@ -190,14 +198,16 @@ fn check(catalog: &Arc<CatalogBase>, file: &File) -> Checked {
         unparsable,
         bodies,
     } = Statements::of(file, &file.statements);
-    let diagnostics = analyser.run(AnalyserParams {
-        stmts,
-        unparsable,
-        catalog_base: Some(catalog.clone()),
-        search_path: vec!["public".into()],
-        typecheck: true,
-        ..Default::default()
-    });
+    let diagnostics = analyser
+        .analyse(AnalyserParams {
+            stmts,
+            unparsable,
+            catalog_base: Some(catalog.clone()),
+            search_path: vec!["public".into()],
+            typecheck: true,
+            ..Default::default()
+        })
+        .diagnostics;
     let findings = diagnostics
         .iter()
         .map(|diagnostic| {
@@ -740,7 +750,7 @@ impl CatalogObjects {
                 match catalog.type_(Some(schema), name, &[]) {
                     Lookup::Found(info) => match info.kind {
                         None => Comparison::Unknown,
-                        Some(inferred) if inferred.typtype() == *kind => Comparison::Agrees,
+                        Some(inferred) if inferred.code() == kind.to_string() => Comparison::Agrees,
                         Some(inferred) => Comparison::Differs(format!(
                             "type {schema}.{name} is a {inferred:?}, not of kind {kind}"
                         )),
@@ -839,7 +849,10 @@ impl CatalogObjects {
                 .any(|table| table.schema == type_.schema && table.name == type_.name);
             if listed(&type_.schema)
                 && !type_.is_array
-                && !matches!(type_.typtype.as_str(), "m" | "p")
+                && !matches!(
+                    type_.typtype.get(),
+                    Some(TypeKind::Multirange | TypeKind::Pseudo)
+                )
                 && !is_row_type
                 && !has("type", &type_.schema, &type_.name)
                 && matches!(

@@ -37,8 +37,8 @@ Results:
 email - public.users.email (Column)
 id - public.users.id (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 
@@ -70,8 +70,8 @@ Results:
 email - public.users.email (Column)
 id - public.users.id (Column)
 abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
 action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
 
 --------------
 

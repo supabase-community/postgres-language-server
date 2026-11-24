@@ -12,8 +12,8 @@ use rustc_hash::FxHashSet;
 
 use super::{Catalog, Entry, Key, explicit_schemas, key};
 use crate::lookup::{
-    CatalogView, ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo,
-    RelationKind, TypeInfo,
+    ColumnInfo, FunctionInfo, FunctionKind, IndexInfo, Lookup, Origin, RelationInfo, RelationKind,
+    TypeInfo,
 };
 
 impl Catalog {
@@ -168,13 +168,13 @@ impl Catalog {
         self.server_version_num().map(|version| version >= 170_000)
     }
 
-    /// Changes the columns of a relation and of its inheritance children and partitions. The
-    /// second argument of `change` is whether the relation is a child or partition of
-    /// `relation`.
+    /// Changes the columns of a relation and of its inheritance children and partitions.
+    /// `change` gets the catalog to look types up in, the columns, and whether the relation is a
+    /// child or partition of `relation`.
     pub(super) fn change_columns(
         &mut self,
         relation: &RelationInfo,
-        change: impl Fn(&mut Option<Vec<ColumnInfo>>, bool),
+        change: impl Fn(&Catalog, &mut Option<Vec<ColumnInfo>>, bool),
     ) {
         // Column changes of a database table also change its children in the database.
         if self.is_database_relation(relation) {
@@ -186,7 +186,7 @@ impl Catalog {
             let Some(mut relation) = self.relation_in(&key.0, &key.1).found() else {
                 continue;
             };
-            change(&mut relation.columns, key != root);
+            change(self, &mut relation.columns, key != root);
             relation.origin = Origin::File;
             self.define_relation(relation);
         }
@@ -227,10 +227,8 @@ impl Catalog {
     /// Removes the inheritance edges of a dropped relation, so that a relation that reuses its
     /// name doesn't inherit them.
     pub(super) fn forget_inheritance(&mut self, relation: &Key) {
-        self.children.remove(relation);
-        for children in self.children.values_mut() {
-            children.retain(|child| child != relation);
-        }
+        self.children.remove_list(relation);
+        self.children.remove_everywhere(relation);
         self.children_with_own_columns.remove(relation);
     }
 
@@ -288,14 +286,8 @@ impl Catalog {
         }
         // The inheritance follows the relation.
         let new_key = key(&relation.schema, &relation.name);
-        if let Some(children) = self.children.remove(&old_key) {
-            self.children.insert(new_key.clone(), children);
-        }
-        for children in self.children.values_mut() {
-            for child in children.iter_mut().filter(|child| **child == old_key) {
-                *child = new_key.clone();
-            }
-        }
+        self.children.move_list(&old_key, new_key.clone());
+        self.children.rename_everywhere(&old_key, &new_key);
         if self.children_with_own_columns.remove(&old_key) {
             self.children_with_own_columns.insert(new_key);
         }
@@ -693,9 +685,10 @@ impl Catalog {
                         existing.as_ref() == Some(&types)
                     })
                 });
-                match replaced {
-                    Some(position) => overloads[position] = function,
-                    None => overloads.push(function),
+                if let Some(slot) = replaced.and_then(|position| overloads.get_mut(position)) {
+                    *slot = function;
+                } else {
+                    overloads.push(function);
                 }
                 Entry::defined(overloads)
             }

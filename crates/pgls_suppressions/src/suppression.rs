@@ -1,4 +1,4 @@
-use pgls_analyse::RuleFilter;
+use pgls_analyse::{RegistryVisitor, RuleFilter, RuleGroup, RuleMeta};
 use pgls_diagnostics::{Category, Diagnostic, MessageAndDescription};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -36,7 +36,40 @@ pub(crate) enum RuleSpecifier {
     Rule(String, String, String),
 }
 
+/// Whether the analyser has a group named `name`. It visits the groups but not their rules, and
+/// doesn't allocate.
+struct GroupLookup<'a> {
+    name: &'a str,
+    found: bool,
+}
+
+impl RegistryVisitor for GroupLookup<'_> {
+    fn record_group<G: RuleGroup>(&mut self) {
+        self.found |= G::NAME == self.name;
+    }
+
+    fn record_rule<R>(&mut self)
+    where
+        R: RuleMeta + 'static,
+    {
+    }
+}
+
 impl RuleSpecifier {
+    /// The rule specifier of a diagnostic's category, if it has one that a suppression can name.
+    pub(crate) fn of<D: Diagnostic>(diagnostic: &D) -> Option<Self> {
+        Self::try_from(diagnostic.category()?.name()).ok()
+    }
+
+    fn is_lint_group(group: &str) -> bool {
+        let mut lookup = GroupLookup {
+            name: group,
+            found: false,
+        };
+        pgls_analyser::visit_registry(&mut lookup);
+        lookup.found || matches!(group, "typecheck" | "nursery")
+    }
+
     pub(crate) fn category(&self) -> &str {
         match self {
             RuleSpecifier::Category(rule_category) => rule_category,
@@ -111,7 +144,7 @@ fn removed(rule: &str) -> &str {
 fn legacy_replacement(value: &str) -> Option<String> {
     match value.split('/').collect::<Vec<_>>().as_slice() {
         ["lint", "safety"] => Some("lint".into()),
-        ["lint", group] if is_lint_group(group) => Some((*group).into()),
+        ["lint", group] if RuleSpecifier::is_lint_group(group) => Some((*group).into()),
         ["lint", _group, rule] => Some(removed(rule).into()),
         ["lint", rule] | [rule] if removed(rule) != *rule => Some(removed(rule).into()),
         _ => None,
@@ -126,7 +159,7 @@ impl TryFrom<&str> for RuleSpecifier {
         let parts: Vec<_> = value.split('/').collect();
         match parts.as_slice() {
             ["lint"] => Ok(Self::Category("lint".into())),
-            ["lint", group] if is_lint_group(group) => {
+            ["lint", group] if RuleSpecifier::is_lint_group(group) => {
                 Ok(Self::Group("lint".into(), (*group).into()))
             }
             ["lint", rule] => {
@@ -144,22 +177,21 @@ impl TryFrom<&str> for RuleSpecifier {
                 Ok(Self::Rule("lint".into(), String::new(), rule.into()))
             }
             ["typecheck"] => Ok(Self::Category("typecheck".into())),
-            [group] if is_lint_group(group) => Ok(Self::Group("lint".into(), (*group).into())),
+            [group] if RuleSpecifier::is_lint_group(group) => {
+                Ok(Self::Group("lint".into(), (*group).into()))
+            }
             [rule] if pgls_analyser::METADATA.group_of(removed(rule)).is_some() => Ok(Self::Rule(
                 "lint".into(),
                 String::new(),
                 removed(rule).into(),
             )),
-            [_] | [_, _] | [_, _, _] if value.parse::<&Category>().is_ok() => {
-                Ok(RuleSpecifier::from(value.parse::<&Category>().unwrap()))
-            }
+            [_] | [_, _] | [_, _, _] => value
+                .parse::<&Category>()
+                .map(RuleSpecifier::from)
+                .map_err(|_| invalid()),
             _ => Err(invalid()),
         }
     }
-}
-
-fn is_lint_group(group: &str) -> bool {
-    pgls_analyser::METADATA.groups().contains(&group) || matches!(group, "typecheck" | "nursery")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -167,42 +199,51 @@ pub(crate) struct Suppression {
     pub(crate) suppression_range: TextRange,
     pub(crate) kind: SuppressionKind,
     pub(crate) rule_specifier: RuleSpecifier,
-    #[allow(unused)]
+    #[allow(dead_code, reason = "parsed and tested, but not shown to the user yet")]
     pub(crate) explanation: Option<String>,
     /// The flat form of a legacy specifier.
     pub(crate) legacy_replacement: Option<String>,
 }
 
 impl Suppression {
-    /// Creates a suppression from a suppression comment line.
-    /// The line start must match `-- pgt-ignore` or `-- pgls-ignore`, otherwise, this will panic.
-    /// Leading whitespace is ignored.
+    /// The suppression comment on `line`: the line without its leading whitespace, if it then
+    /// starts with `-- pgt-ignore` or `-- pgls-ignore`. Whitespace is any Unicode whitespace, so
+    /// that a comment indented with a non-breaking space (e.g. pasted from a web page) is a
+    /// suppression too. The parser and [`Suppression::from_line`] both use this, so they agree on
+    /// which lines are suppressions.
+    pub(crate) fn comment_on(line: &str) -> Option<&str> {
+        let comment = line.trim_start();
+        (comment.starts_with("-- pgt-ignore") || comment.starts_with("-- pgls-ignore"))
+            .then_some(comment)
+    }
+
+    /// Creates a suppression from a suppression comment line, which `line` must start with after
+    /// leading whitespace (see [`Suppression::comment_on`]). Returns an error for any other line.
     pub(crate) fn from_line(line: &str, offset: &TextSize) -> Result<Self, SuppressionDiagnostic> {
-        let start_trimmed = line.trim_ascii_start();
-        let leading_whitespace_offset = line.len() - start_trimmed.len();
-        let trimmed = start_trimmed.trim_ascii_end();
+        let Some(start_trimmed) = Self::comment_on(line) else {
+            return Err(SuppressionDiagnostic {
+                span: TextRange::at(*offset, TextSize::of(line)),
+                message: MessageAndDescription::from(
+                    "This is not a suppression comment.".to_string(),
+                ),
+            });
+        };
+        let leading_whitespace_offset = TextSize::of(line) - TextSize::of(start_trimmed);
+        let trimmed = start_trimmed.trim_end();
 
-        assert!(
-            start_trimmed.starts_with("-- pgt-ignore")
-                || start_trimmed.starts_with("-- pgls-ignore"),
-            "Only try parsing suppressions from lines starting with `-- pgt-ignore` or `-- pgls-ignore`."
-        );
-
-        let full_offset = *offset + TextSize::new(leading_whitespace_offset.try_into().unwrap());
-        let span = TextRange::new(
-            full_offset,
-            pgls_text_size::TextSize::new(trimmed.len().try_into().unwrap()) + full_offset,
-        );
+        let full_offset = *offset + leading_whitespace_offset;
+        let span = TextRange::at(full_offset, TextSize::of(trimmed));
 
         let (line, explanation) = match trimmed.split_once(':') {
             Some((suppr, explanation)) => (suppr, Some(explanation.trim())),
             None => (trimmed, None),
         };
 
-        let mut parts = line.split_ascii_whitespace();
+        let mut parts = line.split_whitespace();
 
         let _ = parts.next();
-        let kind = match parts.next().unwrap() {
+        // The line starts with `-- pgt-ignore` or `-- pgls-ignore`, so the tag is there.
+        let kind = match parts.next().unwrap_or_default() {
             "pgt-ignore-all" | "pgls-ignore-all" => SuppressionKind::File,
             "pgt-ignore-start" | "pgls-ignore-start" => SuppressionKind::Start,
             "pgt-ignore-end" | "pgls-ignore-end" => SuppressionKind::End,
@@ -428,6 +469,25 @@ mod tests {
             )
         );
         assert_eq!(suppression.explanation.as_deref(), Some("explanation"));
+    }
+
+    #[test]
+    fn test_suppression_from_line_non_ascii_whitespace() {
+        let line = "\u{00A0}-- pgls-ignore\u{00A0}banDropColumn";
+        let suppression = Suppression::from_line(line, &TextSize::new(10)).unwrap();
+
+        assert_eq!(suppression.kind, SuppressionKind::Line);
+        assert_eq!(suppression.rule_specifier.rule(), Some("banDropColumn"));
+        assert_eq!(
+            suppression.suppression_range,
+            TextRange::new(TextSize::new(12), TextSize::new(10) + TextSize::of(line))
+        );
+
+        // Any other line is an error, not a panic.
+        assert!(
+            Suppression::from_line("select 1; -- pgls-ignore lint", &TextSize::new(0)).is_err()
+        );
+        assert!(Suppression::from_line("", &TextSize::new(0)).is_err());
     }
 
     #[test]

@@ -10,7 +10,7 @@ use pgls_diagnostics::Error;
 use pgls_diagnostics::category;
 use pgls_workspace::features::diagnostics::{PullDatabaseDiagnosticsParams, PullDiagnosticsResult};
 
-pub fn dblint(
+pub(crate) fn dblint(
     mut session: CliSession,
     cli_options: &CliOptions,
     cli_configuration: Option<PartialConfiguration>,
@@ -37,6 +37,7 @@ pub fn dblint(
     let PullDiagnosticsResult {
         diagnostics,
         skipped_diagnostics,
+        ..
     } = workspace.pull_db_diagnostics(params)?;
 
     let report = Report::new(

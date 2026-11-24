@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/type_name_keyword_schema.sql
+---
+select cast('x' as "json".b), cast(y as "json".c);

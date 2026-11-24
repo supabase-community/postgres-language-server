@@ -22,7 +22,7 @@ pub(crate) struct FieldData {
 }
 
 impl DeriveInput {
-    pub fn parse(input: syn::DeriveInput) -> Self {
+    pub(crate) fn parse(input: syn::DeriveInput) -> Self {
         let ident = input.ident.clone();
         let partial_ident = Ident::new(&format!("Partial{}", input.ident), Span::call_site());
 

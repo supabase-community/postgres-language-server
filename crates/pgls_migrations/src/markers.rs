@@ -10,6 +10,7 @@ use pgls_text_size::{TextRange, TextSize};
 /// its line ending.
 pub(crate) fn lines(text: &str) -> impl Iterator<Item = (TextRange, &str)> {
     let mut offset = TextSize::from(0);
+    // `\n` only: goose and dbmate read their markers from lines split at `\n`.
     text.split_inclusive('\n').map(move |line| {
         let range = TextRange::at(offset, TextSize::of(line));
         offset = range.end();

@@ -5,28 +5,6 @@ use std::ops::Range;
 use std::sync::Arc;
 use std::{borrow::Borrow, ops::Deref};
 
-/// Represents a database object (table, function, etc.)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DatabaseObject<'a> {
-    /// Optional schema name
-    pub schema: Option<&'a str>,
-    /// Object name (required)
-    pub name: &'a str,
-    /// Optional object type (e.g., "table", "function", "view")
-    pub object_type: Option<&'a str>,
-}
-
-/// Owned version of DatabaseObject for use in diagnostic structs
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DatabaseObjectOwned {
-    /// Optional schema name
-    pub schema: Option<String>,
-    /// Object name (required)
-    pub name: String,
-    /// Optional object type (e.g., "table", "function", "view")
-    pub object_type: Option<String>,
-}
-
 /// Represents the location of a diagnostic in a resource.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Location<'a> {
@@ -35,8 +13,6 @@ pub struct Location<'a> {
     /// An optional range of text within the resource associated with the
     /// diagnostic.
     pub span: Option<TextRange>,
-    /// An optional database object reference
-    pub database_object: Option<DatabaseObject<'a>>,
     /// The optional source code of the resource.
     pub source_code: Option<BorrowedSourceCode<'a>>,
 }
@@ -48,7 +24,6 @@ impl<'a> Location<'a> {
             resource: None,
             span: None,
             source_code: None,
-            database_object: None,
         }
     }
 }
@@ -68,8 +43,6 @@ impl Eq for Location<'_> {}
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub enum Resource<Path> {
-    /// The diagnostic is related to the database and its schema.
-    Database,
     /// The diagnostic is related to the content of the command line arguments.
     Argv,
     /// The diagnostic is related to the content of a memory buffer.
@@ -98,7 +71,6 @@ impl<P> Resource<P> {
         P: Deref,
     {
         match self {
-            Resource::Database => Resource::Database,
             Resource::Argv => Resource::Argv,
             Resource::Memory => Resource::Memory,
             Resource::File(file) => Resource::File(file),
@@ -110,7 +82,6 @@ impl Resource<&'_ str> {
     /// Converts a `Path<&str>` to `Path<String>`.
     pub fn to_owned(self) -> Resource<String> {
         match self {
-            Resource::Database => Resource::Database,
             Resource::Argv => Resource::Argv,
             Resource::Memory => Resource::Memory,
             Resource::File(file) => Resource::File(file.to_owned()),
@@ -250,9 +221,46 @@ impl From<&SharedSourceCode> for SharedSourceCode {
     }
 }
 
-impl AsSourceCode for SharedSourceCode {
-    fn as_source_code(&self) -> Option<BorrowedSourceCode<'_>> {
-        Some(self.as_borrowed())
+impl From<BorrowedSourceCode<'_>> for SharedSourceCode {
+    /// Copies the text, and the line index if there is one; builds the line index otherwise.
+    fn from(source_code: BorrowedSourceCode<'_>) -> Self {
+        let Some(line_starts) = source_code.line_starts else {
+            return Self::new(source_code.text);
+        };
+        Self(Arc::new(SourceCode {
+            text: source_code.text.to_owned(),
+            line_starts: Some(line_starts.to_owned()),
+        }))
+    }
+}
+
+/// The source code that [DiagnosticExt::with_file_source_code](crate::DiagnosticExt::with_file_source_code)
+/// takes, `None` for none:
+/// - a [SharedSourceCode] or a reference to one, which all the diagnostics of a file share;
+/// - anything that implements [AsSourceCode] (`&str`, `String`, [SourceCode], an `Option` of
+///   them, ...), which each diagnostic copies.
+///
+/// [SharedSourceCode] doesn't implement [AsSourceCode], so that a `&SharedSourceCode` is shared
+/// instead of copied.
+pub trait IntoSharedSourceCode {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode>;
+}
+
+impl<T: AsSourceCode> IntoSharedSourceCode for T {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode> {
+        self.as_source_code().map(SharedSourceCode::from)
+    }
+}
+
+impl IntoSharedSourceCode for SharedSourceCode {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode> {
+        Some(self)
+    }
+}
+
+impl IntoSharedSourceCode for &SharedSourceCode {
+    fn into_shared_source_code(self) -> Option<SharedSourceCode> {
+        Some(self.clone())
     }
 }
 
@@ -261,7 +269,6 @@ pub struct LocationBuilder<'a> {
     resource: Option<Resource<&'a str>>,
     span: Option<TextRange>,
     source_code: Option<BorrowedSourceCode<'a>>,
-    database_object: Option<DatabaseObject<'a>>,
 }
 
 impl<'a> LocationBuilder<'a> {
@@ -280,17 +287,11 @@ impl<'a> LocationBuilder<'a> {
         self
     }
 
-    pub fn database_object<D: AsDatabaseObject>(mut self, database_object: &'a D) -> Self {
-        self.database_object = database_object.as_database_object();
-        self
-    }
-
     pub fn build(self) -> Location<'a> {
         Location {
             resource: self.resource,
             span: self.span,
             source_code: self.source_code,
-            database_object: self.database_object,
         }
     }
 }
@@ -360,8 +361,8 @@ where
 {
     fn as_span(&self) -> Option<TextRange> {
         Some(TextRange::new(
-            TextSize::try_from(self.start).expect("integer overflow"),
-            TextSize::try_from(self.end).expect("integer overflow"),
+            TextSize::try_from(self.start).ok()?,
+            TextSize::try_from(self.end).ok()?,
         ))
     }
 }
@@ -416,44 +417,11 @@ impl AsSourceCode for String {
     }
 }
 
-/// Utility trait for types that can be converted into a database object reference
-pub trait AsDatabaseObject {
-    fn as_database_object(&self) -> Option<DatabaseObject<'_>>;
-}
-
-impl<T: AsDatabaseObject> AsDatabaseObject for Option<T> {
-    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
-        self.as_ref().and_then(T::as_database_object)
-    }
-}
-
-impl<T: AsDatabaseObject + ?Sized> AsDatabaseObject for &'_ T {
-    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
-        T::as_database_object(*self)
-    }
-}
-
-impl<'a> AsDatabaseObject for DatabaseObject<'a> {
-    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
-        Some(*self)
-    }
-}
-
-impl AsDatabaseObject for DatabaseObjectOwned {
-    fn as_database_object(&self) -> Option<DatabaseObject<'_>> {
-        Some(DatabaseObject {
-            schema: self.schema.as_deref(),
-            name: &self.name,
-            object_type: self.object_type.as_deref(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use pgls_text_size::TextSize;
 
-    use super::{LineIndexBuf, SharedSourceCode};
+    use super::{LineIndex, LineIndexBuf, SharedSourceCode, SourceCode};
     use crate::{Diagnostic, DiagnosticExt, Error};
 
     #[derive(Debug)]
@@ -490,6 +458,56 @@ mod tests {
         );
     }
 
+    /// `with_file_source_code` takes the inputs it took before `SharedSourceCode`, and `None`
+    /// still means no source code.
+    #[test]
+    fn with_file_source_code_takes_every_source_code_input() {
+        let text = String::from("select 1;\nselect 2;");
+        let line_index = LineIndexBuf::from_source_text(&text);
+        let shared = SharedSourceCode::new(text.as_str());
+        let with_source: Vec<Error> = vec![
+            TestDiagnostic.with_file_source_code(text.as_str()),
+            TestDiagnostic.with_file_source_code(&text),
+            TestDiagnostic.with_file_source_code(text.clone()),
+            TestDiagnostic.with_file_source_code(Some(text.as_str())),
+            TestDiagnostic.with_file_source_code(Some(text.clone())),
+            TestDiagnostic.with_file_source_code(SourceCode::<&str, &LineIndex> {
+                text: &text,
+                line_starts: None,
+            }),
+            TestDiagnostic.with_file_source_code(SourceCode::<&str, &LineIndex> {
+                text: &text,
+                line_starts: Some(&line_index),
+            }),
+            TestDiagnostic.with_file_source_code(SourceCode::<String, LineIndexBuf> {
+                text: text.clone(),
+                line_starts: Some(line_index.clone()),
+            }),
+            TestDiagnostic.with_file_source_code(&shared),
+            TestDiagnostic.with_file_source_code(shared.clone()),
+        ];
+        for diagnostic in &with_source {
+            let source_code = diagnostic
+                .location()
+                .source_code
+                .expect("the diagnostic has a source code");
+            assert_eq!(source_code.text, text);
+            assert_eq!(
+                &**source_code.line_starts.expect("a line index"),
+                &**line_index
+            );
+        }
+
+        let without_source: Vec<Error> = vec![
+            TestDiagnostic.with_file_source_code(None::<&str>),
+            TestDiagnostic.with_file_source_code(None::<String>),
+            TestDiagnostic.with_file_source_code(None::<SourceCode<&str, &LineIndex>>),
+        ];
+        for diagnostic in &without_source {
+            assert!(diagnostic.location().source_code.is_none());
+        }
+    }
+
     #[test]
     fn line_starts_with_carriage_return_line_feed() {
         let input = "a\r\nb\r\nc";
@@ -506,11 +524,19 @@ mod tests {
     }
 
     #[test]
-    fn a_lone_carriage_return_does_not_end_a_line() {
+    fn a_lone_carriage_return_ends_a_line() {
         let input = "a\rb\rc\nd";
         let LineIndexBuf(starts) = LineIndexBuf::from_source_text(input);
 
-        assert_eq!(vec![TextSize::from(0u32), TextSize::from(6u32)], starts);
+        assert_eq!(
+            vec![
+                TextSize::from(0u32),
+                TextSize::from(2u32),
+                TextSize::from(4u32),
+                TextSize::from(6u32)
+            ],
+            starts
+        );
     }
 
     #[test]
