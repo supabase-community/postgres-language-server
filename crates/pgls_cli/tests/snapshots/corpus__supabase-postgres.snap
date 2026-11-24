@@ -1,0 +1,70 @@
+---
+source: crates/pgls_cli/tests/corpus.rs
+expression: summary.to_string()
+---
+files: 230 (0 skipped)
+check:
+  lint/avoidAlterEnumAddValue: 3
+  lint/avoidCreateTrigger: 19
+  lint/avoidWideLockWindow: 4
+  lint/banCharField: 2
+  lint/banConcurrentIndexCreationInTransaction: 6
+  lint/banDeleteWithoutWhere: 27
+  lint/banDropConstraint: 6
+  lint/banDropExtension: 16
+  lint/banDropFunction: 49
+  lint/banDropSchema: 28
+  lint/banDropTable: 120
+  lint/banDropTrigger: 15
+  lint/banDropType: 5
+  lint/banDropView: 10
+  lint/banUpdateWithoutWhere: 1
+  lint/creatingEnum: 4
+  lint/lockTimeoutWarning: 6
+  lint/multipleAlterTable: 18
+  lint/preferBigInt: 163
+  lint/preferIdentity: 80
+  lint/preferJsonb: 5
+  lint/preferRobustStmts: 265
+  lint/preferTextField: 45
+  lint/preferTimestamptz: 8
+  lint/renamingTable: 1
+  lint/requireColumnQualifier: 636
+  lint/requireConcurrentRefreshMatview: 1
+  lint/requireEnumValueOrdering: 3
+  lint/requireFunctionSchema: 486
+  lint/requireIdleInTransactionTimeout: 130
+  lint/requireOperatorSchema: 719
+  lint/requireRelationSchema: 618
+  lint/requireStatementTimeout: 130
+  lint/requireTableSchema: 352
+  lint/requireTypeSchema: 727
+  lint/runningStatementWhileHoldingAccessExclusive: 25
+  lint/transactionNesting: 116
+  syntax: 19
+format:
+  format: 1448
+  syntax: 18
+reformatted files: 213
+  migrations/db/init-scripts/00000000000000-initial-schema.sql
+  migrations/db/init-scripts/00000000000001-auth-schema.sql
+  migrations/db/init-scripts/00000000000002-storage-schema.sql
+  migrations/db/init-scripts/00000000000003-post-setup.sql
+  migrations/db/migrations/10000000000000_demote-postgres.sql
+  migrations/db/migrations/20211115181400_update-auth-permissions.sql
+  migrations/db/migrations/20211118015519_create-realtime-schema.sql
+  migrations/db/migrations/20211122051245_update-realtime-permissions.sql
+  migrations/db/migrations/20211124212715_update-auth-owner.sql
+  migrations/db/migrations/20211130151719_update-realtime-permissions.sql
+  migrations/db/migrations/20220118070449_enable-safeupdate-postgrest.sql
+  migrations/db/migrations/20220126121436_finer-postgrest-triggers.sql
+  migrations/db/migrations/20220224211803_fix-postgrest-supautils.sql
+  migrations/db/migrations/20220317095840_pg_graphql.sql
+  migrations/db/migrations/20220321174452_fix-postgrest-alter-type-event-trigger.sql
+  migrations/db/migrations/20220322085208_gotrue-session-limit.sql
+  migrations/db/migrations/20220404205710_pg_graphql-on-by-default.sql
+  migrations/db/migrations/20220613123923_pg_graphql-pg-dump-perms.sql
+  migrations/db/migrations/20220713082019_pg_cron-pg_net-temp-perms-fix.sql
+  migrations/db/migrations/20221028101028_set_authenticator_timeout.sql
+  and 193 more
+crashes: 0

@@ -2365,6 +2365,7 @@ dependencies = [
  "tempfile",
  "tikv-jemallocator",
  "tokio",
+ "toml",
  "tracing",
  "tracing-appender",
  "tracing-bunyan-formatter",

@@ -48,6 +48,7 @@ just test-doc               # doc tests
 - Linter rules are tested with the SQL specs in `crates/pgls_analyser/tests/specs/<group>/<rule>/`.
 - Statement splitter cases live in `crates/pgls_statement_splitter/tests/data/`.
 - `crates/pgls_analyser/tests/postgres_regress.rs` runs the analyser over Postgres' own regression suite for versions 15–18 (fixtures in `crates/pgls_postgres_regress/data/<major>/`) and fails on any finding on a statement Postgres accepted. Re-record a version with `just record-regress <major>` (needs Docker).
+- `crates/pgls_cli/tests/corpus.rs` runs `check` and `format` of the CLI over real-world SQL (`crates/pgls_cli/tests/corpus.toml`: sqlfluff's fixtures, Supabase's migrations, GitLab's schema, ...) and snapshots, per source, the diagnostics per category, the reformatted files and the crashes. A change to a rule, the parser or the formatter shows up there. Run it with `just corpus`; it fetches the pinned sources on the first run. To move a pin, edit its `rev` and accept the changed snapshot.
 
 ## Common tasks
 

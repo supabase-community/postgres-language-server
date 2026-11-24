@@ -1,0 +1,98 @@
+---
+source: crates/pgls_cli/tests/corpus.rs
+expression: summary.to_string()
+---
+files: 227 (0 skipped)
+check:
+  lint/addingFieldWithDefault: 3
+  lint/addingForeignKeyConstraint: 4
+  lint/addingNotNullField: 2
+  lint/addingPrimaryKeyConstraint: 3
+  lint/avoidAddingExclusionConstraint: 2
+  lint/avoidAlterEnumAddValue: 4
+  lint/avoidAttachingPartition: 5
+  lint/avoidCreateTrigger: 14
+  lint/avoidWideLockWindow: 23
+  lint/banAlterDomainWithAddConstraint: 2
+  lint/banAlterIdentity: 2
+  lint/banCharField: 10
+  lint/banConcurrentIndexCreationInTransaction: 8
+  lint/banCreateDomainWithConstraint: 15
+  lint/banDeleteWithoutWhere: 7
+  lint/banDropColumn: 2
+  lint/banDropConstraint: 5
+  lint/banDropDatabase: 6
+  lint/banDropDefault: 5
+  lint/banDropDomain: 1
+  lint/banDropExtension: 2
+  lint/banDropFunction: 20
+  lint/banDropNotNull: 1
+  lint/banDropSequence: 5
+  lint/banDropTrigger: 5
+  lint/banDropType: 18
+  lint/banDropView: 25
+  lint/banSetSchema: 20
+  lint/banTruncate: 15
+  lint/banTruncateCascade: 2
+  lint/banUpdateWithoutWhere: 3
+  lint/banVacuumFull: 10
+  lint/changingColumnType: 5
+  lint/constraintMissingNotValid: 6
+  lint/creatingEnum: 4
+  lint/disallowUniqueConstraint: 8
+  lint/identifierTooLong: 2
+  lint/lockTimeoutWarning: 148
+  lint/multipleAlterTable: 139
+  lint/preferBigInt: 75
+  lint/preferIdentity: 9
+  lint/preferJsonb: 1
+  lint/preferRobustStmts: 103
+  lint/preferTextField: 21
+  lint/preferTimestamptz: 6
+  lint/renamingColumn: 8
+  lint/renamingObject: 36
+  lint/renamingTable: 1
+  lint/requireColumnQualifier: 553
+  lint/requireConcurrentDetachPartition: 1
+  lint/requireConcurrentIndexCreation: 20
+  lint/requireConcurrentIndexDeletion: 10
+  lint/requireConcurrentRefreshMatview: 3
+  lint/requireConcurrentReindex: 7
+  lint/requireEnumValueOrdering: 1
+  lint/requireFunctionSchema: 156
+  lint/requireIdleInTransactionTimeout: 232
+  lint/requireOperatorSchema: 465
+  lint/requireRelationSchema: 611
+  lint/requireSeparateConstraintValidation: 1
+  lint/requireStatementTimeout: 232
+  lint/requireTableSchema: 299
+  lint/requireTypeSchema: 463
+  lint/runningStatementWhileHoldingAccessExclusive: 187
+  lint/transactionNesting: 24
+  syntax: 52
+format:
+  format: 2303
+  syntax: 49
+reformatted files: 225
+  test/fixtures/dialects/postgres/alter_aggregate.sql
+  test/fixtures/dialects/postgres/alter_collation.sql
+  test/fixtures/dialects/postgres/alter_conversion.sql
+  test/fixtures/dialects/postgres/alter_database.sql
+  test/fixtures/dialects/postgres/alter_default_privileges.sql
+  test/fixtures/dialects/postgres/alter_domain.sql
+  test/fixtures/dialects/postgres/alter_event_trigger.sql
+  test/fixtures/dialects/postgres/alter_extension.sql
+  test/fixtures/dialects/postgres/alter_foreign_data_wrapper.sql
+  test/fixtures/dialects/postgres/alter_foreign_table.sql
+  test/fixtures/dialects/postgres/alter_function.sql
+  test/fixtures/dialects/postgres/alter_group.sql
+  test/fixtures/dialects/postgres/alter_index.sql
+  test/fixtures/dialects/postgres/alter_language.sql
+  test/fixtures/dialects/postgres/alter_large_object.sql
+  test/fixtures/dialects/postgres/alter_materialized_view.sql
+  test/fixtures/dialects/postgres/alter_operator.sql
+  test/fixtures/dialects/postgres/alter_policy.sql
+  test/fixtures/dialects/postgres/alter_procedure.sql
+  test/fixtures/dialects/postgres/alter_publication.sql
+  and 205 more
+crashes: 0
