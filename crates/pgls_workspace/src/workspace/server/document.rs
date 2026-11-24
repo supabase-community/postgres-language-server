@@ -818,6 +818,8 @@ fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pgls_line_index::{LineIndex, WideEncoding, WideLineCol};
+    use proptest::prelude::*;
 
     impl Document {
         /// The walk input of every statement.
@@ -825,6 +827,230 @@ mod tests {
             self.statements()
                 .map(|stmt| self.walk_input(stmt))
                 .collect()
+        }
+
+        /// Fails unless the document is the document opened on its content with its settings:
+        /// the same text, statements, diagnostics, suppressions and migration script, the same
+        /// embedded statements and parse results from the cache, and every range inside the text.
+        fn equals_a_fresh_document(&self) -> Result<(), TestCaseError> {
+            let fresh = Document::open(
+                self.project_key,
+                self.settings_version,
+                self.migration_tool,
+                self.max_size,
+                self.content.clone(),
+                self.version,
+            );
+            let text = self.text();
+            prop_assert_eq!(text, fresh.text());
+            prop_assert_eq!(self.too_large, fresh.too_large);
+            prop_assert_eq!(&self.split, &fresh.split);
+            prop_assert_eq!(
+                format!("{:?}", self.diagnostics),
+                format!("{:?}", fresh.diagnostics)
+            );
+            prop_assert_eq!(
+                format!("{:?}", self.suppressions),
+                format!("{:?}", fresh.suppressions)
+            );
+            prop_assert_eq!(
+                format!("{:?}", self.migration_script),
+                format!("{:?}", fresh.migration_script)
+            );
+            for diagnostic in &self.diagnostics {
+                let span = diagnostic.location().span;
+                prop_assert!(
+                    span.is_none_or(|span| text
+                        .get(std::ops::Range::<usize>::from(span))
+                        .is_some()),
+                    "{span:?} is not inside the text"
+                );
+            }
+
+            let statements: Vec<_> = self.statements().collect();
+            let fresh_statements: Vec<_> = fresh.statements().collect();
+            prop_assert_eq!(format!("{statements:?}"), format!("{fresh_statements:?}"));
+            for stmt in &statements {
+                prop_assert!(
+                    text.get(std::ops::Range::<usize>::from(stmt.range()))
+                        .is_some(),
+                    "{:?} is not inside the text",
+                    stmt.range()
+                );
+                prop_assert_eq!(
+                    format!("{:?}", self.parse(stmt)),
+                    format!("{:?}", fresh.parse(stmt))
+                );
+            }
+            Ok(())
+        }
+    }
+
+    /// A change of the content as a client sends it: the text that replaces the content between
+    /// two UTF-16 positions, which can be past the end of their line or of the content, or inside
+    /// a character.
+    #[derive(Debug, Clone)]
+    struct ClientChange {
+        start: WideLineCol,
+        end: WideLineCol,
+        text: String,
+    }
+
+    impl ClientChange {
+        /// The statements that the texts are mostly made of, so that a change has statements on
+        /// both sides that it doesn't touch. They have all three line breaks and characters of 2
+        /// and 4 bytes in UTF-8 in and between them.
+        const STATEMENTS: &[&str] = &[
+            "select 1;\n",
+            "select x from t where y = 'é😀';\r\n",
+            "select é, 😀 from t\rwhere x = 1;\r",
+            "create function f() returns int language sql as $$ select 1; select 2 $$;\n",
+            "create function g() returns int language sql begin atomic select 1; end;\n",
+            "create function h() returns int language sql as 'select 1; select ''é''';\n",
+            "copy t from stdin;\n1\n\\.\n",
+            "insert into t values (${A}, ${B:-x});\n",
+            "update t set x = 1\n\nselect 2;\n",
+        ];
+
+        /// The pieces that a change can open or close a statement, a string, a comment or a
+        /// function body with, line breaks, and the markers of the migration tools and of
+        /// suppressions.
+        const PIECES: &[&str] = &[
+            "select",
+            " ",
+            "x",
+            "é",
+            "😀",
+            "\n",
+            "\r\n",
+            "\r",
+            ";",
+            "'",
+            "\"",
+            "$$",
+            "$f$",
+            "(",
+            ")",
+            "--",
+            "/*",
+            "*/",
+            "\\",
+            "-- pgls-ignore lint\n",
+            "-- +goose Up\n",
+            "-- +goose Down\n",
+            "-- +goose ENVSUB ON\n",
+            "-- +goose ENVSUB OFF\n",
+            "-- +goose StatementBegin\n",
+            "-- +goose StatementEnd\n",
+            "-- migrate:up\n",
+            "-- migrate:down\n",
+        ];
+
+        /// Up to `parts_max` of [`Self::STATEMENTS`] and [`Self::PIECES`], `statement_weight`
+        /// statements to one piece.
+        fn text(parts_max: usize, statement_weight: u32) -> impl Strategy<Value = String> {
+            proptest::collection::vec(
+                prop_oneof![
+                    statement_weight => proptest::sample::select(Self::STATEMENTS),
+                    1 => proptest::sample::select(Self::PIECES),
+                ],
+                0..=parts_max,
+            )
+            .prop_map(|parts| parts.concat())
+        }
+
+        fn arbitrary() -> impl Strategy<Value = Self> {
+            // Mostly typing: a change of a few characters within one line.
+            let lines = prop_oneof![4 => Just(0), 1 => 1..3u32];
+            (0..48u32, 0..48u32, lines, 0..16u32, Self::text(2, 1)).prop_map(
+                |(line, col, lines, width, text)| ClientChange {
+                    start: WideLineCol { line, col },
+                    end: WideLineCol {
+                        line: line + lines,
+                        col: if lines == 0 { col + width } else { width },
+                    },
+                    text,
+                },
+            )
+        }
+
+        /// Applies the change to `content`, with the positions mapped to offsets like the server
+        /// maps them: a position past the end of its line is the end of the line, and one inside
+        /// a character is the start of the character.
+        fn apply(&self, content: &mut String) {
+            let index = LineIndex::new(content);
+            let offset = |position| {
+                usize::from(index.offset_clamped(index.to_utf8(WideEncoding::Utf16, position)))
+            };
+            let (start, end) = (offset(self.start), offset(self.end));
+            content.replace_range(start.min(end)..start.max(end), &self.text);
+        }
+    }
+
+    /// What happens to an open document: a notification of changes, which the server applies in
+    /// order and passes on as one new version, or new settings.
+    #[derive(Debug, Clone)]
+    enum DocumentEvent {
+        Changes(Vec<ClientChange>),
+        Settings(MigrationTool, NonZeroU64),
+    }
+
+    impl DocumentEvent {
+        fn arbitrary() -> impl Strategy<Value = Self> {
+            prop_oneof![
+                9 => proptest::collection::vec(ClientChange::arbitrary(), 1..3)
+                    .prop_map(DocumentEvent::Changes),
+                1 => Self::settings()
+                    .prop_map(|(tool, max_size)| DocumentEvent::Settings(tool, max_size)),
+            ]
+        }
+
+        /// A migration tool, and a size limit that the content is often above.
+        fn settings() -> impl Strategy<Value = (MigrationTool, NonZeroU64)> {
+            (
+                proptest::sample::select(vec![
+                    MigrationTool::Plain,
+                    MigrationTool::Supabase,
+                    MigrationTool::Dbmate,
+                    MigrationTool::Goose,
+                ]),
+                prop_oneof![
+                    3 => Just(NonZeroU64::MAX),
+                    1 => (0..256u64).prop_map(|size| NonZeroU64::MIN.saturating_add(size)),
+                ],
+            )
+        }
+    }
+
+    proptest! {
+        /// rust-analyzer's `reparse` fuzzing for documents: after random changes, like a client
+        /// sends them, every version of the document equals the document opened on its content,
+        /// although it only splits the text around a change and keeps its cache.
+        #[test]
+        fn edited_documents_equal_the_documents_opened_on_their_content(
+            (tool, max_size) in DocumentEvent::settings(),
+            content in ClientChange::text(40, 4),
+            events in proptest::collection::vec(DocumentEvent::arbitrary(), 1..12),
+        ) {
+            let mut content = content;
+            let mut d = Document::open(ProjectKey::default(), 0, tool, max_size, content.clone(), 0);
+            d.equals_a_fresh_document()?;
+            for (version, event) in (1..).zip(events) {
+                match event {
+                    DocumentEvent::Changes(changes) => {
+                        for change in &changes {
+                            change.apply(&mut content);
+                        }
+                        d.update_content(content.clone(), version).drop_in_background();
+                    }
+                    DocumentEvent::Settings(tool, max_size) => {
+                        d.set_settings(ProjectKey::default(), version.unsigned_abs().into(), tool, max_size)
+                            .drop_in_background();
+                    }
+                }
+                prop_assert_eq!(d.get_document_content(), content.as_str());
+                d.equals_a_fresh_document()?;
+            }
         }
     }
 

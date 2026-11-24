@@ -1,0 +1,64 @@
+---
+source: crates/pgls_cli/tests/corpus.rs
+expression: summary.to_string()
+---
+files: 104 (0 skipped)
+check:
+  lint/addSerialColumn: 3
+  lint/addingFieldWithDefault: 6
+  lint/addingForeignKeyConstraint: 2
+  lint/addingRequiredField: 3
+  lint/avoidCreateTrigger: 13
+  lint/avoidWideLockWindow: 3
+  lint/banDropColumn: 8
+  lint/banDropConstraint: 2
+  lint/banDropFunction: 7
+  lint/banDropTable: 2
+  lint/constraintMissingNotValid: 3
+  lint/creatingEnum: 13
+  lint/disallowUniqueConstraint: 2
+  lint/identifierTooLong: 1
+  lint/lockTimeoutWarning: 40
+  lint/multipleAlterTable: 32
+  lint/preferBigInt: 7
+  lint/preferIdentity: 8
+  lint/preferRobustStmts: 70
+  lint/renamingObject: 1
+  lint/requireColumnQualifier: 58
+  lint/requireConcurrentIndexCreation: 6
+  lint/requireConcurrentIndexDeletion: 3
+  lint/requireFunctionSchema: 212
+  lint/requireIdleInTransactionTimeout: 46
+  lint/requireOperatorSchema: 222
+  lint/requireRelationSchema: 16
+  lint/requireSeparateConstraintValidation: 1
+  lint/requireStatementTimeout: 46
+  lint/requireTableSchema: 80
+  lint/requireTypeSchema: 484
+  lint/runningStatementWhileHoldingAccessExclusive: 56
+  lint/transactionNesting: 12
+format:
+  format: 622
+reformatted files: 89
+  docker/volumes/db/_supabase.sql
+  docker/volumes/db/jwt.sql
+  docker/volumes/db/roles.sql
+  docker/volumes/db/webhooks.sql
+  examples/ai/aws_bedrock_image_gen/supabase/migrations/20240523074718_storage_bucket.sql
+  examples/ai/edge-functions/supabase/migrations/20240408072601_embeddings.sql
+  examples/ai/edge-functions/supabase/migrations/20240410031515_vector-search.sql
+  examples/ai/edge-functions/supabase/seed.sql
+  examples/auth/hono-full/supabase/seed.sql
+  examples/caching/with-nextjs-13/supabase/migrations/20221028100232_init.sql
+  examples/caching/with-nextjs-13/supabase/seed.sql
+  examples/caching/with-react-query-nextjs-14/supabase/migrations/20240108135434_remote_schema.sql
+  examples/caching/with-react-query-nextjs-14/supabase/seed.sql
+  examples/clerk/supabase/migrations/20250501155648_setup_database.sql
+  examples/database/employees/supabase/migrations/20241205080043_add_department_to_employees_table.sql
+  examples/database/employees/supabase/seed.sql
+  examples/edge-functions/supabase/migrations/20220331105910_init.sql
+  examples/edge-functions/supabase/migrations/20221208080410_discord-bot.sql
+  examples/edge-functions/supabase/migrations/20240423080303_sentry-functions-challenge.sql
+  examples/edge-functions/supabase/migrations/20260911000000_authenticated-mcp-server.sql
+  and 69 more
+crashes: 0

@@ -311,6 +311,39 @@ jobs:
       - name: Run the option matrix
         run: cargo test -p pgls_pretty_print --release --test option_matrix -- --ignored
 
+  # Runs the CLI over real-world SQL (crates/pgls_cli/tests/corpus.toml) and compares a summary per
+  # source with its snapshot. In release, because `format` of GitLab's schema takes minutes in debug.
+  corpus:
+    name: Corpus
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
+      - name: Run the corpus check
+        run: cargo test -p pgls_cli --release --test corpus -- --ignored
+
   test:
     name: Test
     needs: changes

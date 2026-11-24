@@ -1,0 +1,30 @@
+---
+source: crates/pgls_cli/tests/corpus.rs
+expression: summary.to_string()
+---
+files: 1 (0 skipped)
+check:
+  lint/avoidAttachingPartition: 2054
+  lint/avoidCreateTrigger: 392
+  lint/avoidEnableDisableTrigger: 1
+  lint/avoidWideLockWindow: 371
+  lint/lockTimeoutWarning: 372
+  lint/multipleAlterTable: 4837
+  lint/preferBigInt: 2015
+  lint/preferRobustStmts: 1472
+  lint/preferTextField: 113
+  lint/preferTimestamptz: 272
+  lint/requireColumnQualifier: 39
+  lint/requireFunctionSchema: 3703
+  lint/requireIdleInTransactionTimeout: 372
+  lint/requireOperatorSchema: 3432
+  lint/requireRelationSchema: 70
+  lint/requireStatementTimeout: 372
+  lint/requireTableSchema: 11506
+  lint/requireTypeSchema: 5188
+  lint/runningStatementWhileHoldingAccessExclusive: 3993
+format:
+  format: 15621
+reformatted files: 1
+  db/structure.sql
+crashes: 0
