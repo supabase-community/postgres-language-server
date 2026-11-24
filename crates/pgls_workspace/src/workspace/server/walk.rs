@@ -146,7 +146,7 @@ impl WorkspaceServer {
             unparsable.extend(skipped);
         }
         #[cfg(test)]
-        self.walked_statements.fetch_add(
+        self.counters.walked_statements.fetch_add(
             stmts.len() + unparsable.len(),
             std::sync::atomic::Ordering::Relaxed,
         );

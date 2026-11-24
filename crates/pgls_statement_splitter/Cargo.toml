@@ -18,8 +18,9 @@ pgls_query.workspace     = true
 pgls_text_size.workspace = true
 
 [dev-dependencies]
-criterion.workspace = true
-ntest               = "0.9.3"
+criterion.workspace       = true
+ntest                     = "0.9.3"
+pgls_test_utils.workspace = true
 
 [[bench]]
 harness = false

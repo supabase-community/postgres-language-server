@@ -1,5 +1,7 @@
 use pgls_line_index::LineIndex;
 
+use crate::activity::Activity;
+
 /// Represents an open [`textDocument`]. The session keeps each state of the document in its own
 /// `Arc`, see [`Session::is_current_document`].
 ///
@@ -14,7 +16,9 @@ pub(crate) struct Document {
 }
 
 impl Document {
-    pub(crate) fn new(version: i32, text: &str) -> Self {
+    /// The document of `text`, whose line index `activity` counts.
+    pub(crate) fn new(version: i32, text: &str, activity: &Activity) -> Self {
+        activity.line_index_built();
         Self {
             version,
             line_index: LineIndex::new(text),

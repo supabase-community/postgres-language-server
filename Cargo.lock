@@ -2801,6 +2801,7 @@ dependencies = [
  "pgls_diagnostics",
  "pgls_lexer",
  "pgls_query",
+ "pgls_test_utils",
  "pgls_text_size",
 ]
 
@@ -2812,6 +2813,7 @@ dependencies = [
  "pgls_analyser",
  "pgls_diagnostics",
  "pgls_line_index",
+ "pgls_test_utils",
  "pgls_text_size",
 ]
 
@@ -2912,10 +2914,12 @@ version = "0.0.0"
 dependencies = [
  "pgls_catalog",
  "pgls_migrations",
+ "pgls_postgres_regress",
  "pgls_query",
  "pgls_query_ext",
  "pgls_resolve",
  "pgls_statement_splitter",
+ "pgls_test_utils",
  "pgls_text_size",
  "serde_json",
  "tracing",

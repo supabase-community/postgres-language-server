@@ -18,5 +18,8 @@ pgls_diagnostics = { workspace = true }
 pgls_line_index  = { workspace = true }
 pgls_text_size   = { workspace = true }
 
+[dev-dependencies]
+pgls_test_utils = { workspace = true }
+
 [lints]
 workspace = true

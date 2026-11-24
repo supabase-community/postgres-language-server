@@ -21,7 +21,9 @@ serde_json      = { workspace = true }
 tracing         = { workspace = true }
 
 [dev-dependencies]
+pgls_postgres_regress   = { workspace = true }
 pgls_statement_splitter = { workspace = true }
+pgls_test_utils         = { workspace = true }
 
 [lib]
 doctest = false

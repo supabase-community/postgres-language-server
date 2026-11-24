@@ -18,6 +18,8 @@ mod linter_registry;
 mod linter_rule;
 pub mod options;
 mod registry;
+#[cfg(test)]
+mod scale_tests;
 mod transaction_block;
 mod utils;
 
@@ -139,12 +141,38 @@ impl AnalysisResult {
     /// statements of its SQL function body, so their starts increase and a binary search finds
     /// it.
     pub fn statement(&self, range: TextRange) -> Option<&StatementAnalysis> {
-        let index = self
-            .statements
-            .partition_point(|statement| statement.range.start() < range.start());
+        let index = self.statements.partition_point(|statement| {
+            #[cfg(test)]
+            LookupSteps::count();
+            statement.range.start() < range.start()
+        });
         self.statements
             .get(index)
             .filter(|statement| statement.range == range)
+    }
+}
+
+/// The statements that [`AnalysisResult::statement`] compared on this thread, for the scale test,
+/// see [`LookupSteps::during`].
+#[cfg(test)]
+struct LookupSteps;
+
+#[cfg(test)]
+thread_local! {
+    static LOOKUP_STEPS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+impl LookupSteps {
+    fn count() {
+        LOOKUP_STEPS.with(|steps| steps.set(steps.get() + 1));
+    }
+
+    /// Runs `f` and returns how many statements the lookups compared meanwhile.
+    fn during<T>(f: impl FnOnce() -> T) -> (T, usize) {
+        let before = LOOKUP_STEPS.with(std::cell::Cell::get);
+        let value = f();
+        (value, LOOKUP_STEPS.with(std::cell::Cell::get) - before)
     }
 }
 

@@ -36,6 +36,8 @@ pub struct Progress {
     pub notifications: u64,
     /// The `textDocument/publishDiagnostics` notifications the server sent.
     pub diagnostics_published: u64,
+    /// The line indexes the server built of the documents' texts.
+    pub line_indexes_built: u64,
 }
 
 impl Activity {
@@ -65,6 +67,14 @@ impl Activity {
         #[cfg(feature = "testing")]
         self.progress.send_modify(|progress| {
             progress.diagnostics_published = progress.diagnostics_published.saturating_add(1);
+        });
+    }
+
+    /// Counts a line index that the server built of a document's text.
+    pub(crate) fn line_index_built(&self) {
+        #[cfg(feature = "testing")]
+        self.progress.send_modify(|progress| {
+            progress.line_indexes_built = progress.line_indexes_built.saturating_add(1);
         });
     }
 
@@ -149,7 +159,8 @@ mod tests {
             Progress {
                 jobs: 1,
                 notifications: 1,
-                diagnostics_published: 0
+                diagnostics_published: 0,
+                line_indexes_built: 0,
             }
         );
 

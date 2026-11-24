@@ -670,14 +670,20 @@ mod tests {
         let url =
             Uri::from_file_path(working_directory.path().join("document.sql")).expect("a file url");
 
-        session.insert_document(url.clone(), Document::new(1, "select 1;"));
+        session.insert_document(
+            url.clone(),
+            Document::new(1, "select 1;", &crate::Activity::default()),
+        );
         let opened = session.document(&url).expect("the document is open");
         assert!(session.is_current_document(&url, &opened));
 
         session.remove_document(&url);
         assert!(!session.is_current_document(&url, &opened));
 
-        session.insert_document(url.clone(), Document::new(1, "select 1;"));
+        session.insert_document(
+            url.clone(),
+            Document::new(1, "select 1;", &crate::Activity::default()),
+        );
         assert!(!session.is_current_document(&url, &opened));
     }
 
@@ -737,7 +743,7 @@ mod tests {
             .expect("open_file");
         session.insert_document(
             Uri::from_file_path(&document).expect("a file url"),
-            Document::new(0, "select 1;"),
+            Document::new(0, "select 1;", &crate::Activity::default()),
         );
 
         let (stream, _sink) = socket.split();

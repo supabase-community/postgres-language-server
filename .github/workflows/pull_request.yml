@@ -344,6 +344,42 @@ jobs:
       - name: Run the corpus check
         run: cargo test -p pgls_cli --release --test corpus -- --ignored
 
+  # Runs the operation-count budgets on the generated 20k-statement file, and the language server
+  # on it with the stack size of the released server (S8). In release, because the 20k-statement
+  # file takes minutes in debug; the 1k-statement budgets run with the other tests.
+  scale:
+    name: Scale
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
+      - name: Run the 20k-statement scale tests
+        run: cargo test --release -p pgls_workspace -p pgls_walk -p pgls_lsp -- --ignored scale_20k
+
   test:
     name: Test
     needs: changes

@@ -82,6 +82,8 @@ impl TreeSitterStore {
                 .expect("the parser has a language"),
         );
         drop(parser);
+        #[cfg(all(test, feature = "db"))]
+        TreeParses::count();
 
         // Insert into cache
         {
@@ -96,6 +98,30 @@ impl TreeSitterStore {
         }
 
         tree
+    }
+}
+
+/// The statements that tree-sitter parsed on this thread, for the scale tests, see
+/// [`TreeParses::during`]. The scale tests that read it need a database.
+#[cfg(all(test, feature = "db"))]
+pub(crate) struct TreeParses;
+
+#[cfg(all(test, feature = "db"))]
+thread_local! {
+    static TREE_PARSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(all(test, feature = "db"))]
+impl TreeParses {
+    fn count() {
+        TREE_PARSES.with(|parses| parses.set(parses.get() + 1));
+    }
+
+    /// Runs `f` and returns how many statements tree-sitter parsed meanwhile on this thread.
+    pub(crate) fn during<T>(f: impl FnOnce() -> T) -> (T, usize) {
+        let before = TREE_PARSES.with(std::cell::Cell::get);
+        let value = f();
+        (value, TREE_PARSES.with(std::cell::Cell::get) - before)
     }
 }
 

@@ -148,10 +148,24 @@ pub struct WorkspaceServer {
     #[cfg(feature = "db")]
     running_statements: RunningStatements,
 
-    /// The statements that the editor walks visited, to test that they resume from
-    /// checkpoints.
+    /// What the workspace did, for the tests.
     #[cfg(test)]
-    walked_statements: std::sync::atomic::AtomicUsize,
+    counters: Arc<Counters>,
+}
+
+/// What a workspace did, counted for the tests: that the editor walks resume from checkpoints,
+/// and the budgets of the scale tests.
+#[cfg(test)]
+#[derive(Default)]
+pub(crate) struct Counters {
+    /// The statements that the editor walks visited.
+    pub(crate) walked_statements: std::sync::atomic::AtomicUsize,
+    /// The statements that the typecheck explained in the database.
+    #[cfg(feature = "db")]
+    pub(crate) typecheck_queries: std::sync::atomic::AtomicUsize,
+    /// The functions that plpgsql_check checked in the database.
+    #[cfg(feature = "db")]
+    pub(crate) plpgsql_checks: std::sync::atomic::AtomicUsize,
 }
 
 /// The `Workspace` object is long-lived, so we want it to be able to cross
@@ -192,7 +206,7 @@ impl WorkspaceServer {
             runtime,
             running_statements: RunningStatements::default(),
             #[cfg(test)]
-            walked_statements: Default::default(),
+            counters: Default::default(),
         }
     }
 
@@ -207,7 +221,7 @@ impl WorkspaceServer {
             settings_version: AtomicU64::default(),
             document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
             #[cfg(test)]
-            walked_statements: Default::default(),
+            counters: Default::default(),
         }
     }
 
@@ -517,6 +531,8 @@ impl WorkspaceServer {
             let pool = pool.clone();
             let path = path.clone();
             let stopped = Arc::clone(&stop);
+            #[cfg(test)]
+            let counters = Arc::clone(&self.counters);
 
             self.runtime
                 .run_until(
@@ -530,6 +546,8 @@ impl WorkspaceServer {
                                 let path = path.clone();
                                 let snapshot = Arc::clone(&snapshot);
                                 let plpgsql_check = plpgsql_check.clone();
+                                #[cfg(test)]
+                                let counters = Arc::clone(&counters);
 
                                 async move {
                                     let mut result = StatementDatabaseResult::default();
@@ -563,6 +581,10 @@ impl WorkspaceServer {
                                                         .reported_database_error,
                                                 })
                                                 .await?;
+                                            #[cfg(test)]
+                                            counters
+                                                .typecheck_queries
+                                                .fetch_add(1, Ordering::Relaxed);
 
                                             if let Some(diagnostic) = typecheck {
                                                 let span = database_span(
@@ -608,6 +630,10 @@ impl WorkspaceServer {
                                         .flatten();
 
                                         result.plpgsql_checked = results.is_some();
+                                        #[cfg(test)]
+                                        if result.plpgsql_checked {
+                                            counters.plpgsql_checks.fetch_add(1, Ordering::Relaxed);
+                                        }
 
                                         for diagnostic in results.unwrap_or_default() {
                                             let span =
@@ -1960,6 +1986,9 @@ fn database_span(span: Option<TextRange>, statement: &str, range: TextRange) -> 
 }
 
 // Two attributes, because clippy only exempts tests from the panic lints under a plain `cfg(test)`.
+#[cfg(test)]
+#[cfg(feature = "db")]
+mod scale_tests;
 #[cfg(test)]
 #[cfg(feature = "db")]
 mod tests;

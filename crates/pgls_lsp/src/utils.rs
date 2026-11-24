@@ -1,3 +1,4 @@
+use crate::activity::Activity;
 use crate::adapters::from_lsp::text_range;
 use crate::adapters::{PositionEncoding, to_lsp};
 use anyhow::{Context, Result, ensure};
@@ -166,10 +167,12 @@ pub(crate) fn panic_to_lsp_error(err: Box<dyn Any + Send>) -> LspError {
     error
 }
 
+/// Applies `content_changes` to `current_content`. `activity` counts the line indexes it builds.
 pub(crate) fn apply_document_changes(
     position_encoding: PositionEncoding,
     current_content: String,
     mut content_changes: Vec<ls_types::TextDocumentContentChangeEvent>,
+    activity: &Activity,
 ) -> String {
     // Skip to the last full document change, as it invalidates all previous changes anyways.
     let mut start = content_changes
@@ -198,6 +201,7 @@ pub(crate) fn apply_document_changes(
     };
 
     let mut line_index = LineIndex::new(&text);
+    activity.line_index_built();
 
     // The changes we got must be applied sequentially, but can cross lines so we
     // have to keep our line index updated.
@@ -209,6 +213,7 @@ pub(crate) fn apply_document_changes(
         if let Some(range) = change.range {
             if index_valid <= range.end.line {
                 line_index = LineIndex::new(&text);
+                activity.line_index_built();
             }
             index_valid = range.start.line;
             if let Ok(range) = text_range(&line_index, range, position_encoding) {
@@ -230,6 +235,7 @@ mod tests {
     use tower_lsp_server::ls_types::{Position, Range, TextDocumentContentChangeEvent};
 
     use super::apply_document_changes;
+    use crate::activity::Activity;
     use crate::adapters::PositionEncoding;
 
     #[test]
@@ -242,7 +248,7 @@ mod tests {
             text: String::new(),
         };
 
-        let output = apply_document_changes(encoding, input, vec![change]);
+        let output = apply_document_changes(encoding, input, vec![change], &Activity::default());
         let expected = "(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");(\"Jan 1, 2018\u{2009}–\u{2009}Jan 1, 2019\");\nisSpreadAssignment;\n";
 
         assert_eq!(output, expected);
@@ -256,7 +262,12 @@ mod tests {
             text: text.to_string(),
         };
         let apply = |text: &str, change| {
-            apply_document_changes(PositionEncoding::Utf8, text.to_string(), vec![change])
+            apply_document_changes(
+                PositionEncoding::Utf8,
+                text.to_string(),
+                vec![change],
+                &Activity::default(),
+            )
         };
 
         // A range that ends before it starts is skipped.

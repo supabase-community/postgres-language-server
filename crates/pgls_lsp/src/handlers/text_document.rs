@@ -19,7 +19,7 @@ pub(crate) async fn did_open(
 
     let path = session.file_path(&url)?;
     let project_key = session.project_key(&path);
-    let doc = Document::new(version, &content);
+    let doc = Document::new(version, &content, &session.activity);
 
     session.workspace.open_file(OpenFileParams {
         project_key,
@@ -66,11 +66,15 @@ pub(crate) async fn did_change(
         session.position_encoding(),
         old_text,
         params.content_changes,
+        &session.activity,
     );
 
     tracing::trace!("new document: {:?}", text);
 
-    session.insert_document(url.clone(), Document::new(version, &text));
+    session.insert_document(
+        url.clone(),
+        Document::new(version, &text, &session.activity),
+    );
 
     session.workspace.change_file(ChangeFileParams {
         project_key,

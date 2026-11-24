@@ -35,6 +35,8 @@ pub(crate) use budget::CacheBudget;
 pub(crate) use database::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 pub(crate) use parse::ParseResult;
 use parse::{ParseEntries, PgQueryStore};
+#[cfg(all(test, feature = "db"))]
+pub(crate) use tree::TreeParses;
 use tree::TreeSitterStore;
 pub(crate) use walk::{ContentChange, MigrationContext, ResolvedStatement, WalkCache};
 

@@ -1,4 +1,6 @@
 pub mod parser;
+#[cfg(test)]
+mod scale_tests;
 pub mod suppression;
 
 use std::ops::Range;
@@ -178,6 +180,10 @@ impl Suppressions {
             .chain(span.into_iter().flat_map(|span| {
                 self.range_suppressions
                     .iter()
+                    .inspect(|_| {
+                        #[cfg(test)]
+                        LookedAt::count();
+                    })
                     .filter(move |r| r.suppressed_range.contains_range(span))
                     .map(|r| &r.start_suppression)
             }))
@@ -191,8 +197,13 @@ impl Suppressions {
             return false;
         }
 
-        RuleSpecifier::of(diagnostic)
-            .is_some_and(|specifier| candidates.any(|s| s.matches(&specifier)))
+        RuleSpecifier::of(diagnostic).is_some_and(|specifier| {
+            candidates.any(|s| {
+                #[cfg(test)]
+                LookedAt::count();
+                s.matches(&specifier)
+            })
+        })
     }
 
     /// The indices of the line suppressions that target a line of `span`, or the first line of
@@ -217,14 +228,20 @@ impl Suppressions {
     /// The indices of the line suppressions whose target line holds an offset in
     /// `start..=end`. Empty if `end < start`.
     fn line_suppressions_targeting(&self, start: TextSize, end: TextSize) -> Range<usize> {
-        let first = self
-            .line_suppressions
-            .partition_point(|line| line.target.end() <= start);
+        let first = self.line_suppressions.partition_point(|line| {
+            #[cfg(test)]
+            LookedAt::count();
+            line.target.end() <= start
+        });
         let count = self
             .line_suppressions
             .get(first..)
             .unwrap_or_default()
-            .partition_point(|line| line.target.start() <= end);
+            .partition_point(|line| {
+                #[cfg(test)]
+                LookedAt::count();
+                line.target.start() <= end
+            });
         first..first + count
     }
 
@@ -238,6 +255,30 @@ impl Suppressions {
         statement
             .contains_inclusive(offset)
             .then_some(statement.start())
+    }
+}
+
+/// The suppressions that the lookups looked at on this thread, for the scale test, see
+/// [`LookedAt::during`].
+#[cfg(test)]
+struct LookedAt;
+
+#[cfg(test)]
+thread_local! {
+    static LOOKED_AT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+impl LookedAt {
+    fn count() {
+        LOOKED_AT.with(|looked_at| looked_at.set(looked_at.get() + 1));
+    }
+
+    /// Runs `f` and returns how many suppressions the lookups looked at meanwhile.
+    fn during<T>(f: impl FnOnce() -> T) -> (T, usize) {
+        let before = LOOKED_AT.with(std::cell::Cell::get);
+        let value = f();
+        (value, LOOKED_AT.with(std::cell::Cell::get) - before)
     }
 }
 

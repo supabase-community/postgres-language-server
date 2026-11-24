@@ -6755,10 +6755,10 @@ async fn walks_resume_from_checkpoints_before_the_edit(test_db: PgPool) {
     };
     // The statements that the request walked, and its result.
     let walked = |request: &dyn Fn() -> Vec<String>| {
-        let before = workspace.walked_statements.load(Ordering::Relaxed);
+        let before = workspace.counters.walked_statements.load(Ordering::Relaxed);
         let result = request();
         (
-            workspace.walked_statements.load(Ordering::Relaxed) - before,
+            workspace.counters.walked_statements.load(Ordering::Relaxed) - before,
             result,
         )
     };

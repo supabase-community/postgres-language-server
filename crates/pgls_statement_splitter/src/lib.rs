@@ -2,6 +2,8 @@
 //!
 //! This crate provides a function to split a SQL source string into individual statements.
 pub mod diagnostics;
+#[cfg(test)]
+mod scale_tests;
 mod splitter;
 
 use diagnostics::SplitDiagnostic;
@@ -185,7 +187,11 @@ const LEXER_STATE_BYTES: &[u8] = b"$'\"/*-\\";
 /// when it touches a quote, a comment or a psql command, or when the statements at the edges of
 /// the region don't come out as before.
 pub fn split_edited(old: &str, previous: &SplitResult, new: &str) -> SplitResult {
-    split_region(old, previous, new).unwrap_or_else(|| split(new))
+    split_region(old, previous, new).unwrap_or_else(|| {
+        #[cfg(test)]
+        Operations::count(|operations| operations.full_splits += 1);
+        split(new)
+    })
 }
 
 /// Compared in blocks first, which is much faster than byte by byte.
@@ -202,9 +208,14 @@ fn common_prefix(a: &[u8], b: &[u8]) -> usize {
         .count()
         * COMPARE_BLOCK_BYTES;
     equal
-        + a.iter()
-            .zip(b)
-            .skip(equal)
+        + a.get(equal..)
+            .unwrap_or_default()
+            .iter()
+            .zip(b.get(equal..).unwrap_or_default())
+            .inspect(|_| {
+                #[cfg(test)]
+                Operations::count(|operations| operations.bytes_stepped += 1);
+            })
             .take_while(|(a, b)| a == b)
             .count()
 }
@@ -225,9 +236,60 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
         + a.iter()
             .rev()
             .zip(b.iter().rev())
+            // `skip` steps through the `equal` bytes one at a time, since a reversed zip has no
+            // random access: the regression that checkpoint 0 found, see
+            // `scale_tests::split_edited_steps_through_the_change_only`.
+            .inspect(|_| {
+                #[cfg(test)]
+                Operations::count(|operations| operations.bytes_stepped += 1);
+            })
             .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
+}
+
+/// What the splitter did on this thread, for the scale tests, see [`Operations::during`].
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct Operations {
+    /// The bytes that [`common_prefix`] and [`common_suffix`] stepped through one at a time,
+    /// after comparing blocks of [`COMPARE_BLOCK_BYTES`].
+    bytes_stepped: usize,
+    /// The times [`split_edited`] split all of the new text, instead of the region around the
+    /// change.
+    full_splits: usize,
+}
+
+#[cfg(test)]
+thread_local! {
+    static OPERATIONS: std::cell::Cell<Operations> = const {
+        std::cell::Cell::new(Operations { bytes_stepped: 0, full_splits: 0 })
+    };
+}
+
+#[cfg(test)]
+impl Operations {
+    fn count(add: impl FnOnce(&mut Operations)) {
+        OPERATIONS.with(|operations| {
+            let mut now = operations.get();
+            add(&mut now);
+            operations.set(now);
+        });
+    }
+
+    /// Runs `f` and returns what the splitter did meanwhile on this thread.
+    fn during<T>(f: impl FnOnce() -> T) -> (T, Operations) {
+        let before = OPERATIONS.with(std::cell::Cell::get);
+        let value = f();
+        let after = OPERATIONS.with(std::cell::Cell::get);
+        (
+            value,
+            Operations {
+                bytes_stepped: after.bytes_stepped - before.bytes_stepped,
+                full_splits: after.full_splits - before.full_splits,
+            },
+        )
+    }
 }
 
 /// The work of [`split_edited`]. `None` means that the region can't be split on its own, and the

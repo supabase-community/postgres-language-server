@@ -98,6 +98,10 @@ test-doc:
 corpus:
 	cargo test -p pgls_cli --release --test corpus -- --ignored
 
+# Runs the operation-count budgets on a generated 20k-statement file, and the language server on it with the stack size of the released server. Needs `just db`.
+scale:
+	cargo test --release -p pgls_workspace -p pgls_walk -p pgls_lsp -- --ignored scale_20k
+
 # Alias for `cargo clippy`, it runs clippy on the whole codebase
 lint:
   cargo clippy

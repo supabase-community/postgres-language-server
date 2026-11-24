@@ -4,6 +4,7 @@ use std::fmt::Display;
 extern crate self as pgls_test_utils;
 
 pub mod db;
+pub mod scale;
 
 pub use pgls_test_macros::db_test;
 
