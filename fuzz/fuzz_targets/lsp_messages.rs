@@ -12,7 +12,6 @@
 use std::time::Duration;
 
 use arbitrary::Arbitrary;
-use futures::StreamExt;
 use futures::channel::mpsc::channel;
 use libfuzzer_sys::fuzz_target;
 use pgls_configuration::database::PartialDatabaseConfiguration;
@@ -160,7 +159,10 @@ impl Session {
         let mut server = Server::with_timeout(service, REQUEST_TIMEOUT);
         server.initialize().await.expect("initialize");
         server.initialized().await.expect("initialized");
-        server.load_configuration().await.expect("load the configuration");
+        server
+            .load_configuration()
+            .await
+            .expect("load the configuration");
         server.open_document(&self.text).await.expect("open");
 
         for message in self.messages {
@@ -246,7 +248,8 @@ impl Message {
             Document::NotAFileUri => "untitled:Untitled-1".to_owned(),
             Document::NotAUri => self.text.clone(),
         };
-        let position = |(line, character): (u32, u32)| json!({"line": line, "character": character});
+        let position =
+            |(line, character): (u32, u32)| json!({"line": line, "character": character});
         let range = json!({"start": position(self.start), "end": position(self.end)});
         let change = match self.method {
             Method::DidChangeWholeText => json!({"text": self.text}),

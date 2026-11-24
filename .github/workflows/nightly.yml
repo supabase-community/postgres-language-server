@@ -55,8 +55,7 @@ jobs:
       - name: Fuzz
         run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && 60 || 600 }}
         env:
-          CC: clang
-          CFLAGS: -fsanitize=address
+          CC: ${{ github.workspace }}/fuzz/asan-cc
           RUSTFLAGS: -Clinker=clang -Clink-arg=-fsanitize=address
       - name: Upload the crash
         if: failure()

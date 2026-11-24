@@ -64,18 +64,38 @@ const SNIPPETS: &[&str] = &[
 
 #[derive(Arbitrary, Debug)]
 enum Op {
-    Insert { at: u16, snippet: u8 },
-    InsertRaw { at: u16, text: String },
-    Delete { at: u16, len: u8 },
+    Insert {
+        at: u16,
+        snippet: u8,
+    },
+    InsertRaw {
+        at: u16,
+        text: String,
+    },
+    Delete {
+        at: u16,
+        len: u8,
+    },
     /// Undoes the last edit.
     Undo,
-    Complete { at: u16 },
-    Hover { at: u16 },
-    CodeAction { at: u16 },
+    Complete {
+        at: u16,
+    },
+    Hover {
+        at: u16,
+    },
+    CodeAction {
+        at: u16,
+    },
     /// A completion and a hover at a position that may be past the end.
-    RawPosition { line: u8, character: u8 },
+    RawPosition {
+        line: u8,
+        character: u8,
+    },
     Reopen,
-    Configure { section_markers: bool },
+    Configure {
+        section_markers: bool,
+    },
     /// A message of any content, or, if it's JSON, the parameters of a request.
     Raw(String),
 }
@@ -305,7 +325,11 @@ impl Text {
         let mut rest = self.0.as_str();
         while let Some(end) = rest.find(['\r', '\n']) {
             lines.push(&rest[..end]);
-            let line_break = if rest[end..].starts_with("\r\n") { 2 } else { 1 };
+            let line_break = if rest[end..].starts_with("\r\n") {
+                2
+            } else {
+                1
+            };
             rest = &rest[end + line_break..];
         }
         lines.push(rest);
