@@ -221,11 +221,15 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
         .take_while(|(a, b)| a == b)
         .count()
         * COMPARE_BLOCK_BYTES;
+    // Compare the rest on the bytes before the equal blocks: `skip(equal)` on the reversed,
+    // zipped bytes would step through every byte of the blocks.
+    let (Some(a), Some(b)) = (a.get(..a.len() - equal), b.get(..b.len() - equal)) else {
+        return equal;
+    };
     equal
         + a.iter()
             .rev()
             .zip(b.iter().rev())
-            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
@@ -1876,6 +1880,22 @@ VALUES
             at
         };
         format!("{}{inserted}{}", &sql[..at], &sql[end..])
+    }
+
+    #[test]
+    fn common_prefix_and_suffix_find_the_difference() {
+        // Lengths around the block size, with the one different byte at every position.
+        for len in [0, 1, 63, 64, 65, 127, 128, 129, 200] {
+            let a = vec![b'a'; len];
+            for at in 0..len {
+                let mut b = a.clone();
+                b[at] = b'b';
+                assert_eq!(common_prefix(&a, &b), at, "length {len}, at {at}");
+                assert_eq!(common_suffix(&a, &b), len - at - 1, "length {len}, at {at}");
+            }
+            assert_eq!(common_prefix(&a, &a), len);
+            assert_eq!(common_suffix(&a, &a), len);
+        }
     }
 
     #[test]
