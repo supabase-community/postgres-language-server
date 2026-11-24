@@ -104,7 +104,7 @@
           # Database tools
           sqlx-cli
 
-          # Fuzzing (`just fuzz`), on the stable toolchain with RUSTC_BOOTSTRAP=1
+          # Fuzzing (`just fuzz`)
           cargo-fuzz
         ];
 

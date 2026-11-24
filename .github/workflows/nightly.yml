@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
+  # A change to this file runs it, with short fuzz runs.
+  pull_request:
+    paths:
+      - ".github/workflows/nightly.yml"
 
 env:
   RUST_BACKTRACE: 1
@@ -49,7 +53,7 @@ jobs:
           key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
           restore-keys: fuzz-corpus-${{ matrix.target }}-
       - name: Fuzz
-        run: just fuzz ${{ matrix.target }} 600
+        run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && 60 || 600 }}
         env:
           CC: clang
           CFLAGS: -fsanitize=address
