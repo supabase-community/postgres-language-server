@@ -165,6 +165,8 @@ Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(t
 ### Fuzzing
 `fuzz/` holds the libFuzzer targets, as a workspace of its own: `splitter` (the lexer and splitter don't panic and their ranges hold), `splitter_vs_parser` (when a file parses, the splitter's statements parse to the same statements) and `formatter_roundtrip` (the formatter's output parses back to the same AST and formats to itself). `just fuzz <target> [seconds]` runs one with debug assertions, seeded from the regression SQL; it needs `cargo-fuzz`, which the Nix shell has, and runs on the stable toolchain. The `Nightly` workflow runs every target for 10 minutes and uploads a crash as an artifact. A panic message starts with the target and a fixed description, so crashes of one cause group together; turn a crash into a test of the crate it's in before fixing it.
 
+`crates/pgls_pretty_print/tests/miri.rs` runs `normalize_ast`, and with it the raw-pointer code of `NodeMut`, under Miri: `MIRIFLAGS=-Zmiri-tree-borrows cargo +nightly miri test -p pgls_pretty_print --test miri`. The `Nightly` workflow runs it too. In the Nix shell, add a nightly toolchain with Miri and give bindgen clang's headers: `BINDGEN_EXTRA_CLANG_ARGS="-isystem $(clang -print-resource-dir)/include"`. Its statements are a protobuf fixture, since Miri can't call libpg_query; after an upgrade of libpg_query, rewrite it with `UPDATE_MIRI_FIXTURE=1 cargo test -p pgls_pretty_print --test miri`.
+
 ### Snapshot Testing
 The project uses `insta` for snapshot testing. Update snapshots with:
 ```bash

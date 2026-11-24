@@ -22,6 +22,7 @@ dir-test.workspace                = true
 insta.workspace                   = true
 pgls_postgres_regress.workspace   = true
 pgls_statement_splitter.workspace = true
+prost.workspace                   = true
 rayon.workspace                   = true
 regex.workspace                   = true
 

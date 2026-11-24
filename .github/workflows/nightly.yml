@@ -51,3 +51,23 @@ jobs:
         with:
           name: fuzz-${{ matrix.target }}
           path: fuzz/artifacts/${{ matrix.target }}
+
+  # Runs `normalize_ast` and the raw-pointer code of `pgls_query`'s `NodeMut` under Miri, see
+  # crates/pgls_pretty_print/tests/miri.rs. Goes when 2P3 replaces `NodeMut`.
+  miri:
+    name: Miri
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri, rust-src
+      - name: Run the test under Miri
+        run: cargo +nightly miri test -p pgls_pretty_print --test miri
+        env:
+          MIRIFLAGS: -Zmiri-tree-borrows
