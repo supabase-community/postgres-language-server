@@ -1,0 +1,17 @@
+---
+source: crates/pgls_postgres_regress/tests/lexer.rs
+expression: report
+---
+REL_18_6: 49577 statements, 33 the scanner rejects, 3 differences
+
+strings.sql:8:8:
+  lexer    8:8 "'first line'"
+  scanner  8:8 "'first line'\n' - next line'\n\t' - third l…"
+
+strings.sql:14:8:
+  lexer    14:8 "'first line'"
+  scanner  14:8 "'first line'\n' - next line'"
+
+strings.sql:845:43:
+  lexer    845:43 "b''''"
+  scanner  845:43 "b''"

@@ -2674,6 +2674,7 @@ dependencies = [
  "flate2",
  "insta",
  "pgls_catalog",
+ "pgls_lexer",
  "pgls_query",
  "pgls_statement_splitter",
  "pgls_text_size",

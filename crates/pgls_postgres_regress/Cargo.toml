@@ -23,6 +23,7 @@ tokio        = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta.workspace      = true
+pgls_lexer.workspace = true
 pgls_query.workspace = true
 
 [features]
