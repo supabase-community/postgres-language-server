@@ -302,11 +302,6 @@ impl<'scope> TraversalScope<'scope> for OsTraversalScope<'scope> {
     }
 }
 
-// TODO: remove in 2.0, and directly use `.gitignore`
-/// Default list of ignored directories, in the future will be supplanted by
-/// detecting and parsing .ignore files
-const DEFAULT_IGNORE: &[&[u8]] = &[b".git", b".svn", b".hg", b".yarn", b"node_modules"];
-
 /// Traverse a single directory
 fn handle_dir<'scope>(
     scope: &Scope<'scope>,
@@ -315,8 +310,10 @@ fn handle_dir<'scope>(
     // The unresolved origin path in case the directory is behind a symbolic link
     origin_path: Option<PathBuf>,
 ) {
-    if let Some(file_name) = path.file_name()
-        && DEFAULT_IGNORE.contains(&file_name.as_encoded_bytes())
+    if path
+        .file_name()
+        .and_then(|file_name| file_name.to_str())
+        .is_some_and(|file_name| SKIPPED_DIRECTORIES.contains(&file_name))
     {
         return;
     }

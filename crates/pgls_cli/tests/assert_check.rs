@@ -1772,6 +1772,28 @@ fn check_stdin_applies_fixes() {
     );
 }
 
+/// The traversal skips the folders of version control, dependencies and build output, like the
+/// search for nested configuration files: `target` too.
+#[test]
+fn check_skips_build_output_and_dependencies() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        ("a.sql", "select 1;\n"),
+        ("target/b.sql", "alter table users drop column name;\n"),
+        (
+            "node_modules/c.sql",
+            "alter table users drop column name;\n",
+        ),
+    ]);
+
+    let (success, output) = check_in(root.path(), &["--reporter", "github"], &[]);
+    assert!(success, "{output}");
+    assert!(!output.contains("banDropColumn"), "{output}");
+}
+
 /// `clean` is a command, and empties the log folder of `--log-path` or of the environment.
 #[test]
 fn clean_empties_the_log_folder() {
