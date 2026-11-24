@@ -162,6 +162,7 @@ define_categories! {
     // General categories
     "stdin",
     "check",
+    "dblint",
     "format",
     "configuration",
     "database/connection",
