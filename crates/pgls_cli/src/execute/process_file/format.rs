@@ -1,19 +1,16 @@
 use crate::diagnostics::FormatDiffDiagnostic;
 use crate::execute::process_file::workspace_file::WorkspaceFile;
-use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
+use crate::execute::process_file::{FileResult, FileStatus, Message};
+use crate::execute::walk::TraversalOptions;
 use pgls_workspace::features::format::PullFileFormattingParams;
-use std::io::Write;
 use std::path::Path;
 
-pub(crate) fn format_file<'ctx>(ctx: &SharedTraversalOptions<'ctx, '_>, path: &Path) -> FileResult {
+pub(crate) fn format_file(ctx: &TraversalOptions, path: &Path) -> FileResult {
     let mut workspace_file = WorkspaceFile::new(ctx, path)?;
     format_with_guard(ctx, &mut workspace_file)
 }
 
-fn format_with_guard<'ctx>(
-    ctx: &SharedTraversalOptions<'ctx, '_>,
-    workspace_file: &mut WorkspaceFile,
-) -> FileResult {
+fn format_with_guard(ctx: &TraversalOptions, workspace_file: &mut WorkspaceFile) -> FileResult {
     let path = workspace_file.path.clone();
     let pgls_path = pgls_fs::PgLSPath::new(&path);
 
@@ -45,18 +42,7 @@ fn format_with_guard<'ctx>(
         // A file with diagnostics can come back as written, e.g. with a syntax error.
         let changed = format_result.original != format_result.formatted;
         if changed {
-            let file_path = path.to_path_buf();
-            let mut file = std::fs::File::create(&file_path).map_err(|e| {
-                Message::from(pgls_workspace::WorkspaceError::runtime(&format!(
-                    "Could not write to file: {e}"
-                )))
-            })?;
-            file.write_all(format_result.formatted.as_bytes())
-                .map_err(|e| {
-                    Message::from(pgls_workspace::WorkspaceError::runtime(&format!(
-                        "Could not write to file: {e}"
-                    )))
-                })?;
+            workspace_file.write(&format_result.formatted)?;
         }
 
         if !diagnostics.is_empty() {

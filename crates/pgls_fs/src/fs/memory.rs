@@ -673,9 +673,8 @@ mod tests {
             }
         }
 
-        let (interner, _) = PathInterner::new();
         let mut ctx = TestContext {
-            interner,
+            interner: PathInterner::default(),
             visited: Mutex::default(),
         };
 

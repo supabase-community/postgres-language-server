@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 
+use crate::commands::LogOptions;
 use pgls_lsp::{ServerConnection, ServerFactory};
 use tokio::{
     io::Interest,
@@ -21,7 +22,7 @@ use tracing::{Instrument, debug, info};
 /// Returns the filesystem path of the global socket used to communicate with
 /// the server daemon
 fn get_socket_name() -> PathBuf {
-    pgls_fs::ensure_cache_dir().join(format!("pgls-socket-{}", pgls_configuration::VERSION))
+    pgls_fs::ensure_cache_dir().join(format!("pgls-socket-{}", pgls_env::VERSION))
 }
 
 /// Try to connect to the global socket and wait for the connection to become ready
@@ -39,8 +40,7 @@ async fn try_connect() -> io::Result<UnixStream> {
 fn spawn_daemon(
     stop_on_disconnect: bool,
     config_path: Option<PathBuf>,
-    log_path: Option<PathBuf>,
-    log_file_name_prefix: Option<String>,
+    log_options: Option<&LogOptions>,
 ) -> io::Result<Child> {
     let binary = env::current_exe()?;
 
@@ -54,12 +54,8 @@ fn spawn_daemon(
     if let Some(config_path) = config_path {
         cmd.arg(format!("--config-path={}", config_path.display()));
     }
-    if let Some(log_path) = log_path {
-        cmd.arg(format!("--log-path={}", log_path.display()));
-    }
-
-    if let Some(log_file_name_prefix) = log_file_name_prefix {
-        cmd.arg(format!("--log-prefix-name={log_file_name_prefix}"));
+    if let Some(log_options) = log_options {
+        cmd.args(log_options.args());
     }
 
     // Create a new session for the process and make it the leader, this will
@@ -110,8 +106,7 @@ pub(crate) async fn open_socket() -> io::Result<Option<(OwnedReadHalf, OwnedWrit
 pub(crate) async fn ensure_daemon(
     stop_on_disconnect: bool,
     config_path: Option<PathBuf>,
-    log_path: Option<PathBuf>,
-    log_file_name_prefix: Option<String>,
+    log_options: Option<&LogOptions>,
 ) -> io::Result<bool> {
     let mut current_child: Option<Child> = None;
     let mut last_error = None;
@@ -155,8 +150,7 @@ pub(crate) async fn ensure_daemon(
                         current_child = Some(spawn_daemon(
                             stop_on_disconnect,
                             config_path.clone(),
-                            log_path.clone(),
-                            log_file_name_prefix.clone(),
+                            log_options,
                         )?);
                         time::sleep(Duration::from_millis(50)).await;
                     }
@@ -175,7 +169,7 @@ pub(crate) async fn ensure_daemon(
 /// Ensure the server daemon is running and ready to receive connections and
 /// print the global socket name in the standard output
 pub(crate) async fn print_socket() -> io::Result<()> {
-    ensure_daemon(true, None, None, None).await?;
+    ensure_daemon(true, None, None).await?;
     println!("{}", get_socket_name().display());
     Ok(())
 }

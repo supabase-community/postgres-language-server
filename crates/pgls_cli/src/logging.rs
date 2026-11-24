@@ -7,7 +7,7 @@ use tracing_subscriber::layer::{Context, Filter, SubscriberExt};
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{Layer, registry};
 
-pub fn setup_cli_subscriber(level: LoggingLevel, kind: LoggingKind) {
+pub(crate) fn setup_cli_subscriber(level: LoggingLevel, kind: LoggingKind) {
     if level == LoggingLevel::None {
         return;
     }

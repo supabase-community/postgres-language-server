@@ -55,7 +55,7 @@ where
                 "capabilities": {},
                 "clientInfo": {
                     "name": env!("CARGO_PKG_NAME"),
-                    "version": pgls_configuration::VERSION
+                    "version": pgls_env::VERSION
                 },
             }),
         )?;

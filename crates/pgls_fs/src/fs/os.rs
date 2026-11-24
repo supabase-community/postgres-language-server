@@ -27,14 +27,18 @@ const MAX_SYMLINK_DEPTH: u8 = 3;
 
 /// Implementation of [FileSystem] that directly calls through to the underlying OS
 pub struct OsFileSystem {
-    pub working_directory: Option<PathBuf>,
-    pub configuration_resolver: AssertUnwindSafe<Resolver>,
+    working_directory: Option<PathBuf>,
+    configuration_resolver: AssertUnwindSafe<Resolver>,
 }
 
 impl OsFileSystem {
     pub fn new(working_directory: PathBuf) -> Self {
+        Self::with_working_directory(Some(working_directory))
+    }
+
+    fn with_working_directory(working_directory: Option<PathBuf>) -> Self {
         Self {
-            working_directory: Some(working_directory),
+            working_directory,
             configuration_resolver: AssertUnwindSafe(Resolver::new(ResolveOptions {
                 condition_names: vec!["node".to_string(), "import".to_string()],
                 extensions: vec![".json".to_string(), ".jsonc".to_string()],
@@ -44,16 +48,10 @@ impl OsFileSystem {
     }
 }
 
+/// The file system of the current directory.
 impl Default for OsFileSystem {
     fn default() -> Self {
-        Self {
-            working_directory: env::current_dir().ok(),
-            configuration_resolver: AssertUnwindSafe(Resolver::new(ResolveOptions {
-                condition_names: vec!["node".to_string(), "import".to_string()],
-                extensions: vec![".json".to_string(), ".jsonc".to_string()],
-                ..ResolveOptions::default()
-            })),
-        }
+        Self::with_working_directory(env::current_dir().ok())
     }
 }
 
