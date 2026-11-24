@@ -11,6 +11,9 @@ use sqlx::{Executor, PgPool};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
+    /// A pool without a statement cache (`statement_cache_capacity(0)`). The check prepares the
+    /// statement on one of its connections and resets the session with `discard all`
+    /// afterwards, which also drops what a statement cache would hold.
     pub conn: &'a PgPool,
     pub sql: &'a str,
     pub ast: &'a pgls_query::NodeEnum,
@@ -51,23 +54,26 @@ pub async fn check_sql(
 
     let mut conn = params.conn.acquire().await?;
 
-    // Postgres caches prepared statements within the current DB session (connection).
-    // This can cause issues if the underlying table schema changes while statements
-    // are cached. By closing the connection after use, we ensure a fresh state for
-    // each typecheck operation.
-    conn.close_on_drop();
-
-    if !params.search_path.is_empty() {
-        let schemas = params
-            .search_path
-            .iter()
-            .map(|schema| pgls_catalog::quote_identifier(schema, NamePosition::ColId))
-            .join(", ");
-        conn.execute(&*format!("SET search_path TO {schemas};"))
-            .await?;
+    let res = async {
+        if !params.search_path.is_empty() {
+            let schemas = params
+                .search_path
+                .iter()
+                .map(|schema| pgls_catalog::quote_identifier(schema, NamePosition::ColId))
+                .join(", ");
+            conn.execute(&*format!("SET search_path TO {schemas};"))
+                .await?;
+        }
+        conn.prepare(sql).await.map(drop)
     }
+    .await;
 
-    let res = conn.prepare(sql).await;
+    // The prepared statement and the search path stay in the session. `discard all` resets it,
+    // so that the connection goes back to the pool as it came, and a prepared statement can't
+    // outlive a change of the schema (#291). A connection that can't be reset isn't reused.
+    if conn.execute(sqlx::raw_sql("discard all")).await.is_err() {
+        conn.close_on_drop();
+    }
 
     match res {
         Ok(_) => Ok(None),

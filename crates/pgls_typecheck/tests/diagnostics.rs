@@ -8,7 +8,7 @@
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::Diagnostic;
 use pgls_typecheck::{TypecheckParams, check_sql};
-use sqlx::{Executor, PgPool};
+use sqlx::{Executor, PgPool, postgres::PgPoolOptions};
 use std::fmt::Write;
 
 struct TestSetup<'a> {
@@ -38,8 +38,18 @@ impl TestSetup<'_> {
             .expect("Failed to parse query");
         let tree = parser.parse(self.query, None).unwrap();
 
+        // Without a statement cache, like the language server's statement pool.
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .connect_with(
+                (*self.test_db.connect_options())
+                    .clone()
+                    .statement_cache_capacity(0),
+            )
+            .await
+            .expect("Failed to connect");
         let result = check_sql(TypecheckParams {
-            conn: self.test_db,
+            conn: &pool,
             sql: self.query,
             ast: &root,
             tree: &tree,
@@ -47,6 +57,7 @@ impl TestSetup<'_> {
             duplicate_assignments_reported: false,
         })
         .await;
+        pool.close().await;
 
         assert!(
             result.is_ok(),
@@ -310,8 +321,18 @@ async fn check(
         .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
         .unwrap();
     let tree = parser.parse(sql, None).unwrap();
-    check_sql(TypecheckParams {
-        conn: test_db,
+    // Without a statement cache, like the language server's statement pool.
+    let pool = PgPoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            (*test_db.connect_options())
+                .clone()
+                .statement_cache_capacity(0),
+        )
+        .await
+        .unwrap();
+    let message = check_sql(TypecheckParams {
+        conn: &pool,
         sql,
         ast: &root,
         tree: &tree,
@@ -320,5 +341,64 @@ async fn check(
     })
     .await
     .unwrap()
-    .map(|diagnostic| pgls_diagnostics::PrintDescription(&diagnostic).to_string())
+    .map(|diagnostic| pgls_diagnostics::PrintDescription(&diagnostic).to_string());
+    pool.close().await;
+    message
+}
+
+/// A check leaves neither its prepared statement nor its search path in the session of the
+/// connection, which goes back to the pool.
+#[pgls_test_utils::db_test]
+async fn the_session_is_reset_after_a_check(test_db: PgPool) {
+    test_db
+        .execute("create schema other; create table other.items (id int);")
+        .await
+        .expect("Failed to set up the table");
+    // One connection, so that the queries below run in the session of the checks.
+    let pool = PgPoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            (*test_db.connect_options())
+                .clone()
+                .statement_cache_capacity(0),
+        )
+        .await
+        .unwrap();
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
+
+    for (sql, reported) in [
+        ("select id from items", false),
+        ("select nope from items", true),
+    ] {
+        let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let tree = parser.parse(sql, None).unwrap();
+        let diagnostic = check_sql(TypecheckParams {
+            conn: &pool,
+            sql,
+            ast: &root,
+            tree: &tree,
+            search_path: &["other".to_string()],
+            duplicate_assignments_reported: false,
+        })
+        .await
+        .unwrap();
+        assert_eq!(diagnostic.is_some(), reported, "{sql}: {diagnostic:?}");
+    }
+
+    let prepared: i64 = sqlx::query_scalar("select count(*) from pg_prepared_statements")
+        .persistent(false)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(prepared, 0);
+    let search_path: String = sqlx::query_scalar("show search_path")
+        .persistent(false)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(search_path, r#""$user", public"#);
+    pool.close().await;
 }
