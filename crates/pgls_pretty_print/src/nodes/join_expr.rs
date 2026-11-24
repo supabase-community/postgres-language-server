@@ -24,7 +24,7 @@ pub(super) fn emit_join_expr(e: &mut EventEmitter, n: &JoinExpr) {
             }
         }
 
-        if matches!(e.config().layout, crate::Layout::Expanded) {
+        if matches!(e.layout(), crate::Layout::Expanded) {
             // A hard break makes every soft line in the current group break too. Close the left
             // operand's group before emitting it so the joined table and qualification can still
             // fit.

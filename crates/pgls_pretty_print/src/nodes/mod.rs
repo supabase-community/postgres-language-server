@@ -856,6 +856,7 @@ pub(crate) fn emit_node_enum(e: &mut EventEmitter, node: &NodeEnum) {
 mod tests {
     use crate::comments::attach_comments;
     use crate::emitter::{EventEmitter, LayoutEvent};
+    use crate::source::Source;
 
     #[test]
     fn a_comment_attached_to_a_node_is_emitted_before_it() {
@@ -865,9 +866,10 @@ mod tests {
             .into_root()
             .expect("root");
 
-        let attached = attach_comments(sql, &ast);
+        let attached = attach_comments(&Source::scan(sql), &ast);
+        let config = crate::FormatConfig::default();
         let mut e = EventEmitter::with_comments(
-            Default::default(),
+            &config,
             attached.leading_by_location,
             attached.trailing_by_location,
         );

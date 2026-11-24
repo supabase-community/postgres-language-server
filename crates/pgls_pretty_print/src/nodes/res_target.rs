@@ -19,7 +19,7 @@ pub(super) fn emit_res_target(e: &mut EventEmitter, n: &ResTarget) {
 
             let case_alias_in_expanded_layout =
                 matches!(val.node.as_ref(), Some(NodeEnum::CaseExpr(_)))
-                    && matches!(e.config().layout, crate::Layout::Expanded);
+                    && matches!(e.layout(), crate::Layout::Expanded);
 
             if is_window_expression(val) {
                 e.group_start();

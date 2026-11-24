@@ -16,7 +16,7 @@ pub(super) fn emit_case_when(e: &mut EventEmitter, n: &CaseWhen) {
         e.indent_end();
     }
 
-    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
+    let expanded = matches!(e.layout(), crate::Layout::Expanded);
     if expanded {
         e.indent_start();
     }

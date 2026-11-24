@@ -179,7 +179,8 @@ mod tests {
     use crate::renderer::{RenderConfig, Renderer};
 
     fn render(value: &str, type_case: KeywordCase) -> String {
-        let mut emitter = EventEmitter::new(Default::default());
+        let format_config = crate::FormatConfig::default();
+        let mut emitter = EventEmitter::new(&format_config);
         emit_type_identifier_maybe_quoted(&mut emitter, value);
 
         let mut output = String::new();
