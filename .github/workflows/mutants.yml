@@ -57,6 +57,12 @@ jobs:
       - name: Setup Postgres
         if: matrix.database
         uses: ./.github/actions/setup-postgres
+      # The tests of pgls_catalog build the tree-sitter grammar.
+      - name: Setup tree-sitter
+        if: matrix.database
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
       - name: Run cargo-mutants
         run: |
           # 2 and 3 mean missed mutants and timeouts, which the summary reports.
