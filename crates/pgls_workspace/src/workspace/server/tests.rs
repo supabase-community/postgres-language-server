@@ -74,6 +74,57 @@ fn get_test_workspace(
     Ok((workspace, project_key))
 }
 
+/// The diagnostics say which version of the document they are for, so that the language server
+/// doesn't convert them with the line index of another one.
+#[test]
+fn pulled_diagnostics_are_for_the_version_of_the_document() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let pull = || {
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks: DatabaseChecks::Run,
+            })
+            .expect("Unable to pull diagnostics")
+            .version
+    };
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select 1;".into(),
+            version: 3,
+        })
+        .expect("Unable to open test file");
+    assert_eq!(pull(), Some(3));
+
+    workspace
+        .change_file(crate::workspace::ChangeFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select 2;".into(),
+            version: 4,
+        })
+        .expect("Unable to change test file");
+    assert_eq!(pull(), Some(4));
+}
+
 #[pgls_test_utils::db_test]
 async fn test_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -6059,9 +6110,13 @@ fn database_spans_must_fit_the_statement() {
         TextRange::new(at(107), at(111))
     );
     assert_eq!(database_span(None, statement, range), range);
-    // Inside `é`, or after the end of the statement.
+    // Inside `é`, also empty, or after the end of the statement.
     assert_eq!(
         database_span(Some(TextRange::new(at(9), at(11))), statement, range),
+        range
+    );
+    assert_eq!(
+        database_span(Some(TextRange::new(at(9), at(9))), statement, range),
         range
     );
     assert_eq!(

@@ -1256,10 +1256,7 @@ impl Workspace for WorkspaceServer {
             None => {
                 // return an empty result if no settings are available
                 // we might want to return an error here in the future
-                return Ok(PullDiagnosticsResult {
-                    diagnostics: Vec::new(),
-                    skipped_diagnostics: 0,
-                });
+                return Ok(PullDiagnosticsResult::default());
             }
         };
 
@@ -1296,7 +1293,9 @@ impl Workspace for WorkspaceServer {
         ) else {
             // The document changed or the request was cancelled. The diagnostics would be
             // outdated anyway.
-            return Ok(PullDiagnosticsResult::default());
+            return Ok(PullDiagnosticsResult::outdated(
+                self.document(&params.path).ok().map(|doc| doc.version()),
+            ));
         };
 
         let lint_diagnostics: Vec<SDiagnostic> = analysis
@@ -1342,7 +1341,9 @@ impl Workspace for WorkspaceServer {
             )?
             else {
                 // The document changed or the request was cancelled.
-                return Ok(PullDiagnosticsResult::default());
+                return Ok(PullDiagnosticsResult::outdated(
+                    self.document(&params.path).ok().map(|doc| doc.version()),
+                ));
             };
             // A statement that the checks haven't checked since an edit may still need its
             // suppressions of them.
@@ -1424,10 +1425,10 @@ impl Workspace for WorkspaceServer {
 
         self.charge_document_caches(&params.path, doc);
         info!("Pulled {:?} diagnostic(s)", diagnostics.len());
-        Ok(PullDiagnosticsResult::limited(
-            diagnostics,
-            params.max_diagnostics,
-        ))
+        Ok(PullDiagnosticsResult {
+            version: Some(doc.version()),
+            ..PullDiagnosticsResult::limited(diagnostics, params.max_diagnostics)
+        })
     }
 
     #[cfg(feature = "db")]

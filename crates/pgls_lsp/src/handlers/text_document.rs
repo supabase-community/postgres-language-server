@@ -114,11 +114,7 @@ pub(crate) async fn did_close(
         path: pgls_path,
     })?;
 
-    session.remove_document(&url);
-
-    let diagnostics = vec![];
-    let version = None;
-    session.publish_diagnostics(url, diagnostics, version).await;
+    session.close_document(url).await;
 
     Ok(())
 }
