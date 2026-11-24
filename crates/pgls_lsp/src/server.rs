@@ -87,6 +87,12 @@ impl LSPServer {
         Ok(result)
     }
 
+    /// What the server is still doing, which a test waits for.
+    #[cfg(feature = "testing")]
+    pub(crate) fn activity(&self) -> &crate::Activity {
+        &self.session.activity
+    }
+
     fn new(
         session: SessionHandle,
         sessions: Sessions,
@@ -574,7 +580,7 @@ impl ServerConnection {
     /// What the server of this connection is still doing, which a test waits for.
     #[cfg(feature = "testing")]
     pub fn activity(&self) -> crate::Activity {
-        self.service.inner().session.activity.clone()
+        self.service.inner().activity().clone()
     }
 
     /// Destructure a connection into its inner service instance and socket

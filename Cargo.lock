@@ -2587,6 +2587,7 @@ dependencies = [
  "pgls_text_edit",
  "pgls_text_size",
  "pgls_workspace",
+ "proptest",
  "rustc-hash",
  "serde",
  "serde_json",

@@ -29,20 +29,22 @@ serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 strum                    = { workspace = true }
 tokio                    = { workspace = true, features = ["rt", "io-std", "sync"] }
+tower                    = { version = "0.5.3", features = ["timeout", "util"], optional = true }
 tower-lsp-server         = { version = "0.23.0" }
 tracing                  = { workspace = true, features = ["attributes"] }
 
 [dev-dependencies]
-pgls_lsp        = { path = ".", features = ["testing"] }
+pgls_lsp        = { workspace = true, features = ["testing"] }
 pgls_test_utils = { workspace = true }
+proptest        = { workspace = true }
 sqlx            = { workspace = true }
 tempfile        = "3.15.0"
 tokio           = { workspace = true, features = ["macros"] }
-tower           = { version = "0.5.3", features = ["timeout", "util"] }
 
 [features]
-# Counts what the server is doing, so that a test can wait until it's idle, see `Activity`.
-testing = []
+# Counts what the server is doing, so that a test can wait until it's idle (see `Activity`), and
+# the client of `pgls_lsp::testing`, for tests that talk to the server in the same process.
+testing = ["dep:tower"]
 
 [lib]
 doctest = false
