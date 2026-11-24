@@ -51,3 +51,56 @@ jobs:
         with:
           name: fuzz-${{ matrix.target }}
           path: fuzz/artifacts/${{ matrix.target }}
+
+  # Line coverage of the workspace's tests: an HTML report as an artifact, and the coverage per
+  # file in the job summary. Not a gate; it shows which code no test runs.
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          components: llvm-tools-preview
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
+      # A failing test doesn't stop the report; the Pull Request workflow reports it.
+      - name: Run the tests with coverage
+        run: cargo llvm-cov --workspace --no-fail-fast --no-report || true
+      - name: Write the report
+        run: |
+          cargo llvm-cov report --html --ignore-filename-regex 'xtask/|docs/codegen/'
+          {
+            echo '### Line coverage per file'
+            echo '```'
+            cargo llvm-cov report --summary-only --ignore-filename-regex 'xtask/|docs/codegen/'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: target/llvm-cov/html
