@@ -12,7 +12,6 @@ version              = "0.0.0"
 
 
 [dependencies]
-crossbeam        = { workspace = true }
 directories      = "5.0.1"
 enumflags2       = { workspace = true }
 ignore           = { workspace = true }

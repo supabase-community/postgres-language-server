@@ -43,7 +43,7 @@ pub(crate) fn traverse(
         }
     }
 
-    let (interner, recv_files) = PathInterner::new();
+    let interner = PathInterner::default();
     let (sender, receiver) = unbounded();
 
     let changed = AtomicUsize::new(0);
@@ -61,7 +61,7 @@ pub(crate) fn traverse(
     let (duration, evaluated_paths, diagnostics) = thread::scope(|s| {
         let handler = thread::Builder::new()
             .name(String::from("pgls::console"))
-            .spawn_scoped(s, || printer.run(receiver, recv_files))
+            .spawn_scoped(s, || printer.run(receiver))
             .map_err(CliDiagnostic::io_error)?;
 
         // The traversal context is scoped to ensure all the channels it
@@ -239,8 +239,7 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         should_print
     }
 
-    fn run(&self, receiver: Receiver<Message>, interner: Receiver<PathBuf>) -> Vec<Error> {
-        let mut paths: FxHashSet<String> = FxHashSet::default();
+    fn run(&self, receiver: Receiver<Message>) -> Vec<Error> {
         let mut diagnostics = vec![];
 
         while let Ok(msg) = receiver.recv() {
@@ -251,29 +250,8 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.total_skipped_suggested_fixes
                         .fetch_add(skipped_suggested_fixes, Ordering::Relaxed);
                 }
-                Message::Error(mut err) => {
+                Message::Error(err) => {
                     self.count_severity(err.severity());
-                    if let Some(Resource::File(file_path)) = err.location().resource.as_ref() {
-                        let file_name = match paths.get(*file_path) {
-                            Some(path) => Some(path),
-                            None => loop {
-                                match interner.recv() {
-                                    Ok(path) => {
-                                        paths.insert(path.display().to_string());
-                                        if path.display().to_string() == *file_path {
-                                            break paths.get(&path.display().to_string());
-                                        }
-                                    }
-                                    Err(_) => break None,
-                                }
-                            },
-                        };
-
-                        if let Some(path) = file_name {
-                            err = err.with_file_path(path.as_str());
-                        }
-                    }
-
                     if self.should_store() {
                         diagnostics.push(err);
                     }

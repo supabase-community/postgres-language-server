@@ -8,7 +8,6 @@
 use pgls_console::fmt::{Display, Formatter};
 use pgls_console::{DebugDisplay, KeyValuePair, markup};
 use std::env;
-use std::sync::OnceLock;
 
 /// Returns `true` if this is an unstable build of Postgres Language Server
 pub fn is_unstable() -> bool {
@@ -51,10 +50,11 @@ pub struct PgLSEnv {
     pub pgt_config_path: PgLSEnvVariable,
 }
 
-pub static PGT_ENV: OnceLock<PgLSEnv> = OnceLock::new();
+/// The environment variables that Postgres Language Server reads.
+pub static PGLS_ENV: PgLSEnv = PgLSEnv::new();
 
 impl PgLSEnv {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             pgls_log_path: PgLSEnvVariable::new(
                 "PGLS_LOG_PATH",
@@ -122,7 +122,7 @@ pub struct PgLSEnvVariable {
 }
 
 impl PgLSEnvVariable {
-    fn new(name: &'static str, description: &'static str) -> Self {
+    const fn new(name: &'static str, description: &'static str) -> Self {
         Self { name, description }
     }
 
@@ -140,10 +140,6 @@ impl PgLSEnvVariable {
     pub fn name(&self) -> &'static str {
         self.name
     }
-}
-
-pub fn pgls_env() -> &'static PgLSEnv {
-    PGT_ENV.get_or_init(PgLSEnv::new)
 }
 
 impl Display for PgLSEnv {

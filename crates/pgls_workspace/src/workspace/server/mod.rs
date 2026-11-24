@@ -1501,10 +1501,10 @@ impl Workspace for WorkspaceServer {
                             conn: &pool,
                             snapshot,
                         };
-                        // Without a cache, each run reads the rules and the messages of the
-                        // extension again, so that changes to them show on the next run.
+                        // Each run reads the rules and the messages of the extension again, so
+                        // that changes to them show on the next run.
                         pglinter_diagnostics =
-                            pgls_pglinter::run_pglinter(pglinter_params, &filter, None).await?;
+                            pgls_pglinter::run_pglinter(pglinter_params, &filter).await?;
                     }
                     None if pglinter_enabled => {
                         debug!("pglinter needs the database snapshot. Skipping pglinter checks.");
