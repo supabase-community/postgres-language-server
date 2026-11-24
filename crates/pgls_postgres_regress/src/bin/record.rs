@@ -4,9 +4,10 @@
 //! a tag, the one in `data/<major>/SOURCE` is used.
 //!
 //! Fetches `src/test/regress/sql` of the tag, copies the files verbatim, runs every statement
-//! against `postgres:<major>.<minor>` in Docker and writes Postgres' verdict per statement, and the
-//! types of the columns of the statements that return rows. It also writes the catalog of a fresh
-//! database. With `--catalog-only`, only the catalog is re-recorded.
+//! against `postgres:<major>.<minor>` in Docker and writes Postgres' verdict per statement, the
+//! types of the columns of the statements that return rows, and the objects of the database after
+//! each file. It also writes the catalog of a fresh database. With `--catalog-only`, only the
+//! catalog is re-recorded.
 
 use std::{
     collections::HashMap,
@@ -18,7 +19,8 @@ use std::{
 };
 
 use pgls_postgres_regress::{
-    CATALOG_FILE, OUTPUT_TYPES_DIR, Statement, VERDICTS_DIR, Verdict, data_dir, preprocess, split,
+    CATALOG_FILE, OBJECTS_DIR, OUTPUT_TYPES_DIR, Statement, VERDICTS_DIR, Verdict, data_dir,
+    preprocess, split,
 };
 use sqlx::{
     Column, ConnectOptions, Connection, Executor, PgConnection, Row, Statement as _,
@@ -99,7 +101,8 @@ async fn main() -> Result<()> {
     let sql_dir = dir.join("sql");
     let verdicts_dir = dir.join(VERDICTS_DIR);
     let output_types_dir = dir.join(OUTPUT_TYPES_DIR);
-    for sub in [&verdicts_dir, &output_types_dir] {
+    let objects_dir = dir.join(OBJECTS_DIR);
+    for sub in [&verdicts_dir, &output_types_dir, &objects_dir] {
         fs::create_dir_all(sub).map_err(|e| format!("create {}: {e}", sub.display()))?;
     }
     let builtin_types = TypeNames::fetch(&mut admin, &format!("t.oid < {FIRST_NORMAL_OBJECT_ID}"))
@@ -115,7 +118,7 @@ async fn main() -> Result<()> {
         let source = preprocess(
             &fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?,
         );
-        let statements =
+        let (statements, objects) =
             record_file(&mut admin, &base_url, file_no, &source, &builtin_types).await?;
         let counts = Totals::of(&statements);
         eprintln!(
@@ -144,6 +147,14 @@ async fn main() -> Result<()> {
                 .collect::<String>(),
         )
         .map_err(|e| format!("write output types file of {name}: {e}"))?;
+        fs::write(
+            objects_dir.join(format!("{name}.txt")),
+            objects
+                .iter()
+                .map(|line| format!("{line}\n"))
+                .collect::<String>(),
+        )
+        .map_err(|e| format!("write objects file of {name}: {e}"))?;
     }
     eprintln!(
         "Postgres {server_version}: {} accepted, {} rejected, {} skipped",
@@ -202,7 +213,7 @@ fn copy_upstream(tag: &str, dir: &Path) -> Result<()> {
         "src/test/regress/sql",
     ]))?;
 
-    for sub in ["sql", VERDICTS_DIR, OUTPUT_TYPES_DIR] {
+    for sub in ["sql", VERDICTS_DIR, OUTPUT_TYPES_DIR, OBJECTS_DIR] {
         let _ = fs::remove_dir_all(dir.join(sub));
     }
     let sql_dir = dir.join("sql");
@@ -224,14 +235,15 @@ fn copy_upstream(tag: &str, dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Runs the statements of one file in a fresh database.
+/// Runs the statements of one file in a fresh database. Returns them with their verdicts, and the
+/// lines of the objects of the database after them.
 async fn record_file(
     admin: &mut PgConnection,
     base_url: &str,
     file_no: usize,
     source: &str,
     builtin_types: &TypeNames,
-) -> Result<Vec<Statement>> {
+) -> Result<(Vec<Statement>, Vec<String>)> {
     let db = format!("regress_{file_no}");
     // A database left over from an interrupted run.
     sqlx::raw_sql(&format!("DROP DATABASE IF EXISTS {db} WITH (FORCE)"))
@@ -261,6 +273,7 @@ async fn record_file(
         });
     }
     let _ = tokio::time::timeout(Duration::from_secs(5), client.conn.close()).await;
+    let objects = DatabaseObjects::fetch(&url).await?;
 
     // Roles are shared by all databases.
     let roles = regress_roles(admin).await?;
@@ -281,7 +294,74 @@ async fn record_file(
             .await
             .ok();
     }
-    Ok(statements)
+    Ok((statements, objects))
+}
+
+/// The objects of a database, as the lines of an objects file (see
+/// `pgls_postgres_regress::DatabaseObject`).
+struct DatabaseObjects;
+
+impl DatabaseObjects {
+    /// Outside of the system schemas and of temporary schemas, which a session that ended may
+    /// not have removed yet.
+    const QUERY: &str = r#"
+        with namespaces as (
+            select oid, nspname
+            from pg_catalog.pg_namespace
+            where nspname not in ('pg_catalog', 'information_schema', 'pg_toast')
+                and nspname !~ '^pg_(temp|toast_temp)_'
+        )
+        select line collate "C" as line from (
+            select concat_ws(E'\t', 'schema', nspname) as line
+            from namespaces
+            union all
+            select concat_ws(
+                E'\t', 'relation', c.relkind, n.nspname, c.relname,
+                (
+                    select string_agg(
+                        concat_ws(E'\t', a.attname, tn.nspname || '.' || t.typname),
+                        E'\t' order by a.attnum
+                    )
+                    from pg_catalog.pg_attribute a
+                    join pg_catalog.pg_type t on t.oid = a.atttypid
+                    join pg_catalog.pg_namespace tn on tn.oid = t.typnamespace
+                    where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+                )
+            )
+            from pg_catalog.pg_class c
+            join namespaces n on n.oid = c.relnamespace
+            where c.relkind in ('r', 'p', 'v', 'm', 'f')
+            union all
+            select concat_ws(E'\t', 'type', t.typtype, n.nspname, t.typname)
+            from pg_catalog.pg_type t
+            join namespaces n on n.oid = t.typnamespace
+            where (
+                    t.typtype in ('b', 'd', 'e', 'r')
+                    or (t.typtype = 'c' and exists (
+                        select from pg_catalog.pg_class c where c.oid = t.typrelid and c.relkind = 'c'
+                    ))
+                )
+                and not exists (select from pg_catalog.pg_type e where e.typarray = t.oid)
+            union all
+            select concat_ws(E'\t', 'function', p.prokind, n.nspname, p.proname, count(*))
+            from pg_catalog.pg_proc p
+            join namespaces n on n.oid = p.pronamespace
+            group by p.prokind, n.nspname, p.proname
+        ) objects
+        order by 1
+    "#;
+
+    async fn fetch(url: &str) -> Result<Vec<String>> {
+        let mut conn = PgConnection::connect(url)
+            .await
+            .map_err(|e| format!("connect to {url}: {e}"))?;
+        let lines = sqlx::query_scalar(Self::QUERY)
+            .fetch_all(&mut conn)
+            .await
+            .map_err(|e| format!("list the objects of {url}: {e}"))?;
+        conn.close().await.ok();
+        Ok(lines)
+    }
 }
 
 /// The connection that runs the statements of a file.

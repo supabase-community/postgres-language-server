@@ -1,0 +1,12 @@
+function	f	public	mr_inoutparam_succeed	1
+function	f	public	mr_outparam_succeed	1
+function	f	public	mr_outparam_succeed2	1
+function	f	public	mr_outparam_succeed3	1
+function	f	public	mr_outparam_succeed4	1
+function	f	public	mr_polymorphic	1
+function	f	public	mr_table_succeed	1
+function	f	public	multirangetypes_sql	1
+function	f	public	range_add_bounds	1
+relation	r	public	nummultirange_test	nmr	pg_catalog.nummultirange
+relation	r	public	reservations	room_id	pg_catalog.int4	booked_during	pg_catalog.daterange
+schema	public

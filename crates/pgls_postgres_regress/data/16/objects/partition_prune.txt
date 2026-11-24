@@ -1,0 +1,10 @@
+function	f	public	explain_parallel_append	1
+function	f	public	list_part_fn	1
+relation	p	public	part	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	part_p2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	boolvalues	value	pg_catalog.bool
+relation	r	public	part_p1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	part_p2_p1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	part_rev	b	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	xy_1	x	pg_catalog.int4	y	pg_catalog.int4
+schema	public

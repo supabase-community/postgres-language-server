@@ -1,0 +1,29 @@
+relation	p	public	pagg_tab	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text	d	pg_catalog.int4
+relation	p	public	pagg_tab1	x	pg_catalog.int4	y	pg_catalog.int4
+relation	p	public	pagg_tab2	x	pg_catalog.int4	y	pg_catalog.int4
+relation	p	public	pagg_tab_m	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4
+relation	p	public	pagg_tab_ml	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	p	public	pagg_tab_ml_p2	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	p	public	pagg_tab_ml_p3	b	pg_catalog.int4	c	pg_catalog.text	a	pg_catalog.int4
+relation	p	public	pagg_tab_para	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab1_p1	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab1_p2	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab1_p3	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab2_p1	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab2_p2	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab2_p3	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab_m_p1	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4
+relation	r	public	pagg_tab_m_p2	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4
+relation	r	public	pagg_tab_m_p3	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4
+relation	r	public	pagg_tab_ml_p1	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	pagg_tab_ml_p2_s1	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	pagg_tab_ml_p2_s2	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	pagg_tab_ml_p3_s1	c	pg_catalog.text	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	pagg_tab_ml_p3_s2	b	pg_catalog.int4	c	pg_catalog.text	a	pg_catalog.int4
+relation	r	public	pagg_tab_p1	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text	d	pg_catalog.int4
+relation	r	public	pagg_tab_p2	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text	d	pg_catalog.int4
+relation	r	public	pagg_tab_p3	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text	d	pg_catalog.int4
+relation	r	public	pagg_tab_para_p1	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab_para_p2	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	pagg_tab_para_p3	x	pg_catalog.int4	y	pg_catalog.int4
+schema	public

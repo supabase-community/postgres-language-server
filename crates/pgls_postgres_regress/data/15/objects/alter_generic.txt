@@ -1,0 +1,2 @@
+schema	alt_nsp6
+schema	public

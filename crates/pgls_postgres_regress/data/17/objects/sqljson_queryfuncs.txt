@@ -1,0 +1,6 @@
+schema	public
+type	c	public	sqljsonb_rec
+type	c	public	sqljsonb_reca
+type	d	public	rgb
+type	d	public	sqljsonb_int_not_null
+type	e	public	rainbow

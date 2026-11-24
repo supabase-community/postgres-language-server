@@ -1,0 +1,2 @@
+relation	r	public	timestamp_tbl	d1	pg_catalog.timestamp
+schema	public

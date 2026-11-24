@@ -1,0 +1,4 @@
+relation	r	public	test_tablesample	id	pg_catalog.int4	name	pg_catalog.text
+relation	v	public	test_tablesample_v1	id	pg_catalog.int4
+relation	v	public	test_tablesample_v2	id	pg_catalog.int4
+schema	public

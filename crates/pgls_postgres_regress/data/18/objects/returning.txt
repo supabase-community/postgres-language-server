@@ -1,0 +1,2 @@
+function	f	public	joinview_upd_trig_fn	1
+schema	public

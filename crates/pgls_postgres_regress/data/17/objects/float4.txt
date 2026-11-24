@@ -1,0 +1,2 @@
+relation	r	public	float4_tbl	f1	pg_catalog.float4
+schema	public

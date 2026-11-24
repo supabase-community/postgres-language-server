@@ -1,0 +1,16 @@
+function	f	public	hashint8alias1	1
+function	f	public	int8alias1cmp	1
+function	f	public	int8alias1eq	3
+function	f	public	int8alias1in	1
+function	f	public	int8alias1lt	1
+function	f	public	int8alias1out	1
+function	f	public	int8alias2eq	1
+function	f	public	int8alias2in	1
+function	f	public	int8alias2out	1
+relation	r	public	ec0	ff	pg_catalog.int8	f1	pg_catalog.int8	f2	pg_catalog.int8
+relation	r	public	ec1	ff	pg_catalog.int8	f1	public.int8alias1	f2	public.int8alias2
+relation	r	public	ec2	xf	pg_catalog.int8	x1	public.int8alias1	x2	public.int8alias2
+relation	r	public	tbl_nocom	a	pg_catalog.int8	b	public.int8alias1
+schema	public
+type	b	public	int8alias1
+type	b	public	int8alias2

@@ -1,0 +1,10 @@
+relation	r	public	a	aa	pg_catalog.int4
+relation	r	public	b	aa	pg_catalog.int4	bb	pg_catalog.text
+relation	r	public	c	aa	pg_catalog.int4	cc	pg_catalog.text
+relation	r	public	cc1	f1	pg_catalog.int4	f2	pg_catalog.text	f3	pg_catalog.int4	a2	pg_catalog.int4
+relation	r	public	cc2	f1	pg_catalog.int4	f2	pg_catalog.text	f3	pg_catalog.int4	f4	pg_catalog.float8	a2	pg_catalog.int4
+relation	r	public	d	aa	pg_catalog.int4	bb	pg_catalog.text	cc	pg_catalog.text	dd	pg_catalog.text
+relation	r	public	invalid_check_con	f1	pg_catalog.int4
+relation	r	public	invalid_check_con_child	f1	pg_catalog.int4
+relation	r	public	pp1	f1	pg_catalog.int4
+schema	public

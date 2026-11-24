@@ -1,0 +1,2 @@
+relation	r	public	inet_tbl	c	pg_catalog.cidr	i	pg_catalog.inet
+schema	public

@@ -1,0 +1,5 @@
+relation	r	public	real_city	pop	pg_catalog.int4	cname	pg_catalog.text	outline	pg_catalog.path
+relation	r	public	view_base_table	key	pg_catalog.int4	data	pg_catalog.varchar
+relation	v	public	key_dependent_view	key	pg_catalog.int4	data	pg_catalog.varchar
+relation	v	public	key_dependent_view_no_cols
+schema	public

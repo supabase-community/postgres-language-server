@@ -1,0 +1,7 @@
+relation	r	public	tbl_include_box	c1	pg_catalog.int4	c2	pg_catalog.int4	c3	pg_catalog.int4	c4	pg_catalog.box
+relation	r	public	tbl_include_box_pk	c1	pg_catalog.int4	c2	pg_catalog.int4	c3	pg_catalog.int4	c4	pg_catalog.box
+relation	r	public	tbl_include_pk	c1	pg_catalog.int4	c2	pg_catalog.int4	c3	pg_catalog.int4	c4	pg_catalog.box
+relation	r	public	tbl_include_reg	c1	pg_catalog.int4	c2	pg_catalog.int4	c3	pg_catalog.int4	c4	pg_catalog.box
+relation	r	public	tbl_include_unique1	c1	pg_catalog.int4	c2	pg_catalog.int4	c3	pg_catalog.int4	c4	pg_catalog.box
+relation	r	public	tbl_include_unique2	c1	pg_catalog.int4	c2	pg_catalog.int4	c3	pg_catalog.int4	c4	pg_catalog.box
+schema	public

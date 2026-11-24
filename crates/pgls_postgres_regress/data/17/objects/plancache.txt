@@ -1,0 +1,4 @@
+function	f	public	cache_test	1
+function	f	public	cache_test_2	1
+function	f	public	cachebug	1
+schema	public

@@ -1,0 +1,5 @@
+relation	r	public	array_index_op_test	seqno	pg_catalog.int4	i	pg_catalog._int4	t	pg_catalog._text
+relation	r	public	fast_emp4000	home_base	pg_catalog.box
+relation	r	public	func_index_heap	f1	pg_catalog.text	f2	pg_catalog.text
+relation	r	public	slow_emp4000	home_base	pg_catalog.box
+schema	public

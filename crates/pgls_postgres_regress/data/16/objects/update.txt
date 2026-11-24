@@ -1,0 +1,3 @@
+function	f	public	trans_updatetrigfunc	1
+function	f	public	trigfunc	1
+schema	public

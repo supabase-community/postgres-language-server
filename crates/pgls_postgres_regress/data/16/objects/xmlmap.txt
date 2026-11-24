@@ -1,0 +1,8 @@
+relation	r	testxmlschema	test1	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	testxmlschema	test2	z	pg_catalog.int4	y	pg_catalog.varchar	x	pg_catalog.bpchar	w	pg_catalog.numeric	v	pg_catalog.int2	u	pg_catalog.int8	t	pg_catalog.float4	s	pg_catalog.time	stz	pg_catalog.timetz	r	pg_catalog.timestamp	rtz	pg_catalog.timestamptz	q	pg_catalog.date	p	pg_catalog.xml	o	public.testxmldomain	n	pg_catalog.bool	m	pg_catalog.bytea
+relation	r	testxmlschema	test3	c1	pg_catalog.bool	c2	public.testboolxmldomain	c3	pg_catalog.date	c4	public.testdatexmldomain
+schema	public
+schema	testxmlschema
+type	d	public	testboolxmldomain
+type	d	public	testdatexmldomain
+type	d	public	testxmldomain

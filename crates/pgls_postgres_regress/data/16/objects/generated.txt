@@ -1,0 +1,46 @@
+function	f	public	gtest_trigger_func	1
+function	f	public	gtest_trigger_func3	1
+function	f	public	gtest_trigger_func4	1
+relation	p	public	gtest_parent	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	public	gtest0	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest10	a	pg_catalog.int4
+relation	r	public	gtest10a	a	pg_catalog.int4
+relation	r	public	gtest1_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest1_y	a	pg_catalog.int4	b	pg_catalog.int4	x	pg_catalog.int4
+relation	r	public	gtest2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest20	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest20a	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest20b	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest21a	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest21b	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest22a	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest22b	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest22c	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest23p	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	public	gtest23q	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest24	a	pg_catalog.int4	b	public.gtestdomain1
+relation	r	public	gtest24nn	a	pg_catalog.int4	b	public.gtestdomainnn
+relation	r	public	gtest25	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4	x	pg_catalog.int4	d	pg_catalog.float8	y	pg_catalog.float8
+relation	r	public	gtest26	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest27	a	pg_catalog.int8	b	pg_catalog.int8	x	pg_catalog.int8
+relation	r	public	gtest28a	b	pg_catalog.int4	c	pg_catalog.int4	x	pg_catalog.int4
+relation	r	public	gtest28b	b	pg_catalog.int4	c	pg_catalog.int4	x	pg_catalog.int4
+relation	r	public	gtest29	b	pg_catalog.int4
+relation	r	public	gtest3	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest30	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest30_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest30_1_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtest3a	a	pg_catalog.text	b	pg_catalog.text
+relation	r	public	gtest_child	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	public	gtest_child2	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	public	gtest_child3	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	public	gtest_tableoid	a	pg_catalog.int4	b	pg_catalog.bool	c	pg_catalog.regclass
+relation	r	public	gtestx	a	pg_catalog.int4	b	pg_catalog.int4	x	pg_catalog.int4
+relation	r	public	gtestxx_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtestxx_3	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	gtestxx_4	b	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	gtesty	x	pg_catalog.int4	b	pg_catalog.int4
+schema	public
+type	d	public	gtestdomain1
+type	d	public	gtestdomainnn

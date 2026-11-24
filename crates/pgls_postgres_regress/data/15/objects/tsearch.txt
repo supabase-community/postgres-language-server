@@ -1,0 +1,3 @@
+relation	r	public	test_tsquery	txtkeyword	pg_catalog.text	txtsample	pg_catalog.text	keyword	pg_catalog.tsquery	sample	pg_catalog.tsquery
+relation	r	public	test_tsvector	t	pg_catalog.text	a	pg_catalog.tsvector
+schema	public

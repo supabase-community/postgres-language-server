@@ -1,0 +1,13 @@
+relation	r	public	num_data	id	pg_catalog.int4	val	pg_catalog.numeric
+relation	r	public	num_exp_add	id1	pg_catalog.int4	id2	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_div	id1	pg_catalog.int4	id2	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_ln	id	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_log10	id	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_mul	id1	pg_catalog.int4	id2	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_power_10_ln	id	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_sqrt	id	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_exp_sub	id1	pg_catalog.int4	id2	pg_catalog.int4	expected	pg_catalog.numeric
+relation	r	public	num_input_test	n1	pg_catalog.numeric
+relation	r	public	num_result	id1	pg_catalog.int4	id2	pg_catalog.int4	result	pg_catalog.numeric
+relation	r	public	num_typemod_test	millions	pg_catalog.numeric	thousands	pg_catalog.numeric	units	pg_catalog.numeric	thousandths	pg_catalog.numeric	millionths	pg_catalog.numeric
+schema	public

@@ -1,0 +1,12 @@
+relation	p	public	regress_constr_partitioned	a	pg_catalog.int4
+relation	r	public	check2_tbl	x	pg_catalog.int4	y	pg_catalog.text	z	pg_catalog.int4
+relation	r	public	check_tbl	x	pg_catalog.int4
+relation	r	public	copy_tbl	x	pg_catalog.int4	y	pg_catalog.text	z	pg_catalog.int4
+relation	r	public	default_tbl	i	pg_catalog.int4	x	pg_catalog.text	f	pg_catalog.float8
+relation	r	public	defaultexpr_tbl	i1	pg_catalog.int4	i2	pg_catalog.int4
+relation	r	public	insert_tbl	x	pg_catalog.int4	y	pg_catalog.text	z	pg_catalog.int4
+relation	r	public	regress_constr_partition1	a	pg_catalog.int4
+relation	r	public	regress_notnull1	a	pg_catalog.int4
+relation	r	public	regress_notnull2	a	pg_catalog.int4
+schema	public
+type	d	public	constraint_comments_dom

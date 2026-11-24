@@ -1,0 +1,14 @@
+function	f	public	myinteq	1
+function	f	public	myinthash	1
+function	f	public	myintin	1
+function	f	public	myintne	1
+function	f	public	myintout	1
+function	f	public	return_int_input	1
+function	f	public	return_text_input	1
+relation	r	public	bpchar_tbl	f1	pg_catalog.bpchar	f2	pg_catalog.bpchar
+relation	r	public	inttest	a	public.myint
+relation	r	public	numeric_tbl	f1	pg_catalog.numeric	f2	pg_catalog.numeric
+relation	v	public	bpchar_view	f1	pg_catalog.bpchar	f114	pg_catalog.bpchar	f1n	pg_catalog.bpchar	f2	pg_catalog.bpchar	f214	pg_catalog.bpchar	f2n	pg_catalog.bpchar
+relation	v	public	numeric_view	f1	pg_catalog.numeric	f1164	pg_catalog.numeric	f1n	pg_catalog.numeric	f2	pg_catalog.numeric	f2164	pg_catalog.numeric	f2n	pg_catalog.numeric
+schema	public
+type	b	public	myint

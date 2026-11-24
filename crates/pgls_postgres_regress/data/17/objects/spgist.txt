@@ -1,0 +1,7 @@
+relation	r	public	spgist_box_tbl	id	pg_catalog.int4	b	pg_catalog.box
+relation	r	public	spgist_domain_tbl	f1	public.spgist_text
+relation	r	public	spgist_point_tbl	id	pg_catalog.int4	p	pg_catalog.point
+relation	r	public	spgist_text_tbl	id	pg_catalog.int4	t	pg_catalog.text
+relation	r	public	spgist_unlogged_tbl	id	pg_catalog.int4	b	pg_catalog.box
+schema	public
+type	d	public	spgist_text
