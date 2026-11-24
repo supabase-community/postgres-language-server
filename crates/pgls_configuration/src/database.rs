@@ -46,11 +46,19 @@ pub struct DatabaseConfiguration {
     /// Glob patterns of the databases that code actions may execute statements against, matched
     /// against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched
     /// against `host/database` and allows every port.
-    #[partial(bpaf(long("allow_statement_executions_against")))]
+    #[partial(bpaf(
+        long("allow-statement-executions-against"),
+        long("allow_statement_executions_against")
+    ))]
     pub allow_statement_executions_against: StringSet,
 
     /// The connection timeout in seconds.
-    #[partial(bpaf(long("conn_timeout_secs"), fallback(Some(10)), debug_fallback))]
+    #[partial(bpaf(
+        long("conn-timeout-secs"),
+        long("conn_timeout_secs"),
+        fallback(Some(10)),
+        debug_fallback
+    ))]
     pub conn_timeout_secs: u16,
 
     /// How long a statement executed from the editor may run, in seconds, before Postgres cancels
