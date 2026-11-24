@@ -115,12 +115,14 @@ impl FunctionBody<'_> {
     }
 }
 
-/// A PL/pgSQL function that a statement creates.
+/// A PL/pgSQL function that a statement creates, which plpgsql_check can check.
 struct PlPgSqlFunction<'a> {
     create_fn: &'a CreateFunctionStmt,
     schema: Option<&'a str>,
     name: &'a str,
     body: FunctionBody<'a>,
+    /// The schema of the plpgsql_check extension, whose functions check this one.
+    extension_schema: Option<&'a str>,
 }
 
 impl<'a> PlPgSqlFunction<'a> {
@@ -138,12 +140,10 @@ impl<'a> PlPgSqlFunction<'a> {
             return Err(SkipReason::NotPlPgSql);
         }
         // Only an installed extension has `plpgsql_check_function`.
-        if !snapshot
+        let extension = snapshot
             .extension("plpgsql_check")
-            .is_some_and(pgls_catalog::Extension::is_installed)
-        {
-            return Err(SkipReason::ExtensionMissing);
-        }
+            .filter(|extension| extension.is_installed())
+            .ok_or(SkipReason::ExtensionMissing)?;
         let Some(QualifiedName { schema, name, .. }) = qualified_name(&create_fn.funcname) else {
             return Err(SkipReason::NotPlPgSql);
         };
@@ -165,7 +165,20 @@ impl<'a> PlPgSqlFunction<'a> {
                 range,
                 offsets,
             },
+            extension_schema: extension.schema.as_deref(),
         })
+    }
+
+    /// `plpgsql_check_function`, qualified with the schema of the extension, which needn't be
+    /// on the search path, like `extensions` on Supabase.
+    fn check_function(&self) -> String {
+        match self.extension_schema {
+            Some(schema) => format!(
+                "{}.plpgsql_check_function",
+                quote_identifier(schema, NamePosition::ColId)
+            ),
+            None => "plpgsql_check_function".to_string(),
+        }
     }
 
     fn is_trigger(&self) -> bool {
@@ -276,10 +289,16 @@ impl PlPgSqlCheckParams<'_> {
             (!self.extra_warnings, "extra_warnings := false"),
             (self.performance_warnings, "performance_warnings := true"),
             (self.security_warnings, "security_warnings := true"),
-            (self.compatibility_warnings, "compatibility_warnings := true"),
+            (
+                self.compatibility_warnings,
+                "compatibility_warnings := true",
+            ),
             (self.without_warnings, "without_warnings := true"),
             (self.all_warnings, "all_warnings := true"),
-            (!self.use_incomment_options, "use_incomment_options := false"),
+            (
+                !self.use_incomment_options,
+                "use_incomment_options := false",
+            ),
             (
                 self.incomment_options_usage_warning,
                 "incomment_options_usage_warning := true",
@@ -353,11 +372,12 @@ pub async fn check(params: PlPgSqlCheckParams<'_>) -> Result<Checked, CheckError
 
     // The names are bound as text and read by `regprocedure` and `regclass`, so that quoted
     // names work and no name ends up in the query.
+    let check_function = function.check_function();
     let extra = params.extra_arguments();
     let mut results: Vec<(String, Option<String>)> = Vec::new();
     if relations.is_empty() {
         let result: Option<String> = sqlx::query_scalar(&format!(
-            "select plpgsql_check_function($1::regprocedure, format := 'json'{extra})"
+            "select {check_function}($1::regprocedure, format := 'json'{extra})"
         ))
         .bind(&signature)
         .persistent(false)
@@ -368,7 +388,7 @@ pub async fn check(params: PlPgSqlCheckParams<'_>) -> Result<Checked, CheckError
     } else {
         for relation in relations {
             let result: Option<String> = sqlx::query_scalar(&format!(
-                "select plpgsql_check_function($1::regprocedure, $2::regclass, format := 'json'{extra})"
+                "select {check_function}($1::regprocedure, $2::regclass, format := 'json'{extra})"
             ))
             .bind(&signature)
             .bind(&relation)
@@ -613,6 +633,21 @@ mod tests {
             end;
             $$;
         "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(span_texts[0].as_deref(), Some("missing_var"));
+    }
+
+    /// The extension's functions are called in its schema, which isn't on the search path.
+    /// Every check used to fail there, and the error was dropped.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_extension_in_another_schema(test_db: PgPool) {
+        let setup = "create schema \"Ext Schema\"; create extension if not exists plpgsql_check schema \"Ext Schema\";";
+        let create_fn_sql = "create function in_other_schema() returns int language plpgsql as $$ begin return missing_var; end; $$;";
 
         let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
             .await
@@ -1260,7 +1295,7 @@ mod result_tests {
 
     #[test]
     fn deserializes_issue_detail_and_hint() {
-        let result: super::PlPgSqlCheckResult = serde_json::from_str(
+        let result: PlPgSqlCheckResult = serde_json::from_str(
             r#"{
                 "function": "public.f1",
                 "issues": [{
