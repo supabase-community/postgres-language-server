@@ -131,7 +131,7 @@ impl<'a> PlPgSqlFunction<'a> {
     fn of(
         ast: &'a pgls_query::NodeEnum,
         sql: &str,
-        snapshot: &pgls_catalog::Snapshot,
+        snapshot: &'a pgls_catalog::Snapshot,
     ) -> Result<Self, SkipReason> {
         let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = ast else {
             return Err(SkipReason::NotPlPgSql);
