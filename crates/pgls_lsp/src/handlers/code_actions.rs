@@ -422,6 +422,7 @@ mod tests {
     use super::{FIX_ALL_KIND, covers, fix_all_edit, is_requested};
     use crate::adapters::{PositionEncoding, from_lsp};
     use pgls_line_index::{LineIndex, WideEncoding};
+    use pgls_text_edit::RangeEdit;
     use tower_lsp_server::ls_types::CodeActionKind;
 
     #[test]
@@ -474,7 +475,7 @@ mod tests {
             let edit = fix_all_edit(old, &index, new, encoding).unwrap().unwrap();
             let range = from_lsp::text_range(&index, edit.range, encoding).unwrap();
             let mut applied = old.to_string();
-            applied.replace_range(std::ops::Range::<usize>::from(range), &edit.new_text);
+            assert!(RangeEdit::new(range, edit.new_text.clone()).apply(&mut applied));
             assert_eq!(applied, new, "{edit:?}");
         }
     }

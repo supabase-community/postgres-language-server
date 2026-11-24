@@ -392,7 +392,7 @@ export interface EditAction {
   /**
    * Non-overlapping edits of the file, ordered by their position.
    */
-  edits: TextEdit[];
+  edits: RangeEdit[];
   /**
    * The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`. `None` for refactors.
    */
@@ -415,6 +415,15 @@ export type ActionCategory =
   | { Refactor: RefactorKind }
   | { Source: SourceActionKind }
   | { Other: string };
+/**
+ * Replaces the text in `range` with `new_text`, e.g. an edit of a fix or a code action. Unlike [`TextEdit`](crate::TextEdit), which is a diff of a whole text, it only knows the range it replaces.
+
+The ranges come from rules and frontends, so every application checks them, in release builds too: an edit out of order, or one that doesn't lie on char boundaries, is rejected instead of panicking or changing the wrong text.
+ */
+export interface RangeEdit {
+  new_text: string;
+  range: TextRange;
+}
 export type CommandActionCategory = "InvalidateSchemaCache" | { ExecuteStatement: StatementId };
 /**
  * The sub-category of a refactor code action.

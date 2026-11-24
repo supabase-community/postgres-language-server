@@ -23,6 +23,7 @@ use pgls_analyser::{
 use pgls_console::StdDisplay;
 use pgls_diagnostics::PrintDiagnostic;
 use pgls_migrations::{Direction, Unit};
+use pgls_text_edit::RangeEdit;
 use pgls_text_size::{TextRange, TextSize};
 
 static TYPECHECK_CATALOG: OnceLock<Arc<pgls_catalog::CatalogBase>> = OnceLock::new();
@@ -266,20 +267,21 @@ fn assert_fixes_converge(
             .filter_map(LinterDiagnostic::get_fix)
             .collect();
         fixes.sort_by_key(|fix| fix.range().map(TextRange::start));
-        let mut combined = RuleFix::new("");
+        let mut edits: Vec<RangeEdit> = Vec::new();
         for fix in fixes {
-            let overlaps = combined
-                .range()
+            let overlaps = edits
+                .last()
                 .zip(fix.range())
-                .is_some_and(|(previous, range)| range.start() <= previous.end());
+                .is_some_and(|(previous, range)| range.start() <= previous.range.end());
             if !overlaps {
-                combined.edits.extend(fix.edits.iter().cloned());
+                edits.extend_from_slice(fix.edits());
             }
         }
-        if combined.edits.is_empty() {
+        if edits.is_empty() {
             return;
         }
-        code = combined.apply(&code);
+        code = RangeEdit::apply_all(&code, TextSize::from(0), &edits)
+            .expect("the fixes don't fit the text");
     }
     panic!("the fixes still change the input after 10 passes:\n{code}");
 }
@@ -395,7 +397,9 @@ fn write_fix(snapshot: &mut String, query: &str, fix: &RuleFix) {
         Applicability::Always => "safe",
         Applicability::MaybeIncorrect => "unsafe",
     };
-    let fixed = fix.apply(query);
+    let fixed = fix
+        .apply(query)
+        .expect("the edits of the fix don't fit the input");
     let parses =
         |sql: &str| pgls_query::parse(&pgls_lexer::convert_to_positional_params(sql)).is_ok();
     if parses(query) {
