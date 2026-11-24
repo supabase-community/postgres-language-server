@@ -4,15 +4,12 @@ use crate::execute::diagnostics::{PanicDiagnostic, SkippedDiagnostic};
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgls_diagnostics::{
-    DiagnosticExt, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
-};
+use pgls_diagnostics::{DiagnosticExt, DiagnosticTags, Error, Severity, SharedSourceCode};
 use pgls_fs::{FileSystem, PathInterner, PgLSPath};
 use pgls_fs::{TraversalContext, TraversalScope};
 use pgls_workspace::Workspace;
 use pgls_workspace::dome::Dome;
 use pgls_workspace::workspace::{IsPathIgnoredParams, ProjectKey};
-use rustc_hash::FxHashSet;
 use std::collections::BTreeSet;
 use std::sync::atomic::AtomicU32;
 use std::sync::{PoisonError, RwLock};
