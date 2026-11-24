@@ -195,12 +195,11 @@ impl<'a> PlPgSqlFunction<'a> {
     }
 
     /// The signature of the function as `regprocedure` reads it ([`regprocedurein`]): the
-    /// quoted name and the types of the arguments that identify it. A function's `OUT` and
-    /// `TABLE` arguments don't, a procedure's `OUT` arguments do ([`interpret_function_parameter_list`]).
-    /// `None` if an argument's type is a `%TYPE` reference.
+    /// quoted name and the types of the arguments that identify it, which `proargtypes` holds.
+    /// `OUT` and `TABLE` arguments don't, of functions and procedures alike. `None` if an
+    /// argument's type is a `%TYPE` reference.
     ///
-    /// [`regprocedurein`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/regproc.c#L227
-    /// [`interpret_function_parameter_list`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L184
+    /// [`regprocedurein`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/regproc.c#L224
     fn signature(&self) -> Option<String> {
         let mut signature = match self.schema {
             Some(schema) => format!(
@@ -216,12 +215,10 @@ impl<'a> PlPgSqlFunction<'a> {
             let Some(pgls_query::NodeEnum::FunctionParameter(parameter)) = &parameter.node else {
                 continue;
             };
-            let identifies = match parameter.mode() {
-                FunctionParameterMode::FuncParamOut => self.create_fn.is_procedure,
-                FunctionParameterMode::FuncParamTable => false,
-                _ => true,
-            };
-            if !identifies {
+            if matches!(
+                parameter.mode(),
+                FunctionParameterMode::FuncParamOut | FunctionParameterMode::FuncParamTable
+            ) {
                 continue;
             }
             let type_name = parameter.arg_type.as_ref()?;
@@ -614,7 +611,7 @@ mod tests {
     }
 
     /// A procedure that the database already has is replaced: `OR REPLACE` goes before the
-    /// keyword, after a comment. A procedure's `OUT` arguments are part of its signature.
+    /// keyword, after a comment. Its `OUT` argument isn't part of its signature.
     #[pgls_test_utils::db_test]
     async fn test_plpgsql_check_existing_procedure(test_db: PgPool) {
         let setup = r#"
