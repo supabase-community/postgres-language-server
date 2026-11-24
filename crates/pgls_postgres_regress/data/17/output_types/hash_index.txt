@@ -1,0 +1,18 @@
+1738..1806	pg_catalog.int4	pg_catalog.int4
+1855..1922	pg_catalog.int4	pg_catalog.int4
+1973..2054	pg_catalog.int4	pg_catalog.name
+2102..2180	pg_catalog.int4	pg_catalog.name
+2231..2310	pg_catalog.int4	pg_catalog.text
+2375..2468	pg_catalog.int4	pg_catalog.text
+2518..2596	pg_catalog.int4	pg_catalog.float8
+2645..2722	pg_catalog.int4	pg_catalog.float8
+2752..2821	pg_catalog.text
+2823..2872	pg_catalog.int4	pg_catalog.int4
+3209..3294	pg_catalog.int4	pg_catalog.int4
+3381..3460	pg_catalog.int4
+3564..3679	pg_catalog.int4	pg_catalog.name
+3854..3943	pg_catalog.int4
+4055..4179	pg_catalog.int4	pg_catalog.text
+4275..4362	pg_catalog.int4
+4458..4570	pg_catalog.int4	pg_catalog.float8
+4666..4754	pg_catalog.int4

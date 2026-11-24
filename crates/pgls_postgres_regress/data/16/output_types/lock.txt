@@ -1,0 +1,8 @@
+1885..2026	pg_catalog.name
+2150..2291	pg_catalog.name
+2439..2580	pg_catalog.name
+2704..2845	pg_catalog.name
+2969..3110	pg_catalog.name
+3220..3361	pg_catalog.name
+4878..5025	pg_catalog.name
+5783..5930	pg_catalog.name

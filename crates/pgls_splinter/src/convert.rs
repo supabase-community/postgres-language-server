@@ -1,4 +1,4 @@
-use pgls_diagnostics::{DatabaseObjectOwned, Severity};
+use pgls_diagnostics::Severity;
 use serde_json::Value;
 
 use crate::{SplinterAdvices, SplinterDiagnostic, SplinterQueryResult, registry};
@@ -27,11 +27,6 @@ impl From<SplinterQueryResult> for SplinterDiagnostic {
             category,
             message: result.detail.into(),
             severity,
-            db_object: object_name.as_ref().map(|name| DatabaseObjectOwned {
-                schema: schema.clone(),
-                name: name.clone(),
-                object_type: object_type.clone(),
-            }),
             advices: SplinterAdvices {
                 description: result.description,
                 schema,

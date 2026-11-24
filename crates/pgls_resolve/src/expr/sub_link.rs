@@ -27,9 +27,10 @@ pub(super) fn infer_sub_link(
                     )?,
                     None => crate::query_columns(query, r.catalog, r.search_path)?,
                 };
-                (columns.len() == 1)
-                    .then(|| columns[0].ty.clone())
-                    .flatten()
+                match columns.as_slice() {
+                    [column] => column.ty.clone(),
+                    _ => None,
+                }
             }
             protobuf::SubLinkType::AnySublink | protobuf::SubLinkType::AllSublink => {
                 named(r, "bool")

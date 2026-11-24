@@ -1,0 +1,16 @@
+1316..1390	pg_catalog.text
+1884..1958	pg_catalog.text
+2245..2397	pg_catalog.int4
+2399..2551	pg_catalog.int4
+4812..4871	pg_catalog.int4	pg_catalog.bool
+4872..4937	pg_catalog.int4	pg_catalog.bool
+4938..4998	pg_catalog.int4	pg_catalog.bool
+4999..5064	pg_catalog.int4	pg_catalog.bool
+5117..5154	pg_catalog.bool
+5155..5191	pg_catalog.bool
+5192..5232	pg_catalog.bool
+5233..5275	pg_catalog.bool
+5293..5333	pg_catalog.bool
+5334..5375	pg_catalog.bool
+5376..5419	pg_catalog.bool
+5420..5467	pg_catalog.bool

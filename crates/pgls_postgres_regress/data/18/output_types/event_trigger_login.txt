@@ -1,0 +1,2 @@
+427..460	pg_catalog.int8
+462..495	pg_catalog.int8

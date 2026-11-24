@@ -13,6 +13,13 @@
 //! 3. For each type, set `(*n).location = 0;` at minimum
 //! 4. Check if the type needs additional normalization beyond location clearing
 
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use regex::Regex;
 use std::collections::HashSet;
 use std::fs;

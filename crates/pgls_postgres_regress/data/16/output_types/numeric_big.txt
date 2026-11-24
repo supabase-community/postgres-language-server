@@ -1,0 +1,30 @@
+259960..260124	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+260256..260454	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+260666..260830	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+260962..261148	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+261357..261521	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+261653..261851	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+262086..262250	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+262408..262606	pg_catalog.int4	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+262794..262930	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+263145..263279	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+263510..263647	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+263894..264037	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric
+264400..266205	pg_catalog.numeric	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+266516..268563	pg_catalog.numeric	pg_catalog.int4	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+268947..271223	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+271559..273875	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+273994..279363	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+279669..281138	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+281456..283267	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+283584..285838	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+286154..288368	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+288659..290039	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+290333..290773	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+290899..299274	pg_catalog.numeric
+299352..299450	pg_catalog.text	pg_catalog.numeric
+299825..301074	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+301454..302498	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+302877..303902	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+303944..304041	pg_catalog.text	pg_catalog.numeric
+304417..305101	pg_catalog.text	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric

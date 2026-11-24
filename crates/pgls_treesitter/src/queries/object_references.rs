@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use tree_sitter::Node;
 use tree_sitter::StreamingIterator;
 
-static PARTS_OF_REFERENCE_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(|| {
+static PARTS_OF_REFERENCE_QUERY: LazyLock<Option<tree_sitter::Query>> = LazyLock::new(|| {
     static QUERY_STR: &str = r#"
     (object_reference
         object_reference_1of1: (any_identifier) @tail
@@ -52,7 +52,8 @@ static PARTS_OF_REFERENCE_QUERY: LazyLock<tree_sitter::Query> = LazyLock::new(||
     )
 "#;
     tree_sitter::Query::new(&pgls_treesitter_grammar::LANGUAGE.into(), QUERY_STR)
-        .expect("Invalid TS Query")
+        // A query that doesn't compile fails the tests of this module.
+        .ok()
 });
 
 pub fn parts_of_reference_query<'a>(
@@ -60,25 +61,13 @@ pub fn parts_of_reference_query<'a>(
     stmt: &'a str,
 ) -> Option<(Option<Node<'a>>, Option<Node<'a>>, Node<'a>)> {
     let mut cursor = tree_sitter::QueryCursor::new();
-    let mut matches = cursor.matches(&PARTS_OF_REFERENCE_QUERY, node, stmt.as_bytes());
+    let query = PARTS_OF_REFERENCE_QUERY.as_ref()?;
+    let mut matches = cursor.matches(query, node, stmt.as_bytes());
 
-    if let Some(next) = matches.next() {
-        if next.captures.len() == 1 {
-            return Some((None, None, next.captures[0].node));
-        };
-
-        if next.captures.len() == 2 {
-            return Some((None, Some(next.captures[0].node), next.captures[1].node));
-        };
-
-        if next.captures.len() == 3 {
-            return Some((
-                Some(next.captures[0].node),
-                Some(next.captures[1].node),
-                next.captures[2].node,
-            ));
-        };
+    match matches.next()?.captures {
+        [name] => Some((None, None, name.node)),
+        [qualifier, name] => Some((None, Some(qualifier.node), name.node)),
+        [schema, qualifier, name] => Some((Some(schema.node), Some(qualifier.node), name.node)),
+        _ => None,
     }
-
-    None
 }

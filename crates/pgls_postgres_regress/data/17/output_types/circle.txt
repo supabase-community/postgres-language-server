@@ -1,0 +1,7 @@
+887..912	pg_catalog.circle
+914..960	pg_catalog.point
+962..1008	pg_catalog.float8
+1010..1060	pg_catalog.float8
+1062..1109	pg_catalog.circle
+1111..1162	pg_catalog.circle
+1164..1363	pg_catalog.circle	pg_catalog.circle	pg_catalog.float8

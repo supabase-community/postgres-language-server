@@ -126,28 +126,6 @@ impl pgls_console::fmt::Display for RuleFilter<'_> {
     }
 }
 
-/// Opaque identifier for a group of rule
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct GroupKey {
-    group: &'static str,
-}
-
-impl GroupKey {
-    pub(crate) fn new(group: &'static str) -> Self {
-        Self { group }
-    }
-
-    pub fn group<G: RuleGroup>() -> Self {
-        Self::new(G::NAME)
-    }
-}
-
-impl From<GroupKey> for RuleFilter<'static> {
-    fn from(key: GroupKey) -> Self {
-        RuleFilter::Group(key.group)
-    }
-}
-
 /// Opaque identifier for a single rule
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RuleKey {

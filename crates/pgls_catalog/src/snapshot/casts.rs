@@ -4,14 +4,19 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "db")]
 use sqlx::PgPool;
 
+use super::code::Code;
+use crate::{CastMethod, typing::CoercionContext};
+
 /// A cast present in pg_cast.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PostgresCast {
     pub source: i64,
     pub target: i64,
-    pub context: String,
-    pub method: String,
+    /// `pg_cast.castcontext`.
+    pub context: Code<CoercionContext>,
+    /// `pg_cast.castmethod`.
+    pub method: Code<CastMethod>,
 }
 #[cfg(feature = "db")]
 impl SnapshotItem for PostgresCast {

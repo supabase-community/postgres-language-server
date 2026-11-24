@@ -1,0 +1,9 @@
+165..221	pg_catalog.text
+697..714	pg_catalog.text
+941..958	pg_catalog.text
+967..984	pg_catalog.text
+1064..1185	pg_catalog.int8
+1335..1370	pg_catalog.int4	pg_catalog.int4
+1371..1411	pg_catalog.int4	pg_catalog.int4
+1477..1598	pg_catalog.int8
+2004..2131	pg_catalog.int8

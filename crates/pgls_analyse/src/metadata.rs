@@ -1,4 +1,4 @@
-use pgls_diagnostics::Severity;
+use pgls_diagnostics::{Applicability, Severity};
 use std::cmp::Ordering;
 
 use crate::{categories::RuleCategory, registry::RegistryVisitor};
@@ -57,18 +57,6 @@ impl FixKind {
             Self::Unsafe => Some(Applicability::MaybeIncorrect),
         }
     }
-}
-
-/// Whether a fix can be applied without reviewing it.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub enum Applicability {
-    /// The fix is safe to apply automatically.
-    Always,
-    /// The fix may change the behaviour of the code and should be reviewed.
-    MaybeIncorrect,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -221,9 +209,5 @@ impl RuleSource {
             }
             Self::Pgfence(_) => "https://github.com/flvmnt/pgfence".to_string(),
         }
-    }
-
-    pub fn as_url_and_rule_name(&self) -> (String, &'static str) {
-        (self.to_rule_url(), self.as_rule_name())
     }
 }

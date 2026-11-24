@@ -1,0 +1,5 @@
+566..727	pg_catalog.oid	pg_catalog.oid	pg_catalog.int4	pg_catalog.oid	pg_catalog.oid	pg_catalog.int4	pg_catalog.char
+831..984	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.int4	pg_catalog.oid	pg_catalog.oid	pg_catalog.char
+2023..2236	pg_catalog.name	pg_catalog.name	pg_catalog.regtype
+2357..2544	pg_catalog.name
+2635..2867	pg_catalog.name

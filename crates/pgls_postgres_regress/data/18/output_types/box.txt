@@ -1,0 +1,63 @@
+926..948	pg_catalog.box
+950..1000	pg_catalog.box	pg_catalog.float8
+1013..1084	pg_catalog.box
+1114..1187	pg_catalog.box
+1218..1291	pg_catalog.box
+1304..1375	pg_catalog.box
+1388..1459	pg_catalog.box
+1471..1541	pg_catalog.box
+1553..1623	pg_catalog.box
+1635..1721	pg_catalog.box
+1734..1821	pg_catalog.box
+1835..1906	pg_catalog.box
+1924..1987	pg_catalog.box
+2001..2064	pg_catalog.box
+2082..2145	pg_catalog.box
+2185..2226	pg_catalog.point
+2248..2344	pg_catalog.box	pg_catalog.box
+2346..2388	pg_catalog.float8	pg_catalog.float8
+2866..2919	pg_catalog.box
+2920..2993	pg_catalog.text
+2995..3054	pg_catalog.box
+3055..3134	pg_catalog.text
+3136..3189	pg_catalog.box
+3190..3263	pg_catalog.text
+3265..3318	pg_catalog.box
+3319..3392	pg_catalog.text
+3394..3447	pg_catalog.box
+3448..3521	pg_catalog.text
+3523..3582	pg_catalog.box
+3583..3662	pg_catalog.text
+3664..3723	pg_catalog.box
+3724..3803	pg_catalog.text
+3805..3871	pg_catalog.box
+3872..3958	pg_catalog.text
+3960..4014	pg_catalog.box
+4015..4089	pg_catalog.text
+4091..4144	pg_catalog.box
+4145..4218	pg_catalog.text
+4220..4273	pg_catalog.box
+4274..4347	pg_catalog.text
+4349..4402	pg_catalog.box
+4403..4476	pg_catalog.text
+5804..5878	pg_catalog.int8
+5879..5953	pg_catalog.int8
+5954..6028	pg_catalog.int8
+6029..6103	pg_catalog.int8
+6104..6178	pg_catalog.int8
+6179..6253	pg_catalog.int8
+6254..6328	pg_catalog.int8
+6329..6403	pg_catalog.int8
+6404..6478	pg_catalog.int8
+6479..6553	pg_catalog.int8
+6554..6628	pg_catalog.int8
+6629..6703	pg_catalog.int8
+6704..6778	pg_catalog.int8
+6863..6987	pg_catalog.text
+7138..7360	pg_catalog.int8	pg_catalog.float8	pg_catalog.int4	pg_catalog.int8	pg_catalog.float8	pg_catalog.int4
+7363..7526	pg_catalog.text
+7716..7938	pg_catalog.int8	pg_catalog.float8	pg_catalog.int4	pg_catalog.int8	pg_catalog.float8	pg_catalog.int4
+8063..8102	pg_catalog.bool
+8103..8151	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+8152..8210	pg_catalog.bool
+8211..8278	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

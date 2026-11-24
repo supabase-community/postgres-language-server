@@ -6,7 +6,7 @@ use crate::codegen::node_location::node_location;
 
 /// A comment found in the source of a statement.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Comment {
+pub(crate) struct Comment {
     pub text: String,
     /// True for `--` comments, which run to the end of the line and therefore force a break.
     pub line_comment: bool,
@@ -33,7 +33,7 @@ pub struct Comment {
 
 /// Comments of a statement, indexed by the node they surround.
 #[derive(Debug, Default)]
-pub struct AttachedComments {
+pub(crate) struct AttachedComments {
     /// Comments emitted before the node at this location.
     pub leading_by_location: HashMap<i32, Vec<Comment>>,
     /// Comments emitted after the node at this location.
@@ -64,7 +64,7 @@ enum Placement {
 /// enough: nodes carrying an i32 location field preserve the byte offset they were parsed from.
 /// A comment preceded only by whitespace on its line is leading and belongs to the next node. A
 /// comment following SQL on the same line is trailing and belongs to the previous node.
-pub fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
+pub(crate) fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
     let mut attached = AttachedComments::default();
 
     let comments = collect_comments(sql);
@@ -306,11 +306,14 @@ fn keywords_after_comments(
             // comments before it may belong to different items, and placing them together moves
             // them on every pass.
             let anchored = if is_comma {
-                &pending_comments[pending_comments.len() - 1..]
+                pending_comments
+                    .last()
+                    .map(std::slice::from_ref)
+                    .unwrap_or_default()
             } else {
                 &pending_comments[..]
             };
-            let group_start = anchored[0];
+            let group_start = anchored.first().copied().unwrap_or_default();
             for &comment_start in anchored {
                 keywords.insert(
                     comment_start,

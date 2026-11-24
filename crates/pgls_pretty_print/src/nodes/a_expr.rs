@@ -404,15 +404,15 @@ fn emit_aexpr_similar(e: &mut EventEmitter, n: &AExpr) {
                 matches!(n.node.as_ref(), Some(pgls_query::NodeEnum::String(s)) if s.sval == "similar_to_escape")
             }) {
                 // Emit just the pattern (first argument)
-                if !func.args.is_empty() {
-                    emit_node(e, &func.args[0]);
+                if let Some(first) = func.args.first() {
+                    emit_node(e, first);
                 }
                 // If there's a second argument, it's the ESCAPE character
-                if func.args.len() >= 2 {
+                if let Some(second) = func.args.get(1) {
                     e.space();
                     e.token(TokenKind::ESCAPE_KW);
                     e.space();
-                    emit_node(e, &func.args[1]);
+                    emit_node(e, second);
                 }
                 return;
             }
@@ -434,14 +434,14 @@ fn emit_aexpr_between(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
+            if let Some(first) = list.items.first() {
+                emit_node(e, first);
             }
-            if list.items.len() >= 2 {
+            if let Some(second) = list.items.get(1) {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                emit_node(e, &list.items[1]);
+                emit_node(e, second);
             }
         } else {
             emit_node(e, rexpr);
@@ -464,14 +464,14 @@ fn emit_aexpr_not_between(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
+            if let Some(first) = list.items.first() {
+                emit_node(e, first);
             }
-            if list.items.len() >= 2 {
+            if let Some(second) = list.items.get(1) {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                emit_node(e, &list.items[1]);
+                emit_node(e, second);
             }
         } else {
             emit_node(e, rexpr);
@@ -494,14 +494,14 @@ fn emit_aexpr_between_sym(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
+            if let Some(first) = list.items.first() {
+                emit_node(e, first);
             }
-            if list.items.len() >= 2 {
+            if let Some(second) = list.items.get(1) {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                emit_node(e, &list.items[1]);
+                emit_node(e, second);
             }
         } else {
             emit_node(e, rexpr);
@@ -526,14 +526,14 @@ fn emit_aexpr_not_between_sym(e: &mut EventEmitter, n: &AExpr) {
     // rexpr is a List node with two elements, but we need "expr AND expr" not "expr, expr"
     if let Some(ref rexpr) = n.rexpr {
         if let Some(pgls_query::NodeEnum::List(list)) = rexpr.node.as_ref() {
-            if !list.items.is_empty() {
-                emit_node(e, &list.items[0]);
+            if let Some(first) = list.items.first() {
+                emit_node(e, first);
             }
-            if list.items.len() >= 2 {
+            if let Some(second) = list.items.get(1) {
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::AND_KW);
                 e.space();
-                emit_node(e, &list.items[1]);
+                emit_node(e, second);
             }
         } else {
             emit_node(e, rexpr);
@@ -546,11 +546,11 @@ fn emit_simple_operator(e: &mut EventEmitter, op: &str) {
 }
 
 fn extract_simple_operator(name: &[Node]) -> Option<&str> {
-    if name.len() != 1 {
+    let [name] = name else {
         return None;
-    }
+    };
 
-    match name[0].node.as_ref() {
+    match name.node.as_ref() {
         Some(NodeEnum::String(s)) => Some(&s.sval),
         _ => None,
     }

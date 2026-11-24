@@ -1,0 +1,105 @@
+467..713	pg_catalog.bool
+841..979	pg_catalog.name	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+981..1036	pg_catalog.void
+2237..2351	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+2411..2556	pg_catalog.bool
+2558..2676	pg_catalog.text
+2678..2798	pg_catalog.text
+3172..3251	pg_catalog.int4
+3533..3684	pg_catalog.bool
+3686..3811	pg_catalog.text
+3813..3940	pg_catalog.text
+3951..4032	pg_catalog.int4
+4092..4368	pg_catalog.bool
+4370..4482	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+4525..4659	pg_catalog.bool
+4661..4773	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+4817..4950	pg_catalog.bool
+4952..5064	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+5140..5278	pg_catalog.bool
+5280..5419	pg_catalog.bool
+5421..5554	pg_catalog.bool
+5642..5774	pg_catalog.bool
+5846..5958	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+6013..6145	pg_catalog.bool
+6147..6259	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+6313..6446	pg_catalog.bool
+6494..6630	pg_catalog.bool
+6632..6744	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+6771..6942	pg_catalog.bool
+6944..7056	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+7099..7339	pg_catalog.bool
+7341..7453	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+7494..7658	pg_catalog.bool
+7660..7758	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4
+7779..7870	pg_catalog.void
+7872..7970	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4
+10895..11170	pg_catalog.bool
+11172..11293	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+11442..11633	pg_catalog.bool
+11635..11756	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+11808..12016	pg_catalog.bool
+12018..12139	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+12195..12436	pg_catalog.bool
+12438..12559	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+12615..12847	pg_catalog.bool
+12849..12970	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+13029..13319	pg_catalog.bool
+13321..13442	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+13500..13787	pg_catalog.bool
+13789..13910	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+13995..14274	pg_catalog.bool
+14276..14397	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+14483..14765	pg_catalog.bool
+14767..14888	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+14967..15262	pg_catalog.bool
+15264..15385	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+15402..15657	pg_catalog.bool
+15659..15780	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+15829..16066	pg_catalog.bool
+16068..16189	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+16215..16420	pg_catalog.bool
+16422..16543	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+16602..16855	pg_catalog.bool
+16857..16980	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+17010..17446	pg_catalog.bool
+17448..17571	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+17620..17904	pg_catalog.bool
+17906..18027	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+18096..18349	pg_catalog.bool
+18351..18476	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+18552..18782	pg_catalog.bool
+18784..18909	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+18955..19214	pg_catalog.bool
+19216..19341	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+19394..19661	pg_catalog.bool
+19663..19784	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+19816..20058	pg_catalog.bool
+20060..20185	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+20249..20547	pg_catalog.bool
+20549..20674	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+20720..21014	pg_catalog.bool
+21016..21137	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+21182..21419	pg_catalog.bool
+21421..21544	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+21601..21853	pg_catalog.bool
+21855..21978	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+21994..22267	pg_catalog.bool
+22269..22392	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+22452..22704	pg_catalog.bool
+22706..22827	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray	pg_catalog._float4	pg_catalog._float4	pg_catalog.anyarray	pg_catalog.float4	pg_catalog.anyarray
+23132..23367	pg_catalog.bool
+23475..23967	pg_catalog.bool
+25281..26396	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.bool	pg_catalog.bool
+26398..26655	pg_catalog.name	pg_catalog.int8
+26688..27999	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+28032..29355	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+29392..30711	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+30748..32079	pg_catalog.name	pg_catalog.bool	pg_catalog.float4	pg_catalog.int4	pg_catalog.float4	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.int2	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog._float4	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+32136..32268	pg_catalog.int8
+32270..32420	pg_catalog.void
+32422..32554	pg_catalog.int8
+32608..32849	pg_catalog.bool
+32851..32990	pg_catalog.name	pg_catalog.int4	pg_catalog.float4	pg_catalog.int4	pg_catalog.int4
+32992..33185	pg_catalog.bool
+33187..33331	pg_catalog.name	pg_catalog.float4

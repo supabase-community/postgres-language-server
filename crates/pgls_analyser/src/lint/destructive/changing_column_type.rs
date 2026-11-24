@@ -2,8 +2,7 @@ use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name, cmd_de
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{
-    CatalogView, Decision, Generated, Lookup, Type, base_type, is_binary_coercible,
-    normalize_type_name,
+    Decision, Generated, Lookup, Type, base_type, is_binary_coercible, normalize_type_name,
 };
 use pgls_console::markup;
 use pgls_diagnostics::Severity;

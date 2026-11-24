@@ -1,0 +1,72 @@
+113..135	pg_catalog.regoper
+136..171	pg_catalog.regoperator
+172..194	pg_catalog.regproc
+195..231	pg_catalog.regprocedure
+232..260	pg_catalog.regclass
+261..284	pg_catalog.regtype
+285..316	pg_catalog.regcollation
+318..343	pg_catalog.regoper
+344..382	pg_catalog.regoperator
+383..408	pg_catalog.regproc
+409..448	pg_catalog.regprocedure
+449..480	pg_catalog.regclass
+481..507	pg_catalog.regtype
+508..542	pg_catalog.regcollation
+564..597	pg_catalog.regoper
+598..644	pg_catalog.regoperator
+645..678	pg_catalog.regproc
+679..726	pg_catalog.regprocedure
+727..766	pg_catalog.regclass
+767..801	pg_catalog.regtype
+802..844	pg_catalog.regcollation
+846..882	pg_catalog.regoper
+883..919	pg_catalog.regproc
+920..970	pg_catalog.regprocedure
+971..1013	pg_catalog.regclass
+1014..1051	pg_catalog.regtype
+1052..1097	pg_catalog.regcollation
+1129..1168	pg_catalog.regrole
+1169..1210	pg_catalog.regrole
+1211..1245	pg_catalog.regnamespace
+1246..1282	pg_catalog.regnamespace
+1284..1326	pg_catalog.regrole
+1327..1371	pg_catalog.regrole
+1372..1409	pg_catalog.regnamespace
+1410..1449	pg_catalog.regnamespace
+2430..2456	pg_catalog.regoper
+2457..2496	pg_catalog.regoperator
+2497..2523	pg_catalog.regproc
+2524..2568	pg_catalog.regprocedure
+2569..2602	pg_catalog.regclass
+2603..2629	pg_catalog.regtype
+2630..2670	pg_catalog.regcollation
+2692..2728	pg_catalog.regoper
+2729..2778	pg_catalog.regoperator
+2779..2815	pg_catalog.regproc
+2816..2866	pg_catalog.regprocedure
+2867..2909	pg_catalog.regclass
+2910..2947	pg_catalog.regtype
+2948..2993	pg_catalog.regcollation
+3025..3067	pg_catalog.regrole
+3068..3112	pg_catalog.regrole
+3113..3142	pg_catalog.regrole
+3143..3176	pg_catalog.regrole
+3177..3212	pg_catalog.regrole
+3213..3242	pg_catalog.regrole
+3243..3281	pg_catalog.regnamespace
+3282..3322	pg_catalog.regnamespace
+3323..3357	pg_catalog.regnamespace
+3383..3452	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3453..3516	pg_catalog.bool
+3517..3582	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3583..3656	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3657..3722	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3723..3786	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3787..3837	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3838..3914	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3915..3969	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+3970..4033	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+4034..4111	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+4112..4188	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+4189..4258	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+4259..4320	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

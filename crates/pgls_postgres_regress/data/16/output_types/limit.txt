@@ -1,0 +1,5 @@
+2514..2703	pg_catalog.int4
+3783..3891	pg_catalog.text
+3893..3972	pg_catalog.int4	pg_catalog.int4
+3974..4099	pg_catalog.text
+4101..4197	pg_catalog.int4	pg_catalog.int4

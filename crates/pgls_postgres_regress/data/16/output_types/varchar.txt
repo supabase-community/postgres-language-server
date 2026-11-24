@@ -1,0 +1,10 @@
+641..667	pg_catalog.varchar
+669..723	pg_catalog.varchar
+725..778	pg_catalog.varchar
+780..833	pg_catalog.varchar
+835..889	pg_catalog.varchar
+891..944	pg_catalog.varchar
+946..1000	pg_catalog.varchar
+1302..1351	pg_catalog.bool
+1352..1400	pg_catalog.bool
+1401..1458	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

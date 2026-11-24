@@ -1,0 +1,4 @@
+14658..14699	pg_catalog.bool
+14700..14750	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+14751..14798	pg_catalog.bool
+14799..14855	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

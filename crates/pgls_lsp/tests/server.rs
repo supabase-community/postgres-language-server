@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
+)]
+
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -218,8 +225,10 @@ impl Server {
 
     /// Like [Server::initialize], with the workspace root at `root_uri`, the given workspace
     /// folders and the given client capabilities
-    // The `root_path` field is deprecated, but we still need to specify it
-    #[allow(deprecated)]
+    #[allow(
+        deprecated,
+        reason = "`root_path` is deprecated, but clients still send it"
+    )]
     async fn initialize_with_options(
         &mut self,
         root_uri: Option<Uri>,
@@ -252,7 +261,10 @@ impl Server {
     /// It creates two workspaces, one at folder `test_one` and the other in `test_two`.
     ///
     /// Hence, the two roots will be `/workspace/test_one` and `/workspace/test_two`
-    #[allow(deprecated)]
+    #[allow(
+        deprecated,
+        reason = "`root_path` is deprecated, but clients still send it"
+    )]
     async fn initialize_workspaces(&mut self) -> Result<()> {
         let _res: InitializeResult = self
             .request(
@@ -382,7 +394,23 @@ impl Server {
             .await
     }
 
-    #[allow(unused)]
+    /// Only `database_checks_run_on_open_and_save` saves, and it needs plpgsql_check, which the
+    /// Windows test database doesn't have.
+    #[cfg(not(target_os = "windows"))]
+    async fn save_document(&mut self) -> Result<()> {
+        self.notify(
+            "textDocument/didSave",
+            lsp::DidSaveTextDocumentParams {
+                text_document: TextDocumentIdentifier {
+                    uri: url!("document.sql"),
+                },
+                text: None,
+            },
+        )
+        .await
+    }
+
+    #[allow(dead_code, reason = "a step of the test client that no test uses yet")]
     async fn close_document(&mut self) -> Result<()> {
         self.notify(
             "textDocument/didClose",
@@ -1314,6 +1342,112 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
         bail!("expected semantic tokens, got {in_range:?}");
     };
     assert_eq!(in_range.data, tokens.data);
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The checks against the database run when a document is opened or saved. A change reuses what
+/// they found for the statements it didn't touch, without querying the database.
+#[cfg(not(target_os = "windows"))]
+#[pgls_test_utils::db_test]
+async fn database_checks_run_on_open_and_save(test_db: PgPool) -> Result<()> {
+    const FUNCTION: &str = "create function public.f1() returns int language plpgsql as $$
+begin
+    return missing_var;
+end;
+$$;
+";
+    let is_plpgsql_check = |diagnostic: &lsp::Diagnostic| {
+        matches!(
+            &diagnostic.code,
+            Some(lsp::NumberOrString::String(code)) if code == "plpgsql_check"
+        )
+    };
+
+    test_db
+        .execute("create extension if not exists plpgsql_check;")
+        .await
+        .expect("Failed to setup test database");
+
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    server.open_document(FUNCTION).await?;
+    assert!(
+        wait_for_diagnostics(&mut receiver, 0)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_plpgsql_check),
+        "opening the document checks it against the database"
+    );
+
+    // From now on, checking against the database finds nothing.
+    test_db
+        .execute("drop extension plpgsql_check;")
+        .await
+        .expect("Failed to drop plpgsql_check");
+
+    drain_notifications(&mut receiver);
+    server
+        .replace_document(1, format!("select 1;\n{FUNCTION}"))
+        .await?;
+    let changed = wait_for_diagnostics(&mut receiver, 1).await?;
+    let reused: Vec<_> = changed
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| is_plpgsql_check(diagnostic))
+        .collect();
+    assert_eq!(reused.len(), 1, "a change reuses the result: {changed:?}");
+    // The statement moved down by a line.
+    assert_eq!(reused[0].range.start.line, 3, "{reused:?}");
+
+    drain_notifications(&mut receiver);
+    server.save_document().await?;
+    assert!(
+        !wait_for_diagnostics(&mut receiver, 1)
+            .await?
+            .diagnostics
+            .iter()
+            .any(is_plpgsql_check),
+        "saving the document checks it against the database again"
+    );
 
     server.shutdown().await?;
     reader.abort();
@@ -2646,6 +2780,127 @@ async fn test_invalidate_schema_cache(test_db: PgPool) -> Result<()> {
         has_name_after,
         "Column 'name' should be in completions after schema cache invalidation"
     );
+
+    server.shutdown().await?;
+    reader.abort();
+
+    Ok(())
+}
+
+/// The edit of a completion contains the cursor, also when it follows the closing quote of a
+/// quoted name: the edit replaces the closing quote too. Positions are UTF-16, so the multibyte
+/// `ä` moves the bytes but not the characters.
+#[pgls_test_utils::db_test]
+async fn test_completion_edit_contains_cursor_after_closing_quote(test_db: PgPool) -> Result<()> {
+    let factory = ServerFactory::default();
+    let mut fs = MemoryFileSystem::default();
+
+    let database = test_db
+        .connect_options()
+        .get_database()
+        .unwrap()
+        .to_string();
+    let host = test_db.connect_options().get_host().to_string();
+
+    test_db
+        .execute("create table public.users (name bool);")
+        .await
+        .expect("Failed to setup test database");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(database),
+            host: Some(host),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    fs.insert(
+        url!("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+
+    let (sender, _receiver) = channel(CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(client_handler(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+
+    server.load_configuration().await?;
+
+    for (uri, literal) in [(url!("ascii.sql"), "'e'"), (url!("multibyte.sql"), "'ä'")] {
+        let text = format!(r#"select {literal}, "na" from users"#);
+        server
+            .open_named_document(text.as_str(), uri.clone(), "sql")
+            .await?;
+
+        // The cursor follows `"na"`.
+        let cursor = text.find(" from").unwrap();
+        let character = u32::try_from(text[..cursor].encode_utf16().count()).unwrap();
+        let position = Position { line: 0, character };
+
+        let completions = server
+            .get_completion(CompletionParams {
+                work_done_progress_params: WorkDoneProgressParams::default(),
+                partial_result_params: PartialResultParams::default(),
+                context: None,
+                text_document_position: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier { uri },
+                    position,
+                },
+            })
+            .await?
+            .context("no completions")?;
+        let items = match completions {
+            CompletionResponse::Array(items) => items,
+            CompletionResponse::List(list) => list.items,
+        };
+
+        let item = items
+            .iter()
+            .find(|item| item.label == "name")
+            .with_context(|| format!("no completion for `name` in {text}"))?;
+        let Some(lsp::CompletionTextEdit::Edit(edit)) = &item.text_edit else {
+            bail!("no edit for `name` in {text}: {item:?}");
+        };
+
+        assert!(
+            edit.range.start <= position && position <= edit.range.end,
+            "{text}: the edit {:?} doesn't contain the cursor {position:?}",
+            edit.range
+        );
+
+        // Apply the edit to the line, by UTF-16 positions.
+        let byte = |character: u32| {
+            let mut units = 0;
+            text.char_indices()
+                .find(|(_, c)| {
+                    let before = units;
+                    units += c.len_utf16() as u32;
+                    before >= character
+                })
+                .map_or(text.len(), |(byte, _)| byte)
+        };
+        let edited = format!(
+            "{}{}{}",
+            &text[..byte(edit.range.start.character)],
+            edit.new_text,
+            &text[byte(edit.range.end.character)..]
+        );
+        assert_eq!(edited, format!(r#"select {literal}, "name" from users"#));
+    }
 
     server.shutdown().await?;
     reader.abort();

@@ -1,0 +1,47 @@
+186..232	pg_catalog.bool
+263..311	pg_catalog.bool
+312..366	pg_catalog.bool
+367..410	pg_catalog.bool
+411..460	pg_catalog.bool
+555..588	pg_catalog.bool
+602..679	pg_catalog.bool
+698..751	pg_catalog.bool
+774..812	pg_catalog.bool
+813..861	pg_catalog.bool
+862..894	pg_catalog.bool
+895..937	pg_catalog.bool
+1023..1067	pg_catalog.bool
+1087..1109	pg_catalog.name
+1137..1159	pg_catalog.name
+1192..1214	pg_catalog.name
+1545..1601	pg_catalog.text
+1929..2011	pg_catalog.text
+2134..2194	pg_catalog.text
+2195..2260	pg_catalog.text
+3027..3089	pg_catalog.bool
+3090..3155	pg_catalog.bool
+3156..3253	pg_catalog.bool
+3254..3322	pg_catalog.bool
+3323..3393	pg_catalog.bool
+3394..3467	pg_catalog.bool
+3468..3552	pg_catalog.bool
+3563..3629	pg_catalog.bool
+3630..3696	pg_catalog.bool
+3697..3769	pg_catalog.bool
+3770..3842	pg_catalog.bool
+3843..3944	pg_catalog.bool
+3945..4019	pg_catalog.bool
+4020..4097	pg_catalog.bool
+4098..4186	pg_catalog.bool
+5834..6055	public.myint	pg_catalog.bool	pg_catalog.bool
+6057..6285	public.myint	pg_catalog.bool	pg_catalog.bool
+6287..6516	public.myint	pg_catalog.bool	pg_catalog.bool
+6518..6753	public.myint	pg_catalog.bool	pg_catalog.bool
+7140..7361	public.myint	pg_catalog.bool	pg_catalog.bool
+7363..7591	public.myint	pg_catalog.bool	pg_catalog.bool
+7593..7822	public.myint	pg_catalog.bool	pg_catalog.bool
+7824..8059	public.myint	pg_catalog.bool	pg_catalog.bool
+8370..8798	public.myint	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+8800..9028	public.myint	pg_catalog.bool	pg_catalog.bool
+9030..9474	public.myint	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+9476..9711	public.myint	pg_catalog.bool	pg_catalog.bool

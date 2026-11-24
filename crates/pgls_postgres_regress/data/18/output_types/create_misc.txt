@@ -1,0 +1,14 @@
+4570..4592	pg_catalog.bpchar	pg_catalog.int4
+4594..4661	pg_catalog.bpchar	pg_catalog.int4	pg_catalog.text
+4663..4722	pg_catalog.bpchar	pg_catalog.int4
+4724..4780	pg_catalog.bpchar	pg_catalog.text	pg_catalog.name
+4782..4831	pg_catalog.bpchar	pg_catalog.name
+4833..4874	pg_catalog.bpchar	pg_catalog.int4	pg_catalog.name	pg_catalog.int2	pg_catalog.polygon
+4955..4982	pg_catalog.int8
+4984..5048	pg_catalog.bpchar	pg_catalog.int8
+5314..5368	pg_catalog.bpchar	pg_catalog.int4
+5509..5565	pg_catalog.bpchar	pg_catalog.int4
+5612..5656	pg_catalog.bpchar	pg_catalog.int4
+5794..5816	pg_catalog.bpchar	pg_catalog.int4	pg_catalog.name	pg_catalog.int2	pg_catalog.int4
+5910..6042	pg_catalog.name	pg_catalog.bool
+6110..6143	pg_catalog.bpchar	pg_catalog.int4	pg_catalog.text

@@ -13,7 +13,6 @@ version              = "0.0.0"
 [dependencies]
 pgls_console     = { workspace = true }
 pgls_diagnostics = { workspace = true }
-rustc-hash       = { workspace = true }
 
 [lints]
 workspace = true

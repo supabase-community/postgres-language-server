@@ -1,0 +1,4 @@
+806..853	pg_catalog.int4
+1017..1050	pg_catalog.int4
+1208..1240	public.casttesttype
+1544..1576	public.casttesttype

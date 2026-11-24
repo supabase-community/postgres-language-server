@@ -33,11 +33,13 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
 
     // In WITH RECURSIVE, every CTE can reference every CTE of the list, including itself.
     if n.recursive {
-        r.ctes.extend(definitions.iter().map(|cte| Cte {
-            name: cte.ctename.clone(),
-            columns: None,
-            types_known: false,
-        }));
+        for cte in &definitions {
+            r.define_cte(Cte {
+                name: cte.ctename.clone(),
+                columns: None,
+                types_known: false,
+            });
+        }
     }
 
     for cte in definitions {
@@ -61,7 +63,7 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
         };
         // The recursive term sees the columns of the non-recursive term.
         if let Some(Some(columns)) = &non_recursive
-            && let Some(placeholder) = r.ctes.iter_mut().rev().find(|c| c.name == cte.ctename)
+            && let Some(placeholder) = r.cte_mut(&cte.ctename)
         {
             placeholder.columns = Some(with_added(columns.clone()));
             placeholder.types_known = true;
@@ -97,14 +99,9 @@ pub(super) fn resolve_with_clause(r: &mut Resolver, n: &WithClause) {
             columns,
             types_known,
         };
-        match r
-            .ctes
-            .iter_mut()
-            .rev()
-            .find(|visible| n.recursive && visible.name == cte.ctename)
-        {
+        match r.cte_mut(&cte.ctename).filter(|_| n.recursive) {
             Some(existing) => *existing = resolved,
-            None => r.ctes.push(resolved),
+            None => r.define_cte(resolved),
         }
     }
 }

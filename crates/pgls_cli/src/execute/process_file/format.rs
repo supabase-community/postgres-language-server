@@ -80,10 +80,9 @@ fn format_with_guard<'ctx>(
     for stmt in format_result.statements {
         let diff = pgls_text_edit::TextEdit::from_unicode_words(&stmt.original, &stmt.formatted);
         let start_byte: usize = stmt.range.start().into();
-        let start_line = format_result.original[..start_byte]
-            .chars()
-            .filter(|&c| c == '\n')
-            .count() as u32;
+        // Lines end at `\n`, `\r\n` and a lone `\r`, like in the diagnostics' line numbers.
+        let start_line =
+            pgls_line_index::Lines::new(&format_result.original[..start_byte]).count() as u32 - 1;
         diagnostics.push(pgls_diagnostics::Error::from(FormatDiffDiagnostic {
             file_name: path.display().to_string(),
             diff,

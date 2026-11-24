@@ -5,7 +5,7 @@ use pgls_console::markup;
 use pgls_diagnostics::Diagnostic;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
+use std::sync::{PoisonError, RwLock};
 
 /// A data structure to use when there's need to match a string or a path a against
 /// a unix shell style patterns
@@ -53,14 +53,19 @@ impl Matcher {
 
     /// It matches the given string against the stored patterns.
     ///
-    /// It returns [true] if there's at least a match
+    /// It returns [true] if at least one pattern matches the whole string: `public.users` doesn't
+    /// match `public.users_archive`.
     pub fn matches(&self, source: &str) -> bool {
-        let mut already_ignored = self.already_checked.write().unwrap();
+        // A panic while the lock was held leaves the map consistent: each entry is a finished result.
+        let mut already_ignored = self
+            .already_checked
+            .write()
+            .unwrap_or_else(PoisonError::into_inner);
         if let Some(matches) = already_ignored.get(source) {
             return *matches;
         }
         for pattern in &self.patterns {
-            if pattern.matches_with(source, self.options) || source.contains(pattern.as_str()) {
+            if pattern.matches_with(source, self.options) {
                 already_ignored.insert(source.to_string(), true);
                 return true;
             }
@@ -80,7 +85,10 @@ impl Matcher {
         if self.is_empty() {
             return false;
         }
-        let mut already_checked = self.already_checked.write().unwrap();
+        let mut already_checked = self
+            .already_checked
+            .write()
+            .unwrap_or_else(PoisonError::into_inner);
         let source_as_string = source.to_str();
         if let Some(source_as_string) = source_as_string
             && let Some(matches) = already_checked.get(source_as_string)
@@ -151,6 +159,20 @@ mod test {
         assert!(result);
     }
 
+    /// A pattern matches the whole string, not a part of it.
+    #[test]
+    fn matches_the_whole_string() {
+        let mut ignore = Matcher::new(MatchOptions::default());
+        ignore.add_pattern("public.my_table").unwrap();
+        ignore.add_pattern("*.temp_*").unwrap();
+
+        assert!(ignore.matches("public.my_table"));
+        assert!(!ignore.matches("public.my_table_archive"));
+        assert!(!ignore.matches("xpublic.my_table"));
+        assert!(ignore.matches("public.temp_users"));
+        assert!(!ignore.matches("temp_users"));
+    }
+
     #[test]
     fn matches_path() {
         let current = env::current_dir().unwrap();
@@ -192,8 +214,7 @@ mod test {
         });
         ignore.add_pattern(dir).unwrap();
         let path = env::current_dir().unwrap().join("src/lib.rs");
-        let result = ignore.matches(path.to_str().unwrap());
-
-        assert!(result);
+        // A file name matches the paths that end with it.
+        assert!(ignore.matches_path(&path));
     }
 }

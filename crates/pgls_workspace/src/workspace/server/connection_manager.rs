@@ -116,7 +116,7 @@ struct CachedFailure {
     backoff: Backoff,
 }
 
-pub struct ConnectionManager {
+pub(super) struct ConnectionManager {
     pools: RwLock<HashMap<ConnectionKey, CachedPool>>,
     failures: RwLock<HashMap<ConnectionKey, CachedFailure>>,
     /// When the pools were last checked for idle ones.

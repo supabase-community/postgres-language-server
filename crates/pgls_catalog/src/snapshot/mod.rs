@@ -1,9 +1,8 @@
 //! The database snapshot: the objects of the connected database, as loaded by the queries in
 //! `queries/`.
 
-#![allow(dead_code)]
-
 mod casts;
+mod code;
 mod columns;
 mod extensions;
 mod functions;
@@ -20,9 +19,10 @@ mod types;
 mod versions;
 
 pub use casts::PostgresCast;
+pub use code::{CatalogCode, Code};
 pub use columns::*;
 pub use extensions::Extension;
-pub use functions::{Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
+pub use functions::{ArgumentMode, Behavior, Function, FunctionArg, FunctionArgs, ProcKind};
 pub use indexes::Index;
 pub use operators::PostgresOperator;
 pub use policies::{Policy, PolicyCommand};
@@ -104,7 +104,7 @@ impl Snapshot {
         let version = versions
             .into_iter()
             .next()
-            .expect("Expected at least one version row");
+            .ok_or(sqlx::Error::RowNotFound)?;
 
         Ok(Snapshot {
             schemas,
@@ -212,8 +212,8 @@ mod tests {
 
     use super::Snapshot;
     use crate::OperatorKind;
-    use crate::catalog::{Catalog, CatalogBase};
-    use crate::lookup::{CatalogView, Lookup};
+    use crate::catalog::Catalog;
+    use crate::lookup::Lookup;
     use crate::typing::TypeId;
     use std::sync::Arc;
 
@@ -235,7 +235,7 @@ mod tests {
         assert_eq!(array.typelem, scalar.id);
         assert_eq!(scalar.typarray, array.id);
 
-        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(snapshot))));
+        let catalog = Catalog::from_snapshot(snapshot);
         assert!(matches!(
             catalog.cast(&TypeId::Snapshot(23), &TypeId::Snapshot(20)),
             Lookup::Found(_)

@@ -11,23 +11,22 @@ struct Args {
     file: String,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    let query = std::fs::read_to_string(&args.file).expect("Failed to read file.");
+    let query = std::fs::read_to_string(&args.file)?;
 
     let mut parser = tree_sitter::Parser::new();
 
-    parser
-        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
-        .expect("Setting Language failed.");
+    parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into())?;
 
     let tree = parser
         .parse(query.clone(), None)
-        .expect("Failed to parse query.");
+        .ok_or("tree-sitter returned no tree")?;
 
     let mut result = String::new();
     print_ts_tree(&tree.root_node(), &query, &mut result);
 
-    print!("{result}")
+    print!("{result}");
+    Ok(())
 }

@@ -295,11 +295,12 @@ fn process_diff_lines<'lines, 'diff>(
             (inserted_before_line, inserted_after_line)
             && inserted_before_line.diffs == inserted_after_line.diffs
         {
-            let line = inserted_lines
-                .remove(&LineKey::before(before_line))
-                .unwrap();
+            // Both lines were found above.
+            let Some(line) = inserted_lines.remove(&LineKey::before(before_line)) else {
+                continue;
+            };
 
-            inserted_lines.remove(&LineKey::after(after_line)).unwrap();
+            inserted_lines.remove(&LineKey::after(after_line));
 
             inserted_lines.insert(
                 LineKey {

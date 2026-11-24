@@ -1,0 +1,54 @@
+1379..1422	pg_catalog.bool
+1423..1465	pg_catalog.bool
+1466..1510	pg_catalog.bool
+1511..1564	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1584..1605	pg_catalog.float4
+1606..1627	pg_catalog.float4
+1628..1654	pg_catalog.float4
+1655..1681	pg_catalog.float4
+1682..1722	pg_catalog.float4
+1827..1861	pg_catalog.float8
+1862..1909	pg_catalog.float4
+1910..1951	pg_catalog.float4
+1952..1989	pg_catalog.float4
+1990..2025	pg_catalog.float4
+2026..2056	pg_catalog.float4
+2058..2083	pg_catalog.float4
+2085..2137	pg_catalog.float4
+2139..2190	pg_catalog.float4
+2192..2243	pg_catalog.float4
+2245..2297	pg_catalog.float4
+2299..2351	pg_catalog.float4
+2353..2406	pg_catalog.float4
+2408..2479	pg_catalog.float4	pg_catalog.float4
+2481..2552	pg_catalog.float4	pg_catalog.float4
+2554..2625	pg_catalog.float4	pg_catalog.float4
+2627..2698	pg_catalog.float4	pg_catalog.float4
+2763..2788	pg_catalog.float4
+2827..2874	pg_catalog.float4	pg_catalog.float4
+2960..2985	pg_catalog.float4
+3026..3057	pg_catalog.int2
+3090..3122	pg_catalog.int2
+3156..3190	pg_catalog.int4
+3226..3263	pg_catalog.int4
+3300..3343	pg_catalog.int8
+3388..3434	pg_catalog.int8
+3627..3662	pg_catalog.bytea
+3663..3698	pg_catalog.bytea
+3699..3735	pg_catalog.bytea
+3736..3775	pg_catalog.bytea
+3776..3817	pg_catalog.bytea
+3818..3861	pg_catalog.bytea
+3863..3898	pg_catalog.bytea
+3899..3934	pg_catalog.bytea
+3935..3972	pg_catalog.bytea
+3973..4011	pg_catalog.bytea
+4012..4050	pg_catalog.bytea
+4051..4091	pg_catalog.bytea
+4092..4133	pg_catalog.bytea
+4134..4176	pg_catalog.bytea
+4177..4220	pg_catalog.bytea
+4495..4539	pg_catalog.bytea
+4540..4583	pg_catalog.bytea
+5576..6263	pg_catalog.bytea	pg_catalog.float4
+6265..11512	pg_catalog.bytea	pg_catalog.float4	pg_catalog.float4	pg_catalog.bytea	pg_catalog.bool

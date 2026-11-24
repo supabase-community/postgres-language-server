@@ -1,0 +1,13 @@
+1091..1120	pg_catalog.uuid
+1139..1192	pg_catalog.uuid
+1193..1247	pg_catalog.uuid
+1268..1353	pg_catalog.int8
+1375..1457	pg_catalog.int8
+1478..1563	pg_catalog.int8
+1585..1671	pg_catalog.int8
+1692..1777	pg_catalog.int8
+1799..1885	pg_catalog.int8
+2294..2367	pg_catalog.int8
+2747..2830	pg_catalog.int8
+2831..2941	pg_catalog.int8
+3096..3141	pg_catalog.int8

@@ -1,0 +1,2 @@
+2977..3081	pg_catalog.bool
+3172..3276	pg_catalog.bool

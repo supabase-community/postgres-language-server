@@ -1,0 +1,2 @@
+1196..1219	pg_catalog.line
+1221..1342	pg_catalog.bool	pg_catalog.bool

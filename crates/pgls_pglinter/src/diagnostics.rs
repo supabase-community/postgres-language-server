@@ -2,10 +2,20 @@
 
 use crate::cache::RuleMessage;
 use pgls_diagnostics::{
-    Advices, Category, DatabaseObjectOwned, Diagnostic, LogCategory, MessageAndDescription,
-    Severity, Visit,
+    Advices, Category, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit,
 };
 use std::io;
+
+/// The database object a pglinter violation is about, resolved from the snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DatabaseObject {
+    /// Optional schema name
+    pub schema: Option<String>,
+    /// Object name (required)
+    pub name: String,
+    /// Optional object type (e.g., "table", "function", "view")
+    pub object_type: Option<String>,
+}
 
 /// A specialized diagnostic for pglinter (database-level linting via pglinter extension).
 #[derive(Debug, Diagnostic, PartialEq)]
@@ -13,8 +23,7 @@ pub struct PglinterDiagnostic {
     #[category]
     pub category: &'static Category,
 
-    #[location(database_object)]
-    pub db_object: Option<DatabaseObjectOwned>,
+    pub db_object: Option<DatabaseObject>,
 
     #[message]
     #[description]
@@ -80,12 +89,15 @@ impl PglinterDiagnostic {
         PglinterDiagnostic {
             category: pgls_diagnostics::category!("pglinter/extensionNotInstalled"),
             db_object: None,
-            message: "The pglinter extension is not installed in the database. Install it with 'CREATE EXTENSION pglinter' or disable pglinter rules in your configuration.".into(),
+            message: "pglinter is enabled in your configuration, but the pglinter extension is not installed in the database.".into(),
             severity: Severity::Error,
             advices: PglinterAdvices {
-                description: "pglinter rules are enabled in your configuration but the extension is not installed.".to_string(),
+                description: "The pglinter rules run inside the database, through the pglinter extension (https://github.com/pmpetit/pglinter).".to_string(),
                 rule_code: None,
-                fixes: vec!["Install the pglinter extension: CREATE EXTENSION pglinter".to_string()],
+                fixes: vec![
+                    "Install pglinter on the database server, then run: CREATE EXTENSION pglinter".to_string(),
+                    "Or set `pglinter.enabled` to `false` in your configuration".to_string(),
+                ],
                 object_list: None,
             },
         }
@@ -139,7 +151,7 @@ impl PglinterDiagnostic {
     /// Create diagnostic from a pglinter violation with optional object info and rule message
     pub fn from_violation(
         rule_code: &str,
-        db_object: Option<DatabaseObjectOwned>,
+        db_object: Option<DatabaseObject>,
         rule_message: Option<&RuleMessage>,
     ) -> Option<PglinterDiagnostic> {
         let category = crate::registry::get_rule_category(rule_code)?;
@@ -199,7 +211,7 @@ impl PglinterDiagnostic {
 }
 
 /// Generate a user-friendly violation message for a specific object
-fn violation_message(rule_code: &str, db_object: Option<&DatabaseObjectOwned>) -> String {
+fn violation_message(rule_code: &str, db_object: Option<&DatabaseObject>) -> String {
     let obj_name = db_object
         .map(|obj| {
             if let Some(ref schema) = obj.schema {

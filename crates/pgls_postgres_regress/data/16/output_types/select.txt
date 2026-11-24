@@ -1,0 +1,27 @@
+3001..3044	pg_catalog.record
+3045..3091	pg_catalog.record
+3092..3148	pg_catalog.record
+3764..3796	pg_catalog.int4	pg_catalog.numeric
+4160..4190	pg_catalog.int4
+4191..4225	pg_catalog.int4
+4240..4282	pg_catalog.int4
+4283..4318	pg_catalog.int4
+4319..4365	pg_catalog.int4
+4467..4497	pg_catalog.int4
+4498..4540	pg_catalog.int4
+4541..4576	pg_catalog.int4
+4577..4623	pg_catalog.int4
+4679..4709	pg_catalog.int4
+4710..4752	pg_catalog.int4
+4753..4788	pg_catalog.int4
+4789..4835	pg_catalog.int4
+4902..4932	pg_catalog.int4
+4933..4975	pg_catalog.int4
+4976..5011	pg_catalog.int4
+5012..5058	pg_catalog.int4
+7265..7290	pg_catalog.int4
+7445..7465	pg_catalog.int4
+7466..7497	pg_catalog.int4
+7624..7690	pg_catalog.int4
+7691..7746	pg_catalog.int4
+8050..8100	pg_catalog.text

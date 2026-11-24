@@ -1,0 +1,33 @@
+224..576	pg_catalog.int2	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+578..929	pg_catalog.int4	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+931..1282	pg_catalog.int4	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+1284..1649	pg_catalog.int4	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+1651..2016	pg_catalog.int4	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+2018..2362	pg_catalog.int4	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+2364..2721	pg_catalog.char	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+2723..3122	pg_catalog.text	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+3124..3523	pg_catalog.text	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+3525..4027	pg_catalog.oidvector	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+4029..4411	pg_catalog.aclitem	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+4413..4888	pg_catalog.macaddr	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+4890..5331	pg_catalog.inet	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+5333..5768	pg_catalog.numeric	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+5770..6277	pg_catalog.macaddr8	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+6279..6748	pg_catalog._int4	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+7004..7417	pg_catalog.text	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+7419..7824	pg_catalog.time	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+7826..8285	pg_catalog.timetz	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+8287..8841	pg_catalog.interval	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+8843..9394	pg_catalog.timestamp	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+9396..9969	pg_catalog.uuid	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+9971..10408	pg_catalog.pg_lsn	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+10459..10799	public.mood	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+10817..11339	pg_catalog.jsonb	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+11341..11813	pg_catalog.int4range	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+11815..12369	pg_catalog.int4multirange	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+12416..12809	public.hash_test_t1	pg_catalog.bit	pg_catalog.bit	pg_catalog.bit
+13257..13320	pg_catalog.bool
+13321..13388	pg_catalog.bool
+13389..13452	pg_catalog.bool
+13453..13520	pg_catalog.bool
+13521..13587	pg_catalog.bool

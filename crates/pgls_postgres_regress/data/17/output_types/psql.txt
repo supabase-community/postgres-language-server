@@ -1,0 +1,133 @@
+928..951	pg_catalog.int4
+2540..2592	pg_catalog.int4	pg_catalog.text	pg_catalog.int4	pg_catalog.bool
+2886..3031	pg_catalog.text
+3161..3384	pg_catalog.text	pg_catalog.text
+3861..3871	pg_catalog.text	pg_catalog.text
+3873..3883	pg_catalog.text	pg_catalog.text
+3885..3895	pg_catalog.text	pg_catalog.text
+3899..3909	pg_catalog.text	pg_catalog.text
+3911..3921	pg_catalog.text	pg_catalog.text
+3923..3933	pg_catalog.text	pg_catalog.text
+3937..3947	pg_catalog.text	pg_catalog.text
+3949..3959	pg_catalog.text	pg_catalog.text
+3961..3971	pg_catalog.text	pg_catalog.text
+3978..3988	pg_catalog.text	pg_catalog.text
+3990..4000	pg_catalog.text	pg_catalog.text
+4002..4012	pg_catalog.text	pg_catalog.text
+4016..4026	pg_catalog.text	pg_catalog.text
+4028..4038	pg_catalog.text	pg_catalog.text
+4040..4050	pg_catalog.text	pg_catalog.text
+4054..4064	pg_catalog.text	pg_catalog.text
+4066..4076	pg_catalog.text	pg_catalog.text
+4078..4088	pg_catalog.text	pg_catalog.text
+4097..4107	pg_catalog.text	pg_catalog.text
+4109..4119	pg_catalog.text	pg_catalog.text
+4121..4131	pg_catalog.text	pg_catalog.text
+4135..4145	pg_catalog.text	pg_catalog.text
+4147..4157	pg_catalog.text	pg_catalog.text
+4159..4169	pg_catalog.text	pg_catalog.text
+4173..4183	pg_catalog.text	pg_catalog.text
+4185..4195	pg_catalog.text	pg_catalog.text
+4197..4207	pg_catalog.text	pg_catalog.text
+4214..4224	pg_catalog.text	pg_catalog.text
+4226..4236	pg_catalog.text	pg_catalog.text
+4238..4248	pg_catalog.text	pg_catalog.text
+4252..4262	pg_catalog.text	pg_catalog.text
+4264..4274	pg_catalog.text	pg_catalog.text
+4276..4286	pg_catalog.text	pg_catalog.text
+4290..4300	pg_catalog.text	pg_catalog.text
+4302..4312	pg_catalog.text	pg_catalog.text
+4314..4324	pg_catalog.text	pg_catalog.text
+4512..4522	pg_catalog.text	pg_catalog.text
+4524..4534	pg_catalog.text	pg_catalog.text
+4536..4546	pg_catalog.text	pg_catalog.text
+4550..4560	pg_catalog.text	pg_catalog.text
+4562..4572	pg_catalog.text	pg_catalog.text
+4574..4584	pg_catalog.text	pg_catalog.text
+4588..4598	pg_catalog.text	pg_catalog.text
+4600..4610	pg_catalog.text	pg_catalog.text
+4612..4622	pg_catalog.text	pg_catalog.text
+4629..4639	pg_catalog.text	pg_catalog.text
+4641..4651	pg_catalog.text	pg_catalog.text
+4653..4663	pg_catalog.text	pg_catalog.text
+4667..4677	pg_catalog.text	pg_catalog.text
+4679..4689	pg_catalog.text	pg_catalog.text
+4691..4701	pg_catalog.text	pg_catalog.text
+4705..4715	pg_catalog.text	pg_catalog.text
+4717..4727	pg_catalog.text	pg_catalog.text
+4729..4739	pg_catalog.text	pg_catalog.text
+4746..4756	pg_catalog.text	pg_catalog.text
+4758..4768	pg_catalog.text	pg_catalog.text
+4770..4780	pg_catalog.text	pg_catalog.text
+4784..4794	pg_catalog.text	pg_catalog.text
+4796..4806	pg_catalog.text	pg_catalog.text
+4808..4818	pg_catalog.text	pg_catalog.text
+4822..4832	pg_catalog.text	pg_catalog.text
+4834..4844	pg_catalog.text	pg_catalog.text
+4846..4856	pg_catalog.text	pg_catalog.text
+4865..4875	pg_catalog.text	pg_catalog.text
+4877..4887	pg_catalog.text	pg_catalog.text
+4889..4899	pg_catalog.text	pg_catalog.text
+4903..4913	pg_catalog.text	pg_catalog.text
+4915..4925	pg_catalog.text	pg_catalog.text
+4927..4937	pg_catalog.text	pg_catalog.text
+4941..4951	pg_catalog.text	pg_catalog.text
+4953..4963	pg_catalog.text	pg_catalog.text
+4965..4975	pg_catalog.text	pg_catalog.text
+4981..4991	pg_catalog.text	pg_catalog.text
+4993..5003	pg_catalog.text	pg_catalog.text
+5005..5015	pg_catalog.text	pg_catalog.text
+5019..5029	pg_catalog.text	pg_catalog.text
+5031..5041	pg_catalog.text	pg_catalog.text
+5043..5053	pg_catalog.text	pg_catalog.text
+5057..5067	pg_catalog.text	pg_catalog.text
+5069..5079	pg_catalog.text	pg_catalog.text
+5081..5091	pg_catalog.text	pg_catalog.text
+5248..5277	pg_catalog.int4	pg_catalog.int4
+5279..5308	pg_catalog.int4	pg_catalog.int4
+5593..5614	pg_catalog.int4
+6588..6669	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.float8
+6837..6847	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+6850..6860	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+6863..6873	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+6877..6887	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+6890..6900	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+6903..6913	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7121..7131	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7134..7144	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7179..7230	pg_catalog.text	pg_catalog.text
+7232..7283	pg_catalog.text	pg_catalog.text
+7284..7304	pg_catalog.text
+7306..7333	pg_catalog.text	pg_catalog.text
+7562..7572	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7575..7585	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7588..7598	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7603..7613	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7616..7626	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7629..7639	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7861..7871	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7874..7884	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7887..7897	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7900..7910	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7914..7924	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7927..7937	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7940..7950	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+7953..7963	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8194..8204	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8207..8217	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8220..8230	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8233..8243	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8246..8256	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8261..8271	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8274..8284	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8287..8297	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8300..8310	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8313..8323	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8537..8547	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8550..8560	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8563..8573	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8577..8587	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8590..8600	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8603..8613	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+8817..8831	pg_catalog.text
+8834..8854	pg_catalog.text

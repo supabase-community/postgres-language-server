@@ -1,0 +1,2 @@
+629..721	pg_catalog.float4	pg_catalog.bool
+862..954	pg_catalog.float4	pg_catalog.bool

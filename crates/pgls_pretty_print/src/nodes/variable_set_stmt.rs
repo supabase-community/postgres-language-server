@@ -223,8 +223,8 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
             emit_keyword(e, "snapshot");
             e.space();
             // The snapshot id is in args as a string
-            if !n.args.is_empty() {
-                emit_node(e, &n.args[0]);
+            if let Some(first) = n.args.first() {
+                emit_node(e, first);
             }
         } else {
             // SET TRANSACTION

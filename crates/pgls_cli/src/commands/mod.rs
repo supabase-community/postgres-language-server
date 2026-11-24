@@ -24,7 +24,10 @@ pub(crate) mod version;
 
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options, version(VERSION))]
-#[allow(clippy::large_enum_variant)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "parsed once per run, so boxing the large commands saves nothing"
+)]
 /// Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
 pub enum PgLSCommand {
     /// Shows the version information and quit.
@@ -553,7 +556,6 @@ mod tests {
             evaluated_paths: BTreeSet::new(),
             changed: 0,
             unchanged,
-            matches: 0,
             skipped: 0,
             suggested_fixes_skipped: 0,
             fixable_diagnostics: 0,

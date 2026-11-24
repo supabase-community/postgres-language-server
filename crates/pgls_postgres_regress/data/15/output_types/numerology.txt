@@ -1,0 +1,8 @@
+590..630	pg_catalog.float8
+849..888	pg_catalog.int4
+1140..1179	pg_catalog.int2
+1437..1490	pg_catalog.int4
+1492..1622	pg_catalog.int4	pg_catalog.float8	pg_catalog.float8
+1769..1900	pg_catalog.int4	pg_catalog.float8	pg_catalog.float8
+1902..2038	pg_catalog.int4	pg_catalog.float8	pg_catalog.float8
+2040..2194	pg_catalog.int4	pg_catalog.int4	pg_catalog.float8

@@ -1,0 +1,22 @@
+951..1037	pg_catalog.bpchar	pg_catalog.int8
+1114..1197	pg_catalog.int8
+1437..1500	pg_catalog.int8
+1567..1655	pg_catalog.int4	pg_catalog.int8
+1691..1736	pg_catalog.bpchar
+1772..1840	pg_catalog.int8
+1876..1933	pg_catalog.int8
+1969..2035	pg_catalog.bpchar	pg_catalog.int8
+2445..2494	pg_catalog.int4	pg_catalog.int4
+2580..2635	pg_catalog.int4	pg_catalog.int4
+2721..2789	pg_catalog.int4	pg_catalog.int4
+2856..2971	pg_catalog.int4	pg_catalog.int8
+3039..3149	pg_catalog.int8
+3383..3418	pg_catalog.int8
+3485..3597	pg_catalog.int4	pg_catalog.int8
+3674..3791	pg_catalog.int8
+4031..4098	pg_catalog.int8
+4165..4274	pg_catalog.text	pg_catalog.int8
+4310..4362	pg_catalog.int4
+4398..4487	pg_catalog.int8
+4769..4892	pg_catalog.int4	pg_catalog.int8
+5352..5387	pg_catalog.int8

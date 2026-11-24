@@ -1,0 +1,29 @@
+655..677	pg_catalog.varchar
+715..737	pg_catalog.varchar
+777..848	pg_catalog.text
+911..933	pg_catalog.varchar
+935..1006	pg_catalog.text
+1117..1139	pg_catalog.varchar
+1177..1199	pg_catalog.varchar
+1234..1256	pg_catalog.varchar
+1385..1407	pg_catalog.varchar
+1445..1516	pg_catalog.text
+1700..1722	pg_catalog.varchar
+1759..1781	pg_catalog.varchar
+1923..1945	pg_catalog.varchar
+1983..2054	pg_catalog.text
+2104..2126	pg_catalog.varchar
+2277..2348	pg_catalog.text
+2385..2456	pg_catalog.text
+2569..2596	pg_catalog.void
+2597..2636	pg_catalog.void
+3455..3477	pg_catalog.int4
+3524..3595	pg_catalog.text
+3835..3906	pg_catalog.text
+4094..4116	pg_catalog.int4
+4162..4233	pg_catalog.text
+4356..4427	pg_catalog.text
+4605..4657	pg_catalog.int4	pg_catalog.text
+4734..4794	pg_catalog.int4	pg_catalog.text
+4924..4976	pg_catalog.int4	pg_catalog.text
+5053..5113	pg_catalog.int4	pg_catalog.text

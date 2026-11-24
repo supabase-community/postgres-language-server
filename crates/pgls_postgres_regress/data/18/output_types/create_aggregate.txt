@@ -1,0 +1,3 @@
+5400..5568	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regtype	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char
+6112..6280	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regtype	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char
+6391..6559	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.regtype	pg_catalog.regproc	pg_catalog.regproc	pg_catalog.char

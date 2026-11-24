@@ -1,0 +1,18 @@
+449..495	pg_catalog.bool
+496..551	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+576..616	pg_catalog.pg_lsn	pg_catalog.pg_lsn
+655..696	pg_catalog.bool
+697..739	pg_catalog.bool
+740..781	pg_catalog.bool
+782..822	pg_catalog.bool
+823..872	pg_catalog.numeric
+873..922	pg_catalog.numeric
+923..964	pg_catalog.pg_lsn
+965..1006	pg_catalog.pg_lsn
+1007..1048	pg_catalog.pg_lsn
+1049..1097	pg_catalog.pg_lsn
+1169..1203	pg_catalog.pg_lsn
+1261..1330	pg_catalog.pg_lsn
+1331..1414	pg_catalog.pg_lsn
+1540..1750	pg_catalog.text
+1752..1942	pg_catalog.pg_lsn

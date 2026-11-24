@@ -1,0 +1,7 @@
+903..925	pg_catalog.oid
+927..971	pg_catalog.oid
+973..1020	pg_catalog.oid
+1022..1069	pg_catalog.oid
+1071..1117	pg_catalog.oid
+1119..1166	pg_catalog.oid
+1168..1214	pg_catalog.oid

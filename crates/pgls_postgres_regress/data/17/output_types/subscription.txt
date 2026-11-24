@@ -1,0 +1,5 @@
+1131..1203	pg_catalog.text
+1321..1443	pg_catalog.name	pg_catalog.bool
+1444..1544	pg_catalog.void
+1545..1667	pg_catalog.name	pg_catalog.bool
+1850..1950	pg_catalog.void

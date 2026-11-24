@@ -28,7 +28,7 @@ pub struct TransportRequest<P> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default, Deserialize, Serialize)]
-pub struct InitializeResult {
+pub(super) struct InitializeResult {
     /// Information about the server.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_info: Option<ServerInfo>,

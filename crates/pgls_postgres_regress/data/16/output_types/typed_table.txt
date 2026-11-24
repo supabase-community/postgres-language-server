@@ -1,0 +1,3 @@
+170..192	pg_catalog.int4	pg_catalog.text
+306..338	pg_catalog.int4	pg_catalog.text
+1470..1511	pg_catalog.int4	pg_catalog.int4

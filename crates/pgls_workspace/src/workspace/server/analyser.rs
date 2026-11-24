@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use pgls_analyse::{GroupCategory, RegistryVisitor, RuleCategory, RuleFilter, RuleGroup, RuleMeta};
 use pgls_configuration::RuleSelector;
 use rustc_hash::FxHashSet;
@@ -6,8 +8,14 @@ use crate::settings::Settings;
 
 pub(crate) struct AnalyserVisitorBuilder<'a> {
     lint: Option<RuleSelection<'a>>,
+    /// Whether the lint rules run on the file, see [`LinterSettings::is_linted`].
+    ///
+    /// [`LinterSettings::is_linted`]: crate::settings::LinterSettings::is_linted
+    linted: bool,
     #[cfg(feature = "db")]
     splinter: Option<RuleSelection<'a>>,
+    #[cfg(feature = "db")]
+    pglinter: Option<RuleSelection<'a>>,
     settings: &'a Settings,
 }
 
@@ -17,7 +25,9 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         Self {
             settings,
             lint: None,
+            linted: false,
             splinter: None,
+            pglinter: None,
         }
     }
 
@@ -26,16 +36,20 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         Self {
             settings,
             lint: None,
+            linted: false,
         }
     }
 
+    /// The lint and typecheck rules for the file at `path`.
     #[must_use]
     pub(crate) fn with_linter_rules(
         mut self,
+        path: &Path,
         only: &'a [RuleSelector],
         skip: &'a [RuleSelector],
     ) -> Self {
         self.lint = Some(RuleSelection::new(only, skip));
+        self.linted = self.settings.linter.is_linted(path);
         self
     }
 
@@ -47,6 +61,17 @@ impl<'a> AnalyserVisitorBuilder<'a> {
         skip: &'a [RuleSelector],
     ) -> Self {
         self.splinter = Some(RuleSelection::new(only, skip));
+        self
+    }
+
+    #[cfg(feature = "db")]
+    #[must_use]
+    pub(crate) fn with_pglinter_rules(
+        mut self,
+        only: &'a [RuleSelector],
+        skip: &'a [RuleSelector],
+    ) -> Self {
+        self.pglinter = Some(RuleSelection::new(only, skip));
         self
     }
 
@@ -62,9 +87,9 @@ impl<'a> AnalyserVisitorBuilder<'a> {
                     .map(|rules| (rules.as_enabled_rules(), rules.as_disabled_rules())),
             );
 
-            // `linter.enabled` switches the lint rules, and `typecheck.enabled` the typecheck
-            // rules.
-            let linter_enabled = self.settings.linter.enabled;
+            // `linter.enabled`, `linter.include` and `linter.ignore` switch the lint rules, and
+            // `typecheck.enabled` the typecheck rules.
+            let linter_enabled = self.linted;
             let typecheck_enabled = self.settings.typecheck.enabled;
             linter_enabled_rules.retain(|filter| {
                 let group = match filter {
@@ -91,13 +116,24 @@ impl<'a> AnalyserVisitorBuilder<'a> {
             enabled_rules.extend(splinter_enabled_rules);
             disabled_rules.extend(splinter_disabled_rules);
         }
+        #[cfg(feature = "db")]
+        if let Some(mut pglinter) = self.pglinter {
+            pgls_pglinter::registry::visit_registry(&mut pglinter);
+            let (pglinter_enabled_rules, pglinter_disabled_rules) = pglinter.finish(
+                self.settings
+                    .as_pglinter_rules()
+                    .map(|rules| (rules.as_enabled_rules(), rules.as_disabled_rules())),
+            );
+            enabled_rules.extend(pglinter_enabled_rules);
+            disabled_rules.extend(pglinter_disabled_rules);
+        }
 
         (enabled_rules, disabled_rules)
     }
 }
 
-/// The rules of a registry that `only` and `skip` select, visiting the registry of the linter
-/// or of splinter.
+/// The rules of a registry that `only` and `skip` select, visiting the registry of the linter,
+/// of splinter or of pglinter.
 #[derive(Debug)]
 struct RuleSelection<'a> {
     enabled_rules: FxHashSet<RuleFilter<'static>>,
@@ -140,7 +176,7 @@ impl<'a> RuleSelection<'a> {
 
 impl RegistryVisitor for RuleSelection<'_> {
     fn record_category<C: GroupCategory>(&mut self) {
-        // The splinter rules are of the lint kind too.
+        // The splinter and pglinter rules are of the lint kind too.
         if C::CATEGORY == RuleCategory::Lint {
             C::record_groups(self)
         }
@@ -210,7 +246,7 @@ mod tests {
         };
 
         let (_, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
-            .with_linter_rules(&[], &[])
+            .with_linter_rules(std::path::Path::new("test.sql"), &[], &[])
             .finish();
 
         assert_eq!(
@@ -287,7 +323,7 @@ mod tests {
         };
 
         let (_, disabled_rules) = AnalyserVisitorBuilder::new(&settings)
-            .with_linter_rules(&[], &[])
+            .with_linter_rules(std::path::Path::new("test.sql"), &[], &[])
             .with_splinter_rules(&[], &[])
             .finish();
 

@@ -23,15 +23,15 @@ pub(crate) struct CompletionBuilder<'a> {
 }
 
 impl<'a> CompletionBuilder<'a> {
-    pub fn new(ctx: &'a TreesitterContext) -> Self {
+    pub(crate) fn new(ctx: &'a TreesitterContext) -> Self {
         CompletionBuilder { items: vec![], ctx }
     }
 
-    pub fn add_item(&mut self, item: PossibleCompletionItem<'a>) {
+    pub(crate) fn add_item(&mut self, item: PossibleCompletionItem<'a>) {
         self.items.push(item);
     }
 
-    pub fn finish(self) -> Vec<CompletionItem> {
+    pub(crate) fn finish(self) -> Vec<CompletionItem> {
         let mut shared_tree = self.ctx.tree.clone();
 
         let mut items: Vec<PossibleCompletionItem> = self

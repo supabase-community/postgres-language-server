@@ -10,7 +10,7 @@ use crate::{
 
 use super::helper::{Qualifier, with_schema_or_alias};
 
-pub fn complete_columns<'a>(
+pub(crate) fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
     snapshot: &'a Snapshot,
     builder: &mut CompletionBuilder<'a>,

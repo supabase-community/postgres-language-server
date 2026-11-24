@@ -1,0 +1,34 @@
+60..221	pg_catalog.xid	pg_catalog.xid	pg_catalog.xid	pg_catalog.xid	pg_catalog.xid8	pg_catalog.xid8	pg_catalog.xid8	pg_catalog.xid8
+287..302	pg_catalog.xid
+303..322	pg_catalog.xid
+323..339	pg_catalog.xid8
+340..360	pg_catalog.xid8
+374..401	pg_catalog.bool
+402..430	pg_catalog.bool
+431..460	pg_catalog.bool
+461..491	pg_catalog.bool
+507..540	pg_catalog.bool
+541..575	pg_catalog.bool
+804..879	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+880..958	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+959..1034	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+1035..1113	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+1157..1220	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+1364..1399	pg_catalog.xid8	pg_catalog.xid8
+1721..1750	pg_catalog.pg_snapshot
+1751..1785	pg_catalog.pg_snapshot
+1786..1820	pg_catalog.pg_snapshot
+2379..2422	pg_catalog.pg_snapshot
+2424..2535	pg_catalog.xid8	pg_catalog.xid8	pg_catalog.xid8
+2537..2653	pg_catalog.int4	pg_catalog.bool
+2671..2788	pg_catalog.int4	pg_catalog.bool
+2818..2889	pg_catalog.bool
+2953..3028	pg_catalog.bool
+3049..3138	pg_catalog.pg_snapshot
+3139..3260	pg_catalog.bool
+3261..3382	pg_catalog.bool
+3407..3452	pg_catalog.pg_snapshot
+3546..3594	pg_catalog.bool
+4125..4158	pg_catalog.text
+4205..4238	pg_catalog.text
+4282..4315	pg_catalog.text

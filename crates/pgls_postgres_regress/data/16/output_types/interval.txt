@@ -1,0 +1,142 @@
+115..153	pg_catalog.interval
+154..194	pg_catalog.interval
+195..237	pg_catalog.interval
+238..287	pg_catalog.interval
+288..342	pg_catalog.interval
+343..398	pg_catalog.interval
+399..451	pg_catalog.interval
+452..521	pg_catalog.interval
+1305..1355	pg_catalog.bool
+1356..1404	pg_catalog.bool
+1405..1459	pg_catalog.bool
+1460..1517	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1518..1581	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1611..1638	pg_catalog.interval
+1640..1716	pg_catalog.interval
+1718..1794	pg_catalog.interval
+1796..1869	pg_catalog.interval
+1871..1947	pg_catalog.interval
+1949..2025	pg_catalog.interval
+2027..2108	pg_catalog.interval
+2110..2217	pg_catalog.interval	pg_catalog.interval
+2990..3103	pg_catalog.interval	pg_catalog.interval
+3184..3250	pg_catalog.text
+3251..3297	pg_catalog.interval
+3898..3952	pg_catalog.interval
+3954..4008	pg_catalog.interval
+4010..4064	pg_catalog.interval
+4066..4121	pg_catalog.interval
+4224..4251	pg_catalog.interval
+4754..4787	pg_catalog.interval
+4817..4917	pg_catalog.interval
+5100..5181	pg_catalog.interval
+5227..5349	pg_catalog.interval
+5350..5471	pg_catalog.interval
+5618..5691	pg_catalog.interval
+5693..5752	pg_catalog.interval
+5753..5814	pg_catalog.interval
+5943..6013	pg_catalog.interval
+6014..6085	pg_catalog.interval
+6355..6479	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+6480..6521	pg_catalog.interval
+6828..6850	pg_catalog.interval
+6878..6907	pg_catalog.interval
+6941..6970	pg_catalog.interval
+6971..6998	pg_catalog.interval
+6999..7025	pg_catalog.interval
+7026..7054	pg_catalog.interval
+7108..7133	pg_catalog.interval
+7134..7160	pg_catalog.interval
+7161..7185	pg_catalog.interval
+7186..7211	pg_catalog.interval
+7212..7239	pg_catalog.interval
+7240..7267	pg_catalog.interval
+7268..7302	pg_catalog.interval
+7303..7339	pg_catalog.interval
+7340..7374	pg_catalog.interval
+7375..7412	pg_catalog.interval
+7413..7453	pg_catalog.interval
+7491..7530	pg_catalog.interval
+7531..7573	pg_catalog.interval
+7611..7650	pg_catalog.interval
+7651..7693	pg_catalog.interval
+7732..7772	pg_catalog.interval
+7773..7816	pg_catalog.interval
+7855..7895	pg_catalog.interval
+7896..7939	pg_catalog.interval
+7980..8022	pg_catalog.interval
+8023..8068	pg_catalog.interval
+8069..8112	pg_catalog.interval
+8113..8159	pg_catalog.interval
+8160..8203	pg_catalog.interval
+8204..8250	pg_catalog.interval
+8251..8288	pg_catalog.interval
+8497..8538	pg_catalog.interval
+8539..8580	pg_catalog.interval
+8581..8630	pg_catalog.interval
+8648..8679	pg_catalog.interval
+8680..8714	pg_catalog.interval
+8759..8801	pg_catalog.interval
+8802..8849	pg_catalog.interval
+8850..8900	pg_catalog.interval
+8946..8995	pg_catalog.interval
+8996..9047	pg_catalog.interval
+9096..9146	pg_catalog.interval
+9147..9200	pg_catalog.interval
+9255..9397	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+9498..9805	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+9912..10057	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+10118..10356	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+10464..10691	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+10752..10990	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+11129..11622	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+11730..12148	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+12237..12377	pg_catalog.interval	pg_catalog.interval
+12449..12956	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+13016..13049	pg_catalog.interval
+13050..13085	pg_catalog.interval
+13086..13121	pg_catalog.interval
+13122..13156	pg_catalog.interval
+13157..13191	pg_catalog.interval
+13192..13219	pg_catalog.interval
+13434..13482	pg_catalog.interval
+13483..13538	pg_catalog.interval
+13539..13613	pg_catalog.interval	pg_catalog.interval	pg_catalog.interval
+13674..13721	pg_catalog.interval
+13722..13770	pg_catalog.interval
+13771..13820	pg_catalog.interval
+13821..13871	pg_catalog.interval
+13872..13919	pg_catalog.interval
+13920..13968	pg_catalog.interval
+13969..14021	pg_catalog.interval
+14022..14075	pg_catalog.interval
+14076..14127	pg_catalog.interval
+14128..14180	pg_catalog.interval
+14182..14224	pg_catalog.interval
+14225..14269	pg_catalog.interval
+14271..14315	pg_catalog.interval
+14317..14362	pg_catalog.interval
+14363..14409	pg_catalog.interval
+20448..20526	pg_catalog.interval
+20562..20640	pg_catalog.interval
+20672..20750	pg_catalog.interval
+20790..20868	pg_catalog.interval
+20942..20996	pg_catalog.bool
+20997..21081	pg_catalog.bool
+21106..21139	pg_catalog.interval
+21140..21186	pg_catalog.interval
+21187..21285	pg_catalog.interval
+21287..21398	pg_catalog.bool
+21399..21461	pg_catalog.interval
+21638..21673	pg_catalog.interval
+21697..22250	pg_catalog.interval	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+22372..22417	pg_catalog.numeric
+22418..22462	pg_catalog.numeric
+22463..22508	pg_catalog.numeric
+22509..22555	pg_catalog.numeric
+22557..22603	pg_catalog.numeric
+22604..22649	pg_catalog.numeric
+22650..22696	pg_catalog.numeric
+22697..22744	pg_catalog.numeric
+22858..23064	pg_catalog.interval	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8	pg_catalog.float8
+23097..23151	pg_catalog.numeric

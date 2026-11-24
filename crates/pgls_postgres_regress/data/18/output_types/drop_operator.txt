@@ -1,0 +1,4 @@
+323..487	pg_catalog.tid	pg_catalog.oid
+489..662	pg_catalog.tid	pg_catalog.oid
+992..1156	pg_catalog.tid	pg_catalog.oid
+1158..1331	pg_catalog.tid	pg_catalog.oid

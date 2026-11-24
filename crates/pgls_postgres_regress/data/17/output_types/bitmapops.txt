@@ -1,0 +1,2 @@
+1199..1253	pg_catalog.int8
+1274..1327	pg_catalog.int8

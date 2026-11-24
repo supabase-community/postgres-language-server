@@ -1,12 +1,15 @@
 //! The refactor that replaces a `*` in a select list with the columns it expands to.
 
-use pgls_analyse::{ActionCategory, Applicability, RefactorKind};
+use pgls_analyse::Applicability;
 use pgls_catalog::{NamePosition, quote_identifier};
+use pgls_line_index::Lines;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
 
-use crate::features::code_actions::{CodeAction, CodeActionKind, EditAction, TextEdit};
+use crate::features::code_actions::{
+    ActionCategory, CodeAction, CodeActionKind, EditAction, RefactorKind, TextEdit,
+};
 
 /// The action that replaces the `*` or `t.*` of `reference` with its columns. `content` is the
 /// text of the file, and the statement of the reference starts at `stmt_start`. `None` if a
@@ -47,12 +50,9 @@ pub(crate) fn expand_star_action(
 /// and strings, `count(*)`, and multiplications don't count. If the line doesn't scan, like
 /// a line inside a multi-line string, any `*` on it counts.
 pub(crate) fn is_at_star(content: &str, position: TextSize) -> bool {
-    let offset = usize::from(position).min(content.len());
-    let line_start = content[..offset].rfind('\n').map_or(0, |i| i + 1);
-    let line_end = content[offset..]
-        .find('\n')
-        .map_or(content.len(), |i| offset + i);
-    is_at_star_in(&content[line_start..line_end], offset - line_start)
+    let line = Lines::new(content).line_at(position);
+    let cursor = position.clamp(line.start(), line.end()) - line.start();
+    is_at_star_in(&content[line], usize::from(cursor))
 }
 
 /// Whether `cursor` is on a `*` of a select list in `text`, a line or a string constant on it.
@@ -187,6 +187,8 @@ mod tests {
         assert!(at("select public.us|ers.* from users"));
         assert!(at("insert into t values (1) returning |*"));
         assert!(at("  |*\n"));
+        // A lone `\r` ends the line before, as in the LSP.
+        assert!(at("select 1;\r  |*\r"));
         assert!(!at("select * |from users"));
         assert!(!at("select count(|*) from users"));
         assert!(!at("select a |* b from t"));

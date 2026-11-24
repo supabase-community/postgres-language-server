@@ -1,7 +1,6 @@
 use std::{
     convert::Infallible,
     env,
-    fs::read_dir,
     io::{self, ErrorKind},
     mem::swap,
     os::windows::process::CommandExt,
@@ -25,24 +24,6 @@ use tracing::Instrument;
 /// server daemon
 fn get_pipe_name() -> String {
     format!(r"\\.\pipe\pgls-service-{}", pgls_configuration::VERSION)
-}
-
-#[allow(dead_code)]
-pub(crate) fn enumerate_pipes() -> io::Result<impl Iterator<Item = String>> {
-    read_dir(r"\\.\pipe").map(|iter| {
-        iter.filter_map(|entry| {
-            let entry = entry.ok()?.path();
-            let file_name = entry.file_name()?;
-            let file_name = file_name.to_str()?;
-
-            let version = file_name.strip_prefix("pgls-service")?;
-            if version.is_empty() {
-                Some(String::new())
-            } else {
-                Some(version.strip_prefix('-')?.to_string())
-            }
-        })
-    })
 }
 
 /// Error code from the Win32 API

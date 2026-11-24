@@ -1,0 +1,273 @@
+1113..1135	pg_catalog._int2	pg_catalog._int4	pg_catalog._name	pg_catalog._text	pg_catalog._float8	pg_catalog._bpchar	pg_catalog._varchar
+1137..1278	pg_catalog.int2	pg_catalog.int4	pg_catalog.name	pg_catalog.text	pg_catalog.float8
+1280..1341	pg_catalog.int2	pg_catalog.int4	pg_catalog.name	pg_catalog.text	pg_catalog.float8
+1343..1442	pg_catalog._int2	pg_catalog._int4	pg_catalog._name	pg_catalog._text
+1444..1527	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+1529..1609	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1630..1710	pg_catalog._int2	pg_catalog._int4	pg_catalog._name	pg_catalog._text	pg_catalog._float8	pg_catalog._bpchar	pg_catalog._varchar
+1999..2025	pg_catalog._int2	pg_catalog._int4	pg_catalog._name
+2027..2126	pg_catalog._int2	pg_catalog._int4	pg_catalog._name	pg_catalog._text
+2128..2182	pg_catalog._int4	pg_catalog._text
+2229..2251	pg_catalog._int2
+2303..2344	pg_catalog._int2
+2399..2425	pg_catalog._int2	pg_catalog._int4	pg_catalog._name
+2467..2509	pg_catalog._int4
+2510..2562	pg_catalog._int4
+2563..2616	pg_catalog._int4
+2617..2680	pg_catalog._int4
+2842..2902	pg_catalog.int4
+2903..2965	pg_catalog._int4
+2966..3028	pg_catalog._int4
+3669..3693	pg_catalog._int2	pg_catalog._int2
+3694..3733	pg_catalog._int2	pg_catalog._int2
+3734..3773	pg_catalog._int2	pg_catalog._int2
+3774..3807	pg_catalog._int2	pg_catalog._int2
+3928..3952	pg_catalog._int2	pg_catalog._int2
+4032..4056	pg_catalog._int2	pg_catalog._int2
+4109..4133	pg_catalog._int2	pg_catalog._int2
+5390..5413	pg_catalog._int4	pg_catalog._text
+5466..5489	pg_catalog._int4	pg_catalog._text
+5535..5558	pg_catalog._int4	pg_catalog._text
+5605..5628	pg_catalog._int4	pg_catalog._text
+5674..5697	pg_catalog._int4	pg_catalog._text
+5753..5776	pg_catalog._int4	pg_catalog._text
+5864..5887	pg_catalog._int4	pg_catalog._text
+5972..5995	pg_catalog._int4	pg_catalog._text
+6073..6096	pg_catalog._int4	pg_catalog._text
+6174..6197	pg_catalog._int4	pg_catalog._text
+6286..6309	pg_catalog._int4	pg_catalog._text
+6388..6411	pg_catalog._int4	pg_catalog._text
+6504..6527	pg_catalog._int4	pg_catalog._text
+6630..6653	pg_catalog._int4	pg_catalog._text
+6752..6775	pg_catalog._int4	pg_catalog._text
+8163..8314	pg_catalog.int4	pg_catalog.int4
+8315..8357	pg_catalog._text
+8358..8402	pg_catalog._text
+8403..8465	pg_catalog._float8
+8481..8508	pg_catalog._int4
+8509..8532	pg_catalog._int4
+8547..8593	pg_catalog._int4
+8594..8641	pg_catalog._int4
+8642..8698	pg_catalog._int4
+8699..8773	pg_catalog._int4
+8774..8848	pg_catalog._int4
+8850..8893	pg_catalog.int4
+8894..8937	pg_catalog.int4
+8984..9063	pg_catalog.int4
+9064..9143	pg_catalog.int4
+9144..9222	pg_catalog.int4
+9223..9306	pg_catalog.int4
+9307..9391	pg_catalog.int4
+9393..9426	pg_catalog._int4
+9427..9467	pg_catalog._int4
+9468..9526	pg_catalog._int4
+9574..9635	pg_catalog._int4
+9636..9703	pg_catalog._int4
+9704..9942	pg_catalog.int4
+10167..10216	pg_catalog.int4
+10217..10267	pg_catalog._int4
+10269..10425	pg_catalog.int4	pg_catalog._int4
+10440..10499	pg_catalog._int2
+10500..10562	pg_catalog.bool
+10563..10599	pg_catalog._int4
+10600..10636	pg_catalog._int4
+10637..10684	pg_catalog._int4
+10685..10763	pg_catalog._text
+10764..10829	pg_catalog._int4
+10830..10895	pg_catalog._int4
+10896..10939	pg_catalog._int4
+10940..10974	pg_catalog._numeric
+10975..11053	pg_catalog._record
+11054..11128	pg_catalog._record
+11130..11191	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11192..11253	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11254..11315	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11316..11377	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11378..11442	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11443..11507	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11508..11578	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11579..11637	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11638..11697	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11698..11757	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11758..11817	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11818..11880	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11881..11944	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+11945..12008	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12009..12072	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12074..12146	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12147..12219	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12220..12292	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12293..12365	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12366..12452	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12453..12539	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12540..12702	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12703..12761	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12762..12821	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12822..12881	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12882..12941	pg_catalog.int4	pg_catalog._int4	pg_catalog._text
+12958..13016	pg_catalog._float8
+13017..13097	pg_catalog.regtype
+13098..13182	pg_catalog._varchar
+13183..13278	pg_catalog.regtype
+13279..13360	pg_catalog._text
+13361..13398	pg_catalog._int4
+13429..13457	pg_catalog.bool
+13458..13487	pg_catalog.bool
+13488..13517	pg_catalog.bool
+13518..13548	pg_catalog.bool
+13567..13604	pg_catalog.bool
+13605..13636	pg_catalog.bool
+13637..13668	pg_catalog.bool
+13687..13720	pg_catalog.bool
+13721..13754	pg_catalog.bool
+13825..13855	pg_catalog.bool
+13856..13891	pg_catalog.bool
+13892..13923	pg_catalog.bool
+13924..13956	pg_catalog.bool
+13957..13987	pg_catalog.bool
+13988..14023	pg_catalog.bool
+14024..14055	pg_catalog.bool
+14056..14089	pg_catalog.bool
+14119..14202	pg_catalog.bool
+14593..14656	pg_catalog._int4
+14657..14720	pg_catalog._int4
+14872..15016	pg_catalog.int4	pg_catalog._int4
+15017..15206	pg_catalog.int4	pg_catalog._int4
+16090..16132	pg_catalog.bool
+16138..16180	pg_catalog.bool
+16186..16228	pg_catalog.bool
+16234..16276	pg_catalog.bool
+16282..16328	pg_catalog.bool
+16334..16380	pg_catalog.bool
+16386..16429	pg_catalog.bool
+16435..16478	pg_catalog.bool
+16840..16860	pg_catalog._text
+16861..16924	pg_catalog._text
+16925..16968	pg_catalog._interval
+16969..17006	pg_catalog._text
+17007..17069	pg_catalog._text
+17070..17171	pg_catalog._interval
+17172..17195	pg_catalog._text
+17196..17231	pg_catalog._float8
+17683..17759	pg_catalog._int4	pg_catalog._int4	pg_catalog._text	pg_catalog._text	pg_catalog._float8	pg_catalog._float8
+17880..17956	pg_catalog._int4	pg_catalog._int4	pg_catalog._text	pg_catalog._text	pg_catalog._float8	pg_catalog._float8
+18061..18137	pg_catalog._int4	pg_catalog._int4	pg_catalog._text	pg_catalog._text	pg_catalog._float8	pg_catalog._float8
+18247..18323	pg_catalog._int4	pg_catalog._int4	pg_catalog._text	pg_catalog._text	pg_catalog._float8	pg_catalog._float8
+18435..18511	pg_catalog._int4	pg_catalog._int4	pg_catalog._text	pg_catalog._text	pg_catalog._float8	pg_catalog._float8
+18948..18972	public.comptype	public.__comptype
+18973..19004	pg_catalog.text
+19438..19474	pg_catalog.int4
+19475..19521	pg_catalog.int4
+19590..19646	pg_catalog._int4
+19647..19692	pg_catalog._int4
+19693..19746	pg_catalog._text
+19747..19789	pg_catalog._text
+19790..19834	pg_catalog._int4
+19835..19868	pg_catalog._int4
+19869..19924	pg_catalog._text
+19925..19969	pg_catalog._text
+19970..20062	pg_catalog._int4	pg_catalog.bool	pg_catalog.text
+20063..20151	pg_catalog._int4	pg_catalog.bool	pg_catalog.text
+20152..20246	pg_catalog._int4	pg_catalog.bool	pg_catalog.text
+20516..20553	pg_catalog._text
+20554..20592	pg_catalog._text
+20593..20634	pg_catalog._text
+20635..20671	pg_catalog._text
+20672..20704	pg_catalog._text
+20705..20743	pg_catalog._text
+20744..20786	pg_catalog.bool
+20787..20821	pg_catalog._text
+20822..20863	pg_catalog._text
+20864..20899	pg_catalog._text
+20900..20942	pg_catalog._text
+20943..20985	pg_catalog._text
+20986..21032	pg_catalog._text
+21033..21081	pg_catalog._text
+21083..21156	pg_catalog.text	pg_catalog.bool
+21157..21231	pg_catalog.text	pg_catalog.bool
+21232..21309	pg_catalog.text	pg_catalog.bool
+21310..21382	pg_catalog.text	pg_catalog.bool
+21383..21451	pg_catalog.text	pg_catalog.bool
+21452..21526	pg_catalog.text	pg_catalog.bool
+21527..21597	pg_catalog.text	pg_catalog.bool
+21598..21668	pg_catalog.text	pg_catalog.bool
+21669..21746	pg_catalog.text	pg_catalog.bool
+21747..21818	pg_catalog.text	pg_catalog.bool
+21819..21897	pg_catalog.text	pg_catalog.bool
+21898..21976	pg_catalog.text	pg_catalog.bool
+21977..22059	pg_catalog.text	pg_catalog.bool
+22060..22144	pg_catalog.text	pg_catalog.bool
+22146..22196	pg_catalog.bool
+22197..22239	pg_catalog.text
+22240..22291	pg_catalog.text
+22292..22348	pg_catalog.text
+22349..22401	pg_catalog.text
+22402..22459	pg_catalog.text
+22461..22520	pg_catalog.text
+22522..22559	pg_catalog.int4
+22560..22608	pg_catalog.int4
+22609..22657	pg_catalog.int4
+22658..22706	pg_catalog.int4
+22707..22755	pg_catalog.int4
+22757..22789	pg_catalog.int4
+22790..22822	pg_catalog.int4
+22823..22856	pg_catalog.int4
+22857..22900	pg_catalog.int4
+22901..22938	pg_catalog.int4
+22939..22988	pg_catalog.int4
+22989..23048	pg_catalog.int4
+23450..23528	pg_catalog._int4
+23529..23643	pg_catalog._int4
+23644..23756	pg_catalog._int4
+23757..23833	pg_catalog._numeric
+23834..23908	pg_catalog._text
+23909..23986	pg_catalog._int4
+24189..24217	pg_catalog.int4
+24218..24253	pg_catalog.int4
+24254..24296	pg_catalog.float8
+24297..24340	pg_catalog.numeric
+24341..24390	pg_catalog.int4
+24391..24448	pg_catalog.text
+24449..24488	pg_catalog.int4
+24489..24528	pg_catalog._int4
+24529..24568	pg_catalog._int4
+24569..24617	pg_catalog._int4
+24618..24674	pg_catalog._text
+24675..24720	pg_catalog._numeric
+24781..24833	pg_catalog.bool
+24834..24875	pg_catalog._int4
+24876..24920	pg_catalog._int4
+24921..24973	pg_catalog._int4
+24974..25029	pg_catalog._text
+25030..25078	pg_catalog._int4
+25079..25134	pg_catalog._text
+25169..25231	pg_catalog._int4
+25232..25306	pg_catalog._text
+25387..25468	pg_catalog.regtype
+25469..25539	pg_catalog._int2vector
+25540..25618	pg_catalog.int2vector
+25619..25699	pg_catalog.regtype
+25700..25769	pg_catalog._oidvector
+25770..25847	pg_catalog.oidvector
+25879..25927	pg_catalog.regtype
+25928..25965	pg_catalog._int2vector
+25966..26022	pg_catalog.regtype
+26023..26068	pg_catalog.int2vector
+26069..26118	pg_catalog.regtype
+26119..26157	pg_catalog.int2
+26158..26205	pg_catalog.regtype
+26206..26242	pg_catalog._oidvector
+26243..26298	pg_catalog.regtype
+26299..26343	pg_catalog.oidvector
+26344..26392	pg_catalog.regtype
+26393..26430	pg_catalog.oid
+26974..27015	pg_catalog.int4
+27033..27074	pg_catalog.int4
+27111..27152	pg_catalog.int4
+27302..27988	pg_catalog.numeric	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+28033..28203	pg_catalog.float8	pg_catalog.int4
+28257..28354	pg_catalog.int4	pg_catalog.int4
+28356..28459	pg_catalog.int4
+28477..28510	pg_catalog.int4
+28511..28540	pg_catalog.int4
+28729..28945	pg_catalog._int8	pg_catalog._int8

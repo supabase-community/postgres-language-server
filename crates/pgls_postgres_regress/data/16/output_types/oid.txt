@@ -1,0 +1,17 @@
+903..925	pg_catalog.oid
+970..1010	pg_catalog.bool
+1011..1052	pg_catalog.bool
+1053..1103	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1104..1150	pg_catalog.bool
+1151..1206	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1253..1303	pg_catalog.bool
+1304..1354	pg_catalog.bool
+1355..1414	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1415..1470	pg_catalog.bool
+1471..1535	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1537..1581	pg_catalog.oid
+1583..1630	pg_catalog.oid
+1632..1679	pg_catalog.oid
+1681..1727	pg_catalog.oid
+1729..1776	pg_catalog.oid
+1778..1824	pg_catalog.oid

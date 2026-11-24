@@ -41,14 +41,20 @@ impl LineIndex {
         for (offset, char) in text.char_indices() {
             let char_size = TextSize::of(char);
 
-            if char == '\n' {
+            // The `\r` of a `\r\n` is part of its line until the `\n` ends it.
+            let ends_line = match char {
+                '\n' => true,
+                '\r' => text.as_bytes().get(offset + 1) != Some(&b'\n'),
+                _ => false,
+            };
+            if ends_line {
                 #[expect(
                     clippy::expect_used,
                     reason = "offsets are `TextSize` (u32) everywhere, documents over 4 GiB aren't supported"
                 )]
                 let char_offset = TextSize::try_from(offset).expect("TextSize overflow");
                 newlines.push(char_offset + char_size);
-                if text[..offset].ends_with('\r') {
+                if char == '\n' && text[..offset].ends_with('\r') {
                     crlf_newlines.push(char_offset);
                 }
 
@@ -91,7 +97,8 @@ impl LineIndex {
         self.len
     }
 
-    /// The offset of the start of each line, starting with `0`.
+    /// The offset of the start of each line, starting with `0`. A line break at the end of the
+    /// text starts an empty last line.
     pub fn line_starts(&self) -> &[TextSize] {
         &self.newlines
     }

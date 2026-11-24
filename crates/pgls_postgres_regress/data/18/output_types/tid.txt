@@ -1,0 +1,10 @@
+38..160	pg_catalog.tid	pg_catalog.tid	pg_catalog.tid	pg_catalog.tid
+281..320	pg_catalog.bool
+321..369	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+370..412	pg_catalog.bool
+413..464	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+611..641	pg_catalog.tid
+642..672	pg_catalog.tid
+961..1012	pg_catalog.tid
+1111..1158	pg_catalog.tid
+1916..1974	pg_catalog.tid
