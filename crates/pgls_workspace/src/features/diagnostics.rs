@@ -44,9 +44,23 @@ pub struct PullDiagnosticsResult {
     pub diagnostics: Vec<pgls_diagnostics::serde::Diagnostic>,
     /// How many diagnostics `max_diagnostics` left out.
     pub skipped_diagnostics: u32,
+    /// The client's version of the document whose text the diagnostics are for. `None` if they
+    /// don't depend on it: the path is ignored or no settings apply, or they are the database's.
+    /// A pull that stopped because the document changed has no diagnostics and the version of
+    /// the change, see [PullDiagnosticsResult::outdated].
+    pub version: Option<i32>,
 }
 
 impl PullDiagnosticsResult {
+    /// The result of a pull that stopped because the document changed, now at `version`: no
+    /// diagnostics, and a version that tells the caller that they are outdated.
+    pub fn outdated(version: Option<i32>) -> Self {
+        Self {
+            version,
+            ..Self::default()
+        }
+    }
+
     /// At most `max_diagnostics` of `diagnostics`: if there are more, the most severe ones, each
     /// severity in the order of `diagnostics`.
     pub fn limited(
@@ -63,6 +77,7 @@ impl PullDiagnosticsResult {
         Self {
             diagnostics,
             skipped_diagnostics: u32::try_from(skipped).unwrap_or(u32::MAX),
+            version: None,
         }
     }
 }

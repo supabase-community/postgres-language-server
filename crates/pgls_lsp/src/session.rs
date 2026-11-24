@@ -180,6 +180,11 @@ pub(crate) struct Session {
     /// How long the debounces wait.
     debounce: DebounceDurations,
 
+    /// Held while diagnostics are checked to be current and then published, and while a document
+    /// is closed and its diagnostics cleared. Without it, a run that found its document current
+    /// could publish after a newer run or after the close.
+    publishing: tokio::sync::Mutex<()>,
+
     /// The work in flight, which tests wait for.
     pub(crate) activity: Activity,
 }
@@ -299,6 +304,7 @@ impl Session {
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
             editor_features_without_database: AtomicBool::new(false),
             debounce,
+            publishing: tokio::sync::Mutex::new(()),
             activity: Activity::default(),
         }
     }
@@ -584,6 +590,22 @@ impl Session {
                 .await
                 .map_err(anyhow::Error::from)??;
 
+            // The workspace and the session take a change one after the other, so the
+            // workspace may have analysed another version, or stopped because of a change. Its
+            // diagnostics don't fit the line index of this one; the change publishes its own.
+            if result
+                .version
+                .is_some_and(|version| version != captured_version)
+                || !self.is_current_document(&url, &doc)
+            {
+                debug!(
+                    "discarding the diagnostics of version {:?} of {}: the document is at version {captured_version}",
+                    result.version,
+                    url.as_str(),
+                );
+                return Ok(());
+            }
+
             result
                 .diagnostics
                 .into_iter()
@@ -607,6 +629,7 @@ impl Session {
 
         // A change, or closing and opening the document again, which can reset its version to
         // the same or a lower number, makes the diagnostics outdated.
+        let publishing = self.publishing.lock().await;
         if !self.is_current_document(&url, &doc) {
             debug!(
                 "discarding stale diagnostics for {}: computed for version {captured_version}",
@@ -614,9 +637,9 @@ impl Session {
             );
             return Ok(());
         }
-
         self.publish_diagnostics(url, diagnostics, Some(captured_version))
             .await;
+        drop(publishing);
 
         if self
             .editor_features_without_database
@@ -639,8 +662,15 @@ impl Session {
         Ok(())
     }
 
+    /// Forgets the document `url` and clears its diagnostics in the client.
+    pub(crate) async fn close_document(&self, url: ls_types::Uri) {
+        let _publishing = self.publishing.lock().await;
+        self.remove_document(&url);
+        self.publish_diagnostics(url, Vec::new(), None).await;
+    }
+
     /// Sends the diagnostics of `url` to the client.
-    pub(crate) async fn publish_diagnostics(
+    async fn publish_diagnostics(
         &self,
         url: ls_types::Uri,
         diagnostics: Vec<ls_types::Diagnostic>,

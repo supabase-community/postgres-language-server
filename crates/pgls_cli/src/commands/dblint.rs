@@ -37,6 +37,7 @@ pub(crate) fn dblint(
     let PullDiagnosticsResult {
         diagnostics,
         skipped_diagnostics,
+        ..
     } = workspace.pull_db_diagnostics(params)?;
 
     let report = Report::new(

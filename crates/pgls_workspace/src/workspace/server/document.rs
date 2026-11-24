@@ -244,6 +244,11 @@ impl Document {
         stale
     }
 
+    /// The client's version of the content.
+    pub(crate) fn version(&self) -> i32 {
+        self.version
+    }
+
     /// Which version of the content this is. Unlike the client's version, it is unique across
     /// all documents: it changes on every change, also of the migration tool, and a document that
     /// is closed and opened again gets a new one.
