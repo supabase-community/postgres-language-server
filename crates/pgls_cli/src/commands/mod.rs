@@ -200,7 +200,20 @@ pub enum PgLsCommand {
     },
 
     /// Cleans the logs emitted by the daemon.
-    Clean,
+    #[bpaf(command)]
+    Clean {
+        #[bpaf(external(log_options), hide_usage)]
+        log_options: LogOptions,
+    },
+
+    /// `--clean`, the name of the `clean` command before it was a command.
+    #[bpaf(hide)]
+    CleanFlag {
+        #[bpaf(long("clean"), req_flag(()))]
+        clean: (),
+        #[bpaf(external(log_options), hide_usage)]
+        log_options: LogOptions,
+    },
 
     /// Exports the database schema to JSON for use with WASM bindings.
     /// Writes to stdout by default, or to a file if --output is specified.
@@ -306,7 +319,8 @@ impl PgLsCommand {
             | PgLsCommand::Stop
             | PgLsCommand::Init
             | PgLsCommand::RunServer { .. }
-            | PgLsCommand::Clean
+            | PgLsCommand::Clean { .. }
+            | PgLsCommand::CleanFlag { .. }
             | PgLsCommand::SchemaExport { .. }
             | PgLsCommand::Parse { .. }
             | PgLsCommand::PrintSocket => None,

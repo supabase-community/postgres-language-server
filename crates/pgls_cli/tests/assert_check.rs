@@ -1771,3 +1771,30 @@ fn check_stdin_applies_fixes() {
         "{output}"
     );
 }
+
+/// `clean` is a command, and empties the log folder of `--log-path` or of the environment.
+#[test]
+fn clean_empties_the_log_folder() {
+    let root = write_tree(&[("logs/server.log", "log\n"), ("old/server.log", "log\n")]);
+    let clean = |args: &[&str], envs: &[(&str, &str)]| {
+        let output = cargo_bin_cmd!("postgres-language-server")
+            .env_remove("PGLS_LOG_PATH")
+            .env_remove("PGT_LOG_PATH")
+            .envs(envs.iter().copied())
+            .args(args)
+            .output()
+            .expect("failed to run CLI");
+        assert!(output.status.success(), "{output:?}");
+    };
+    let logs = root.path().join("logs");
+    let old = root.path().join("old");
+
+    clean(&["clean", "--log-path", logs.to_str().unwrap()], &[]);
+    assert!(logs.is_dir());
+    assert!(!logs.join("server.log").exists());
+
+    // The name from before the rename, and `--clean` from before `clean` was a command.
+    clean(&["--clean"], &[("PGT_LOG_PATH", old.to_str().unwrap())]);
+    assert!(old.is_dir());
+    assert!(!old.join("server.log").exists());
+}

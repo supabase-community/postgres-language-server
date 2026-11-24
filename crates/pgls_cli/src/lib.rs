@@ -145,7 +145,9 @@ impl<'app> CliSession<'app> {
                 let input = commands::parse::read_input(path.as_deref())?;
                 commands::parse::run_parse(&input, path.as_deref())
             }
-            PgLsCommand::Clean => commands::clean::clean(),
+            PgLsCommand::Clean { log_options } | PgLsCommand::CleanFlag { log_options, .. } => {
+                commands::clean::clean(&log_options)
+            }
             PgLsCommand::Start {
                 config_path,
                 log_options,

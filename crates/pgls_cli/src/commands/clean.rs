@@ -1,13 +1,10 @@
 use crate::CliDiagnostic;
+use crate::commands::LogOptions;
 use std::fs::{create_dir, remove_dir_all};
-use std::path::PathBuf;
 
-/// Runs the clean command
-pub(crate) fn clean() -> Result<(), CliDiagnostic> {
-    let logs_path = pgls_env::PGLS_LOG_PATH.value().map_or_else(
-        || pgls_fs::ensure_cache_dir().join("pgls-logs"),
-        PathBuf::from,
-    );
-    remove_dir_all(&logs_path).and_then(|()| create_dir(&logs_path))?;
+/// Runs the clean command: empties the folder of the logs.
+pub(crate) fn clean(log_options: &LogOptions) -> Result<(), CliDiagnostic> {
+    let logs_path = &log_options.log_path;
+    remove_dir_all(logs_path).and_then(|()| create_dir(logs_path))?;
     Ok(())
 }
