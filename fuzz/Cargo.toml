@@ -10,7 +10,16 @@ version = "0.0.0"
 cargo-fuzz = true
 
 [dependencies]
+arbitrary               = { version = "1", features = ["derive"] }
+futures                 = "0.3.31"
 libfuzzer-sys           = "0.4"
+pgls_configuration      = { path = "../crates/pgls_configuration" }
+pgls_fs                 = { path = "../crates/pgls_fs" }
+pgls_lsp                = { path = "../crates/pgls_lsp", features = ["testing"] }
+pgls_wasm               = { path = "../crates/pgls_wasm" }
+pgls_workspace          = { path = "../crates/pgls_workspace" }
+serde_json              = "1"
+tokio                   = { version = "1", features = ["rt-multi-thread", "time"] }
 pgls_lexer              = { path = "../crates/pgls_lexer" }
 pgls_pretty_print       = { path = "../crates/pgls_pretty_print" }
 pgls_query              = { path = "../crates/pgls_query" }
@@ -45,4 +54,25 @@ bench = false
 doc   = false
 name  = "formatter_roundtrip"
 path  = "fuzz_targets/formatter_roundtrip.rs"
+test  = false
+
+[[bin]]
+bench = false
+doc   = false
+name  = "lexer_vs_scan"
+path  = "fuzz_targets/lexer_vs_scan.rs"
+test  = false
+
+[[bin]]
+bench = false
+doc   = false
+name  = "lsp_messages"
+path  = "fuzz_targets/lsp_messages.rs"
+test  = false
+
+[[bin]]
+bench = false
+doc   = false
+name  = "wasm_session"
+path  = "fuzz_targets/wasm_session.rs"
 test  = false

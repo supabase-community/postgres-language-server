@@ -100,13 +100,14 @@ test-doc:
 corpus:
 	cargo test -p pgls_cli --release --test corpus -- --ignored
 
-# Fuzzes a target of fuzz/ (splitter, splitter_vs_parser, formatter_roundtrip) for the given seconds, with debug assertions, e.g. just fuzz splitter_vs_parser 600.
-# Seeded from the regression SQL; extra arguments go to libFuzzer. A crash is saved in fuzz/artifacts/<target>/ and reruns with
-# RUSTC_BOOTSTRAP=1 cargo fuzz run --fuzz-dir fuzz -s none -a <target> <file>
+# Fuzzes a target of fuzz/ (splitter, splitter_vs_parser, formatter_roundtrip, lexer_vs_scan, lsp_messages, wasm_session) for the given seconds,
+# with debug assertions, e.g. just fuzz splitter_vs_parser 600. Seeded from the regression SQL; extra arguments go to libFuzzer.
+# With CC=clang CFLAGS=-fsanitize=address RUSTFLAGS="-Clinker=clang -Clink-arg=-fsanitize=address", the C code runs under AddressSanitizer.
+# A crash is saved in fuzz/artifacts/<target>/ and reruns with cargo fuzz run --fuzz-dir fuzz -s none -a <target> <file>
 fuzz target seconds="300" *args:
 	cargo run --manifest-path fuzz/Cargo.toml --example seeds
 	mkdir -p fuzz/corpus/{{target}}
-	RUSTC_BOOTSTRAP=1 cargo fuzz run --fuzz-dir fuzz -s none -a {{target}} fuzz/corpus/{{target}} fuzz/seeds/inputs crates/pgls_statement_splitter/tests/data -- -dict=fuzz/seeds/keywords.dict -max_len=4096 -timeout=30 -max_total_time={{seconds}} {{args}}
+	cargo fuzz run --fuzz-dir fuzz -s none -a {{target}} fuzz/corpus/{{target}} fuzz/seeds/inputs crates/pgls_statement_splitter/tests/data -- -dict=fuzz/seeds/keywords.dict -max_len=4096 -timeout=30 -max_total_time={{seconds}} {{args}}
 
 # Alias for `cargo clippy`, it runs clippy on the whole codebase
 lint:

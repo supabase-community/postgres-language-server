@@ -9,15 +9,24 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # Runs each target of fuzz/ for 10 minutes with debug assertions. The corpus a run finds is kept
-  # in the Actions cache for the next one; a crash fails the job and is uploaded as an artifact.
+  # Runs each target of fuzz/ for 10 minutes with debug assertions, and with AddressSanitizer in
+  # the C code: libpg_query and the tree-sitter grammar's scanner. The Rust code isn't instrumented:
+  # that needs `-Zsanitizer`, and `rustix` 0.37, which sqlx's async-std runtime pulls in, doesn't
+  # build with nightly features. The corpus a run finds is kept in the Actions cache for the next
+  # one; a crash fails the job and is uploaded as an artifact.
   fuzz:
     name: Fuzz ${{ matrix.target }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        target: [splitter, splitter_vs_parser, formatter_roundtrip]
+        target:
+          - splitter
+          - splitter_vs_parser
+          - formatter_roundtrip
+          - lexer_vs_scan
+          - lsp_messages
+          - wasm_session
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,6 +50,10 @@ jobs:
           restore-keys: fuzz-corpus-${{ matrix.target }}-
       - name: Fuzz
         run: just fuzz ${{ matrix.target }} 600
+        env:
+          CC: clang
+          CFLAGS: -fsanitize=address
+          RUSTFLAGS: -Clinker=clang -Clink-arg=-fsanitize=address
       - name: Upload the crash
         if: failure()
         uses: actions/upload-artifact@v4
