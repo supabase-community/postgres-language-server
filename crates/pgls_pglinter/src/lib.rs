@@ -11,8 +11,8 @@ use pgls_catalog::{Extension, Snapshot};
 use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
-pub use extension::RuleMessage;
 pub use diagnostics::{DatabaseObject, PglinterAdvices, PglinterDiagnostic};
+pub use extension::RuleMessage;
 pub use rule::PglinterRule;
 
 /// PostgreSQL catalog OIDs for different object types

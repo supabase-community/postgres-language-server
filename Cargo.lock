@@ -2494,7 +2494,6 @@ dependencies = [
 name = "pgls_fs"
 version = "0.0.0"
 dependencies = [
- "crossbeam",
  "directories",
  "enumflags2",
  "ignore",
