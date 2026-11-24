@@ -1,0 +1,27 @@
+---
+source: crates/pgls_completions/tests/harness.rs
+expression: harness.summary.report()
+---
+requests: 3152
+items: 15206
+failures: 434
+
+not a viable prefix: Column: 142
+  indexing.sql:351:1 `alter table idxpart detach p` + `pad_attribute`
+  triggers.sql:1751:1 `alter table parent disable tri` + `trigger_catalog`
+  foreign_key.sql:1669:1 `ALTER TABLE fk_partitioned_fk_6 ATTACH PARTITION` + `partitions_done`
+
+not a viable prefix: Function: 150
+  rowtypes.sql:19:1 `select row('Joe', 'Blow')::full` + `pg_catalog."RI_FKey_setnull_del"()`
+  rangefuncs.sql:266:1 `SELECT * FROM (VALUES (1),(2),(3)) v(` + `rngfunc_mat(${1:}, ${2:})`
+  foreign_key.sql:1669:1 `ALTER TABLE fk_partitioned_fk_6 ATTACH PARTITION` + `pg_catalog.pg_get_partition_constraintdef(${1:})`
+
+not a viable prefix: Keyword: 49
+  alter_table.sql:1242:1 `create t` + `external`
+  create_index.sql:346:1 `CREATE T` + `EXTERNAL`
+  create_index.sql:98:1 `CREATE T` + `EXTERNAL`
+
+not a viable prefix: Table: 93
+  triggers.sql:1751:1 `alter table parent disable tri` + `trigpart1`
+  rangefuncs.sql:266:1 `SELECT * FROM (VALUES (1),(2),(3)) v(` + `information_schema._pg_foreign_data_wrappers`
+  foreign_key.sql:1669:1 `ALTER TABLE fk_partitioned_fk_6 ATTACH PARTITION` + `fk_partitioned_fk_1`
