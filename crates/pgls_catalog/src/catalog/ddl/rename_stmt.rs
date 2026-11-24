@@ -92,7 +92,7 @@ fn rename_column(
     let Some(relation) = c.relation_of(range_var, search_path).found() else {
         return;
     };
-    c.change_columns(&relation, |columns, _| {
+    c.change_columns(&relation, |_, columns, _| {
         rename_in(columns, old_name, new_name)
     });
     c.rename_index_column(&relation, old_name, new_name);
