@@ -3,7 +3,7 @@ use pgls_console::{MarkupBuf, markup};
 use pgls_diagnostics::adapters::ResolveError;
 
 use pgls_diagnostics::{Advices, Diagnostic, Error, LogCategory, MessageAndDescription, Visit};
-use pgls_line_index::{LineCol, LineIndex};
+use pgls_line_index::{LineIndex, PositionEncoding, WideLineCol};
 use pgls_text_size::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
@@ -157,7 +157,8 @@ impl DeserializationError {
     fn span(source: &str, error: &serde_json::Error) -> Option<TextRange> {
         let line = u32::try_from(error.line().checked_sub(1)?).ok()?;
         let col = u32::try_from(error.column().saturating_sub(1)).ok()?;
-        let offset = LineIndex::new(source).offset_clamped(LineCol { line, col });
+        let offset =
+            LineIndex::new(source).offset_at(WideLineCol { line, col }, PositionEncoding::Utf8);
         let len = source
             .get(usize::from(offset)..)
             .and_then(|rest| rest.chars().next())

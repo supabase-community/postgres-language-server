@@ -1,5 +1,6 @@
 use pgls_text_size::{TextRange, TextSize};
 
+use crate::PositionEncoding::{Utf8, Wide};
 use crate::WideEncoding::{Utf16, Utf32};
 use crate::{
     LineBreak, LineCol, LineIndex, Lines, WideLineCol, changed_range, offset_of_char_position,
@@ -33,7 +34,7 @@ fn line_breaks_and_wide_characters() {
 
     // Past the end of a line: the start of its line break. Past the last line: the end of the
     // text.
-    let clamped = |line, col| u32::from(line_index.offset_clamped(at(line, col)));
+    let clamped = |line, col| u32::from(line_index.offset_at(WideLineCol { line, col }, Utf8));
     assert_eq!(clamped(0, 100), 2);
     assert_eq!(clamped(1, 100), 5);
     assert_eq!(clamped(2, 100), 7);
@@ -42,15 +43,19 @@ fn line_breaks_and_wide_characters() {
     // Inside a character: the start of the character.
     assert_eq!(clamped(3, 1), 8);
     assert_eq!(clamped(3, 4), 10);
-    let mid_surrogate_pair = line_index.to_utf8(Utf16, WideLineCol { line: 3, col: 2 });
-    assert_eq!(u32::from(line_index.offset_clamped(mid_surrogate_pair)), 10);
+    let mid_surrogate_pair = WideLineCol { line: 3, col: 2 };
+    assert_eq!(
+        u32::from(line_index.offset_at(mid_surrogate_pair, Wide(Utf16))),
+        10
+    );
 
-    for (offset, utf16, utf32) in [(8, 0, 0), (10, 1, 1), (14, 3, 2), (15, 4, 3)] {
-        let utf8 = line_col(offset);
-        for (enc, col) in [(Utf16, utf16), (Utf32, utf32)] {
-            let wide = line_index.to_wide(enc, utf8).unwrap();
-            assert_eq!(wide, WideLineCol { line: 3, col }, "{offset} {enc:?}");
-            assert_eq!(line_index.to_utf8(enc, wide), utf8, "{offset} {enc:?}");
+    for (offset, utf8, utf16, utf32) in [(8, 0, 0, 0), (10, 2, 1, 1), (14, 6, 3, 2), (15, 7, 4, 3)]
+    {
+        let offset = TextSize::from(offset);
+        for (enc, col) in [(Utf8, utf8), (Wide(Utf16), utf16), (Wide(Utf32), utf32)] {
+            let position = line_index.position(offset, enc).unwrap();
+            assert_eq!(position, WideLineCol { line: 3, col }, "{offset:?} {enc:?}");
+            assert_eq!(line_index.offset_at(position, enc), offset, "{enc:?}");
         }
     }
 }
@@ -139,9 +144,8 @@ fn test_every_chars() {
         assert_eq!(got_lin_col, lin_col);
 
         for enc in [Utf16, Utf32] {
-            let wide_lin_col = line_index.to_wide(enc, lin_col).unwrap();
-            let got_lin_col = line_index.to_utf8(enc, wide_lin_col);
-            assert_eq!(got_lin_col, lin_col);
+            let wide_lin_col = line_index.position(got_offset, Wide(enc)).unwrap();
+            assert_eq!(line_index.offset_at(wide_lin_col, Wide(enc)), got_offset);
 
             let want_col = match enc {
                 Utf16 => col_utf16,
@@ -194,8 +198,8 @@ fn changed_range_keeps_crlf_whole() {
         for offset in [range.start(), range.end()] {
             let line_col = line_index.line_col(offset).unwrap();
             assert_eq!(
-                line_index.offset_clamped(line_col),
-                offset,
+                line_index.offset(line_col),
+                Some(offset),
                 "{old:?} {offset:?}"
             );
         }
@@ -227,8 +231,9 @@ mod properties {
     use pgls_text_size::{TextRange, TextSize};
     use proptest::prelude::*;
 
+    use crate::PositionEncoding::{Utf8, Wide};
     use crate::WideEncoding::{Utf16, Utf32};
-    use crate::{LineCol, LineIndex, Lines, changed_range};
+    use crate::{LineCol, LineIndex, Lines, WideLineCol, changed_range};
 
     /// A text of line breaks and characters of 1, 2 and 4 bytes in UTF-8, so that every line
     /// break, `\r\n` split or not, and every width of character shows up next to each other.
@@ -297,10 +302,16 @@ mod properties {
                     "{}", offset
                 );
                 prop_assert_eq!(line_index.offset(line_col), Some(TextSize::try_from(at).unwrap()));
-                prop_assert_eq!(line_index.offset_clamped(line_col), TextSize::try_from(at).unwrap());
-                for enc in [Utf16, Utf32] {
-                    let wide = line_index.to_wide(enc, line_col).unwrap();
-                    prop_assert_eq!(line_index.to_utf8(enc, wide), line_col);
+                // The column counts the code units of the line before `at`.
+                let before = &text[starts[line]..at];
+                for (enc, col) in [
+                    (Utf8, before.len()),
+                    (Wide(Utf16), before.encode_utf16().count()),
+                    (Wide(Utf32), before.chars().count()),
+                ] {
+                    let position = line_index.position(size, enc).unwrap();
+                    prop_assert_eq!(position, WideLineCol { line: line as u32, col: col as u32 });
+                    prop_assert_eq!(line_index.offset_at(position, enc), TextSize::try_from(at).unwrap());
                 }
             }
         }
@@ -328,8 +339,8 @@ mod properties {
             let line_index = LineIndex::new(&text);
             for (line, (start, content)) in Lines::new(&text).enumerate() {
                 let end = start + TextSize::of(content);
-                let line_col = LineCol { line: line as u32, col: u32::from(TextSize::of(content)) + 3 };
-                prop_assert_eq!(line_index.offset_clamped(line_col), end);
+                let position = WideLineCol { line: line as u32, col: u32::from(TextSize::of(content)) + 3 };
+                prop_assert_eq!(line_index.offset_at(position, Utf8), end);
             }
         }
 

@@ -1,5 +1,5 @@
 use crate::activity::Activity;
-use crate::adapters::{PositionEncoding, negotiated_encoding};
+use crate::adapters::negotiated_encoding;
 use crate::diagnostics::LspError;
 use crate::documents::Document;
 use crate::utils;
@@ -12,7 +12,7 @@ use pgls_configuration::database::PartialDatabaseConfiguration;
 use pgls_configuration::{ConfigurationPathHint, PartialConfiguration};
 use pgls_diagnostics::{DiagnosticExt, Error};
 use pgls_fs::{ConfigName, FileSystem, PgLSPath};
-use pgls_line_index::WideEncoding;
+use pgls_line_index::{PositionEncoding, WideEncoding};
 use pgls_workspace::Workspace;
 use pgls_workspace::configuration::{
     ConfigurationLayers, ConfigurationNotice, ConfigureProjectParams, ConfiguredProject,

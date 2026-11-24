@@ -2565,9 +2565,9 @@ dependencies = [
 name = "pgls_line_index"
 version = "0.0.0"
 dependencies = [
+ "memchr",
  "pgls_text_size",
  "proptest",
- "rustc-hash",
 ]
 
 [[package]]
