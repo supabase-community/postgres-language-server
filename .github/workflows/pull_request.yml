@@ -378,7 +378,7 @@ jobs:
         with:
           tree-sitter-ref: v0.25.9
       - name: Run the 20k-statement scale tests
-        run: cargo test --release -p pgls_workspace -p pgls_walk -p pgls_lsp -- --ignored scale_20k
+        run: cargo test --release -p pgls_workspace -p pgls_walk -p pgls_lsp -- --ignored scale_20k --nocapture --test-threads 1
 
   test:
     name: Test

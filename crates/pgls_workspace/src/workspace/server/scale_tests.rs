@@ -319,33 +319,46 @@ impl Scale {
         }
     }
 
-    /// The budgets with the test database, on a dump of `statements` statements. plpgsql_check
-    /// must be available.
+    /// The budgets with the test database, on a dump of `statements` statements.
     async fn assert_database_within_budget(test_db: PgPool, statements: usize) {
         let dump = Dump::new(statements);
         let n = statements as f64;
         let functions = dump.functions();
 
+        let plpgsql_check: bool = sqlx::query_scalar(
+            "select exists (select from pg_available_extensions where name = 'plpgsql_check')",
+        )
+        .fetch_one(&test_db)
+        .await
+        .expect("read the available extensions");
+        // CI's Windows runner has no plpgsql_check.
+        assert!(
+            plpgsql_check || cfg!(target_os = "windows"),
+            "plpgsql_check is available"
+        );
+
         // Row 21: without the extension installed, no function is checked. The test database
         // may come with it installed.
-        sqlx::query("drop extension if exists plpgsql_check")
-            .execute(&test_db)
-            .await
-            .expect("drop plpgsql_check");
-        let scale = Scale::new(Scale::with_database(&test_db));
-        scale.open(&dump.sql);
-        scale.pull(DatabaseChecks::Run);
-        assert_eq!(
-            scale.counters().plpgsql_checks.load(Ordering::Relaxed),
-            0,
-            "plpgsql_check is only available"
-        );
-        drop(scale);
+        if plpgsql_check {
+            sqlx::query("drop extension if exists plpgsql_check")
+                .execute(&test_db)
+                .await
+                .expect("drop plpgsql_check");
+            let scale = Scale::new(Scale::with_database(&test_db));
+            scale.open(&dump.sql);
+            scale.pull(DatabaseChecks::Run);
+            assert_eq!(
+                scale.counters().plpgsql_checks.load(Ordering::Relaxed),
+                0,
+                "plpgsql_check is only available"
+            );
+            drop(scale);
 
-        sqlx::query("create extension if not exists plpgsql_check")
-            .execute(&test_db)
-            .await
-            .expect("plpgsql_check is available");
+            sqlx::query("create extension plpgsql_check")
+                .execute(&test_db)
+                .await
+                .expect("create plpgsql_check");
+        }
         let mut scale = Scale::new(Scale::with_database(&test_db));
         scale.open(&dump.sql);
         let queries = |scale: &Scale| {
@@ -366,7 +379,10 @@ impl Scale {
             checks,
             functions
         );
-        assert!(checks > 0, "plpgsql_check checks the functions");
+        assert!(
+            checks > 0 || !plpgsql_check,
+            "plpgsql_check checks the functions"
+        );
         assert_budget!(
             "typecheck, first pull (statements explained)",
             typechecks,
@@ -469,13 +485,11 @@ fn scale_20k_statements_within_budget() {
     Scale::assert_within_budget(20_000);
 }
 
-#[cfg(not(target_os = "windows"))]
 #[pgls_test_utils::db_test]
 async fn scale_1k_database_checks_within_budget(test_db: PgPool) {
     Scale::assert_database_within_budget(test_db, 1_000).await;
 }
 
-#[cfg(not(target_os = "windows"))]
 #[pgls_test_utils::db_test]
 #[ignore = "slow in debug; CI's Scale job runs it in release"]
 async fn scale_20k_database_checks_within_budget(test_db: PgPool) {

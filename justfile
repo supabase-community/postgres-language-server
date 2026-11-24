@@ -100,7 +100,7 @@ corpus:
 
 # Runs the operation-count budgets on a generated 20k-statement file, and the language server on it with the stack size of the released server. Needs `just db`.
 scale:
-	cargo test --release -p pgls_workspace -p pgls_walk -p pgls_lsp -- --ignored scale_20k
+	cargo test --release -p pgls_workspace -p pgls_walk -p pgls_lsp -- --ignored scale_20k --nocapture --test-threads 1
 
 # Alias for `cargo clippy`, it runs clippy on the whole codebase
 lint:
