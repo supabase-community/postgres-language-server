@@ -1,3 +1,4 @@
+use pgls_treesitter_grammar::Kind;
 use std::borrow::Cow;
 
 use pgls_text_size::TextSize;
@@ -247,7 +248,7 @@ fn cursor_before_semicolon(tree: &tree_sitter::Tree, position: TextSize) -> bool
     // We must manually verify that the cursor is between the statement and the semi nodes.
 
     // if the last node is not a semi, the statement is not completed.
-    if leaf_node.kind() != ";" {
+    if Kind::of(leaf_node) != Kind::ANON_SEMI {
         return false;
     }
 

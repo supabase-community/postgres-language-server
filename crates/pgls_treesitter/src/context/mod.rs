@@ -10,6 +10,7 @@ use crate::{
 };
 use pgls_catalog::identifier_name;
 use pgls_text_size::TextSize;
+use pgls_treesitter_grammar::{Field, Kind};
 use tree_sitter::Language;
 
 mod ancestors;
@@ -104,17 +105,17 @@ pub enum WrappingNode {
     List,
 }
 
-impl TryFrom<&str> for WrappingNode {
+impl TryFrom<Kind> for WrappingNode {
     type Error = String;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn try_from(value: Kind) -> Result<Self, Self::Error> {
         match value {
-            "relation" => Ok(Self::Relation),
-            "assignment" => Ok(Self::Assignment),
-            "binary_expression" => Ok(Self::BinaryExpression),
-            "list" => Ok(Self::List),
+            Kind::RELATION => Ok(Self::Relation),
+            Kind::ASSIGNMENT => Ok(Self::Assignment),
+            Kind::BINARY_EXPRESSION => Ok(Self::BinaryExpression),
+            Kind::LIST => Ok(Self::List),
             _ => {
-                let message = format!("Unimplemented Relation: {value}");
+                let message = format!("Unimplemented Relation: {value:?}");
 
                 // Err on tests, so we notice that we're lacking an implementation immediately.
                 if cfg!(test) {
@@ -124,13 +125,6 @@ impl TryFrom<&str> for WrappingNode {
                 Err(message)
             }
         }
-    }
-}
-
-impl TryFrom<String> for WrappingNode {
-    type Error = String;
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_str())
     }
 }
 
@@ -415,10 +409,10 @@ impl<'a> TreesitterContext<'a> {
         loop {
             let current_node = cursor.node();
 
-            let parent_node_kind = parent_node.kind();
-            let current_node_kind = current_node.kind();
+            let parent_node_kind = Kind::of(parent_node);
+            let current_node_kind = Kind::of(current_node);
 
-            if ["comment", "marginalia"].contains(&current_node_kind) {
+            if [Kind::COMMENT, Kind::MARGINALIA].contains(&current_node_kind) {
                 return;
             }
 
@@ -426,18 +420,18 @@ impl<'a> TreesitterContext<'a> {
 
             // prevent an endless loop – this can happen with ERROR nodes
             if current_node_kind == parent_node_kind
-                && ["ERROR", "program"].contains(&parent_node_kind)
+                && [Kind::ERROR, Kind::PROGRAM].contains(&parent_node_kind)
             {
                 self.node_under_cursor = current_node;
                 return;
             }
 
             match current_node_kind {
-                "statement" | "subquery" => {
+                Kind::STATEMENT | Kind::SUBQUERY => {
                     self.wrapping_statement_range = Some(current_node.range());
                 }
 
-                "object_reference" | "column_reference" => {
+                Kind::OBJECT_REFERENCE | Kind::COLUMN_REFERENCE => {
                     if let Some((head, middle, _)) =
                         parts_of_reference_query(current_node, self.text)
                     {
@@ -448,7 +442,7 @@ impl<'a> TreesitterContext<'a> {
                     }
                 }
 
-                "table_reference" | "type_reference" | "function_reference" => {
+                Kind::TABLE_REFERENCE | Kind::TYPE_REFERENCE | Kind::FUNCTION_REFERENCE => {
                     if let Some((_, middle, _)) = parts_of_reference_query(current_node, self.text)
                     {
                         self.identifier_qualifiers =
@@ -456,24 +450,24 @@ impl<'a> TreesitterContext<'a> {
                     }
                 }
 
-                "relation" | "binary_expression" | "assignment" => {
+                Kind::RELATION | Kind::BINARY_EXPRESSION | Kind::ASSIGNMENT => {
                     self.wrapping_node_kind = current_node_kind.try_into().ok();
                 }
 
-                "list" => {
+                Kind::LIST => {
                     if current_node
                         .prev_sibling()
-                        .is_none_or(|n| n.kind() != "keyword_values")
+                        .is_none_or(|n| Kind::of(n) != Kind::KEYWORD_VALUES)
                     {
                         self.wrapping_node_kind = current_node_kind.try_into().ok();
                     }
                 }
 
-                "insert_columns" => {
+                Kind::INSERT_COLUMNS => {
                     self.wrapping_node_kind = Some(WrappingNode::List);
                 }
 
-                "invocation" => self.is_invocation = true,
+                Kind::INVOCATION => self.is_invocation = true,
 
                 _ => {
                     if let Some(clause_type) =
@@ -509,39 +503,39 @@ impl<'a> TreesitterContext<'a> {
         node: tree_sitter::Node<'a>,
         cursor: &mut tree_sitter::TreeCursor<'a>,
     ) -> Option<WrappingClause<'a>> {
-        match node.kind() {
-            "where" => Some(WrappingClause::Where),
-            "update" => Some(WrappingClause::Update),
-            "select" => Some(WrappingClause::Select),
-            "delete_statement" => Some(WrappingClause::Delete),
-            "returning" => Some(WrappingClause::Returning),
-            "merge" => Some(WrappingClause::Merge),
-            "when_clause" => Some(WrappingClause::MergeWhen),
-            "from" => Some(WrappingClause::From),
-            "drop_table" => Some(WrappingClause::DropTable),
-            "alter_role" => Some(WrappingClause::AlterRole),
-            "drop_role" => Some(WrappingClause::DropRole),
-            "drop_column" => Some(WrappingClause::DropColumn),
-            "alter_column" => Some(WrappingClause::AlterColumn),
-            "rename_column" => Some(WrappingClause::RenameColumn),
-            "alter_table" => Some(WrappingClause::AlterTable),
-            "set_statement" => Some(WrappingClause::SetStatement),
-            "revoke_statement" => Some(WrappingClause::RevokeStatement),
-            "grant_statement" => Some(WrappingClause::GrantStatement),
-            "alter_default_privileges" => Some(WrappingClause::AlterDefaultPrivileges),
-            "column_definitions" => Some(WrappingClause::ColumnDefinitions),
-            "table_inherits" => Some(WrappingClause::TableInherits),
-            "create_policy" => Some(WrappingClause::CreatePolicy),
-            "alter_policy" => Some(WrappingClause::AlterPolicy),
-            "drop_policy" => Some(WrappingClause::DropPolicy),
-            "check_or_using_clause" => Some(WrappingClause::CheckOrUsingClause),
-            "insert" => Some(WrappingClause::Insert),
-            "join" => {
+        match Kind::of(node) {
+            Kind::WHERE => Some(WrappingClause::Where),
+            Kind::UPDATE => Some(WrappingClause::Update),
+            Kind::SELECT => Some(WrappingClause::Select),
+            Kind::DELETE_STATEMENT => Some(WrappingClause::Delete),
+            Kind::RETURNING => Some(WrappingClause::Returning),
+            Kind::MERGE => Some(WrappingClause::Merge),
+            Kind::WHEN_CLAUSE => Some(WrappingClause::MergeWhen),
+            Kind::FROM => Some(WrappingClause::From),
+            Kind::DROP_TABLE => Some(WrappingClause::DropTable),
+            Kind::ALTER_ROLE => Some(WrappingClause::AlterRole),
+            Kind::DROP_ROLE => Some(WrappingClause::DropRole),
+            Kind::DROP_COLUMN => Some(WrappingClause::DropColumn),
+            Kind::ALTER_COLUMN => Some(WrappingClause::AlterColumn),
+            Kind::RENAME_COLUMN => Some(WrappingClause::RenameColumn),
+            Kind::ALTER_TABLE => Some(WrappingClause::AlterTable),
+            Kind::SET_STATEMENT => Some(WrappingClause::SetStatement),
+            Kind::REVOKE_STATEMENT => Some(WrappingClause::RevokeStatement),
+            Kind::GRANT_STATEMENT => Some(WrappingClause::GrantStatement),
+            Kind::ALTER_DEFAULT_PRIVILEGES => Some(WrappingClause::AlterDefaultPrivileges),
+            Kind::COLUMN_DEFINITIONS => Some(WrappingClause::ColumnDefinitions),
+            Kind::TABLE_INHERITS => Some(WrappingClause::TableInherits),
+            Kind::CREATE_POLICY => Some(WrappingClause::CreatePolicy),
+            Kind::ALTER_POLICY => Some(WrappingClause::AlterPolicy),
+            Kind::DROP_POLICY => Some(WrappingClause::DropPolicy),
+            Kind::CHECK_OR_USING_CLAUSE => Some(WrappingClause::CheckOrUsingClause),
+            Kind::INSERT => Some(WrappingClause::Insert),
+            Kind::JOIN => {
                 // sadly, we need to manually iterate over the children –
                 // `node.child_by_field_id(..)` does not work as expected
                 let mut on_node = None;
                 for child in node.children(cursor) {
-                    if child.kind() == "keyword_on" {
+                    if Kind::of(child) == Kind::KEYWORD_ON {
                         on_node = Some(child);
                     }
                 }
@@ -564,7 +558,7 @@ impl<'a> TreesitterContext<'a> {
 
     fn gather_possible_keywords_at_position(&mut self) {
         let parse_state = match self.node_under_cursor.child(0) {
-            Some(first) if self.node_under_cursor.kind() == "ERROR" => first.parse_state(),
+            Some(first) if Kind::of(self.node_under_cursor) == Kind::ERROR => first.parse_state(),
             _ => self.node_under_cursor.parse_state(),
         };
 
@@ -577,7 +571,7 @@ impl<'a> TreesitterContext<'a> {
         }
     }
 
-    pub fn before_cursor_matches_kind(&self, kinds: &[&'static str]) -> bool {
+    pub fn before_cursor_matches_kind(&self, kinds: &[Kind]) -> bool {
         let mut current = self.node_under_cursor;
 
         // move up to the parent until we're at top OR we have a prev sibling
@@ -589,27 +583,27 @@ impl<'a> TreesitterContext<'a> {
 
         current
             .prev_sibling()
-            .is_some_and(|sib| kinds.contains(&sib.kind()))
+            .is_some_and(|sib| kinds.contains(&Kind::of(sib)))
     }
 
     /// Verifies whether the node_under_cursor has the passed in ancestors in the right order.
     /// Note that you need to pass in the ancestors in the order as they would appear in the tree:
     ///
     /// If the tree shows `relation > object_reference > any_identifier`
-    /// you need to pass `&["relation", "object_reference", "any_identifier"]`.
-    pub fn history_ends_with(&self, expected_ancestors: &[&'static str]) -> bool {
+    /// you need to pass `&[Kind::RELATION, Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER]`.
+    pub fn history_ends_with(&self, expected_ancestors: &[Kind]) -> bool {
         self.scope_tracker
             .current()
             .ancestors
             .history_ends_with(expected_ancestors)
     }
 
-    /// Returns true if the node under the cursor matches the field_name OR has a parent that matches the field_name.
-    pub fn node_under_cursor_is_within_field(&self, names: &[&'static str]) -> bool {
+    /// Returns true if the node under the cursor is in one of the fields OR has a parent that is.
+    pub fn node_under_cursor_is_within_field(&self, fields: &[Field]) -> bool {
         self.scope_tracker
             .current()
             .ancestors
-            .is_within_one_of_fields(names)
+            .is_within_one_of_fields(fields)
     }
 
     /// The names of the tables of the statement in the schema with the name `schema`, or of
@@ -626,7 +620,7 @@ impl<'a> TreesitterContext<'a> {
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_merge.c#L52
     fn find_hidden_merge_relation(&self) -> Option<RelationName> {
         let mut when_clause = Some(self.node_under_cursor);
-        while let Some(node) = when_clause.filter(|node| node.kind() != "when_clause") {
+        while let Some(node) = when_clause.filter(|node| Kind::of(node) != Kind::WHEN_CLAUSE) {
             when_clause = node.parent();
         }
         let when_clause = when_clause?;
@@ -635,15 +629,17 @@ impl<'a> TreesitterContext<'a> {
             let mut cursor = parent.walk();
             parent
                 .children(&mut cursor)
-                .find(|child| child.kind() == "merge")?
+                .find(|child| Kind::of(child) == Kind::MERGE)?
         };
-        let relation_after = |keyword: &str| {
+        let relation_after = |keyword: Kind| {
             let mut cursor = merge.walk();
             let children: Vec<_> = merge.children(&mut cursor).collect();
-            let position = children.iter().position(|child| child.kind() == keyword)?;
+            let position = children
+                .iter()
+                .position(|child| Kind::of(child) == keyword)?;
             let reference = children
                 .get(position + 1)
-                .filter(|child| child.kind() == "table_reference")?;
+                .filter(|child| Kind::of(**child) == Kind::TABLE_REFERENCE)?;
             let (_, schema, name) = parts_of_reference_query(*reference, self.text)?;
             Some(RelationName {
                 schema: schema
@@ -652,20 +648,17 @@ impl<'a> TreesitterContext<'a> {
                 name: identifier_name(&self.get_ts_node_content(&name)?),
             })
         };
-        let target = relation_after("keyword_into");
-        let source = relation_after("keyword_using");
+        let target = relation_after(Kind::KEYWORD_INTO);
+        let source = relation_after(Kind::KEYWORD_USING);
         if target.is_some() && target == source {
             return None;
         }
 
-        let is_target_column = self.node_under_cursor.kind() == "column_identifier";
+        let is_target_column = Kind::of(self.node_under_cursor) == Kind::COLUMN_IDENTIFIER;
         let mut cursor = when_clause.walk();
-        let kinds: Vec<&str> = when_clause
-            .children(&mut cursor)
-            .map(|child| child.kind())
-            .collect();
-        let not_matched = kinds.contains(&"keyword_not");
-        let by_source = kinds.contains(&"keyword_source");
+        let kinds: Vec<Kind> = when_clause.children(&mut cursor).map(Kind::of).collect();
+        let not_matched = kinds.contains(&Kind::KEYWORD_NOT);
+        let by_source = kinds.contains(&Kind::KEYWORD_SOURCE);
         if is_target_column || (not_matched && by_source) {
             source
         } else if not_matched {
@@ -757,6 +750,7 @@ impl<'a> TreesitterContext<'a> {
 #[cfg(test)]
 mod tests {
     use crate::context::{TreeSitterContextParams, TreesitterContext, WrappingClause};
+    use pgls_treesitter_grammar::Field;
 
     use pgls_test_utils::QueryWithCursorPosition;
 
@@ -1131,7 +1125,7 @@ mod tests {
 
         let ctx = TreesitterContext::new(params);
 
-        assert!(ctx.node_under_cursor_is_within_field(&["custom_type"]));
+        assert!(ctx.node_under_cursor_is_within_field(&[Field::CUSTOM_TYPE]));
     }
 
     #[test]

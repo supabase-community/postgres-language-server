@@ -1,4 +1,5 @@
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+use pgls_treesitter_grammar::Kind;
 
 use pgls_migrations::{History, MigrationTool};
 use pgls_treesitter::context::{TreesitterContext, WrappingClause};
@@ -241,18 +242,18 @@ impl CompletionScore<'_> {
             return;
         }
 
-        match ctx.node_under_cursor.kind() {
-            "function_identifier" | "table_identifier"
+        match Kind::of(ctx.node_under_cursor) {
+            Kind::FUNCTION_IDENTIFIER | Kind::TABLE_IDENTIFIER
                 if self.get_schema_name().is_some_and(|s| s == "public") =>
             {
                 self.score += 10;
             }
 
-            "schema_identifier" if self.get_schema_name().is_some_and(|s| s != "public") => {
+            Kind::SCHEMA_IDENTIFIER if self.get_schema_name().is_some_and(|s| s != "public") => {
                 self.score += 10;
             }
 
-            "any_identifier" => match self.data {
+            Kind::ANY_IDENTIFIER => match self.data {
                 CompletionRelevanceData::Table(table) => {
                     if table.schema == "public" {
                         self.score += 20;

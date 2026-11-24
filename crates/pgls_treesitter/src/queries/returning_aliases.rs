@@ -1,3 +1,4 @@
+use pgls_treesitter_grammar::Kind;
 use std::sync::LazyLock;
 
 use crate::queries::{Query, QueryResult, object_references::parts_of_reference_query};
@@ -55,26 +56,26 @@ impl ReturningAliasMatch<'_> {
         let with = self
             .returning
             .children(&mut cursor)
-            .find(|child| child.kind() == "returning_with");
+            .find(|child| Kind::of(child) == Kind::RETURNING_WITH);
         if let Some(with) = with {
             let mut cursor = with.walk();
             for item in with
                 .children(&mut cursor)
-                .filter(|child| child.kind() == "returning_with_item")
+                .filter(|child| Kind::of(child) == Kind::RETURNING_WITH_ITEM)
             {
                 let mut item_cursor = item.walk();
-                let mut kind = None;
+                let mut kind_of_item = None;
                 let mut name = None;
                 for child in item.children(&mut item_cursor) {
-                    match child.kind() {
-                        "keyword_old" | "keyword_new" => kind = Some(child.kind()),
-                        "any_identifier" => name = child.utf8_text(sql.as_bytes()).ok(),
+                    match Kind::of(child) {
+                        kind @ (Kind::KEYWORD_OLD | Kind::KEYWORD_NEW) => kind_of_item = Some(kind),
+                        Kind::ANY_IDENTIFIER => name = child.utf8_text(sql.as_bytes()).ok(),
                         _ => {}
                     }
                 }
-                match (kind, name) {
-                    (Some("keyword_old"), Some(name)) => explicit_old = Some(name),
-                    (Some("keyword_new"), Some(name)) => explicit_new = Some(name),
+                match (kind_of_item, name) {
+                    (Some(Kind::KEYWORD_OLD), Some(name)) => explicit_old = Some(name),
+                    (Some(Kind::KEYWORD_NEW), Some(name)) => explicit_new = Some(name),
                     _ => {}
                 }
             }

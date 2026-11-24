@@ -1,5 +1,6 @@
 use pgls_catalog::{Column, NamePosition, Snapshot, identifier_name};
 use pgls_treesitter::TreesitterContext;
+use pgls_treesitter_grammar::Kind;
 
 use crate::{
     CompletionItemKind, CompletionText,
@@ -38,7 +39,7 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
     // A `column_identifier` is a column name that can't be qualified, like the target of
     // `SET col = ...` or a column of an INSERT column list. The alias is a name, which is quoted
     // again if needed.
-    let alias = (ctx.node_under_cursor.kind() != "column_identifier")
+    let alias = (Kind::of(ctx.node_under_cursor) != Kind::COLUMN_IDENTIFIER)
         .then(|| ctx.get_used_alias_for_table(&col.schema_name, &col.table_name))
         .flatten()
         .map(|alias| identifier_name(&alias));

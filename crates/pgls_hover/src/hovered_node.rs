@@ -1,5 +1,6 @@
 use pgls_catalog::identifier_name;
 use pgls_treesitter::WrappingClause;
+use pgls_treesitter_grammar::{Field, Kind};
 
 #[derive(Debug)]
 pub(crate) enum HoveredNode {
@@ -27,30 +28,34 @@ impl HoveredNode {
 
         let under_cursor = &ctx.node_under_cursor;
 
-        match under_cursor.kind() {
-            "column_identifier" => Some(HoveredNode::Column((
+        match Kind::of(under_cursor) {
+            Kind::COLUMN_IDENTIFIER => Some(HoveredNode::Column((
                 ctx.head_qualifier_sanitized(),
                 ctx.tail_qualifier_sanitized(),
                 name,
             ))),
-            "function_identifier" => Some(HoveredNode::Function((
+            Kind::FUNCTION_IDENTIFIER => Some(HoveredNode::Function((
                 ctx.tail_qualifier_sanitized(),
                 name,
             ))),
-            "policy_identifier" => {
+            Kind::POLICY_IDENTIFIER => {
                 Some(HoveredNode::Policy((ctx.tail_qualifier_sanitized(), name)))
             }
-            "table_identifier" => Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name))),
-
-            "schema_identifier" => Some(HoveredNode::Schema(name)),
-            "role_identifier" => Some(HoveredNode::Role(name)),
-
-            "any_identifier" if ctx.history_ends_with(&["table_reference", "any_identifier"]) => {
+            Kind::TABLE_IDENTIFIER => {
                 Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name)))
             }
 
-            "any_identifier"
-                if ctx.history_ends_with(&["object_reference", "any_identifier"])
+            Kind::SCHEMA_IDENTIFIER => Some(HoveredNode::Schema(name)),
+            Kind::ROLE_IDENTIFIER => Some(HoveredNode::Role(name)),
+
+            Kind::ANY_IDENTIFIER
+                if ctx.history_ends_with(&[Kind::TABLE_REFERENCE, Kind::ANY_IDENTIFIER]) =>
+            {
+                Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name)))
+            }
+
+            Kind::ANY_IDENTIFIER
+                if ctx.history_ends_with(&[Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER])
                     && ctx.wrapping_clause_type.as_ref().is_some_and(|clause| {
                         matches!(
                             clause,
@@ -63,25 +68,25 @@ impl HoveredNode {
                 Some(HoveredNode::Table((ctx.tail_qualifier_sanitized(), name)))
             }
 
-            "any_identifier"
+            Kind::ANY_IDENTIFIER
                 if ctx.history_ends_with(&[
-                    "binary_expression",
-                    "object_reference",
-                    "any_identifier",
-                ]) || ctx.history_ends_with(&["term", "object_reference", "any_identifier"])
+                    Kind::BINARY_EXPRESSION,
+                    Kind::OBJECT_REFERENCE,
+                    Kind::ANY_IDENTIFIER,
+                ]) || ctx.history_ends_with(&[Kind::TERM, Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER])
                     // The value of `SET col = t.col`, and of `MERGE ... INSERT VALUES (t.col)`,
                     // but not its qualifier `t`, which may be the name of a column too.
-                    || ((ctx.history_ends_with(&["assignment", "object_reference", "any_identifier"])
+                    || ((ctx.history_ends_with(&[Kind::ASSIGNMENT, Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER])
                         || ctx.history_ends_with(&[
-                            "merge_insert",
-                            "insert_values",
-                            "object_reference",
-                            "any_identifier",
+                            Kind::MERGE_INSERT,
+                            Kind::INSERT_VALUES,
+                            Kind::OBJECT_REFERENCE,
+                            Kind::ANY_IDENTIFIER,
                         ]))
                         && ctx.node_under_cursor_is_within_field(&[
-                            "object_reference_1of1",
-                            "object_reference_2of2",
-                            "object_reference_3of3",
+                            Field::OBJECT_REFERENCE_1OF1,
+                            Field::OBJECT_REFERENCE_2OF2,
+                            Field::OBJECT_REFERENCE_3OF3,
                         ])) =>
             {
                 Some(HoveredNode::Column((
@@ -91,11 +96,11 @@ impl HoveredNode {
                 )))
             }
 
-            "any_identifier"
+            Kind::ANY_IDENTIFIER
                 if ctx.history_ends_with(&[
-                    "invocation",
-                    "function_reference",
-                    "any_identifier",
+                    Kind::INVOCATION,
+                    Kind::FUNCTION_REFERENCE,
+                    Kind::ANY_IDENTIFIER,
                 ]) =>
             {
                 Some(HoveredNode::Function((
@@ -104,16 +109,16 @@ impl HoveredNode {
                 )))
             }
 
-            "any_identifier"
+            Kind::ANY_IDENTIFIER
                 if (
                     // hover over custom type in `create table` or `returns`
-                    (ctx.history_ends_with(&["type", "object_reference", "any_identifier"])
-                    && ctx.node_under_cursor_is_within_field(&["custom_type"]))
+                    (ctx.history_ends_with(&[Kind::TYPE, Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER])
+                    && ctx.node_under_cursor_is_within_field(&[Field::CUSTOM_TYPE]))
 
                     // hover over type in `select` clause etc…
                     || (ctx
-                        .history_ends_with(&["field_selection", "parenthesized_expression", "object_reference", "any_identifier"])
-                        && ctx.node_under_cursor_is_within_field(&["object_reference_1of1", "object_reference_2of2"])))
+                        .history_ends_with(&[Kind::FIELD_SELECTION, Kind::PARENTHESIZED_EXPRESSION, Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER])
+                        && ctx.node_under_cursor_is_within_field(&[Field::OBJECT_REFERENCE_1OF1, Field::OBJECT_REFERENCE_2OF2])))
 
                     // make sure we're not checking against an alias
                     && ctx
@@ -129,7 +134,9 @@ impl HoveredNode {
             }
 
             // quoted columns
-            "literal" if ctx.history_ends_with(&["select_expression", "term", "literal"]) => {
+            Kind::LITERAL
+                if ctx.history_ends_with(&[Kind::SELECT_EXPRESSION, Kind::TERM, Kind::LITERAL]) =>
+            {
                 Some(HoveredNode::Column((
                     ctx.head_qualifier_sanitized(),
                     ctx.tail_qualifier_sanitized(),

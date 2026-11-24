@@ -1,16 +1,18 @@
+use pgls_treesitter_grammar::{Field, Kind};
+
 #[derive(Debug)]
 pub(super) struct Scope {
     pub ancestors: AncestorTracker,
 }
 
-static SCOPE_BOUNDARIES: &[&str] = &[
-    "statement",
-    "ERROR",
-    "program",
-    "block",
-    "transaction",
-    "psql_meta_command",
-    "copy_data_stream",
+static SCOPE_BOUNDARIES: &[Kind] = &[
+    Kind::STATEMENT,
+    Kind::ERROR,
+    Kind::PROGRAM,
+    Kind::BLOCK,
+    Kind::TRANSACTION,
+    Kind::PSQL_META_COMMAND,
+    Kind::COPY_DATA_STREAM,
 ];
 
 #[derive(Debug)]
@@ -34,7 +36,7 @@ impl ScopeTracker {
     }
 
     pub(super) fn register<'a>(&mut self, node: tree_sitter::Node<'a>, position: usize) {
-        if SCOPE_BOUNDARIES.contains(&node.kind()) {
+        if SCOPE_BOUNDARIES.contains(&Kind::of(node)) {
             self.add_new_scope(node);
         }
 
@@ -58,14 +60,14 @@ impl ScopeTracker {
 
 #[derive(Clone, Debug)]
 struct AncestorNode {
-    kind: String,
-    field: Option<String>,
+    kind: Kind,
+    field: Option<Field>,
 }
 
 #[derive(Debug)]
 pub(crate) struct AncestorTracker {
     ancestors: Vec<AncestorNode>,
-    next_field: Option<String>,
+    next_field: Option<Field>,
 }
 
 impl AncestorTracker {
@@ -78,7 +80,7 @@ impl AncestorTracker {
 
     pub(super) fn register<'a>(&mut self, node: tree_sitter::Node<'a>, position: usize) {
         let ancestor_node = AncestorNode {
-            kind: node.kind().into(),
+            kind: Kind::of(node),
             field: self.next_field.take(),
         };
 
@@ -88,19 +90,19 @@ impl AncestorTracker {
                 .zip(node.children(&mut node.walk()))
                 .find(|(_, n)| n == &child_on_cursor)
                 .and_then(|(idx, _)| node.field_name_for_child(idx))
-                .map(|f| f.to_string())
+                .and_then(Field::named)
         }
 
         self.ancestors.push(ancestor_node);
     }
 
-    pub(super) fn is_within_one_of_fields(&self, field_names: &[&'static str]) -> bool {
+    pub(super) fn is_within_one_of_fields(&self, fields: &[Field]) -> bool {
         self.ancestors
             .iter()
-            .any(|n| n.field.as_deref().is_some_and(|f| field_names.contains(&f)))
+            .any(|n| n.field.is_some_and(|f| fields.contains(&f)))
     }
 
-    pub(super) fn history_ends_with(&self, matchers: &[&'static str]) -> bool {
+    pub(super) fn history_ends_with(&self, matchers: &[Kind]) -> bool {
         debug_assert!(!matchers.is_empty());
 
         self.ancestors

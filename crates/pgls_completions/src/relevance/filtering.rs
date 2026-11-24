@@ -3,6 +3,7 @@ use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
     goto_node_at_position, previous_sibling_completed,
 };
+use pgls_treesitter_grammar::{Field, Kind};
 use std::ops::Range;
 
 use tree_sitter::{InputEdit, Point, Tree};
@@ -123,24 +124,24 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        let current_node_kind = ctx.node_under_cursor.kind();
+        let current_node_kind = Kind::of(ctx.node_under_cursor);
 
-        if current_node_kind.starts_with("keyword_")
-            || current_node_kind == "="
-            || current_node_kind == ","
-            || current_node_kind == "ERROR"
+        if ctx.node_under_cursor.kind().starts_with("keyword_")
+            || current_node_kind == Kind::ANON_EQ
+            || current_node_kind == Kind::ANON_COMMA
+            || current_node_kind == Kind::ERROR
         {
             return None;
         }
 
-        if ctx.before_cursor_matches_kind(&["ERROR"]) {
+        if ctx.before_cursor_matches_kind(&[Kind::ERROR]) {
             return None;
         }
 
         // "literal" nodes can be identfiers wrapped in quotes:
         // `select "email" from auth.users;`
         // Here, "email" is a literal node.
-        if current_node_kind == "literal" {
+        if current_node_kind == Kind::LITERAL {
             match self.data {
                 CompletionRelevanceData::Column(_) => match ctx.wrapping_clause_type.as_ref() {
                     Some(WrappingClause::Select)
@@ -163,18 +164,18 @@ impl CompletionFilter<'_> {
             }
         }
 
-        if ctx.node_under_cursor.kind() == "any_identifier"
-            && (ctx.history_ends_with(&["alias", "any_identifier"])
+        if Kind::of(ctx.node_under_cursor) == Kind::ANY_IDENTIFIER
+            && (ctx.history_ends_with(&[Kind::ALIAS, Kind::ANY_IDENTIFIER])
                 // `o` in `returning with (old as o)` is a new name too.
-                || ctx.history_ends_with(&["returning_with_item", "any_identifier"]))
+                || ctx.history_ends_with(&[Kind::RETURNING_WITH_ITEM, Kind::ANY_IDENTIFIER]))
         {
             return None;
         }
 
         // No autocompletions if there are two identifiers without a separator.
         if ctx.node_under_cursor.prev_sibling().is_some_and(|p| {
-            (p.kind() == "any_identifier" || p.kind() == "object_reference")
-                && ctx.node_under_cursor.kind() == "any_identifier"
+            (Kind::of(p) == Kind::ANY_IDENTIFIER || Kind::of(p) == Kind::OBJECT_REFERENCE)
+                && Kind::of(ctx.node_under_cursor) == Kind::ANY_IDENTIFIER
         }) {
             return None;
         }
@@ -182,7 +183,8 @@ impl CompletionFilter<'_> {
         // no completions if we're right after an asterisk:
         // `select * {}`
         if ctx.node_under_cursor.prev_sibling().is_some_and(|p| {
-            (p.kind() == "all_fields") && ctx.node_under_cursor.kind() == "any_identifier"
+            (Kind::of(p) == Kind::ALL_FIELDS)
+                && Kind::of(ctx.node_under_cursor) == Kind::ANY_IDENTIFIER
         }) {
             return None;
         }
@@ -191,25 +193,25 @@ impl CompletionFilter<'_> {
     }
 
     fn check_specific_node_type(&self, ctx: &TreesitterContext) -> Option<()> {
-        let kind = ctx.node_under_cursor.kind();
+        let kind = Kind::of(ctx.node_under_cursor);
 
         let is_allowed = match kind {
-            "column_identifier" => matches!(self.data, CompletionRelevanceData::Column(_)),
-            "role_identifier" => matches!(self.data, CompletionRelevanceData::Role(_)),
-            "function_identifier" => matches!(self.data, CompletionRelevanceData::Function(_)),
-            "schema_identifier" => matches!(self.data, CompletionRelevanceData::Schema(_)),
-            "table_identifier" => matches!(self.data, CompletionRelevanceData::Table(_)),
-            "policy_identifier" => matches!(self.data, CompletionRelevanceData::Policy(_)),
+            Kind::COLUMN_IDENTIFIER => matches!(self.data, CompletionRelevanceData::Column(_)),
+            Kind::ROLE_IDENTIFIER => matches!(self.data, CompletionRelevanceData::Role(_)),
+            Kind::FUNCTION_IDENTIFIER => matches!(self.data, CompletionRelevanceData::Function(_)),
+            Kind::SCHEMA_IDENTIFIER => matches!(self.data, CompletionRelevanceData::Schema(_)),
+            Kind::TABLE_IDENTIFIER => matches!(self.data, CompletionRelevanceData::Table(_)),
+            Kind::POLICY_IDENTIFIER => matches!(self.data, CompletionRelevanceData::Policy(_)),
 
-            "any_identifier" => match self.data {
+            Kind::ANY_IDENTIFIER => match self.data {
                 CompletionRelevanceData::Column(_) => {
                     let matches_field = ctx.node_under_cursor_is_within_field(&[
-                        "object_reference_1of1",
-                        "object_reference_2of2",
-                        "object_reference_3of3",
-                        "column_reference_1of1",
-                        "column_reference_2of2",
-                        "column_reference_3of3",
+                        Field::OBJECT_REFERENCE_1OF1,
+                        Field::OBJECT_REFERENCE_2OF2,
+                        Field::OBJECT_REFERENCE_3OF3,
+                        Field::COLUMN_REFERENCE_1OF1,
+                        Field::COLUMN_REFERENCE_2OF2,
+                        Field::COLUMN_REFERENCE_3OF3,
                     ]);
 
                     let has_any_qualifier = ctx.has_any_qualifier();
@@ -218,44 +220,44 @@ impl CompletionFilter<'_> {
                 }
 
                 CompletionRelevanceData::Schema(_) => ctx.node_under_cursor_is_within_field(&[
-                    "object_reference_1of1",
-                    "object_reference_1of2",
-                    "object_reference_1of3",
-                    "type_reference_1of1",
-                    "table_reference_1of1",
-                    "column_reference_1of1",
-                    "column_reference_1of2",
-                    "function_reference_1of1",
+                    Field::OBJECT_REFERENCE_1OF1,
+                    Field::OBJECT_REFERENCE_1OF2,
+                    Field::OBJECT_REFERENCE_1OF3,
+                    Field::TYPE_REFERENCE_1OF1,
+                    Field::TABLE_REFERENCE_1OF1,
+                    Field::COLUMN_REFERENCE_1OF1,
+                    Field::COLUMN_REFERENCE_1OF2,
+                    Field::FUNCTION_REFERENCE_1OF1,
                 ]),
 
                 CompletionRelevanceData::Function(f) => {
                     ctx.node_under_cursor_is_within_field(&[
-                        "object_reference_1of1",
-                        "object_reference_2of2",
-                        "function_reference_1of1",
+                        Field::OBJECT_REFERENCE_1OF1,
+                        Field::OBJECT_REFERENCE_2OF2,
+                        Field::FUNCTION_REFERENCE_1OF1,
                     ]) && !(ctx.history_ends_with(&[
-                        "check_or_using_clause",
-                        "binary_expression",
-                        "object_reference",
-                        "any_identifier",
+                        Kind::CHECK_OR_USING_CLAUSE,
+                        Kind::BINARY_EXPRESSION,
+                        Kind::OBJECT_REFERENCE,
+                        Kind::ANY_IDENTIFIER,
                     ]) && matches!(f.kind, ProcKind::Aggregate))
                 }
 
                 CompletionRelevanceData::Table(_) => {
                     ctx.node_under_cursor_is_within_field(&[
-                        "object_reference_1of1",
-                        "object_reference_1of2",
-                        "object_reference_2of2",
-                        "object_reference_2of3",
-                        "table_reference_1of1",
-                        "column_reference_1of1",
-                        "column_reference_1of2",
-                        "column_reference_2of2",
+                        Field::OBJECT_REFERENCE_1OF1,
+                        Field::OBJECT_REFERENCE_1OF2,
+                        Field::OBJECT_REFERENCE_2OF2,
+                        Field::OBJECT_REFERENCE_2OF3,
+                        Field::TABLE_REFERENCE_1OF1,
+                        Field::COLUMN_REFERENCE_1OF1,
+                        Field::COLUMN_REFERENCE_1OF2,
+                        Field::COLUMN_REFERENCE_2OF2,
                     ]) && !ctx.history_ends_with(&[
-                        "update",
-                        "assignment",
-                        "column_reference",
-                        "any_identifier",
+                        Kind::UPDATE,
+                        Kind::ASSIGNMENT,
+                        Kind::COLUMN_REFERENCE,
+                        Kind::ANY_IDENTIFIER,
                     ])
                 }
                 _ => false,
@@ -282,9 +284,9 @@ impl CompletionFilter<'_> {
 
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => ctx
                             .history_ends_with(&[
-                                "grantable_on_table",
-                                "object_reference",
-                                "any_identifier",
+                                Kind::GRANTABLE_ON_TABLE,
+                                Kind::OBJECT_REFERENCE,
+                                Kind::ANY_IDENTIFIER,
                             ]),
 
                         WrappingClause::Join { on_node: None } => true,
@@ -296,19 +298,19 @@ impl CompletionFilter<'_> {
                             ctx.wrapping_node_kind
                                 .as_ref()
                                 .is_none_or(|n| n != &WrappingNode::List)
-                                && (ctx.before_cursor_matches_kind(&["keyword_into"])
-                                    || (ctx.before_cursor_matches_kind(&["."])
+                                && (ctx.before_cursor_matches_kind(&[Kind::KEYWORD_INTO])
+                                    || (ctx.before_cursor_matches_kind(&[Kind::ANON_DOT])
                                         && ctx.history_ends_with(&[
-                                            "object_reference",
-                                            "any_identifier",
+                                            Kind::OBJECT_REFERENCE,
+                                            Kind::ANY_IDENTIFIER,
                                         ])))
                         }
 
                         WrappingClause::DropTable | WrappingClause::AlterTable => ctx
                             .before_cursor_matches_kind(&[
-                                "keyword_exists",
-                                "keyword_only",
-                                "keyword_table",
+                                Kind::KEYWORD_EXISTS,
+                                Kind::KEYWORD_ONLY,
+                                Kind::KEYWORD_TABLE,
                             ]),
 
                         WrappingClause::Merge => is_merge_relation(ctx),
@@ -316,8 +318,9 @@ impl CompletionFilter<'_> {
                         WrappingClause::CreatePolicy
                         | WrappingClause::AlterPolicy
                         | WrappingClause::DropPolicy => {
-                            ctx.history_ends_with(&["object_reference", "any_identifier"])
-                                && ctx.before_cursor_matches_kind(&["keyword_on", "."])
+                            ctx.history_ends_with(&[Kind::OBJECT_REFERENCE, Kind::ANY_IDENTIFIER])
+                                && ctx
+                                    .before_cursor_matches_kind(&[Kind::KEYWORD_ON, Kind::ANON_DOT])
                         }
 
                         _ => false,
@@ -335,12 +338,15 @@ impl CompletionFilter<'_> {
                             // The join condition.
                             WrappingClause::Merge => !is_merge_relation(ctx),
 
-                            WrappingClause::RenameColumn => ctx
-                                .before_cursor_matches_kind(&["keyword_rename", "keyword_column"]),
+                            WrappingClause::RenameColumn => ctx.before_cursor_matches_kind(&[
+                                Kind::KEYWORD_RENAME,
+                                Kind::KEYWORD_COLUMN,
+                            ]),
 
-                            WrappingClause::AlterColumn => {
-                                ctx.before_cursor_matches_kind(&["keyword_alter", "keyword_column"])
-                            }
+                            WrappingClause::AlterColumn => ctx.before_cursor_matches_kind(&[
+                                Kind::KEYWORD_ALTER,
+                                Kind::KEYWORD_COLUMN,
+                            ]),
 
                             // We can complete columns in JOIN cluases, but only if we are after the
                             // ON node in the "ON u.id = posts.user_id" part.
@@ -357,17 +363,19 @@ impl CompletionFilter<'_> {
                                 .is_some_and(|n| n == &WrappingNode::List),
 
                             // only autocomplete left side of binary expression
-                            WrappingClause::Where => {
-                                ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
-                                    || (ctx.before_cursor_matches_kind(&["field_qualifier"])
-                                        && ctx.history_ends_with(&["field", "any_identifier"]))
-                            }
+                            WrappingClause::Where => ctx.before_cursor_matches_kind(&[
+                                Kind::KEYWORD_AND,
+                                Kind::KEYWORD_WHERE,
+                            ]),
 
                             WrappingClause::CheckOrUsingClause => {
-                                ctx.before_cursor_matches_kind(&["(", "keyword_and"])
-                                    || ctx.wrapping_node_kind.as_ref().is_some_and(|nk| {
-                                        matches!(nk, WrappingNode::BinaryExpression)
-                                    })
+                                ctx.before_cursor_matches_kind(&[
+                                    Kind::ANON_LPAREN,
+                                    Kind::KEYWORD_AND,
+                                ]) || ctx
+                                    .wrapping_node_kind
+                                    .as_ref()
+                                    .is_some_and(|nk| matches!(nk, WrappingNode::BinaryExpression))
                             }
 
                             _ => false,
@@ -386,10 +394,13 @@ impl CompletionFilter<'_> {
 
                         WrappingClause::CheckOrUsingClause => {
                             !matches!(f.kind, ProcKind::Aggregate)
-                                && (ctx.before_cursor_matches_kind(&["(", "keyword_and"])
-                                    || ctx.wrapping_node_kind.as_ref().is_some_and(|nk| {
-                                        matches!(nk, WrappingNode::BinaryExpression)
-                                    }))
+                                && (ctx.before_cursor_matches_kind(&[
+                                    Kind::ANON_LPAREN,
+                                    Kind::KEYWORD_AND,
+                                ]) || ctx
+                                    .wrapping_node_kind
+                                    .as_ref()
+                                    .is_some_and(|nk| matches!(nk, WrappingNode::BinaryExpression)))
                         }
 
                         _ => false,
@@ -406,35 +417,37 @@ impl CompletionFilter<'_> {
 
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
                             (ctx.history_ends_with(&[
-                                "grantable_on_table",
-                                "object_reference",
-                                "any_identifier",
+                                Kind::GRANTABLE_ON_TABLE,
+                                Kind::OBJECT_REFERENCE,
+                                Kind::ANY_IDENTIFIER,
                             ]) && !ctx.has_any_qualifier())
-                                || ctx.history_ends_with(&["grantable_on_all", "any_identifier"])
+                                || ctx.history_ends_with(&[
+                                    Kind::GRANTABLE_ON_ALL,
+                                    Kind::ANY_IDENTIFIER,
+                                ])
                         }
 
-                        WrappingClause::Where => {
-                            ctx.before_cursor_matches_kind(&["keyword_and", "keyword_where"])
-                        }
+                        WrappingClause::Where => ctx
+                            .before_cursor_matches_kind(&[Kind::KEYWORD_AND, Kind::KEYWORD_WHERE]),
 
                         WrappingClause::DropTable | WrappingClause::AlterTable => ctx
                             .before_cursor_matches_kind(&[
-                                "keyword_exists",
-                                "keyword_only",
-                                "keyword_table",
+                                Kind::KEYWORD_EXISTS,
+                                Kind::KEYWORD_ONLY,
+                                Kind::KEYWORD_TABLE,
                             ]),
 
                         WrappingClause::Insert => {
                             ctx.wrapping_node_kind
                                 .as_ref()
                                 .is_none_or(|n| n != &WrappingNode::List)
-                                && ctx.before_cursor_matches_kind(&["keyword_into"])
+                                && ctx.before_cursor_matches_kind(&[Kind::KEYWORD_INTO])
                         }
 
                         WrappingClause::CreatePolicy
                         | WrappingClause::AlterPolicy
                         | WrappingClause::DropPolicy => {
-                            ctx.before_cursor_matches_kind(&["keyword_on"])
+                            ctx.before_cursor_matches_kind(&[Kind::KEYWORD_ON])
                         }
 
                         _ => false,
@@ -445,28 +458,36 @@ impl CompletionFilter<'_> {
                             clause,
                             // not CREATE – there can't be existing policies.
                             WrappingClause::AlterPolicy | WrappingClause::DropPolicy
-                        ) && ctx.before_cursor_matches_kind(&["keyword_policy", "keyword_exists"])
+                        ) && ctx.before_cursor_matches_kind(&[
+                            Kind::KEYWORD_POLICY,
+                            Kind::KEYWORD_EXISTS,
+                        ])
                     }
 
                     CompletionRelevanceData::Role(_) => match clause {
                         WrappingClause::DropRole | WrappingClause::AlterRole => true,
 
-                        WrappingClause::SetStatement => ctx
-                            .before_cursor_matches_kind(&["keyword_role", "keyword_authorization"]),
+                        WrappingClause::SetStatement => ctx.before_cursor_matches_kind(&[
+                            Kind::KEYWORD_ROLE,
+                            Kind::KEYWORD_AUTHORIZATION,
+                        ]),
 
                         WrappingClause::RevokeStatement | WrappingClause::GrantStatement => {
-                            ctx.history_ends_with(&["role_specification", "any_identifier"])
-                                || (ctx.node_under_cursor.kind() == "any_identifier"
+                            ctx.history_ends_with(&[Kind::ROLE_SPECIFICATION, Kind::ANY_IDENTIFIER])
+                                || (Kind::of(ctx.node_under_cursor) == Kind::ANY_IDENTIFIER
                                     && ctx.before_cursor_matches_kind(&[
-                                        "keyword_grant",
-                                        "keyword_revoke",
-                                        "keyword_for",
+                                        Kind::KEYWORD_GRANT,
+                                        Kind::KEYWORD_REVOKE,
+                                        Kind::KEYWORD_FOR,
                                     ]))
                         }
 
                         WrappingClause::AlterPolicy | WrappingClause::CreatePolicy => {
-                            ctx.before_cursor_matches_kind(&["keyword_to"])
-                                && ctx.history_ends_with(&["policy_to_role", "any_identifier"])
+                            ctx.before_cursor_matches_kind(&[Kind::KEYWORD_TO])
+                                && ctx.history_ends_with(&[
+                                    Kind::POLICY_TO_ROLE,
+                                    Kind::ANY_IDENTIFIER,
+                                ])
                         }
 
                         _ => false,
@@ -611,17 +632,24 @@ impl CompletionFilter<'_> {
             return None;
         }
 
-        if ctx.previous_clause.is_some_and(|n| n.kind() == "ERROR") {
+        if ctx
+            .previous_clause
+            .is_some_and(|n| Kind::of(n) == Kind::ERROR)
+        {
             return Some(());
         }
 
-        let clause_to_investigate = if ctx.node_under_cursor.kind() != "ERROR" {
+        let clause_to_investigate = if Kind::of(ctx.node_under_cursor) != Kind::ERROR {
             ctx.current_clause
         } else {
             ctx.previous_clause
         };
 
-        if clause_to_investigate.is_none() || ctx.previous_clause.is_some_and(|n| n.kind() == ";") {
+        if clause_to_investigate.is_none()
+            || ctx
+                .previous_clause
+                .is_some_and(|n| Kind::of(n) == Kind::ANON_SEMI)
+        {
             if keyword.starts_statement {
                 return Some(());
             } else {
@@ -632,8 +660,10 @@ impl CompletionFilter<'_> {
         // The grammar can't read the word at the cursor, like the sanitized token after a column
         // type, so the clauses around it are an ERROR and say nothing. The keyword fits if
         // every clause before it is finished in the tree with the keyword.
-        if ctx.node_under_cursor.kind() == "ERROR"
-            || ctx.current_clause.is_some_and(|n| n.kind() == "ERROR")
+        if Kind::of(ctx.node_under_cursor) == Kind::ERROR
+            || ctx
+                .current_clause
+                .is_some_and(|n| Kind::of(n) == Kind::ERROR)
         {
             let mut node = goto_node_at_position(&tree, start_byte);
             while let Some(investigated) = node {
@@ -659,7 +689,7 @@ impl CompletionFilter<'_> {
                     return None;
                 }
 
-                if parent.kind() == old_unfinished_parent.kind()
+                if Kind::of(parent) == Kind::of(old_unfinished_parent)
                     || parent.start_byte() < old_unfinished_parent.start_byte()
                 {
                     break;
@@ -669,7 +699,7 @@ impl CompletionFilter<'_> {
             }
 
             if let Some(new_parent) = new_parent {
-                if new_parent.kind() != old_unfinished_parent.kind() {
+                if Kind::of(new_parent) != Kind::of(old_unfinished_parent) {
                     return None;
                 }
 
@@ -687,7 +717,7 @@ impl CompletionFilter<'_> {
 
 /// Whether the cursor is on the target or the source of MERGE, rather than in its join condition.
 fn is_merge_relation(ctx: &TreesitterContext) -> bool {
-    ctx.before_cursor_matches_kind(&["keyword_into", "keyword_using"])
+    ctx.before_cursor_matches_kind(&[Kind::KEYWORD_INTO, Kind::KEYWORD_USING])
 }
 
 #[cfg(test)]
