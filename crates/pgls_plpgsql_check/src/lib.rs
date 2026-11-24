@@ -1,15 +1,16 @@
 mod diagnostics;
 
+use std::borrow::Cow;
+
 pub use diagnostics::PlPgSqlCheckDiagnostic;
-use diagnostics::create_diagnostics_from_check_result;
-use pgls_query::protobuf::CreateFunctionStmt;
+use pgls_catalog::{NamePosition, quote_identifier};
+use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameterMode, Token, TypeName};
 use pgls_query_ext::{
-    function_body::Language,
+    function_body::{Language, OffsetMap, function_body_location},
     utils::{QualifiedName, find_option_value, qualified_name},
 };
-use regex::Regex;
+use pgls_text_size::TextRange;
 use serde::Deserialize;
-pub use sqlx::postgres::PgSeverity;
 use sqlx::{Acquire, PgPool, Postgres, Transaction};
 
 #[derive(Debug)]
@@ -31,68 +32,144 @@ pub struct PlPgSqlCheckParams<'a> {
     pub constant_tracing: bool,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PlpgSqlCheckResult {
-    pub function: String,
-    pub issues: Vec<PlpgSqlCheckIssue>,
+/// What [`check`] did with a statement.
+#[derive(Debug)]
+pub enum Checked {
+    /// plpgsql_check checked the function and found these issues.
+    Issues(Vec<PlPgSqlCheckDiagnostic>),
+    /// The statement wasn't checked.
+    Skipped(SkipReason),
+}
+
+/// Why [`check`] didn't check a statement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SkipReason {
+    /// It doesn't create a PL/pgSQL function.
+    NotPlPgSql,
+    /// The extension isn't installed in the database.
+    ExtensionMissing,
+    /// A trigger function that no trigger of the snapshot uses. plpgsql_check checks a trigger
+    /// function for the table of a trigger.
+    TriggerWithoutTable,
+    /// An argument's type is written as `%TYPE`, which a signature can't name.
+    ArgumentTypeReference,
+    /// The body isn't a string constant found in the statement, like a string with an invalid
+    /// escape, which Postgres rejects anyway.
+    BodyNotFound,
+}
+
+/// Why [`check`] failed.
+#[derive(Debug, thiserror::Error)]
+pub enum CheckError {
+    #[error(transparent)]
+    Database(#[from] sqlx::Error),
+    #[error("plpgsql_check returned output that isn't its JSON: {0}")]
+    Output(#[from] serde_json::Error),
 }
 
 #[derive(Debug, Deserialize)]
-pub struct PlpgSqlCheckIssue {
-    pub level: String,
-    pub message: String,
-    pub detail: Option<String>,
-    pub hint: Option<String>,
-    pub statement: Option<Statement>,
-    pub query: Option<Query>,
+pub(crate) struct PlPgSqlCheckResult {
+    pub(crate) issues: Vec<PlPgSqlCheckIssue>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct PlPgSqlCheckIssue {
+    pub(crate) level: String,
+    pub(crate) message: String,
+    pub(crate) detail: Option<String>,
+    pub(crate) hint: Option<String>,
+    pub(crate) statement: Option<Statement>,
+    pub(crate) query: Option<Query>,
     #[serde(rename = "sqlState")]
-    pub sql_state: Option<String>,
+    pub(crate) sql_state: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Statement {
+pub(crate) struct Statement {
     #[serde(rename = "lineNumber")]
-    pub line_number: String,
-    pub text: String,
+    pub(crate) line_number: String,
+    pub(crate) text: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Query {
-    pub position: String,
-    pub text: String,
+pub(crate) struct Query {
+    pub(crate) position: String,
+    pub(crate) text: String,
 }
 
-/// check if the given node is a plpgsql function that should be checked
-fn should_check_function<'a>(
-    ast: &'a pgls_query::NodeEnum,
-    snapshot: &pgls_catalog::Snapshot,
-) -> Option<&'a CreateFunctionStmt> {
-    let create_fn = match ast {
-        pgls_query::NodeEnum::CreateFunctionStmt(stmt) => stmt,
-        _ => return None,
-    };
-
-    if Language::of(create_fn) != Some(Language::PlPgSql) {
-        return None;
-    }
-
-    // Only an installed extension has `plpgsql_check_function`.
-    if !snapshot
-        .extension("plpgsql_check")
-        .is_some_and(pgls_catalog::Extension::is_installed)
-    {
-        return None;
-    }
-
-    Some(create_fn)
+/// The body of a function: its value, which plpgsql_check's positions are in, and where it is
+/// in the statement.
+pub(crate) struct FunctionBody<'a> {
+    pub(crate) value: &'a str,
+    /// Where the string constant's text is in the statement.
+    range: TextRange,
+    /// How offsets in `value` map to the constant's text, which differ where it escapes
+    /// characters.
+    offsets: OffsetMap,
 }
 
-/// check if a function is a trigger function
-fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
-    create_fn
-        .return_type
-        .as_ref()
-        .map(|n| {
+impl FunctionBody<'_> {
+    /// The range in the statement of `range` in the body's value.
+    pub(crate) fn to_statement(&self, range: TextRange) -> TextRange {
+        self.offsets.range_to_source(range) + self.range.start()
+    }
+}
+
+/// A PL/pgSQL function that a statement creates.
+struct PlPgSqlFunction<'a> {
+    create_fn: &'a CreateFunctionStmt,
+    schema: Option<&'a str>,
+    name: &'a str,
+    body: FunctionBody<'a>,
+}
+
+impl<'a> PlPgSqlFunction<'a> {
+    /// The PL/pgSQL function that `ast`, whose text is `sql`, creates, if plpgsql_check can check
+    /// it in the database of `snapshot`.
+    fn of(
+        ast: &'a pgls_query::NodeEnum,
+        sql: &str,
+        snapshot: &pgls_catalog::Snapshot,
+    ) -> Result<Self, SkipReason> {
+        let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = ast else {
+            return Err(SkipReason::NotPlPgSql);
+        };
+        if Language::of(create_fn) != Some(Language::PlPgSql) {
+            return Err(SkipReason::NotPlPgSql);
+        }
+        // Only an installed extension has `plpgsql_check_function`.
+        if !snapshot
+            .extension("plpgsql_check")
+            .is_some_and(pgls_catalog::Extension::is_installed)
+        {
+            return Err(SkipReason::ExtensionMissing);
+        }
+        let Some(QualifiedName { schema, name, .. }) = qualified_name(&create_fn.funcname) else {
+            return Err(SkipReason::NotPlPgSql);
+        };
+        // The body's value is the `AS` option; the scanner finds its constant, so that an
+        // escaped body or one whose text also occurs earlier in the statement is found.
+        let value = find_option_value(create_fn, "as").ok_or(SkipReason::BodyNotFound)?;
+        let (range, offsets) =
+            function_body_location(create_fn, sql).ok_or(SkipReason::BodyNotFound)?;
+        debug_assert!(
+            usize::from(range.end()) <= sql.len(),
+            "the body is in the statement"
+        );
+        Ok(Self {
+            create_fn,
+            schema,
+            name,
+            body: FunctionBody {
+                value,
+                range,
+                offsets,
+            },
+        })
+    }
+
+    fn is_trigger(&self) -> bool {
+        self.create_fn.return_type.as_ref().is_some_and(|n| {
             matches!(
                 qualified_name(&n.names),
                 Some(QualifiedName {
@@ -102,129 +179,159 @@ fn is_trigger_function(create_fn: &CreateFunctionStmt) -> bool {
                 })
             )
         })
-        .unwrap_or(false)
-}
+    }
 
-/// build the function identifier string used by plpgsql_check
-fn build_function_identifier(
-    create_fn: &CreateFunctionStmt,
-    fn_schema: Option<&str>,
-    fn_name: &str,
-) -> String {
-    let args = create_fn
-        .parameters
-        .iter()
-        .filter_map(|arg| {
-            let node = match &arg.node {
-                Some(pgls_query::NodeEnum::FunctionParameter(n)) => n,
-                _ => return None,
+    /// The signature of the function as `regprocedure` reads it ([`regprocedurein`]): the
+    /// quoted name and the types of the arguments that identify it. A function's `OUT` and
+    /// `TABLE` arguments don't, a procedure's `OUT` arguments do ([`interpret_function_parameter_list`]).
+    /// `None` if an argument's type is a `%TYPE` reference.
+    ///
+    /// [`regprocedurein`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/regproc.c#L227
+    /// [`interpret_function_parameter_list`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L184
+    fn signature(&self) -> Option<String> {
+        let mut signature = match self.schema {
+            Some(schema) => format!(
+                "{}.{}",
+                quote_identifier(schema, NamePosition::ColId),
+                quote_identifier(self.name, NamePosition::ColLabel)
+            ),
+            None => quote_identifier(self.name, NamePosition::TypeFunctionName).into_owned(),
+        };
+        signature.push('(');
+        let mut first = true;
+        for parameter in &self.create_fn.parameters {
+            let Some(pgls_query::NodeEnum::FunctionParameter(parameter)) = &parameter.node else {
+                continue;
             };
-            let type_name_node = node.arg_type.as_ref()?;
-            let type_name = match qualified_name(&type_name_node.names)? {
-                QualifiedName {
-                    schema: Some(schema),
-                    name,
-                    ..
-                } => format!("{schema}.{name}"),
-                QualifiedName { name, .. } => name.to_owned(),
+            let identifies = match parameter.mode() {
+                FunctionParameterMode::FuncParamOut => self.create_fn.is_procedure,
+                FunctionParameterMode::FuncParamTable => false,
+                _ => true,
             };
-
-            if !type_name_node.array_bounds.is_empty() {
-                Some(format!("{type_name}[]"))
-            } else {
-                Some(type_name)
+            if !identifies {
+                continue;
             }
-        })
-        .collect::<Vec<_>>();
+            let type_name = parameter.arg_type.as_ref()?;
+            if !first {
+                signature.push_str(", ");
+            }
+            first = false;
+            signature.push_str(&Self::type_name(type_name)?);
+        }
+        signature.push(')');
+        Some(signature)
+    }
 
-    let fn_qualified_name = match fn_schema {
-        Some(schema) => format!("{schema}.{fn_name}"),
-        None => fn_name.to_string(),
-    };
+    /// The type `type_name` as a type name in a signature: its quoted name, `[]` for an array.
+    /// Postgres ignores the type modifiers of an argument.
+    fn type_name(type_name: &TypeName) -> Option<String> {
+        if type_name.pct_type {
+            return None;
+        }
+        let mut name = String::new();
+        for (i, part) in type_name.names.iter().enumerate() {
+            let Some(pgls_query::NodeEnum::String(part)) = &part.node else {
+                return None;
+            };
+            let position = if i == 0 {
+                NamePosition::TypeFunctionName
+            } else {
+                name.push('.');
+                NamePosition::ColLabel
+            };
+            name.push_str(&quote_identifier(&part.sval, position));
+        }
+        if !type_name.array_bounds.is_empty() {
+            name.push_str("[]");
+        }
+        Some(name)
+    }
 
-    if args.is_empty() {
-        fn_qualified_name
-    } else {
-        format!("{}({})", fn_qualified_name, args.join(", "))
+    /// `sql` as `CREATE OR REPLACE`, so that it replaces the function if the database has it:
+    /// `OR REPLACE` inserted before the `FUNCTION` or `PROCEDURE` keyword.
+    fn create_or_replace<'s>(&self, sql: &'s str) -> Cow<'s, str> {
+        if self.create_fn.replace {
+            return Cow::Borrowed(sql);
+        }
+        let keyword = pgls_query::scan(sql).ok().and_then(|scan| {
+            scan.tokens
+                .iter()
+                .find(|token| matches!(token.token(), Token::Function | Token::Procedure))
+                .and_then(|token| usize::try_from(token.start).ok())
+        });
+        match keyword.and_then(|start| Some((sql.get(..start)?, sql.get(start..)?))) {
+            Some((before, after)) => Cow::Owned(format!("{before}OR REPLACE {after}")),
+            None => Cow::Borrowed(sql),
+        }
     }
 }
 
-/// Build extra named parameters for plpgsql_check_function().
-/// Only includes parameters that differ from plpgsql_check defaults.
-fn build_extra_params(options: &PlPgSqlCheckParams<'_>) -> String {
-    let mut params = Vec::new();
-
-    if !options.fatal_errors {
-        params.push("fatal_errors := false".to_string());
-    }
-    if !options.other_warnings {
-        params.push("other_warnings := false".to_string());
-    }
-    if !options.extra_warnings {
-        params.push("extra_warnings := false".to_string());
-    }
-    if options.performance_warnings {
-        params.push("performance_warnings := true".to_string());
-    }
-    if options.security_warnings {
-        params.push("security_warnings := true".to_string());
-    }
-    if options.compatibility_warnings {
-        params.push("compatibility_warnings := true".to_string());
-    }
-    if options.without_warnings {
-        params.push("without_warnings := true".to_string());
-    }
-    if options.all_warnings {
-        params.push("all_warnings := true".to_string());
-    }
-    if !options.use_incomment_options {
-        params.push("use_incomment_options := false".to_string());
-    }
-    if options.incomment_options_usage_warning {
-        params.push("incomment_options_usage_warning := true".to_string());
-    }
-    if !options.constant_tracing {
-        params.push("constant_tracing := false".to_string());
-    }
-
-    if params.is_empty() {
-        String::new()
-    } else {
-        format!(", {}", params.join(", "))
+impl PlPgSqlCheckParams<'_> {
+    /// The named arguments of `plpgsql_check_function` for the options that differ from its
+    /// defaults, so that older versions of the extension, which lack some of them, still work.
+    fn extra_arguments(&self) -> String {
+        let arguments = [
+            (!self.fatal_errors, "fatal_errors := false"),
+            (!self.other_warnings, "other_warnings := false"),
+            (!self.extra_warnings, "extra_warnings := false"),
+            (self.performance_warnings, "performance_warnings := true"),
+            (self.security_warnings, "security_warnings := true"),
+            (self.compatibility_warnings, "compatibility_warnings := true"),
+            (self.without_warnings, "without_warnings := true"),
+            (self.all_warnings, "all_warnings := true"),
+            (!self.use_incomment_options, "use_incomment_options := false"),
+            (
+                self.incomment_options_usage_warning,
+                "incomment_options_usage_warning := true",
+            ),
+            (!self.constant_tracing, "constant_tracing := false"),
+        ];
+        arguments
+            .into_iter()
+            .filter(|(differs, _)| *differs)
+            .map(|(_, argument)| format!(", {argument}"))
+            .collect()
     }
 }
 
-/// Checks a PL/pgSQL function with plpgsql_check.
-///
-/// Returns `None` if the function was not checked, e.g. because the extension is not installed
-/// or because no trigger uses the trigger function.
-pub async fn check_plpgsql(
-    params: PlPgSqlCheckParams<'_>,
-) -> Result<Option<Vec<PlPgSqlCheckDiagnostic>>, sqlx::Error> {
-    let create_fn = match should_check_function(params.ast, params.snapshot) {
-        Some(stmt) => stmt,
-        None => return Ok(None),
+/// Checks a PL/pgSQL function with plpgsql_check: creates it in a transaction that is rolled
+/// back, and checks it, a trigger function once for the table of each trigger that uses it.
+pub async fn check(params: PlPgSqlCheckParams<'_>) -> Result<Checked, CheckError> {
+    let function = match PlPgSqlFunction::of(params.ast, params.sql, params.snapshot) {
+        Ok(function) => function,
+        Err(reason) => return Ok(Checked::Skipped(reason)),
+    };
+    let Some(signature) = function.signature() else {
+        return Ok(Checked::Skipped(SkipReason::ArgumentTypeReference));
     };
 
-    let Some(QualifiedName {
-        schema: fn_schema,
-        name: fn_name,
-        ..
-    }) = qualified_name(&create_fn.funcname)
-    else {
-        return Ok(None);
+    // The tables of the triggers that use a trigger function, as `regclass` reads them.
+    let relations: Vec<String> = if function.is_trigger() {
+        let relations: Vec<String> = params
+            .snapshot
+            .triggers
+            .iter()
+            .filter(|trigger| {
+                trigger.proc_name == function.name
+                    && function
+                        .schema
+                        .is_none_or(|schema| schema == trigger.proc_schema)
+            })
+            .map(|trigger| {
+                format!(
+                    "{}.{}",
+                    quote_identifier(&trigger.table_schema, NamePosition::ColId),
+                    quote_identifier(&trigger.table_name, NamePosition::ColLabel)
+                )
+            })
+            .collect();
+        if relations.is_empty() {
+            return Ok(Checked::Skipped(SkipReason::TriggerWithoutTable));
+        }
+        relations
+    } else {
+        Vec::new()
     };
-
-    let fn_identifier = build_function_identifier(create_fn, fn_schema, fn_name);
-
-    let fn_body = find_option_value(create_fn, "as")
-        .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body".to_string()))?;
-    let offset = params
-        .sql
-        .find(fn_body)
-        .ok_or_else(|| sqlx::Error::Protocol("Failed to find function body in SQL".to_string()))?;
-    let is_trigger = is_trigger_function(create_fn);
 
     // A connection of the pool. The function only exists in the transaction, which is rolled
     // back, and the queries that name it aren't prepared (`persistent(false)`), so the connection
@@ -238,88 +345,49 @@ pub async fn check_plpgsql(
         .execute(&mut *tx)
         .await?;
 
-    // make sure we run with "or replace"
-    let sql_with_replace = if !create_fn.replace {
-        #[expect(
-            clippy::unwrap_used,
-            reason = "the pattern is a constant, which the tests of functions without `OR REPLACE` compile"
-        )]
-        let re = Regex::new(r"(?i)\bCREATE\s+FUNCTION\b").unwrap();
-        re.replace(params.sql, "CREATE OR REPLACE FUNCTION")
-            .to_string()
-    } else {
-        params.sql.to_string()
-    };
-
     // create the function - this should always succeed
-    sqlx::query(&sql_with_replace)
+    sqlx::query(&function.create_or_replace(params.sql))
         .persistent(false)
         .execute(&mut *tx)
         .await?;
 
-    // run plpgsql_check and collect results with their relations
-    let extra = build_extra_params(&params);
-    let mut checked = !is_trigger;
-    let results_with_relations: Vec<(String, Option<String>)> = if is_trigger {
-        let mut results = Vec::new();
-
-        for trigger in params.snapshot.triggers.iter() {
-            if trigger.proc_name == fn_name
-                && (fn_schema.is_none() || fn_schema == Some(trigger.proc_schema.as_str()))
-            {
-                let relation = format!("{}.{}", trigger.table_schema, trigger.table_name);
-                checked = true;
-
-                let result: Option<String> = sqlx::query_scalar(&format!(
-                    "select plpgsql_check_function('{fn_identifier}', '{relation}', format := 'json'{extra})"
-                ))
-                .persistent(false)
-                .fetch_optional(&mut *tx)
-                .await?
-                .flatten();
-
-                if let Some(result) = result {
-                    results.push((result, Some(relation)));
-                }
-            }
-        }
-
-        results
-    } else {
+    // The names are bound as text and read by `regprocedure` and `regclass`, so that quoted
+    // names work and no name ends up in the query.
+    let extra = params.extra_arguments();
+    let mut results: Vec<(String, Option<String>)> = Vec::new();
+    if relations.is_empty() {
         let result: Option<String> = sqlx::query_scalar(&format!(
-            "select plpgsql_check_function('{fn_identifier}', format := 'json'{extra})"
+            "select plpgsql_check_function($1::regprocedure, format := 'json'{extra})"
         ))
+        .bind(&signature)
         .persistent(false)
         .fetch_optional(&mut *tx)
         .await?
         .flatten();
-
-        if let Some(result) = result {
-            vec![(result, None)]
-        } else {
-            vec![]
+        results.extend(result.map(|result| (result, None)));
+    } else {
+        for relation in relations {
+            let result: Option<String> = sqlx::query_scalar(&format!(
+                "select plpgsql_check_function($1::regprocedure, $2::regclass, format := 'json'{extra})"
+            ))
+            .bind(&signature)
+            .bind(&relation)
+            .persistent(false)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
+            results.extend(result.map(|result| (result, Some(relation))));
         }
-    };
+    }
 
     tx.rollback().await?;
 
-    if !checked {
-        return Ok(None);
-    }
-
-    // Parse results and create diagnostics
     let mut diagnostics = Vec::new();
-    for (result_json, relation) in results_with_relations {
-        let check_result: PlpgSqlCheckResult = serde_json::from_str(&result_json).map_err(|e| {
-            sqlx::Error::Protocol(format!("Failed to parse plpgsql_check result: {e}"))
-        })?;
-
-        let mut result_diagnostics =
-            create_diagnostics_from_check_result(&check_result, fn_body, offset, relation);
-        diagnostics.append(&mut result_diagnostics);
+    for (result, relation) in results {
+        let result: PlPgSqlCheckResult = serde_json::from_str(&result)?;
+        diagnostics.extend(result.diagnostics(&function.body, relation));
     }
-
-    Ok(Some(diagnostics))
+    Ok(Checked::Issues(diagnostics))
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
@@ -340,7 +408,7 @@ mod tests {
             .ok_or("Failed to parse SQL root")?;
         let snapshot = pgls_catalog::Snapshot::load(test_db).await?;
 
-        let diagnostics = super::check_plpgsql(super::PlPgSqlCheckParams {
+        let checked = super::check(super::PlPgSqlCheckParams {
             conn: test_db,
             sql: create_fn_sql,
             ast: &ast,
@@ -357,8 +425,11 @@ mod tests {
             incomment_options_usage_warning: false,
             constant_tracing: true,
         })
-        .await?
-        .unwrap_or_default();
+        .await?;
+        let diagnostics = match checked {
+            super::Checked::Issues(diagnostics) => diagnostics,
+            super::Checked::Skipped(reason) => return Err(format!("skipped: {reason:?}").into()),
+        };
 
         let span_texts = diagnostics
             .iter()
@@ -406,7 +477,7 @@ mod tests {
             "the test server should have plpgsql_check available"
         );
 
-        let result = super::check_plpgsql(super::PlPgSqlCheckParams {
+        let result = super::check(super::PlPgSqlCheckParams {
             conn: &test_db,
             sql: create_fn_sql,
             ast: &ast,
@@ -426,7 +497,146 @@ mod tests {
         .await
         .expect("plpgsql_check must not run");
 
-        assert!(result.is_none());
+        assert!(
+            matches!(
+                result,
+                super::Checked::Skipped(super::SkipReason::ExtensionMissing)
+            ),
+            "{result:?}"
+        );
+    }
+
+    /// The body is found where the statement has it, also when it escapes quotes, and when its
+    /// text occurs earlier in the statement. Both used to leave the function unchecked or put
+    /// the diagnostic at the wrong place.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_finds_the_body_by_location(test_db: PgPool) {
+        let setup = "create extension if not exists plpgsql_check;";
+
+        let escaped = "create function escaped() returns int language plpgsql as 'begin raise notice ''it''''s''; return missing_var; end';";
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, escaped)
+            .await
+            .expect("Failed to run plpgsql_check test");
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(span_texts[0].as_deref(), Some("missing_var"));
+
+        let repeated = "create /* begin return missing_var; end; */ function repeated() returns int language plpgsql as $$begin return missing_var; end;$$;";
+        let (diagnostics, _) = run_plpgsql_check_test(&test_db, setup, repeated)
+            .await
+            .expect("Failed to run plpgsql_check test");
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        let body = repeated.find("$$").expect("a body");
+        let span = diagnostics[0].span.expect("a span");
+        assert!(usize::from(span.start()) > body, "{span:?}");
+        assert_eq!(
+            &repeated[std::ops::Range::<usize>::from(span)],
+            "missing_var"
+        );
+    }
+
+    /// Names that need quotes, and a quote in a name, are passed to the database as they are.
+    /// `OUT` arguments aren't part of a function's signature.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_quoted_names(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+            create schema "My Schema";
+            create type "My Schema"."My Type" as (a int);
+        "#;
+        let create_fn_sql = r#"
+            create function "My Schema"."Check 'Me'"(p "My Schema"."My Type", p2 int[], out q int)
+            language plpgsql as $$
+            begin
+                q := missing_var;
+            end;
+            $$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(span_texts[0].as_deref(), Some("missing_var"));
+    }
+
+    /// A trigger function is checked for a table whose name needs quotes.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_trigger_on_a_quoted_table(test_db: PgPool) {
+        let create_fn_sql = r#"
+            create or replace function public.audit_trigger() returns trigger
+            language plpgsql as $$
+            begin
+                new.missing := 1;
+                return new;
+            end;
+            $$;
+        "#;
+        let setup = format!(
+            r#"
+            create extension if not exists plpgsql_check;
+            create table public."Audit Items" (id int);
+            {create_fn_sql}
+            create trigger audit before insert on public."Audit Items"
+                for each row execute function public.audit_trigger();
+            "#
+        );
+
+        let (diagnostics, _) = run_plpgsql_check_test(&test_db, &setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(
+            diagnostics[0].advices.relation.as_deref(),
+            Some(r#"public."Audit Items""#)
+        );
+    }
+
+    /// A procedure that the database already has is replaced: `OR REPLACE` goes before the
+    /// keyword, after a comment. A procedure's `OUT` arguments are part of its signature.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_existing_procedure(test_db: PgPool) {
+        let setup = r#"
+            create extension if not exists plpgsql_check;
+            create procedure public.existing(a int, out b int) language plpgsql as $$
+            begin
+                b := a;
+            end;
+            $$;
+        "#;
+        let create_fn_sql = r#"
+            create /* replaces it */ procedure public.existing(a int, out b int)
+            language plpgsql as $$
+            begin
+                b := missing_var;
+            end;
+            $$;
+        "#;
+
+        let (diagnostics, span_texts) = run_plpgsql_check_test(&test_db, setup, create_fn_sql)
+            .await
+            .expect("Failed to run plpgsql_check test");
+
+        assert_eq!(diagnostics.len(), 1, "{diagnostics:?}");
+        assert_eq!(span_texts[0].as_deref(), Some("missing_var"));
+    }
+
+    /// A signature can't name a `%TYPE` argument, so the function isn't checked.
+    #[pgls_test_utils::db_test]
+    async fn test_plpgsql_check_skips_type_references(test_db: PgPool) {
+        let setup =
+            "create extension if not exists plpgsql_check; create table public.items (id int);";
+        let create_fn_sql = "create function by_type(p public.items.id%type) returns int language plpgsql as $$ begin return missing_var; end; $$;";
+
+        let result = run_plpgsql_check_test(&test_db, setup, create_fn_sql).await;
+
+        assert_eq!(
+            result
+                .map(|(diagnostics, _)| diagnostics.len())
+                .map_err(|err| err.to_string()),
+            Err("skipped: ArgumentTypeReference".to_string())
+        );
     }
 
     #[pgls_test_utils::db_test]
@@ -1050,7 +1260,7 @@ mod result_tests {
 
     #[test]
     fn deserializes_issue_detail_and_hint() {
-        let result: PlpgSqlCheckResult = serde_json::from_str(
+        let result: super::PlPgSqlCheckResult = serde_json::from_str(
             r#"{
                 "function": "public.f1",
                 "issues": [{

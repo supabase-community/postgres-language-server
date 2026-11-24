@@ -37,6 +37,8 @@ use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
 #[cfg(feature = "db")]
+use pgls_plpgsql_check::Checked;
+#[cfg(feature = "db")]
 use runtime::WorkspaceRuntime;
 
 use pgls_catalog::Snapshot;
@@ -580,7 +582,7 @@ impl WorkspaceServer {
                                     }
 
                                     if plpgsql_check.enabled {
-                                        let results = pgls_plpgsql_check::check_plpgsql(
+                                        let checked = pgls_plpgsql_check::check(
                                             pgls_plpgsql_check::PlPgSqlCheckParams {
                                                 conn: &pool,
                                                 sql: id.content(),
@@ -603,13 +605,20 @@ impl WorkspaceServer {
                                                 constant_tracing: plpgsql_check.constant_tracing,
                                             },
                                         )
-                                        .await
-                                        .ok()
-                                        .flatten();
+                                        .await;
+                                        let diagnostics = match checked {
+                                            Ok(Checked::Issues(diagnostics)) => {
+                                                result.plpgsql_checked = true;
+                                                diagnostics
+                                            }
+                                            Ok(Checked::Skipped(_)) => Vec::new(),
+                                            Err(err) => {
+                                                debug!("plpgsql_check failed: {err}");
+                                                Vec::new()
+                                            }
+                                        };
 
-                                        result.plpgsql_checked = results.is_some();
-
-                                        for diagnostic in results.unwrap_or_default() {
+                                        for diagnostic in diagnostics {
                                             let span =
                                                 database_span(diagnostic.span, id.content(), range);
                                             result.diagnostics.push(SDiagnostic::new(
