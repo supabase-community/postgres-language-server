@@ -8,81 +8,42 @@ use std::{
         atomic::{AtomicBool, Ordering},
         mpsc::{self, RecvTimeoutError},
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 
-use tokio::runtime::{Handle, Runtime};
+use tokio::runtime::Runtime;
 
 use crate::{WORKER_STACK_SIZE_BYTES, WorkspaceError};
 
 /// How often [`WorkspaceRuntime::run_until`] checks whether to stop.
 const STOP_CHECK_PERIOD: Duration = Duration::from_millis(20);
 
-/// Where the workspace runs its async work, the database queries, and the clock of its backoffs
-/// and idle timeouts.
+/// Where the workspace runs its async work, the database queries: a runtime of its own, created
+/// on first use.
 ///
 /// The workspace's methods are sync and called from threads that may not belong to a runtime, so
 /// the futures run on this runtime while the calling thread waits for them. See
 /// https://greptime.com/blogs/2023-03-09-bridging-async-and-sync-rust for details.
+///
+/// Its workers type check statements, which walks their parse trees and parses them with
+/// tree-sitter, so they get the stack size of the language server's threads. Creating it fails
+/// if the OS can't start its threads: the request that tried reports that, and the next request
+/// tries again.
+#[derive(Default)]
 pub(crate) struct WorkspaceRuntime {
-    executor: Executor,
-    clock: Clock,
-}
-
-enum Executor {
-    /// A runtime of the workspace's own, created on first use.
-    Own(OwnRuntime),
-    /// The runtime of whoever created the workspace, e.g. a test's runtime with a paused clock.
-    Injected(Handle),
-}
-
-impl Default for WorkspaceRuntime {
-    fn default() -> Self {
-        Self::new()
-    }
+    runtime: OnceLock<Runtime>,
+    /// Held while the runtime is created, so that only one request creates it.
+    init: Mutex<()>,
 }
 
 impl WorkspaceRuntime {
-    /// A runtime of the workspace's own, created when the first future runs, and the system clock.
-    pub(crate) fn new() -> Self {
-        Self {
-            executor: Executor::Own(OwnRuntime::default()),
-            clock: Clock::system(),
-        }
-    }
-
-    /// The runtime of `handle` and its clock. Paused, the clock only moves when the runtime
-    /// advances it.
-    ///
-    /// The workspace waits for its futures on the thread that calls it, so it must not be called
-    /// from a thread that drives a current-thread runtime of `handle`, but e.g. from its
-    /// `spawn_blocking` threads, as the language server does.
-    pub(crate) fn with_handle(handle: Handle) -> Self {
-        Self {
-            clock: Clock::of(&handle),
-            executor: Executor::Injected(handle),
-        }
-    }
-
-    /// The clock of the backoffs and idle timeouts.
-    pub(crate) fn clock(&self) -> &Clock {
-        &self.clock
-    }
-
-    fn handle(&self) -> Result<&Handle, WorkspaceError> {
-        match &self.executor {
-            Executor::Own(own) => own.get().map(Runtime::handle),
-            Executor::Injected(handle) => Ok(handle),
-        }
-    }
-
     /// Runs `future` on the runtime and waits for it on this thread.
     pub(crate) fn run<F, R>(&self, future: F) -> Result<R, WorkspaceError>
     where
         F: Future<Output = R> + Send + 'static,
         R: Send + 'static,
     {
-        let handle = self.handle()?;
+        let handle = self.get()?.handle();
         futures::executor::block_on(async { handle.spawn(future).await.map_err(|e| e.into()) })
     }
 
@@ -103,7 +64,7 @@ impl WorkspaceRuntime {
         if should_stop() {
             stop.store(true, Ordering::Relaxed);
         }
-        let handle = self.handle()?;
+        let handle = self.get()?.handle();
         let (done, finished) = mpsc::channel::<()>();
         let task = handle.spawn(async move {
             let result = future.await;
@@ -118,20 +79,7 @@ impl WorkspaceRuntime {
         }
         futures::executor::block_on(task).map_err(|e| e.into())
     }
-}
 
-/// The runtime the workspace creates itself. Its workers type check statements, which walks
-/// their parse trees and parses them with tree-sitter, so they get the stack size of the language
-/// server's threads. Creating it fails if the OS can't start its threads: the request that tried
-/// reports that, and the next request tries again.
-#[derive(Default)]
-struct OwnRuntime {
-    runtime: OnceLock<Runtime>,
-    /// Held while the runtime is created, so that only one request creates it.
-    init: Mutex<()>,
-}
-
-impl OwnRuntime {
     fn get(&self) -> Result<&Runtime, WorkspaceError> {
         self.get_or_build(Self::build)
     }
@@ -182,54 +130,13 @@ impl OwnRuntime {
     }
 }
 
-impl Drop for OwnRuntime {
+impl Drop for WorkspaceRuntime {
     /// Drops the runtime's tasks without waiting for them. The workspace may be dropped on a
     /// thread of an async runtime, where waiting would panic.
     fn drop(&mut self) {
         if let Some(runtime) = self.runtime.take() {
             runtime.shutdown_background();
         }
-    }
-}
-
-/// The clock of the workspace's backoffs and idle timeouts: the system's, or the one of an
-/// injected runtime, which a test can pause and advance.
-pub(crate) struct Clock {
-    /// The runtime whose clock this is, if it was injected.
-    runtime: Option<Handle>,
-    /// When the clock was created, see [`Clock::elapsed`].
-    epoch: Instant,
-}
-
-impl Clock {
-    fn system() -> Self {
-        Self {
-            runtime: None,
-            epoch: Instant::now(),
-        }
-    }
-
-    fn of(handle: &Handle) -> Self {
-        let _context = handle.enter();
-        Self {
-            runtime: Some(handle.clone()),
-            epoch: tokio::time::Instant::now().into_std(),
-        }
-    }
-
-    pub(crate) fn now(&self) -> Instant {
-        match &self.runtime {
-            Some(runtime) => {
-                let _context = runtime.enter();
-                tokio::time::Instant::now().into_std()
-            }
-            None => Instant::now(),
-        }
-    }
-
-    /// How long ago the clock was created.
-    pub(crate) fn elapsed(&self) -> Duration {
-        self.now().saturating_duration_since(self.epoch)
     }
 }
 
@@ -244,7 +151,7 @@ mod tests {
         time::Duration,
     };
 
-    use super::{OwnRuntime, WorkspaceRuntime};
+    use super::WorkspaceRuntime;
     use crate::WorkspaceError;
 
     /// Recurses until the frames below `base` take at least `target` bytes of stack, and returns
@@ -263,7 +170,7 @@ mod tests {
     #[test]
     fn futures_run_with_the_worker_stack_size() {
         const TARGET: usize = 4 * 1024 * 1024;
-        let used = WorkspaceRuntime::new()
+        let used = WorkspaceRuntime::default()
             .run(async {
                 let base = black_box(0u8);
                 use_stack(&base as *const u8 as usize, TARGET)
@@ -277,7 +184,7 @@ mod tests {
         let stop = Arc::new(AtomicBool::new(false));
         let checks = AtomicUsize::new(0);
         // Counts until it is stopped, which the third check does.
-        let counted = WorkspaceRuntime::new()
+        let counted = WorkspaceRuntime::default()
             .run_until(
                 {
                     let stop = Arc::clone(&stop);
@@ -302,7 +209,7 @@ mod tests {
     #[test]
     fn a_future_that_should_stop_right_away_is_stopped_before_it_starts() {
         let stop = Arc::new(AtomicBool::new(false));
-        let started = WorkspaceRuntime::new()
+        let started = WorkspaceRuntime::default()
             .run_until(
                 {
                     let stop = Arc::clone(&stop);
@@ -319,7 +226,7 @@ mod tests {
     /// next call creates the runtime instead of failing until the server restarts.
     #[test]
     fn a_runtime_that_fails_to_start_is_created_by_the_next_call() {
-        let own = OwnRuntime::default();
+        let own = WorkspaceRuntime::default();
 
         // The OS can't map a 1 PiB stack, so spawning the first worker thread fails.
         let failed = own.get_or_build(|| {
@@ -337,36 +244,9 @@ mod tests {
     /// The workspace, and with it its runtime, may be dropped on a thread of the language
     /// server's runtime.
     #[tokio::test]
-    async fn the_own_runtime_can_be_dropped_in_an_async_context() {
-        let runtime = WorkspaceRuntime::new();
+    async fn the_runtime_can_be_dropped_in_an_async_context() {
+        let runtime = WorkspaceRuntime::default();
         assert_eq!(runtime.run(async { 1 }).unwrap(), 1);
         drop(runtime);
-    }
-
-    /// An injected runtime runs the futures, and its clock is the one of the backoffs and idle
-    /// timeouts, so a test can pause it and move it forward.
-    #[test]
-    fn an_injected_runtime_runs_the_futures_on_its_clock() {
-        let test_runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .start_paused(true)
-            .build()
-            .unwrap();
-        let runtime = WorkspaceRuntime::with_handle(test_runtime.handle().clone());
-        assert_eq!(runtime.clock().elapsed(), Duration::ZERO);
-
-        test_runtime.block_on(async {
-            tokio::time::advance(Duration::from_secs(90)).await;
-            // The workspace is called from a blocking thread, while the runtime's own thread
-            // waits for it.
-            let ran = tokio::task::spawn_blocking(move || {
-                let ran = runtime.run(async { tokio::time::sleep(Duration::ZERO).await });
-                (ran, runtime.clock().elapsed())
-            })
-            .await
-            .unwrap();
-            assert!(ran.0.is_ok());
-            assert_eq!(ran.1, Duration::from_secs(90));
-        });
     }
 }

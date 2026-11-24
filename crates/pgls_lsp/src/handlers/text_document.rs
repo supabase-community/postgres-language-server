@@ -118,10 +118,7 @@ pub(crate) async fn did_close(
 
     let diagnostics = vec![];
     let version = None;
-    session
-        .client
-        .publish_diagnostics(url, diagnostics, version)
-        .await;
+    session.publish_diagnostics(url, diagnostics, version).await;
 
     Ok(())
 }

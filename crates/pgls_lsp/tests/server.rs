@@ -24,11 +24,10 @@ use pgls_configuration::migrations::{MigrationTool, PartialMigrationsConfigurati
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_configuration::{PartialLinterConfiguration, PartialTypecheckConfiguration};
 use pgls_fs::{ConfigName, MemoryFileSystem, OsFileSystem};
-use pgls_lsp::Blocking;
+use pgls_lsp::DebounceDurations;
 use pgls_lsp::LSPServer;
 use pgls_lsp::ServerFactory;
 use pgls_workspace::DynRef;
-use pgls_workspace::workspace::server::WorkspaceServer;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -41,7 +40,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::io::AsyncWriteExt;
 use tower::timeout::Timeout;
 use tower::{Service, ServiceExt};
@@ -691,15 +690,16 @@ async fn test_database_connection(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-/// The workspace runs its async work on the test's runtime, whose clock is paused, and the work
-/// that blocks runs inline on the runtime's thread. So the debounce of the diagnostics takes
-/// exactly its time on the paused clock, however long the analysis takes.
-#[tokio::test(start_paused = true)]
-async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
-    let workspace = WorkspaceServer::with_runtime(tokio::runtime::Handle::current());
-    let factory = ServerFactory::default()
-        .with_workspace(Arc::new(workspace))
-        .with_blocking(Blocking::Inline);
+/// Two changes within the debounce publish the diagnostics of the second change only. The test
+/// waits until the server is idle on the real clock, then reads every diagnostics it published.
+#[tokio::test]
+async fn diagnostics_are_debounced() -> Result<()> {
+    // Long enough that the second change comes within the debounce of the first.
+    let debounce = Duration::from_secs(1);
+    let factory = ServerFactory::default().with_debounce(DebounceDurations {
+        diagnostics: debounce,
+        ..DebounceDurations::default()
+    });
     let mut fs = MemoryFileSystem::default();
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -717,9 +717,9 @@ async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
         serde_json::to_string_pretty(&conf).unwrap(),
     );
 
-    let (service, client) = factory
-        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
-        .into_inner();
+    let connection = factory.create_with_fs(None, DynRef::Owned(Box::new(fs)));
+    let activity = connection.activity();
+    let (service, client) = connection.into_inner();
     let (stream, sink) = client.split();
     let mut server = Server::new(service);
     let (sender, mut receiver) = channel(CHANNEL_BUFFER_SIZE);
@@ -729,27 +729,45 @@ async fn diagnostics_are_debounced_on_the_paused_clock() -> Result<()> {
     server.initialized().await?;
     server.load_configuration().await?;
     server.open_document("select 1;\n").await?;
-    wait_for_diagnostics(&mut receiver, 0).await?;
+    let opened = activity.wait_until_idle(3, IDLE_TIMEOUT).await?;
+    receive_diagnostics(&mut receiver, opened.diagnostics_published).await?;
 
-    // The second change comes within the debounce of the first, which it replaces.
-    let start = tokio::time::Instant::now();
+    let start = Instant::now();
     server.replace_document(1, "select 2;\n").await?;
-    tokio::time::sleep(Duration::from_millis(200)).await;
     server.replace_document(2, "select 3;\n").await?;
-    let published = loop {
-        match receiver.next().await {
-            Some(ServerNotification::PublishDiagnostics(params)) => break params,
-            Some(_) => {}
-            None => bail!("the server closed the connection"),
-        }
-    };
-    assert_eq!(published.version, Some(2));
-    assert_eq!(start.elapsed(), Duration::from_millis(500));
+    let changed = activity.wait_until_idle(5, IDLE_TIMEOUT).await?;
+    let published = receive_diagnostics(
+        &mut receiver,
+        changed.diagnostics_published - opened.diagnostics_published,
+    )
+    .await?;
+    let versions: Vec<_> = published.iter().map(|params| params.version).collect();
+    assert_eq!(versions, [Some(2)]);
+    assert!(start.elapsed() >= debounce);
 
     server.shutdown().await?;
     reader.abort();
 
     Ok(())
+}
+
+/// How long a test waits for the server to become idle.
+const IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Receives the next `count` diagnostics, skipping the other notifications.
+async fn receive_diagnostics(
+    receiver: &mut Receiver<ServerNotification>,
+    count: u64,
+) -> Result<Vec<PublishDiagnosticsParams>> {
+    let mut published = Vec::new();
+    while (published.len() as u64) < count {
+        match tokio::time::timeout(IDLE_TIMEOUT, receiver.next()).await? {
+            Some(ServerNotification::PublishDiagnostics(params)) => published.push(params),
+            Some(_) => {}
+            None => bail!("the server closed the connection"),
+        }
+    }
+    Ok(published)
 }
 
 /// The type check error below can only be produced with a database connection and the schema of the

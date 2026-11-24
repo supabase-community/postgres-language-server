@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     adapters::{PositionEncoding, get_cursor_position, to_lsp},
-    blocking::Blocking,
-    session::Session,
+    session::{Session, SessionHandle},
 };
 use anyhow::{Result, anyhow};
 use pgls_analyse::Applicability;
@@ -14,7 +13,6 @@ use tower_lsp_server::ls_types::{
     MessageType, WorkspaceEdit,
 };
 
-use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
     FixFileParams, SUPPRESSION_ACTION_CATEGORY,
@@ -318,7 +316,7 @@ fn execute_statement_arguments(
 
 #[tracing::instrument(level = "debug", skip(session), err)]
 pub(crate) async fn execute_command(
-    session: &Session,
+    session: &SessionHandle,
     params: ExecuteCommandParams,
 ) -> anyhow::Result<Option<serde_json::Value>> {
     let command = params.command;
@@ -338,15 +336,10 @@ pub(crate) async fn execute_command(
             // The statement runs on a blocking thread, so that the server keeps handling requests,
             // `$/cancelRequest` included. That drops this future, and the guard then cancels the
             // statement in the database.
-            let guard = CancelStatementOnDrop(Some((
-                session.workspace.clone(),
-                params.clone(),
-                session.blocking,
-            )));
+            let guard = CancelStatementOnDrop(Some((Arc::clone(session), params.clone())));
             let workspace = session.workspace.clone();
             let result = session
-                .blocking
-                .spawn(move || workspace.execute_statement(params))
+                .spawn_blocking(move || workspace.execute_statement(params))
                 .await??;
             guard.disarm();
 
@@ -403,7 +396,7 @@ pub(crate) async fn execute_command(
 }
 
 /// Cancels the execution of a statement when dropped, unless disarmed.
-struct CancelStatementOnDrop(Option<(Arc<dyn Workspace>, ExecuteStatementParams, Blocking)>);
+struct CancelStatementOnDrop(Option<(SessionHandle, ExecuteStatementParams)>);
 
 impl CancelStatementOnDrop {
     fn disarm(mut self) {
@@ -413,8 +406,9 @@ impl CancelStatementOnDrop {
 
 impl Drop for CancelStatementOnDrop {
     fn drop(&mut self) {
-        if let Some((workspace, params, blocking)) = self.0.take() {
-            blocking.spawn(move || {
+        if let Some((session, params)) = self.0.take() {
+            let workspace = session.workspace.clone();
+            session.spawn_blocking(move || {
                 if let Err(err) = workspace.cancel_statement_execution(params) {
                     tracing::warn!("Could not cancel the statement execution: {err}");
                 }

@@ -91,6 +91,8 @@ mod analysis;
 #[cfg(feature = "db")]
 mod backoff;
 #[cfg(feature = "db")]
+pub use backoff::BackoffDurations;
+#[cfg(feature = "db")]
 mod connection_key;
 #[cfg(feature = "db")]
 use crate::settings::DatabaseSettings;
@@ -138,7 +140,7 @@ pub struct WorkspaceServer {
     #[cfg(feature = "db")]
     connection: ConnectionManager,
 
-    /// Where the database queries run, and the clock of their backoffs and idle timeouts
+    /// Where the database queries run
     #[cfg(feature = "db")]
     runtime: Arc<WorkspaceRuntime>,
 
@@ -171,31 +173,22 @@ impl WorkspaceServer {
     /// creates on first use.
     #[cfg(feature = "db")]
     pub fn new() -> Self {
-        Self::on(WorkspaceRuntime::new())
+        Self::with_backoff(BackoffDurations::default())
     }
 
-    /// Create a new [Workspace] whose database queries run on the runtime of `handle`, and whose
-    /// backoffs and idle timeouts read its clock, which a test can pause and move forward.
-    ///
-    /// The workspace waits for its queries on the thread that calls it. Call it from a thread
-    /// that doesn't drive a current-thread runtime of `handle`, e.g. from its `spawn_blocking`
-    /// threads, as the language server does.
+    /// Create a new [Workspace] that waits `backoff` before it retries a database connection or
+    /// snapshot that failed. Tests set it short.
     #[cfg(feature = "db")]
-    pub fn with_runtime(handle: tokio::runtime::Handle) -> Self {
-        Self::on(WorkspaceRuntime::with_handle(handle))
-    }
-
-    #[cfg(feature = "db")]
-    fn on(runtime: WorkspaceRuntime) -> Self {
-        let runtime = Arc::new(runtime);
+    pub fn with_backoff(backoff: BackoffDurations) -> Self {
+        let runtime = Arc::new(WorkspaceRuntime::default());
         Self {
             settings: RwLock::default(),
             documents: RwLock::new(HashMap::new()),
-            snapshot: SnapshotManager::new(Arc::clone(&runtime)),
+            snapshot: SnapshotManager::new(Arc::clone(&runtime), backoff),
             catalog_base: Mutex::default(),
             settings_version: AtomicU64::default(),
             document_caches: CacheBudget::new(DOCUMENT_CACHE_ENTRIES_MAX),
-            connection: ConnectionManager::new(Arc::clone(&runtime)),
+            connection: ConnectionManager::new(backoff),
             runtime,
             running_statements: RunningStatements::default(),
             #[cfg(test)]
