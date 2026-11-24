@@ -1,86 +1,53 @@
-use pgls_query::protobuf::FetchStmt;
+use pgls_query::protobuf::{FetchDirection, FetchStmt};
 
 use super::prelude::*;
 
+/// `FETCH ALL` is `FETCH_ALL`, which is `LONG_MAX` of the platform libpg_query is built for.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/parsenodes.h#L3425
+#[allow(
+    clippy::unnecessary_cast,
+    reason = "`c_long` is `i64` on Linux and macOS but `i32` on Windows"
+)]
+const FETCH_ALL: i64 = std::ffi::c_long::MAX as i64;
+
+/// Any other count is printed as a number, even 0 and negative ones: `FETCH RELATIVE 0` refetches
+/// the current row and `FETCH FORWARD -2` moves backwards, neither is `ALL`.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L7479
 pub(super) fn emit_fetch_stmt(e: &mut EventEmitter, n: &FetchStmt) {
     e.group_start();
 
-    // FETCH or MOVE
     if n.ismove {
         e.token(TokenKind::MOVE_KW);
     } else {
         e.token(TokenKind::FETCH_KW);
     }
 
-    // Direction: NEXT, PRIOR, FIRST, LAST, ABSOLUTE n, RELATIVE n, FORWARD, BACKWARD, etc.
-    // FetchDirection enum values (from protobuf.rs):
-    // 0: Undefined
-    // 1: FetchForward
-    // 2: FetchBackward
-    // 3: FetchAbsolute
-    // 4: FetchRelative
-
-    // Note: PostgreSQL uses LLONG_MAX (9223372036854775807) to represent "ALL"
-    // On some platforms/versions, INT_MAX (2147483647) may be used instead
-    let is_all = n.how_many == 0 || n.how_many == 9223372036854775807 || n.how_many == 2147483647;
-
-    // Emit direction and count
-    match n.direction {
-        1 => {
-            // FetchForward - emit explicit FORWARD for ALL, or NEXT for single row
-            if is_all {
-                e.space();
-                e.token(TokenKind::FORWARD_KW);
-            } else if n.how_many == 1 {
-                e.space();
-                e.token(TokenKind::NEXT_KW);
-            } else if n.how_many > 1 {
-                e.space();
-                e.token(TokenKind::FORWARD_KW);
-            }
-        }
-        2 => {
-            // FetchBackward
-            if n.how_many == 1 {
-                e.space();
-                e.token(TokenKind::PRIOR_KW);
-            } else {
-                e.space();
-                e.token(TokenKind::BACKWARD_KW);
-            }
-        }
-        3 => {
-            // FetchAbsolute
-            e.space();
-            e.token(TokenKind::ABSOLUTE_KW);
-        }
-        4 => {
-            // FetchRelative
-            e.space();
-            e.token(TokenKind::RELATIVE_KW);
-        }
-        _ => {
-            // Undefined - should not normally happen
-        }
-    }
-
-    // Emit count
-    // For ABSOLUTE and RELATIVE, the count is always required
-    // For FORWARD/BACKWARD, count is only needed when > 1 (or for ALL)
-    let needs_count = match n.direction {
-        3 | 4 => true, // FetchAbsolute, FetchRelative always need count
-        _ => n.how_many > 1 && !is_all,
+    let (keyword, count) = match (n.direction(), n.how_many) {
+        (FetchDirection::FetchForward, 1) => (Some(TokenKind::NEXT_KW), None),
+        (FetchDirection::FetchForward, _) => (Some(TokenKind::FORWARD_KW), Some(n.how_many)),
+        (FetchDirection::FetchBackward, 1) => (Some(TokenKind::PRIOR_KW), None),
+        (FetchDirection::FetchBackward, _) => (Some(TokenKind::BACKWARD_KW), Some(n.how_many)),
+        (FetchDirection::FetchAbsolute, _) => (Some(TokenKind::ABSOLUTE_KW), Some(n.how_many)),
+        (FetchDirection::FetchRelative, _) => (Some(TokenKind::RELATIVE_KW), Some(n.how_many)),
+        (FetchDirection::Undefined, _) => (None, None),
     };
 
-    if is_all {
+    if let Some(keyword) = keyword {
         e.space();
-        e.token(TokenKind::ALL_KW);
-    } else if needs_count {
-        e.space();
-        e.token(TokenKind::IDENT(n.how_many.to_string()));
+        e.token(keyword);
+    }
+    match count {
+        Some(FETCH_ALL) => {
+            e.space();
+            e.token(TokenKind::ALL_KW);
+        }
+        Some(count) => {
+            e.space();
+            e.token(TokenKind::IDENT(count.to_string()));
+        }
+        None => {}
     }
 
-    // Emit FROM cursor_name
     if !n.portalname.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::FROM_KW);

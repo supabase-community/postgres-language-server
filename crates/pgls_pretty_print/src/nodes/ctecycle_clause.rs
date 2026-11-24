@@ -23,14 +23,14 @@ pub(super) fn emit_ctecycle_clause(e: &mut EventEmitter, n: &CteCycleClause) {
         e.space();
         e.token(TokenKind::TO_KW);
         e.space();
-        emit_node(e, value);
+        super::emit_constant(e, value);
     }
 
     if let Some(ref default_value) = n.cycle_mark_default {
         e.space();
         e.token(TokenKind::DEFAULT_KW);
         e.space();
-        emit_node(e, default_value);
+        super::emit_constant(e, default_value);
     }
 
     if !n.cycle_path_column.is_empty() {

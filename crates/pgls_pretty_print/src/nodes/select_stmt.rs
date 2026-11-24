@@ -90,7 +90,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                         e.line(LineType::SoftOrSpace);
                         e.token(TokenKind::OFFSET_KW);
                         e.space();
-                        emit_node(e, offset);
+                        emit_fetch_first_value(e, offset);
                         e.space();
                         e.token(TokenKind::ROWS_KW);
                     }
@@ -102,7 +102,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                         e.space();
                         e.token(TokenKind::FIRST_KW);
                         e.space();
-                        emit_node(e, limit);
+                        emit_fetch_first_value(e, limit);
                         e.space();
                         e.token(TokenKind::ROWS_KW);
                         e.space();
@@ -324,7 +324,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 emit_layout_break(e);
                 e.token(TokenKind::OFFSET_KW);
                 e.space();
-                emit_node(e, limit_offset);
+                emit_fetch_first_value(e, limit_offset);
                 e.space();
                 e.token(TokenKind::ROWS_KW);
             }
@@ -336,7 +336,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
                 e.space();
                 e.token(TokenKind::FIRST_KW);
                 e.space();
-                emit_node(e, limit_count);
+                emit_fetch_first_value(e, limit_count);
                 e.space();
                 e.token(TokenKind::ROWS_KW);
                 e.space();
@@ -378,6 +378,21 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
 }
 
 /// Emits the comments written before `LIMIT`, or before `FETCH FIRST`, which is written as `LIMIT`.
+/// The count of `FETCH FIRST … ROWS` and `OFFSET … ROWS` is a `c_expr` or a signed number, so any
+/// other expression is parenthesised: `fetch first (null + 1) rows`.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L13413
+fn emit_fetch_first_value(e: &mut EventEmitter, node: &Node) {
+    let is_operator_cast = matches!(node.node.as_ref(), Some(NodeEnum::TypeCast(_)))
+        && e.config().cast_style == crate::CastStyle::Operator;
+    if is_operator_cast || needs_parentheses(node, Position::Postfix) {
+        e.token(TokenKind::L_PAREN);
+        emit_node(e, node);
+        e.token(TokenKind::R_PAREN);
+    } else {
+        emit_node(e, node);
+    }
+}
+
 fn emit_comments_before_limit(e: &mut EventEmitter, limit_count: &Node) {
     emit_comments_before_keyword(e, "limit", limit_count);
     emit_comments_before_keyword(e, "fetch", limit_count);

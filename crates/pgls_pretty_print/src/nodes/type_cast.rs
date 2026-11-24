@@ -15,6 +15,25 @@ pub(super) enum CastSpelling {
     Call,
 }
 
+/// Emits a node where the grammar takes only a constant, `AexprConst`, as the marks of a CTE's
+/// `CYCLE` clause: a cast there is a typed literal, `point '(1,1)'`, since `cast(…)` and `::` are
+/// expressions.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17354
+pub(super) fn emit_constant(e: &mut EventEmitter, node: &Node) {
+    if let Some(NodeEnum::TypeCast(cast)) = node.node.as_ref()
+        && let Some(NodeEnum::AConst(a_const)) =
+            cast.arg.as_deref().and_then(|arg| arg.node.as_ref())
+        && let Some(pgls_query::protobuf::a_const::Val::Sval(literal)) = a_const.val.as_ref()
+        && let Some(ref type_name) = cast.type_name
+    {
+        e.group_start();
+        super::emit_typed_literal(e, type_name, &literal.sval);
+        e.group_end();
+    } else {
+        emit_node(e, node);
+    }
+}
+
 pub(super) fn emit_type_cast(e: &mut EventEmitter, n: &TypeCast) {
     emit_type_cast_as(e, n, CastSpelling::Configured);
 }
