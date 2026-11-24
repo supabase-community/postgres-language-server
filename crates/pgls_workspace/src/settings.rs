@@ -778,7 +778,7 @@ impl Default for SemanticTokensSettings {
 }
 
 /// plpgsql_check settings for the entire workspace
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlPgSqlCheckSettings {
     pub enabled: bool,
     pub fatal_errors: bool,
