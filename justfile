@@ -40,6 +40,10 @@ gen-lint:
   cargo run -p docs_codegen
   just format
 
+# Vendors pglinter's `rules.sql` at the commit in `crates/pgls_pglinter/vendor/COMMIT_SHA.txt`. `--commit <sha>` moves it to another commit; run `just gen-lint` after.
+vendor-pglinter *args:
+  cargo run -p xtask_codegen -- vendor-pglinter {{args}}
+
 # Creates a new lint rule in the given path, with the given name. Name has to be camel case. Group should be lowercase.
 new-lintrule group rulename severity="error":
   cargo run -p xtask_codegen -- new-lintrule --category=lint --name={{rulename}} --group={{group}} --severity={{severity}}

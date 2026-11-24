@@ -4,7 +4,7 @@ use xtask_codegen::{project_root, pushd, Result};
 use xtask_codegen::{
     generate_analyser, generate_bindings, generate_crate, generate_new_analyser_rule,
     generate_pglinter, generate_rules_configuration, generate_schema_types, generate_splinter,
-    task_command, TaskCommand,
+    task_command, vendor_pglinter, TaskCommand,
 };
 
 fn main() -> Result<()> {
@@ -40,6 +40,9 @@ fn main() -> Result<()> {
         }
         TaskCommand::SchemaTypes => {
             generate_schema_types(Overwrite)?;
+        }
+        TaskCommand::VendorPglinter { commit } => {
+            vendor_pglinter(commit)?;
         }
     }
 
