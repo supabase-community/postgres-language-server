@@ -1,7 +1,6 @@
-use crate::blocking::Blocking;
 use crate::capabilities::server_capabilities;
 use crate::handlers;
-use crate::session::{Session, SessionHandle, SessionKey};
+use crate::session::{DebounceDurations, Session, SessionHandle, SessionKey};
 use crate::utils::{into_lsp_error, panic_to_lsp_error};
 use futures::FutureExt;
 use futures::future::ready;
@@ -63,8 +62,7 @@ impl LSPServer {
         let _cancel_on_drop = CancelOnDrop(Arc::clone(&cancelled));
         let result = self
             .session
-            .blocking
-            .spawn(move || {
+            .spawn_blocking(move || {
                 let _guard = span.entered();
                 pgls_workspace::cancellation::with_cancellation(cancelled, || handler(&session))
             })
@@ -146,6 +144,7 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "info", skip_all)]
     async fn initialized(&self, params: InitializedParams) {
+        let _handled = self.session.activity.notification();
         let _ = params;
 
         info!("Attempting to load the configuration",);
@@ -171,12 +170,14 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "info", skip_all)]
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
+        let _handled = self.session.activity.notification();
         handlers::configuration::did_change_configuration(&self.session, params).await;
         self.session.setup_capabilities().await;
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
+        let _handled = self.session.activity.notification();
         let is_configuration_change =
             params
                 .changes
@@ -198,6 +199,7 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        let _handled = self.session.activity.notification();
         handlers::text_document::did_open(&self.session, params)
             .await
             .ok();
@@ -205,6 +207,7 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        let _handled = self.session.activity.notification();
         if let Err(e) = handlers::text_document::did_change(&self.session, params).await {
             error!("{}", e);
         };
@@ -212,17 +215,20 @@ impl LanguageServer for LSPServer {
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        let _handled = self.session.activity.notification();
         handlers::text_document::did_save(&self.session, params);
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        let _handled = self.session.activity.notification();
         handlers::text_document::did_close(&self.session, params)
             .await
             .ok();
     }
 
     async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
+        let _handled = self.session.activity.notification();
         let paths = |folders: &[WorkspaceFolder]| -> Vec<PathBuf> {
             folders
                 .iter()
@@ -388,7 +394,7 @@ macro_rules! workspace_method {
                 tracing::info!("Received request: {}", stringify!($method));
 
                 let workspace = server.session.workspace.clone();
-                let result = server.session.blocking.spawn(move || {
+                let result = server.session.spawn_blocking(move || {
                     let _guard = span.entered();
                     workspace.$method(params)
                 });
@@ -396,7 +402,7 @@ macro_rules! workspace_method {
                 result.map(move |result| {
                     // The type of `result` is `Result<Result<R, RomeError>, JoinError>`,
                     // where the inner result is the return value of `$method` while the
-                    // outer one is added by `Blocking::spawn` to catch panics or
+                    // outer one is added by `spawn_blocking` to catch panics or
                     // cancellations of the task
                     match result {
                         Ok(Ok(result)) => Ok(result),
@@ -440,8 +446,8 @@ pub struct ServerFactory {
     /// The database settings of the environment variables (DATABASE_URL, PGHOST, etc.).
     /// Computed once at factory creation and passed to each session.
     environment: Option<PartialDatabaseConfiguration>,
-    /// Where the sessions run the work that blocks.
-    blocking: Blocking,
+    /// How long the sessions' debounces wait.
+    debounce: DebounceDurations,
 }
 
 impl ServerFactory {
@@ -454,20 +460,19 @@ impl ServerFactory {
             stop_on_disconnect,
             is_initialized: Arc::default(),
             environment: PartialDatabaseConfiguration::from_env(),
-            blocking: Blocking::default(),
+            debounce: DebounceDurations::default(),
         }
     }
 
-    /// Serves every connection with `workspace`, e.g. a workspace whose database queries run on
-    /// a test's runtime with a paused clock.
+    /// Serves every connection with `workspace`, e.g. a workspace with short backoffs for a test.
     pub fn with_workspace(mut self, workspace: Arc<dyn Workspace>) -> Self {
         self.workspace = Some(workspace);
         self
     }
 
-    /// Runs the work that blocks, like the workspace's methods, as [`Blocking`] says.
-    pub fn with_blocking(mut self, blocking: Blocking) -> Self {
-        self.blocking = blocking;
+    /// Debounces as `debounce` says, e.g. short ones for a test.
+    pub fn with_debounce(mut self, debounce: DebounceDurations) -> Self {
+        self.debounce = debounce;
         self
     }
 
@@ -489,7 +494,7 @@ impl ServerFactory {
         let session_key = SessionKey(self.next_session_key.fetch_add(1, Ordering::Relaxed));
 
         let environment = self.environment.clone();
-        let blocking = self.blocking;
+        let debounce = self.debounce;
         let mut builder = LspService::build(move |client| {
             let mut session = Session::new(
                 session_key,
@@ -498,7 +503,7 @@ impl ServerFactory {
                 self.cancellation.clone(),
                 fs,
                 environment,
-                blocking,
+                debounce,
             );
             if let Some(path) = config_path {
                 session.set_config_path(path);
@@ -566,6 +571,12 @@ pub struct ServerConnection {
 }
 
 impl ServerConnection {
+    /// What the server of this connection is still doing, which a test waits for.
+    #[cfg(feature = "testing")]
+    pub fn activity(&self) -> crate::Activity {
+        self.service.inner().session.activity.clone()
+    }
+
     /// Destructure a connection into its inner service instance and socket
     pub fn into_inner(self) -> (LspService<LSPServer>, ClientSocket) {
         (self.service, self.socket)
