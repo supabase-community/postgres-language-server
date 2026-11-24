@@ -63,6 +63,7 @@ pgls_test_utils = { workspace = true }
 pgls_text_size  = { workspace = true }
 sqlx            = { workspace = true }
 tempfile        = "3.15.0"
+toml            = { workspace = true }
 
 [lib]
 doctest = false
