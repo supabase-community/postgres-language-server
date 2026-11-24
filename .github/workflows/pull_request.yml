@@ -335,6 +335,49 @@ jobs:
       - name: Run clippy
         run: cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
 
+  # Mutation testing of the lines a PR changes in the crates of mutants.yml without a database:
+  # reports the mutants their tests don't catch, in the job summary. Doesn't block the PR.
+  mutants:
+    name: Mutants
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+      - name: Run cargo-mutants on the diff
+        run: |
+          git diff "origin/${{ github.base_ref }}...HEAD" > pr.diff
+          code=0
+          cargo mutants --in-diff pr.diff -p pgls_line_index -p pgls_text_size -p pgls_text_edit \
+            -p pgls_suppressions -p pgls_lexer -p pgls_tokenizer -p pgls_matcher || code=$?
+          if [ -s mutants.out/missed.txt ]; then
+            {
+              echo "### Mutants no test catches"
+              echo '```'
+              cat mutants.out/missed.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$code"
+
   # Runs the CLI over real-world SQL (crates/pgls_cli/tests/corpus.toml) and compares a summary per
   # source with its snapshot. In release, because `format` of GitLab's schema takes minutes in debug.
   corpus:

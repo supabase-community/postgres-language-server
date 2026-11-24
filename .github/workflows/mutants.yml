@@ -1,0 +1,76 @@
+name: Mutants
+
+on:
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+  # A change to this file or to the configuration runs it.
+  pull_request:
+    paths:
+      - ".github/workflows/mutants.yml"
+      - ".cargo/mutants.toml"
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  # Mutation testing of the small crates with precise contracts that others rely on, and of the
+  # type rules of the catalog: cargo-mutants changes the code, one mutant at a time, and reports
+  # the mutants the crate's own tests don't catch. Report only: the job fails if the tests don't
+  # pass on the unchanged code, not on missed mutants, which the summary and the artifact list.
+  mutants:
+    name: Mutants ${{ matrix.package }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: pgls_line_index
+          - package: pgls_text_size
+          - package: pgls_text_edit
+          - package: pgls_suppressions
+          - package: pgls_lexer
+          - package: pgls_tokenizer
+          - package: pgls_matcher
+          - package: pgls_catalog
+            # The type rules, with their tests only.
+            args: --file 'crates/pgls_catalog/src/typing/**' -- --lib -- typing
+            database: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+      - name: Setup Postgres
+        if: matrix.database
+        uses: ./.github/actions/setup-postgres
+      - name: Run cargo-mutants
+        run: |
+          # 2 and 3 mean missed mutants and timeouts, which the summary reports.
+          code=0
+          cargo mutants -p ${{ matrix.package }} ${{ matrix.args }} || code=$?
+          {
+            echo "### ${{ matrix.package }}"
+            echo '```'
+            cat mutants.out/missed.txt 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$code" -eq 0 ] || [ "$code" -eq 2 ] || [ "$code" -eq 3 ]
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-${{ matrix.package }}
+          path: mutants.out

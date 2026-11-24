@@ -165,6 +165,9 @@ Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(t
 ### Fuzzing
 `fuzz/` holds the libFuzzer targets, as a workspace of its own: `splitter` (the lexer and splitter don't panic and their ranges hold), `splitter_vs_parser` (when a file parses, the splitter's statements parse to the same statements) and `formatter_roundtrip` (the formatter's output parses back to the same AST and formats to itself). `just fuzz <target> [seconds]` runs one with debug assertions, seeded from the regression SQL; it needs `cargo-fuzz`, which the Nix shell has, and runs on the stable toolchain. The `Nightly` workflow runs every target for 10 minutes and uploads a crash as an artifact. A panic message starts with the target and a fixed description, so crashes of one cause group together; turn a crash into a test of the crate it's in before fixing it.
 
+### Mutation Testing
+The `Mutants` workflow runs `cargo mutants` weekly on the small crates others rely on (`pgls_line_index`, `pgls_text_size`, `pgls_text_edit`, `pgls_suppressions`, `pgls_lexer`, `pgls_tokenizer`, `pgls_matcher`) and on the type rules in `pgls_catalog::typing`, and lists the mutants their tests don't catch in the job summary. On a PR, the `Mutants` job of `pull_request.yml` does the same for the lines the PR changes in those crates, without blocking it. Run it locally with `cargo mutants -p <crate>` (the Nix shell has it); a mutant no test can catch, since it behaves like the original, goes into `exclude_re` in `.cargo/mutants.toml`, with the reason.
+
 ### Snapshot Testing
 The project uses `insta` for snapshot testing. Update snapshots with:
 ```bash

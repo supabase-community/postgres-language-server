@@ -106,6 +106,9 @@
 
           # Fuzzing (`just fuzz`)
           cargo-fuzz
+
+          # Mutation testing, see .github/workflows/mutants.yml
+          cargo-mutants
         ];
 
         # Environment variables

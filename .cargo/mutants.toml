@@ -1,0 +1,10 @@
+# cargo-mutants, see .github/workflows/mutants.yml.
+
+# Mutants that behave like the code they replace, so no test can catch them.
+exclude_re = [
+  # At `c.start == col`, both arms return `col`.
+  "replace < with <= in LineIndex::floor_char_boundary",
+  # Inside a character, the line around its end is the line around its start. With its line, since
+  # the other `-=` of the function is caught; move the line along when the code moves.
+  "lines.rs:35:\\d+: replace -= with \\+= in Lines<'a>::line_at",
+]
