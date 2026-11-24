@@ -2978,6 +2978,7 @@ dependencies = [
  "pgls_typecheck",
  "pgls_walk",
  "pgls_workspace_macros",
+ "proptest",
  "regex",
  "rustc-hash",
  "schemars",
