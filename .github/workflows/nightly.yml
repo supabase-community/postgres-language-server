@@ -1,0 +1,49 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  # Runs each target of fuzz/ for 10 minutes with debug assertions. The corpus a run finds is kept
+  # in the Actions cache for the next one; a crash fails the job and is uploaded as an artifact.
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [splitter, splitter_vs_parser, formatter_roundtrip]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free Disk Space
+        uses: ./.github/actions/free-disk-space
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Setup Just
+        uses: extractions/setup-just@v3
+      - uses: actions/cache@v5
+        with:
+          path: fuzz/corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
+      - name: Fuzz
+        run: just fuzz ${{ matrix.target }} 600
+      - name: Upload the crash
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}

@@ -103,6 +103,9 @@
 
           # Database tools
           sqlx-cli
+
+          # Fuzzing (`just fuzz`), on the stable toolchain with RUSTC_BOOTSTRAP=1
+          cargo-fuzz
         ];
 
         # Environment variables
