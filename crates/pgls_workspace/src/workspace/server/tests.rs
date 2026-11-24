@@ -6110,9 +6110,13 @@ fn database_spans_must_fit_the_statement() {
         TextRange::new(at(107), at(111))
     );
     assert_eq!(database_span(None, statement, range), range);
-    // Inside `é`, or after the end of the statement.
+    // Inside `é`, also empty, or after the end of the statement.
     assert_eq!(
         database_span(Some(TextRange::new(at(9), at(11))), statement, range),
+        range
+    );
+    assert_eq!(
+        database_span(Some(TextRange::new(at(9), at(9))), statement, range),
         range
     );
     assert_eq!(
