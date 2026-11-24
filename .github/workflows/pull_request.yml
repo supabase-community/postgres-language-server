@@ -341,7 +341,8 @@ jobs:
     name: Mutants
     needs: changes
     if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
-    runs-on: ubuntu-22.04
+    # The prebuilt cargo-mutants needs glibc 2.39.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     continue-on-error: true
     steps:
