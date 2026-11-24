@@ -51,6 +51,10 @@ export interface PullDiagnosticsResult {
    * How many diagnostics `max_diagnostics` left out.
    */
   skipped_diagnostics: number;
+  /**
+   * The client's version of the document whose text the diagnostics are for. `None` if they don't depend on it: the path is ignored or no settings apply, or they are the database's. A pull that stopped because the document changed has no diagnostics and the version of the change, see [PullDiagnosticsResult::outdated].
+   */
+  version?: number;
 }
 /**
  * Serializable representation for a [Diagnostic](super::Diagnostic).
