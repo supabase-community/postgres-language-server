@@ -16,7 +16,6 @@ pgls_diagnostics         = { workspace = true }
 pgls_lexer.workspace     = true
 pgls_query.workspace     = true
 pgls_text_size.workspace = true
-regex.workspace          = true
 
 [dev-dependencies]
 criterion.workspace = true

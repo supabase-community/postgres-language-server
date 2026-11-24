@@ -1,0 +1,46 @@
+944..1054	pg_catalog.text
+1055..1177	pg_catalog.text
+1178..1314	pg_catalog.text
+1315..1451	pg_catalog.text
+1452..1669	pg_catalog.text
+1847..1974	pg_catalog.text
+2072..2194	pg_catalog.text
+2288..2427	pg_catalog.text
+2547..2681	pg_catalog.text
+3469..3608	pg_catalog.text
+3609..3760	pg_catalog.text
+4253..4408	pg_catalog.text
+4543..4672	pg_catalog.text
+4747..4919	pg_catalog.text
+4964..5130	pg_catalog.text
+5211..5406	pg_catalog.json
+10974..11132	pg_catalog.text
+13648..13802	pg_catalog.int4	pg_catalog.text
+13835..13989	pg_catalog.int4	pg_catalog.text
+14073..14226	pg_catalog.int4	pg_catalog.text
+14238..14368	pg_catalog.int4	pg_catalog.text
+14420..14579	pg_catalog.text
+14580..14716	pg_catalog.text
+16125..16154	pg_catalog.int4	pg_catalog.text
+16251..16280	pg_catalog.int4	pg_catalog.text
+17501..17524	pg_catalog.text	pg_catalog.float8	pg_catalog.int4	pg_catalog.bpchar
+17877..17900	pg_catalog.text	pg_catalog.float8	pg_catalog.int4	pg_catalog.bpchar
+18053..18094	pg_catalog.regclass	pg_catalog.text	pg_catalog.float8	pg_catalog.int4
+18274..18297	pg_catalog.text	pg_catalog.float8	pg_catalog.int4	pg_catalog.bpchar
+18406..18447	pg_catalog.regclass	pg_catalog.text	pg_catalog.float8	pg_catalog.int4
+18654..18695	pg_catalog.regclass	pg_catalog.text	pg_catalog.float8	pg_catalog.int4
+19036..19147	pg_catalog.int4	pg_catalog.text
+19163..19272	pg_catalog.int4	pg_catalog.text
+19331..19429	pg_catalog.int4	pg_catalog.text
+19742..20227	pg_catalog.int4	pg_catalog.int4	pg_catalog.text	pg_catalog.numeric	pg_catalog.float8
+20258..20479	pg_catalog.int4	pg_catalog.int4	pg_catalog.text	pg_catalog.numeric	pg_catalog.float8
+20562..20855	pg_catalog.int4	pg_catalog.text	pg_catalog.float8
+20886..21039	pg_catalog.int4	pg_catalog.text	pg_catalog.float8
+21710..21739	pg_catalog.int4	pg_catalog.box
+22698..22725	pg_catalog.int4	pg_catalog.int4
+23849..23895	pg_catalog.int4	pg_catalog.bpchar
+24395..24441	pg_catalog.int4	pg_catalog.bpchar
+24952..24998	pg_catalog.int4	pg_catalog.bpchar
+25536..25582	pg_catalog.int4	pg_catalog.bpchar
+25976..26022	pg_catalog.int4	pg_catalog.bpchar
+28062..28103	pg_catalog.int4	pg_catalog.text	pg_catalog.int4

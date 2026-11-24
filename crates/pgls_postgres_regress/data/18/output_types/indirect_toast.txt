@@ -1,0 +1,8 @@
+1162..1247	pg_catalog.text
+1298..1392	pg_catalog.text
+1450..1548	pg_catalog.text
+1550..1654	pg_catalog.text
+1656..1719	pg_catalog.text
+1806..1869	pg_catalog.text
+2930..2993	pg_catalog.text
+3080..3143	pg_catalog.text

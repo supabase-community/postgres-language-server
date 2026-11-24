@@ -1,0 +1,9 @@
+1742..1775	pg_catalog.text
+2101..2223	pg_catalog.text
+7841..7883	pg_catalog.int8
+12914..12988	pg_catalog.record
+15031..15110	pg_catalog.name	pg_catalog.name	pg_catalog.name	pg_catalog.varchar
+15861..15922	pg_catalog.text
+15923..15964	pg_catalog.text	pg_catalog._int4	pg_catalog.text
+16671..16700	pg_catalog.text
+16761..16790	pg_catalog.text

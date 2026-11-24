@@ -1,0 +1,9 @@
+0..234	pg_catalog.int8	pg_catalog.text	pg_catalog.text
+236..654	pg_catalog.numeric	pg_catalog.text	pg_catalog.text
+686..1050	pg_catalog.int8	pg_catalog.text	pg_catalog.text
+1052..1504	pg_catalog.numeric	pg_catalog.text	pg_catalog.text
+1583..1691	pg_catalog.text	pg_catalog.text
+1718..1896	pg_catalog.text	pg_catalog.int8
+1938..2116	pg_catalog.text	pg_catalog.int8
+2152..2342	pg_catalog.text	pg_catalog.int8
+2383..2543	pg_catalog.text	pg_catalog.int8

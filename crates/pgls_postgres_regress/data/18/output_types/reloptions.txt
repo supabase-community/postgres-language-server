@@ -1,0 +1,16 @@
+144..216	pg_catalog._text
+1677..1749	pg_catalog._text
+1875..1947	pg_catalog._text
+2028..2100	pg_catalog._text
+2249..2351	pg_catalog._text
+2703..2775	pg_catalog._text
+2983..3055	pg_catalog._text
+3225..3272	pg_catalog.bool
+3274..3397	pg_catalog._text
+3452..3524	pg_catalog._text
+3694..3741	pg_catalog.bool
+4621..4693	pg_catalog._text
+4694..4817	pg_catalog._text
+4944..5020	pg_catalog._text
+5502..5578	pg_catalog._text
+5731..5808	pg_catalog._text

@@ -1,0 +1,11 @@
+402..554	pg_catalog.text
+555..619	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.box
+650..735	pg_catalog.text
+1187..1339	pg_catalog.text
+1340..1404	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.box
+1435..1520	pg_catalog.text
+1868..1948	pg_catalog.text
+2229..2309	pg_catalog.text
+2338..2418	pg_catalog.text
+2456..2536	pg_catalog.text
+3742..3827	pg_catalog.text

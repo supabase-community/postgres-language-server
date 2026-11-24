@@ -1,0 +1,6 @@
+19..46	pg_catalog.text
+71..126	pg_catalog.text
+127..195	pg_catalog.text
+221..258	pg_catalog.text
+342..377	pg_catalog.text
+593..1001	pg_catalog.text

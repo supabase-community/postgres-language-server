@@ -1,0 +1,62 @@
+699..1024	pg_catalog.oid	pg_catalog.name
+1092..1343	pg_catalog.oid	pg_catalog.name
+1397..1510	pg_catalog.oid	pg_catalog.name
+1601..1739	pg_catalog.oid	pg_catalog.name
+1928..2214	pg_catalog.oid	pg_catalog.name
+2284..2553	pg_catalog.oid	pg_catalog.name	pg_catalog.name	pg_catalog.regproc
+2613..2749	pg_catalog.oid	pg_catalog.name
+2807..3157	pg_catalog.oid	pg_catalog.name	pg_catalog.char	pg_catalog.name	pg_catalog.char
+3206..3295	pg_catalog.oid	pg_catalog.name
+3335..3791	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+4141..4593	pg_catalog.regprocedure	pg_catalog.regtype	pg_catalog._regtype
+4688..4855	pg_catalog.regprocedure	pg_catalog._char	pg_catalog.oid
+4947..5200	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+5325..5530	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+5576..5720	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+5812..5911	pg_catalog.char	pg_catalog.regproc
+6042..6345	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+6347..6525	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+6572..6717	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+6801..6906	pg_catalog.char	pg_catalog.regproc
+6966..7152	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+7194..7655	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+7747..8002	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+8129..8338	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+8413..8617	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+8665..8811	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+8905..9006	pg_catalog.char	pg_catalog.regproc
+9135..9437	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+9439..9613	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+9658..9801	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+9883..9986	pg_catalog.char	pg_catalog.regproc
+10044..10226	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+10266..10515	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+10561..10705	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+10746..10994	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+11041..11186	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+11257..11435	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+11502..11645	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+11704..11945	pg_catalog.oid	pg_catalog.name	pg_catalog.char	pg_catalog.name	pg_catalog.char
+11991..12094	pg_catalog.oid	pg_catalog.name	pg_catalog.oid
+12148..12364	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.int2	pg_catalog.bool
+12366..12585	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.int2	pg_catalog.bool
+12627..12877	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+13006..13166	pg_catalog.oid	pg_catalog.name	pg_catalog.regproc	pg_catalog.oid	pg_catalog.name	pg_catalog.regproc
+13282..13483	pg_catalog.oid	pg_catalog.name	pg_catalog.regproc
+13672..13874	pg_catalog.oid	pg_catalog.name	pg_catalog.regproc
+13970..14176	pg_catalog.oid	pg_catalog.name
+14234..14346	pg_catalog.oid	pg_catalog.name
+14407..14516	pg_catalog.oid	pg_catalog.name
+14557..14716	pg_catalog.oid	pg_catalog.name	pg_catalog.name	pg_catalog.char
+14770..14939	pg_catalog.oid	pg_catalog.name	pg_catalog.name	pg_catalog.char
+15043..15256	pg_catalog.oid	pg_catalog.name
+15305..15451	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+15566..15742	pg_catalog.oid	pg_catalog.name
+15890..16176	pg_catalog.oid	pg_catalog.name	pg_catalog.oid	pg_catalog.name
+16273..16384	pg_catalog.oid	pg_catalog.oid
+16449..16615	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid
+16740..17150	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid	pg_catalog.name
+17216..17392	pg_catalog.oid	pg_catalog.oid	pg_catalog.name
+17453..17689	pg_catalog.oid	pg_catalog.oid	pg_catalog.name
+17738..17856	pg_catalog.oid	pg_catalog.oid	pg_catalog.oid
+20150..21410	pg_catalog.oid	pg_catalog.name	pg_catalog.char	pg_catalog.oid	pg_catalog.oid

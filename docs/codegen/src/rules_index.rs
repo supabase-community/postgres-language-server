@@ -34,7 +34,7 @@ pub fn generate_rules_index(docs_dir: &Path) -> anyhow::Result<()> {
 
     let file_content = fs::read_to_string(&index_file)?;
 
-    let new_content = utils::replace_section(&file_content, "RULES_INDEX", &new_content);
+    let new_content = utils::replace_section(&file_content, "RULES_INDEX", &new_content)?;
 
     fs::write(index_file, new_content)?;
 
@@ -204,7 +204,7 @@ pub fn generate_splinter_rules_index(docs_dir: &Path) -> anyhow::Result<()> {
 
     let file_content = fs::read_to_string(&index_file)?;
 
-    let new_content = utils::replace_section(&file_content, "SPLINTER_RULES_INDEX", &new_content);
+    let new_content = utils::replace_section(&file_content, "SPLINTER_RULES_INDEX", &new_content)?;
 
     fs::write(index_file, new_content)?;
 

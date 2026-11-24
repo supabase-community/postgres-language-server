@@ -1,0 +1,7 @@
+3154..3287	pg_catalog.text
+3986..4075	pg_catalog.text
+4119..4209	pg_catalog.text
+4678..4776	pg_catalog.text
+4815..4913	pg_catalog.text
+5383..5472	pg_catalog.text
+5578..5720	pg_catalog.text

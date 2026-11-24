@@ -533,11 +533,11 @@ fn emit_simple_operator(e: &mut EventEmitter, op: &str) {
 }
 
 fn extract_simple_operator(name: &[Node]) -> Option<&str> {
-    if name.len() != 1 {
+    let [name] = name else {
         return None;
-    }
+    };
 
-    match name[0].node.as_ref() {
+    match name.node.as_ref() {
         Some(NodeEnum::String(s)) => Some(&s.sval),
         _ => None,
     }

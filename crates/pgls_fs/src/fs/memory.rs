@@ -397,7 +397,7 @@ impl File for MemoryFile {
     }
 }
 
-pub struct MemoryTraversalScope<'scope> {
+pub(super) struct MemoryTraversalScope<'scope> {
     fs: &'scope MemoryFileSystem,
 }
 

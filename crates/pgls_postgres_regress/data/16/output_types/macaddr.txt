@@ -1,0 +1,17 @@
+881..908	pg_catalog.int4	pg_catalog.macaddr
+1039..1093	pg_catalog.int4	pg_catalog.macaddr	pg_catalog.macaddr
+1095..1157	pg_catalog.bool
+1166..1228	pg_catalog.bool
+1238..1300	pg_catalog.bool
+1310..1372	pg_catalog.bool
+1381..1443	pg_catalog.bool
+1453..1515	pg_catalog.bool
+1524..1586	pg_catalog.bool
+1595..1657	pg_catalog.bool
+1668..1718	pg_catalog.macaddr
+1719..1769	pg_catalog.macaddr
+1770..1820	pg_catalog.macaddr
+1899..1956	pg_catalog.bool
+1957..2023	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+2024..2079	pg_catalog.bool
+2080..2144	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

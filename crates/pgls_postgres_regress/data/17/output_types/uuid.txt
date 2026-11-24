@@ -1,0 +1,21 @@
+825..864	pg_catalog.bool
+865..913	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1212..1241	pg_catalog.uuid
+1260..1313	pg_catalog.uuid
+1314..1368	pg_catalog.uuid
+1389..1474	pg_catalog.int8
+1496..1578	pg_catalog.int8
+1599..1684	pg_catalog.int8
+1706..1792	pg_catalog.int8
+1813..1898	pg_catalog.int8
+1920..2006	pg_catalog.int8
+2415..2488	pg_catalog.int8
+2868..2951	pg_catalog.int8
+2952..3062	pg_catalog.int8
+3217..3262	pg_catalog.int8
+3298..3366	pg_catalog.int2
+3373..3420	pg_catalog.int2
+3427..3495	pg_catalog.int2
+3519..3644	pg_catalog.bool
+3673..3722	pg_catalog.timestamptz
+3732..3802	pg_catalog.timestamptz

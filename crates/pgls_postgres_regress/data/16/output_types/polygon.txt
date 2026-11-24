@@ -1,0 +1,31 @@
+830..856	pg_catalog.polygon
+1865..1983	pg_catalog.text
+1984..2082	pg_catalog.int8
+2084..2202	pg_catalog.text
+2203..2301	pg_catalog.int8
+2303..2421	pg_catalog.text
+2422..2520	pg_catalog.int8
+2522..2640	pg_catalog.text
+2641..2739	pg_catalog.int8
+2741..2859	pg_catalog.text
+2860..2958	pg_catalog.int8
+2960..3079	pg_catalog.text
+3080..3179	pg_catalog.int8
+3181..3300	pg_catalog.text
+3301..3400	pg_catalog.int8
+3402..3521	pg_catalog.text
+3522..3621	pg_catalog.int8
+3623..3742	pg_catalog.text
+3743..3842	pg_catalog.int8
+3844..3962	pg_catalog.text
+3963..4061	pg_catalog.int8
+4063..4171	pg_catalog.text
+4172..4260	pg_catalog.int8
+4262..4373	pg_catalog.text
+4374..4465	pg_catalog.int8
+4550..4738	pg_catalog.text
+4954..5178	pg_catalog.int8	pg_catalog.float8	pg_catalog.int4	pg_catalog.int8	pg_catalog.float8	pg_catalog.int4
+5303..5356	pg_catalog.bool
+5357..5419	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+5420..5469	pg_catalog.bool
+5470..5528	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

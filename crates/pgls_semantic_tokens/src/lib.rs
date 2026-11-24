@@ -7,11 +7,8 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
-// Semantic tokens read the client's SQL and the database's catalog, so a panic on unexpected
-// input takes down the server for every connected editor.
-#![warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-
-use pgls_catalog::{CatalogView, identifier_name};
+use pgls_catalog::{Catalog, identifier_name};
+use pgls_line_index::{LineBreak, Lines};
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
@@ -21,7 +18,7 @@ pub struct SemanticTokensParams<'a> {
     pub stmt: &'a NodeEnum,
     /// The statement text. The AST's locations point into it.
     pub sql: &'a str,
-    pub catalog: &'a dyn CatalogView,
+    pub catalog: &'a Catalog,
     /// The explicit search path of the session.
     pub search_path: &'a [String],
     /// Set when the statement is the body of a SQL function.
@@ -223,19 +220,20 @@ pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec
 
 /// Splits a token that spans several lines, like a string constant continued on the next line
 /// (`'a'` newline `'b'`), into one token per line, since clients only support tokens on a single
-/// line by default. Each part leaves out the whitespace at the start and end of its line.
+/// line by default. A lone `\r` ends a line too, as in the LSP. Each part leaves out the
+/// whitespace at the start and end of its line.
 fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
     let Some(text) = sql.get(std::ops::Range::<usize>::from(token.range)) else {
         return vec![token];
     };
-    if !text.contains('\n') {
+    if !LineBreak::is_in(text) {
         return vec![token];
     }
     let mut parts = Vec::new();
-    let mut line_start = token.range.start();
-    for line in text.split('\n') {
+    for (line_start, line) in Lines::new(text) {
         let trimmed = line.trim_start();
-        let start = line_start + TextSize::of(&line[..line.len() - trimmed.len()]);
+        let start =
+            token.range.start() + line_start + TextSize::of(&line[..line.len() - trimmed.len()]);
         let trimmed = trimmed.trim_end();
         if !trimmed.is_empty() {
             parts.push(SemanticToken {
@@ -243,7 +241,6 @@ fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
                 ..token.clone()
             });
         }
-        line_start += TextSize::of(line) + TextSize::of('\n');
     }
     parts
 }
@@ -354,5 +351,6 @@ mod tests {
         assert_eq!(lines("'hap'  \r\n\n   'py'"), ["'hap'", "'py'"]);
         assert_eq!(lines("e'ä'\n\t'ö'"), ["e'ä'", "'ö'"]);
         assert_eq!(lines("$$a\n  b$$"), ["$$a", "b$$"]);
+        assert_eq!(lines("'hap'\r'p'\r\n'y'"), ["'hap'", "'p'", "'y'"]);
     }
 }

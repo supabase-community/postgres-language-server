@@ -1,0 +1,30 @@
+1024..1079	pg_catalog.text	pg_catalog.text	pg_catalog.text
+1081..1123	pg_catalog.int4
+1124..1175	pg_catalog.text
+1176..1227	pg_catalog.text
+1228..1296	pg_catalog.text
+1297..1340	pg_catalog.text
+1380..1427	pg_catalog.int4
+1428..1484	pg_catalog.text
+1485..1541	pg_catalog.text
+1542..1590	pg_catalog.text
+1640..1713	pg_catalog.text
+1969..2015	pg_catalog.int4
+2016..2071	pg_catalog.text
+2072..2127	pg_catalog.text
+2128..2183	pg_catalog.text
+2184..2259	pg_catalog.bytea
+2260..2332	pg_catalog.text
+2352..2437	pg_catalog.text	pg_catalog.text	pg_catalog.text
+2696..2752	pg_catalog.int4
+2753..2818	pg_catalog.text
+2819..2884	pg_catalog.text
+2885..2970	pg_catalog.bytea
+2971..3036	pg_catalog.text
+3155..3212	pg_catalog.text
+8663..8715	pg_catalog.text
+8716..8771	pg_catalog.text
+8889..8944	pg_catalog.text
+8945..9000	pg_catalog.text
+9158..9213	pg_catalog.text
+10022..10079	pg_catalog.text

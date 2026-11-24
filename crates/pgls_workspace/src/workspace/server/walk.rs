@@ -17,7 +17,7 @@ use pgls_walk::{
 
 use super::{
     WorkspaceServer,
-    document::{AnalyserDiagnosticsMapper, Document, DocumentStatement},
+    document::{Document, DocumentStatement, StatementWalkInput},
     document_cache::{CacheKey, MigrationContext, ResolvedStatement, WalkCache},
 };
 use crate::settings::Settings;
@@ -123,13 +123,15 @@ impl WorkspaceServer {
         let mut stmts = Vec::new();
         let mut unparsable = Vec::new();
         let walk_start = from.as_ref().map_or(TextSize::from(0), |from| from.at());
-        for (i, (stmt, _, skipped)) in doc
-            .iter_from(AnalyserDiagnosticsMapper, walk_start)
-            .enumerate()
-        {
+        for (i, stmt) in doc.statements_from(walk_start).enumerate() {
             if (i + 1).is_multiple_of(STOP_CHECK_INTERVAL) && should_stop() {
                 return None;
             }
+            let StatementWalkInput {
+                analysable: stmt,
+                unparsable: skipped,
+                ..
+            } = doc.walk_input(stmt);
             let Some(stmt_start) = stmt
                 .as_ref()
                 .map(|stmt| stmt.range.start())
@@ -279,14 +281,15 @@ impl WorkspaceServer {
     ) -> Arc<Snapshot> {
         let ranges = doc.statement_ranges();
         let top = ranges
-            .get(ranges.partition_point(|range| range.end() <= stmt.range.start()))
-            .map_or(stmt.range.start(), |range| range.start());
-        let in_body = stmt.id.is_child();
+            .get(ranges.partition_point(|range| range.end() <= stmt.range().start()))
+            .map_or(stmt.range().start(), |range| range.start());
+        let in_body = stmt.is_embedded();
         if let Some(snapshot) = request.with_walk(doc, |walk| walk.snapshot(top, in_body)) {
             return snapshot;
         }
         // An outdated or cancelled request gets the database snapshot. Its result is discarded.
-        let Some((catalog, _)) = self.walk(request, doc, top, stmt.range.start(), |_, _| {}) else {
+        let Some((catalog, _)) = self.walk(request, doc, top, stmt.range().start(), |_, _| {})
+        else {
             return Arc::clone(&request.snapshot);
         };
         let snapshot = catalog
@@ -307,11 +310,11 @@ impl WorkspaceServer {
         stmt: &DocumentStatement,
         position: TextSize,
     ) -> (Vec<Reference>, Arc<Snapshot>) {
-        let resolved = self.resolved_statements(request, doc, stmt.range);
+        let resolved = self.resolved_statements(request, doc, stmt.range());
         let Some(resolved) = resolved
             .iter()
             .flat_map(|statements| statements.iter())
-            .find(|resolved| resolved.stmt.range == stmt.range)
+            .find(|resolved| resolved.stmt.range == stmt.range())
         else {
             // A statement that doesn't parse, or that has identifier parameters.
             return (Vec::new(), self.snapshot_before(request, doc, stmt));

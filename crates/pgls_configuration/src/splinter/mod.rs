@@ -31,16 +31,20 @@ impl SplinterConfiguration {
         !self.enabled
     }
     #[doc = r" Build a matcher from the global ignore patterns."]
-    #[doc = r" Returns None if no patterns are configured."]
-    pub fn get_global_ignore_matcher(&self) -> Option<pgls_matcher::Matcher> {
+    #[doc = r" Returns None if no patterns are configured, and an error for an invalid pattern."]
+    pub fn get_global_ignore_matcher(
+        &self,
+    ) -> Result<Option<pgls_matcher::Matcher>, crate::ConfigurationDiagnostic> {
         if self.ignore.is_empty() {
-            return None;
+            return Ok(None);
         }
         let mut m = pgls_matcher::Matcher::new(pgls_matcher::MatchOptions::default());
         for p in self.ignore.iter() {
-            let _ = m.add_pattern(p);
+            m.add_pattern(p).map_err(|err| {
+                crate::ConfigurationDiagnostic::new_invalid_ignore_pattern(p.as_str(), err.msg)
+            })?;
         }
-        Some(m)
+        Ok(Some(m))
     }
 }
 impl Default for SplinterConfiguration {

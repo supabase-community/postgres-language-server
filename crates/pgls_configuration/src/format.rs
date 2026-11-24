@@ -357,8 +357,8 @@ impl Default for FormatConfiguration {
     fn default() -> Self {
         Self {
             enabled: true,
-            line_width: NonZeroU16::new(100).unwrap(),
-            indent_size: NonZeroU8::new(2).unwrap(),
+            line_width: const { NonZeroU16::new(100).unwrap() },
+            indent_size: const { NonZeroU8::new(2).unwrap() },
             indent_style: IndentStyle::Spaces,
             keyword_case: KeywordCase::default(),
             constant_case: KeywordCase::default(),

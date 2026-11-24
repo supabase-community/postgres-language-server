@@ -33,3 +33,7 @@ doctest = false
 
 [lints]
 workspace = true
+
+[package.metadata.cargo-shear]
+# Compile-fail cases that `tests/macro.rs` hands to trybuild, not modules.
+ignored-paths = ["tests/markup/*.rs"]

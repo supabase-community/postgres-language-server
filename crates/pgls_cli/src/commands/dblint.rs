@@ -10,7 +10,7 @@ use pgls_diagnostics::Error;
 use pgls_diagnostics::category;
 use pgls_workspace::features::diagnostics::{PullDatabaseDiagnosticsParams, PullDiagnosticsResult};
 
-pub fn dblint(
+pub(crate) fn dblint(
     mut session: CliSession,
     cli_options: &CliOptions,
     cli_configuration: Option<PartialConfiguration>,

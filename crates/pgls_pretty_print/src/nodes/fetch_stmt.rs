@@ -4,8 +4,10 @@ use super::prelude::*;
 
 /// `FETCH ALL` is `FETCH_ALL`, which is `LONG_MAX` of the platform libpg_query is built for.
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/include/nodes/parsenodes.h#L3425
-// `c_long` is `i64` on Linux and macOS but `i32` on Windows.
-#[allow(clippy::unnecessary_cast)]
+#[allow(
+    clippy::unnecessary_cast,
+    reason = "`c_long` is `i64` on Linux and macOS but `i32` on Windows"
+)]
 const FETCH_ALL: i64 = std::ffi::c_long::MAX as i64;
 
 /// Any other count is printed as a number, even 0 and negative ones: `FETCH RELATIVE 0` refetches

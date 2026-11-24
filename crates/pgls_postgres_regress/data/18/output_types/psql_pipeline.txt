@@ -1,0 +1,13 @@
+154..168	pg_catalog.text
+325..339	pg_catalog.text
+340..362	pg_catalog.text	pg_catalog.text
+426..435	pg_catalog.int4
+436..445	pg_catalog.int4
+446..456	pg_catalog.int4
+612..626	pg_catalog.text
+627..649	pg_catalog.text	pg_catalog.text
+818..832	pg_catalog.text
+835..849	pg_catalog.text
+851..865	pg_catalog.text
+972..981	pg_catalog.int4
+1083..1092	pg_catalog.int4

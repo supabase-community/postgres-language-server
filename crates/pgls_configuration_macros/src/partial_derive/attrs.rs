@@ -8,7 +8,7 @@ use syn::{
 use crate::util::parse_meta_list;
 
 #[derive(Clone, Debug)]
-pub struct Attrs {
+pub(crate) struct Attrs {
     pub derives: HashSet<Path>,
     pub doc_lines: Vec<TokenStream>,
     pub nested_attrs: Vec<TokenStream>,
@@ -72,7 +72,7 @@ impl TryFrom<&Vec<Attribute>> for Attrs {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct FieldAttrs {
+pub(super) struct FieldAttrs {
     pub ty: Option<PartialType>,
     pub doc_lines: Vec<TokenStream>,
     pub nested_attrs: Vec<TokenStream>,
@@ -122,8 +122,11 @@ impl TryFrom<&Vec<Attribute>> for FieldAttrs {
 }
 
 #[derive(Clone, Debug, Default)]
-#[allow(clippy::large_enum_variant)]
-pub enum PartialType {
+#[allow(
+    clippy::large_enum_variant,
+    reason = "one value per field of a derive, so boxing the type saves nothing"
+)]
+pub(super) enum PartialType {
     #[default]
     Prefixed,
     Literal(Type),

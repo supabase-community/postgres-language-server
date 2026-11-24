@@ -52,11 +52,6 @@ fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
 /// levels take well under a millisecond.
 const COLUMN_NAME_DEPTH_MAX: usize = 10_000;
 
-/// How many arms of a chain of set operations, like `select 1 union select 2 union ...`, are
-/// followed to the left-most select. Postgres transforms the chain recursively, and fails with
-/// its stack depth limit long before a hundred thousand arms.
-const SET_OPERATION_ARMS_MAX: usize = 100_000;
-
 /// The column name together with how strong that choice is. A type cast uses the name of its
 /// argument only if that name is strong (2), and its type name otherwise. A CASE likewise uses the
 /// name of its ELSE result only if it is strong, and `case` otherwise. Port of
@@ -252,7 +247,7 @@ fn step<'a>(value: &'a NodeEnum, subquery_column: SubqueryColumn<'_>) -> Step<'a
 /// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
 /// [`addRangeTableEntryForValues`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2183
 fn first_column<'a>(select: &'a protobuf::SelectStmt, wrapper: Wrapper<'a>) -> Step<'a> {
-    let Some(select) = leftmost_select(select) else {
+    let Some(select) = select.leftmost() else {
         return Step::Named(None);
     };
     if !select.values_lists.is_empty() {
@@ -280,22 +275,6 @@ fn first_column<'a>(select: &'a protobuf::SelectStmt, wrapper: Wrapper<'a>) -> S
 /// [`addRangeTableEntryForValues`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L2183
 pub(super) fn values_column_name(index: usize) -> String {
     format!("column{}", index + 1)
-}
-
-/// The left-most select of a chain of set operations, whose columns name those of the chain, or
-/// the select itself. `None` after [`SET_OPERATION_ARMS_MAX`] arms.
-pub(crate) fn leftmost_select(select: &protobuf::SelectStmt) -> Option<&protobuf::SelectStmt> {
-    let mut select = select;
-    for _ in 0..SET_OPERATION_ARMS_MAX {
-        if select.op() == protobuf::SetOperation::SetopNone {
-            return Some(select);
-        }
-        select = select.larg.as_deref()?;
-    }
-    tracing::warn!(
-        "stopped looking for the left-most select after {SET_OPERATION_ARMS_MAX} set operations"
-    );
-    None
 }
 
 #[cfg(test)]

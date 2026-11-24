@@ -28,7 +28,7 @@ use crate::{WasmError, Workspace};
 /// JSON-RPC request/notification structure
 #[derive(Debug, Deserialize)]
 struct JsonRpcMessage {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "required by JSON-RPC; its value isn't checked")]
     jsonrpc: String,
     id: Option<Value>,
     method: String,
@@ -434,9 +434,9 @@ impl LspHandler {
                     .cloned()
                     .collect();
                 let is_fix = edit.rule.is_some()
-                    && !edit
-                        .category
-                        .matches(pgls_analyse::SUPPRESSION_ACTION_CATEGORY);
+                    && !edit.category.matches(
+                        pgls_workspace::features::code_actions::SUPPRESSION_ACTION_CATEGORY,
+                    );
                 actions.push(CodeAction {
                     title: action.title,
                     kind: Some(CodeActionKind::from(edit.category.to_str().into_owned())),
@@ -1303,13 +1303,15 @@ mod tests {
 
     #[test]
     fn test_position_conversion_lone_cr() {
-        // Like in the native language server, only `\n` ends a line.
+        // A lone `\r` ends a line, as in the LSP and the native language server.
         let index = LineIndex::new("select '\r';\nselect 2;");
 
-        assert_eq!(offset_to_position(&index, 9), Some(Position::new(0, 9)));
-        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 11);
-        assert_eq!(offset_to_position(&index, 12), Some(Position::new(1, 0)));
-        assert_eq!(position_to_offset(&index, Position::new(1, 0)), 12);
+        assert_eq!(offset_to_position(&index, 8), Some(Position::new(0, 8)));
+        assert_eq!(position_to_offset(&index, Position::new(0, 100)), 8);
+        assert_eq!(offset_to_position(&index, 9), Some(Position::new(1, 0)));
+        assert_eq!(position_to_offset(&index, Position::new(1, 100)), 11);
+        assert_eq!(offset_to_position(&index, 12), Some(Position::new(2, 0)));
+        assert_eq!(position_to_offset(&index, Position::new(2, 0)), 12);
     }
 
     #[test]

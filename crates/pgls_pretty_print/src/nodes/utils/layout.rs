@@ -100,7 +100,6 @@ pub(crate) fn emit_parenthesized_condition_with(
 /// In expanded layout it is a `Hard` line, which `try_single_line` refuses to collapse, so the
 /// break propagates to every enclosing group and the whole statement opens up. That propagation is
 /// why expanded layout needs no renderer change.
-#[allow(dead_code)] // Consumed by the clause emitters introduced in task 3.
 pub(crate) fn emit_layout_break(e: &mut EventEmitter) {
     match e.config().layout {
         Layout::Expanded => e.line(LineType::Hard),

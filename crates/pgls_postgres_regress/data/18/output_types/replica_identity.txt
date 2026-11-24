@@ -1,0 +1,11 @@
+1063..1143	pg_catalog.char
+1176..1243	pg_catalog.char
+1244..1316	pg_catalog.char
+2325..2405	pg_catalog.char
+2566..2646	pg_catalog.char
+3056..3136	pg_catalog.char
+3138..3238	pg_catalog.int8
+3344..3424	pg_catalog.char
+3425..3525	pg_catalog.int8
+3584..3664	pg_catalog.char
+3726..3806	pg_catalog.char

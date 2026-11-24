@@ -20,14 +20,14 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
         }
 
         // PARTITION OF parent_table
-        if !base.inh_relations.is_empty() {
+        if let Some(first) = base.inh_relations.first() {
             e.line(crate::emitter::LineType::SoftOrSpace);
             e.token(TokenKind::PARTITION_KW);
             e.space();
             e.token(TokenKind::OF_KW);
             e.space();
             // Emit first inherited relation as parent table
-            emit_node(e, &base.inh_relations[0]);
+            emit_node(e, first);
 
             // Partition bound spec (DEFAULT or FOR VALUES ...)
             // For partition foreign tables, a bound spec is required

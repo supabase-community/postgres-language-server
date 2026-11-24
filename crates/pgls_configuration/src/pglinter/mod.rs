@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[partial(cfg_attr(feature = "schema", derive(schemars::JsonSchema)))]
 #[partial(serde(rename_all = "camelCase", default, deny_unknown_fields))]
 pub struct PglinterConfiguration {
-    #[doc = r" if `false`, it disables the feature and the linter won't be executed. `true` by default"]
+    #[doc = r" if `false`, it disables the feature and the linter won't be executed. `false` by default"]
     #[partial(bpaf(hide))]
     pub enabled: bool,
     #[doc = r" List of rules"]
@@ -23,10 +23,14 @@ impl PglinterConfiguration {
         !self.enabled
     }
 }
+#[expect(
+    clippy::derivable_impls,
+    reason = "spells out that it is off by default"
+)]
 impl Default for PglinterConfiguration {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             rules: Default::default(),
         }
     }

@@ -1,0 +1,22 @@
+804..880	pg_catalog._text
+1188..1327	pg_catalog.text
+3325..3442	pg_catalog.name
+4024..4162	pg_catalog.name
+4299..4437	pg_catalog.name
+4547..4685	pg_catalog.name
+4771..4909	pg_catalog.name
+6861..6971	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4
+7405..7780	pg_catalog.name	pg_catalog.text	pg_catalog.text
+7952..8087	pg_catalog.name	pg_catalog.name
+8271..8411	pg_catalog.name	pg_catalog.name
+8547..8688	pg_catalog.name	pg_catalog.name
+8770..8909	pg_catalog.name	pg_catalog.name
+10263..10524	pg_catalog.name	pg_catalog.name
+10893..11037	pg_catalog.name	pg_catalog.name
+12654..12696	pg_catalog.int8
+12826..12868	pg_catalog.int4
+14220..14264	pg_catalog.int8	pg_catalog.int8
+14397..14441	pg_catalog.int8	pg_catalog.int4
+15236..15270	pg_catalog.int4
+16452..16491	pg_catalog.int8
+16765..16801	pg_catalog.int8

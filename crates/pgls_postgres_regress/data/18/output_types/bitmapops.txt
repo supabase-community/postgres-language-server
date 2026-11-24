@@ -1,0 +1,3 @@
+1268..1322	pg_catalog.int8
+1530..1584	pg_catalog.int8
+1605..1658	pg_catalog.int8

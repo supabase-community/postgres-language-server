@@ -16,7 +16,7 @@ use crate::CliDiagnostic;
 /// # Arguments
 /// * `connection_string` - PostgreSQL connection string
 /// * `output_path` - Optional path to write the JSON output (stdout if None)
-pub async fn run_schema_export(
+pub(crate) async fn run_schema_export(
     connection_string: &str,
     output_path: Option<&Path>,
 ) -> Result<(), CliDiagnostic> {

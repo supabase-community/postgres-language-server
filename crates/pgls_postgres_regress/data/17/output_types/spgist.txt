@@ -1,0 +1,3 @@
+1607..1757	pg_catalog.int8
+3161..3229	pg_catalog.text
+3230..3278	pg_catalog.varchar

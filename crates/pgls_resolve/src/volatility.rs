@@ -3,13 +3,14 @@
 //!
 //! [`contain_volatile_functions`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/optimizer/util/clauses.c#L552
 
+use pgls_catalog::Catalog;
 use pgls_query::{NodeEnum, protobuf};
 use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
 use super::{expr::infer_expr, resolver::Resolver};
 use pgls_catalog::Behavior;
 use pgls_catalog::typing::{Decision, Type, TypeId, normalize_type_name};
-use pgls_catalog::{CatalogView, FunctionInfo, Lookup, OperatorKind};
+use pgls_catalog::{FunctionInfo, Lookup, OperatorKind};
 
 /// How many nodes of an expression [`contains_volatile_functions`] visits. A column default or a
 /// `USING` expression has a few dozen; ten thousand only stops generated input, and visiting them
@@ -42,7 +43,7 @@ const FIRST_NORMAL_OBJECT_ID: i64 = 16384;
 /// [`check_functions_in_node`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/nodes/nodeFuncs.c#L1906
 pub fn contains_volatile_functions(
     expr: &NodeEnum,
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     search_path: &[String],
 ) -> Decision<bool> {
     let mut resolver = Resolver::new(catalog, search_path, None, None);
@@ -163,7 +164,7 @@ fn push_children<'a>(node: &'a NodeEnum, stack: &mut Vec<&'a NodeEnum>) {
 ///
 /// [`FuncnameGetCandidates`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L1192
 fn call_volatility(
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     call: &protobuf::FuncCall,
     search_path: &[String],
 ) -> Decision<bool> {
@@ -282,7 +283,7 @@ fn is_builtin_type(id: &TypeId) -> bool {
 ///
 /// [`transformAExprBetween`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_expr.c#L1294
 fn a_expr_volatility(
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     expr: &protobuf::AExpr,
     search_path: &[String],
 ) -> Decision<bool> {
@@ -314,7 +315,7 @@ fn a_expr_volatility(
 
 /// An operator is not volatile if every operator it may resolve to is built in.
 fn operator_volatility(
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     schema: Option<&str>,
     name: &str,
     kind: OperatorKind,
@@ -353,7 +354,7 @@ mod tests {
             panic!("no target");
         };
         let expr = target.val.as_ref().unwrap().node.as_ref().unwrap();
-        contains_volatile_functions(expr, &Catalog::new(None), &[])
+        contains_volatile_functions(expr, &Catalog::without_database(), &[])
     }
 
     #[test]
@@ -387,7 +388,7 @@ mod tests {
                 ..Default::default()
             }))
         };
-        let catalog = Catalog::new(None);
+        let catalog = Catalog::without_database();
         assert_eq!(
             contains_volatile_functions(&and(VOLATILITY_NODES_MAX - 1), &catalog, &[]),
             Decision::Known(false)

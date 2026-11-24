@@ -1,14 +1,15 @@
 //! Facts about a single type: its base type, category, and array element, and the
 //! conversion between type names and type identities.
 
+use crate::Catalog;
 use crate::typing::{Decision, Type, TypeId, TypedColumn};
-use crate::{CatalogView, Lookup, TypeInfo, TypeKind};
+use crate::{Lookup, TypeInfo, TypeKind};
 use pgls_query::protobuf;
 use pgls_query_ext::utils::{QualifiedName, qualified_name};
 
 /// The type with this identity. Unknown if it is missing too, as an identity always comes from
 /// the catalog.
-pub(super) fn info(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeInfo> {
+pub(super) fn info(c: &Catalog, id: &TypeId) -> Decision<TypeInfo> {
     match c.type_by_id(id) {
         Lookup::Found(t) => Decision::Known(t),
         _ => Decision::Unknown,
@@ -16,19 +17,23 @@ pub(super) fn info(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeInfo> {
 }
 
 /// The identity of the builtin type `pg_catalog.<name>`, `None` if it certainly does not exist.
-/// Unlike [`CatalogView::builtin_type`], this tells a missing type from an unknown one.
-pub(super) fn lookup_builtin(c: &dyn CatalogView, name: &str) -> Decision<Option<TypeId>> {
+/// Unlike [`Catalog::builtin_type`], this tells a missing type from an unknown one.
+pub(super) fn lookup_builtin(c: &Catalog, name: &str) -> Decision<Option<TypeId>> {
     c.type_(Some("pg_catalog"), name, &[])
         .into_decision()
         .map(|t| t.and_then(|t| t.id))
 }
 
+/// The most domains [`base_type`] follows. Postgres' catalog has no cycles, but a `SchemaCache`
+/// from JSON may.
+const BASE_TYPE_DOMAINS_MAX: usize = 64;
+
 /// Port of [`getBaseType`]: the type a domain is based on, through nested domains.
 ///
 /// [`getBaseType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L2823
-pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
+pub fn base_type(c: &Catalog, id: &TypeId) -> Decision<TypeId> {
     let mut current = id.clone();
-    loop {
+    for _ in 0..BASE_TYPE_DOMAINS_MAX {
         let meta = match info(c, &current) {
             Decision::Known(t) => t,
             Decision::Unknown => return Decision::Unknown,
@@ -46,6 +51,11 @@ pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
         }
         current = base;
     }
+    tracing::warn!(
+        "The base type of {id:?} is more than {BASE_TYPE_DOMAINS_MAX} domains away; the catalog \
+         may have a cycle of domains"
+    );
+    Decision::Unknown
 }
 
 /// The `typcategory` and `typispreferred` of a type. Port of [`get_type_category_preferred`],
@@ -54,7 +64,7 @@ pub fn base_type(c: &dyn CatalogView, id: &TypeId) -> Decision<TypeId> {
 /// [`get_type_category_preferred`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L3012
 /// [`TypeCategory`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2979
 /// [`IsPreferredType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L2998
-pub(crate) fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char, bool)> {
+pub(crate) fn type_category(c: &Catalog, id: &TypeId) -> Decision<(char, bool)> {
     match info(c, id) {
         Decision::Known(t) => match (t.category, t.preferred) {
             (Some(category), Some(preferred)) => Decision::Known((category, preferred)),
@@ -67,7 +77,7 @@ pub(crate) fn type_category(c: &dyn CatalogView, id: &TypeId) -> Decision<(char,
 /// Port of [`type_is_array`]: whether the type has an element type.
 ///
 /// [`type_is_array`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/utils/lsyscache.h#L218
-pub(crate) fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
+pub(crate) fn is_array(c: &Catalog, id: &TypeId) -> Decision<bool> {
     match info(c, id) {
         Decision::Known(t) => Decision::Known(t.element.is_some()),
         Decision::Unknown => Decision::Unknown,
@@ -77,7 +87,7 @@ pub(crate) fn is_array(c: &dyn CatalogView, id: &TypeId) -> Decision<bool> {
 /// Port of [`get_element_type`]: the element type of a true array type.
 ///
 /// [`get_element_type`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/cache/lsyscache.c#L3061
-pub(crate) fn array_element(c: &dyn CatalogView, id: &TypeId) -> Decision<Option<TypeId>> {
+pub(crate) fn array_element(c: &Catalog, id: &TypeId) -> Decision<Option<TypeId>> {
     match info(c, id) {
         Decision::Known(t) => Decision::Known(t.element),
         Decision::Unknown => Decision::Unknown,
@@ -134,7 +144,7 @@ pub fn serial_type(type_name: &protobuf::TypeName) -> Option<SerialType> {
 ///
 /// [`LookupTypeNameExtended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_type.c#L73
 pub fn normalize_type_name(
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     name: &protobuf::TypeName,
     search_path: &[String],
 ) -> (Option<TypeId>, bool) {
@@ -168,46 +178,51 @@ pub fn normalize_type_name(
 /// Displays a type like [`format_type_be`] does.
 ///
 /// [`format_type_be`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/format_type.c#L343
-pub fn format_type(c: &dyn CatalogView, ty: &Type) -> Option<String> {
+pub fn format_type(c: &Catalog, ty: &Type) -> Option<String> {
     format_type_with_search_path(c, ty, &[])
 }
 
 /// Formats a type using the supplied path to determine whether qualification is needed.
 pub fn format_type_with_search_path(
-    c: &dyn CatalogView,
+    c: &Catalog,
     ty: &Type,
     search_path: &[String],
 ) -> Option<String> {
     match ty {
         Type::UnknownLiteral => Some("unknown".into()),
         Type::Record(_) => Some("record".into()),
-        Type::Named(id) => format_named(c, id, search_path, 0),
+        Type::Named(id) => format_named(c, id, search_path),
     }
 }
+
+/// The most array element types [`format_named`] follows. Postgres has no arrays of arrays,
+/// but a `SchemaCache` from JSON may have a cycle of element types.
+const FORMAT_ELEMENTS_MAX: usize = 16;
 
 /// Port of [`format_type_extended`] without typmods: SQL-standard names for built-in types,
 /// and the schema only when the type is not visible on the search path.
 ///
 /// [`format_type_extended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/format_type.c#L112
-fn format_named(
-    c: &dyn CatalogView,
-    id: &TypeId,
-    search_path: &[String],
-    depth: usize,
-) -> Option<String> {
-    if depth > 16 {
-        return None;
-    }
-    let info = match c.type_by_id(id) {
-        Lookup::Found(info) => info,
-        _ => return None,
+fn format_named(c: &Catalog, id: &TypeId, search_path: &[String]) -> Option<String> {
+    let mut id = id.clone();
+    let mut dimensions = 0;
+    let info = loop {
+        let Lookup::Found(info) = c.type_by_id(&id) else {
+            return None;
+        };
+        let Some(element) = info.element else {
+            break info;
+        };
+        if dimensions == FORMAT_ELEMENTS_MAX {
+            tracing::warn!(
+                "Type {id:?} is more than {FORMAT_ELEMENTS_MAX} element types deep; the catalog \
+                 may have a cycle of array types"
+            );
+            return None;
+        }
+        dimensions += 1;
+        id = element;
     };
-    if let Some(element) = info.element.as_ref() {
-        return Some(format!(
-            "{}[]",
-            format_named(c, element, search_path, depth + 1)?
-        ));
-    }
     let standard = match info.name.as_str() {
         "int2" => "smallint",
         "int4" => "integer",
@@ -227,26 +242,27 @@ fn format_named(
         name => name,
     };
     let visible = info.schema == "pg_catalog"
-        || matches!(c.type_(None, &info.name, search_path), Lookup::Found(visible) if visible.id.as_ref() == Some(id));
-    Some(if visible {
+        || matches!(c.type_(None, &info.name, search_path), Lookup::Found(visible) if visible.id.as_ref() == Some(&id));
+    let mut name = if visible {
         standard.to_owned()
     } else {
         format!("{}.{}", info.schema, standard)
-    })
+    };
+    name.push_str(&"[]".repeat(dimensions));
+    Some(name)
 }
 
 #[cfg(all(test, feature = "db"))]
 mod tests {
     use super::format_type;
     use crate::typing::Type;
-    use crate::{Catalog, CatalogBase, Snapshot};
+    use crate::{Catalog, Snapshot};
     use sqlx::PgPool;
-    use std::sync::Arc;
 
     #[pgls_test_utils::db_test]
     async fn formats_postgres_builtin_types(test_db: PgPool) {
         let snapshot = Snapshot::load(&test_db).await.unwrap();
-        let catalog = Catalog::new(Some(Arc::new(CatalogBase::new(Arc::new(snapshot)))));
+        let catalog = Catalog::from_snapshot(snapshot);
         for (oid, expected) in [
             (23, "integer"),
             (20, "bigint"),
@@ -277,7 +293,7 @@ mod tests {
 ///
 /// [`resolveTargetListUnknowns`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L288
 pub fn resolve_unknown_outputs(
-    catalog: &dyn CatalogView,
+    catalog: &Catalog,
     columns: Option<Vec<TypedColumn>>,
 ) -> Option<Vec<TypedColumn>> {
     let mut columns = columns?;

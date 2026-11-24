@@ -6,7 +6,7 @@ use crate::{
     session::Session,
 };
 use anyhow::{Result, anyhow};
-use pgls_analyse::{Applicability, SUPPRESSION_ACTION_CATEGORY};
+use pgls_analyse::Applicability;
 use pgls_line_index::{LineIndex, changed_range};
 use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
@@ -17,7 +17,7 @@ use tower_lsp_server::ls_types::{
 use pgls_workspace::Workspace;
 use pgls_workspace::features::code_actions::{
     CodeActionKind, CodeActionsParams, CommandActionCategory, ExecuteStatementParams, FixFileMode,
-    FixFileParams,
+    FixFileParams, SUPPRESSION_ACTION_CATEGORY,
 };
 use pgls_workspace::workspace::{
     GetFileContentParams, InvalidateSchemaCacheParams, SchemaCacheScope,
@@ -25,7 +25,7 @@ use pgls_workspace::workspace::{
 use std::sync::Arc;
 
 #[tracing::instrument(level = "debug", skip(session), err)]
-pub fn get_actions(
+pub(crate) fn get_actions(
     session: &Session,
     params: ls_types::CodeActionParams,
 ) -> Result<ls_types::CodeActionResponse> {
@@ -287,7 +287,7 @@ fn workspace_edit(
     }
 }
 
-pub fn command_id(command: &CommandActionCategory) -> String {
+pub(crate) fn command_id(command: &CommandActionCategory) -> String {
     match command {
         CommandActionCategory::ExecuteStatement(_) => "pgls.executeStatement".into(),
         CommandActionCategory::InvalidateSchemaCache => "pgls.invalidateSchemaCache".into(),
@@ -317,7 +317,7 @@ fn execute_statement_arguments(
 }
 
 #[tracing::instrument(level = "debug", skip(session), err)]
-pub async fn execute_command(
+pub(crate) async fn execute_command(
     session: &Session,
     params: ExecuteCommandParams,
 ) -> anyhow::Result<Option<serde_json::Value>> {

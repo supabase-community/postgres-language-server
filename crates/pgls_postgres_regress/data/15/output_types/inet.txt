@@ -1,0 +1,64 @@
+1623..1665	pg_catalog.cidr	pg_catalog.inet
+1703..1763	pg_catalog.inet	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+1764..1806	pg_catalog.cidr	pg_catalog.text
+1807..1879	pg_catalog.cidr	pg_catalog.inet	pg_catalog.inet	pg_catalog.inet
+1880..1986	pg_catalog.cidr	pg_catalog.cidr	pg_catalog.inet	pg_catalog.cidr
+1987..2093	pg_catalog.cidr	pg_catalog.int4	pg_catalog.inet	pg_catalog.int4
+2095..2225	pg_catalog.cidr	pg_catalog.int4	pg_catalog.inet	pg_catalog.int4
+2227..2283	pg_catalog.cidr	pg_catalog.inet
+2285..2480	pg_catalog.inet	pg_catalog.cidr	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
+2482..2532	pg_catalog.inet	pg_catalog.inet
+2533..2583	pg_catalog.inet	pg_catalog.inet
+2638..2690	pg_catalog.inet
+2800..2875	pg_catalog.text
+2876..2931	pg_catalog.cidr	pg_catalog.inet
+2932..3008	pg_catalog.text
+3009..3065	pg_catalog.cidr	pg_catalog.inet
+3066..3144	pg_catalog.text
+3145..3203	pg_catalog.cidr	pg_catalog.inet
+3204..3281	pg_catalog.text
+3282..3339	pg_catalog.cidr	pg_catalog.inet
+3517..3585	pg_catalog.cidr	pg_catalog.inet
+3586..3655	pg_catalog.cidr	pg_catalog.inet
+3656..3724	pg_catalog.cidr	pg_catalog.inet
+3725..3794	pg_catalog.cidr	pg_catalog.inet
+3795..3863	pg_catalog.cidr	pg_catalog.inet
+3864..3931	pg_catalog.cidr	pg_catalog.inet
+3932..4000	pg_catalog.cidr	pg_catalog.inet
+4001..4068	pg_catalog.cidr	pg_catalog.inet
+4069..4137	pg_catalog.cidr	pg_catalog.inet
+4138..4205	pg_catalog.cidr	pg_catalog.inet
+4206..4274	pg_catalog.cidr	pg_catalog.inet
+4301..4389	pg_catalog.text
+4390..4458	pg_catalog.inet
+4632..4700	pg_catalog.cidr	pg_catalog.inet
+4701..4770	pg_catalog.cidr	pg_catalog.inet
+4771..4839	pg_catalog.cidr	pg_catalog.inet
+4840..4909	pg_catalog.cidr	pg_catalog.inet
+4910..4978	pg_catalog.cidr	pg_catalog.inet
+4979..5046	pg_catalog.cidr	pg_catalog.inet
+5047..5115	pg_catalog.cidr	pg_catalog.inet
+5116..5183	pg_catalog.cidr	pg_catalog.inet
+5184..5252	pg_catalog.cidr	pg_catalog.inet
+5253..5320	pg_catalog.cidr	pg_catalog.inet
+5321..5389	pg_catalog.cidr	pg_catalog.inet
+5416..5504	pg_catalog.text
+5505..5573	pg_catalog.inet
+5681..5716	pg_catalog.inet	pg_catalog.inet
+5717..5759	pg_catalog.inet	pg_catalog.cidr	pg_catalog.inet
+5760..5801	pg_catalog.inet	pg_catalog.cidr	pg_catalog.inet
+5802..5845	pg_catalog.inet	pg_catalog.inet
+5846..5889	pg_catalog.inet	pg_catalog.inet
+5890..5934	pg_catalog.inet	pg_catalog.cidr	pg_catalog.int8
+5935..5966	pg_catalog.inet
+5967..6006	pg_catalog.inet
+6007..6035	pg_catalog.inet
+6036..6072	pg_catalog.inet
+6073..6127	pg_catalog.int8
+6128..6182	pg_catalog.int8
+6183..6231	pg_catalog.int8
+6232..6280	pg_catalog.int8
+6496..6532	pg_catalog.inet
+6533..6572	pg_catalog.int8
+6799..6866	pg_catalog.cidr
+6928..10373	pg_catalog.inet

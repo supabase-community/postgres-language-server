@@ -1,0 +1,43 @@
+68..106	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int4
+107..142	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int4
+143..186	pg_catalog.regclass
+187..227	pg_catalog.regclass
+228..259	pg_catalog.regclass
+260..288	pg_catalog.regclass
+1012..1050	pg_catalog.regclass
+1051..1090	pg_catalog.regclass
+1091..1131	pg_catalog.regclass
+1132..1171	pg_catalog.regclass
+1983..2027	pg_catalog.regclass
+2028..2073	pg_catalog.regclass
+2074..2120	pg_catalog.regclass
+2121..2166	pg_catalog.regclass
+2207..2286	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+2329..2450	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+2475..2597	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+2648..2769	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+2816..2868	pg_catalog.regclass
+2869..2919	pg_catalog.regclass
+2990..3131	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+3173..3258	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+3302..3429	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+3454..3582	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+3633..3760	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+3831..3978	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+4026..4084	pg_catalog.regclass
+4085..4141	pg_catalog.regclass
+4268..4355	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.int4	pg_catalog.bool
+4356..4414	pg_catalog.regclass
+4415..4461	pg_catalog.regclass
+4899..4949	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int4
+4950..5003	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int4
+5004..5054	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int4
+5055..5104	pg_catalog.regclass	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int4
+5105..5160	pg_catalog.regclass
+5161..5219	pg_catalog.regclass
+5220..5275	pg_catalog.regclass
+5276..5330	pg_catalog.regclass
+5331..5374	pg_catalog.regclass
+5375..5421	pg_catalog.regclass
+5422..5465	pg_catalog.regclass
+5466..5508	pg_catalog.regclass

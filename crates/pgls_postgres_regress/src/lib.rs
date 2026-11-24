@@ -7,6 +7,8 @@
 //! - `sql/*.sql`: the upstream regression files, verbatim
 //! - `verdicts/*.txt`: one `start..end verdict` line per statement, where `start..end` is the byte
 //!   range of the statement Postgres was sent, in the preprocessed source (see [`preprocess`])
+//! - `output_types/*.txt`: one `start..end` line per accepted statement that returns rows, with
+//!   the types of its columns after it, separated by tabs (see [`Statement::output_types`])
 //! - `catalog.json.gz`: the catalog of a fresh database on that version, as gzipped
 //!   `pgls_catalog::Snapshot` JSON
 //!
@@ -63,6 +65,14 @@ pub struct Statement {
     /// The statement's range in [`File::source`], without surrounding whitespace.
     pub range: TextRange,
     pub verdict: Verdict,
+    /// For an accepted statement that returns rows, the types of their columns as Postgres
+    /// described them to the client before the statement ran: `schema.name`, with `pg_temp` for
+    /// the session's temporary schema. A column of a domain has the domain's base type
+    /// ([`SendRowDescriptionMessage`]). `None` for other statements, and where Postgres couldn't
+    /// describe the statement.
+    ///
+    /// [`SendRowDescriptionMessage`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/printtup.c#L166
+    pub output_types: Option<Vec<String>>,
 }
 
 /// The statement's line in a verdict file.
@@ -79,14 +89,39 @@ impl fmt::Display for Statement {
 }
 
 impl Statement {
+    /// A statement from its line in a verdict file.
     fn parse(line: &str) -> Option<Self> {
         let (range, verdict) = line.split_once(' ')?;
+        Some(Statement {
+            range: Self::parse_range(range)?,
+            verdict: Verdict::parse(verdict)?,
+            output_types: None,
+        })
+    }
+
+    fn parse_range(range: &str) -> Option<TextRange> {
         let (start, end) = range.split_once("..")?;
         let (start, end) = (start.parse::<u32>().ok()?, end.parse::<u32>().ok()?);
-        Some(Statement {
-            range: (start <= end).then(|| TextRange::new(start.into(), end.into()))?,
-            verdict: Verdict::parse(verdict)?,
-        })
+        (start <= end).then(|| TextRange::new(start.into(), end.into()))
+    }
+
+    /// The statement's line in an output types file, if it has output types.
+    pub fn output_types_line(&self) -> Option<String> {
+        let types = self.output_types.as_ref()?;
+        Some(format!(
+            "{}..{}\t{}",
+            u32::from(self.range.start()),
+            u32::from(self.range.end()),
+            types.join("\t")
+        ))
+    }
+
+    /// The range and the types of a line in an output types file.
+    fn parse_output_types(line: &str) -> Option<(TextRange, Vec<String>)> {
+        let mut fields = line.split('\t');
+        let range = Self::parse_range(fields.next()?)?;
+        let types = fields.map(str::to_owned).collect::<Vec<_>>();
+        (!types.is_empty() && types.iter().all(|x| !x.is_empty())).then_some((range, types))
     }
 }
 
@@ -111,7 +146,11 @@ impl File {
 
     /// The 1-based line and column of an offset in [`File::source`].
     pub fn line_col_at(&self, offset: TextSize) -> (usize, usize) {
-        line_cols(&self.source, std::iter::once(offset))[0]
+        // One offset, one position.
+        line_cols(&self.source, std::iter::once(offset))
+            .into_iter()
+            .next()
+            .unwrap_or((1, 1))
     }
 }
 
@@ -125,6 +164,12 @@ pub struct Version {
 
 /// The name of the catalog file in `data/<major>/`.
 pub const CATALOG_FILE: &str = "catalog.json.gz";
+
+/// The directory of the verdict files in `data/<major>/`.
+pub const VERDICTS_DIR: &str = "verdicts";
+
+/// The directory of the output types files in `data/<major>/`.
+pub const OUTPUT_TYPES_DIR: &str = "output_types";
 
 impl Version {
     /// The catalog of a fresh database on this version, as `pgls_catalog::Snapshot` JSON.
@@ -146,17 +191,20 @@ impl Version {
 
     /// Loads every file of this version, sorted by name.
     ///
-    /// Panics if a verdict file is missing or doesn't fit its SQL file.
+    /// Panics if a verdict or output types file is missing or doesn't fit its SQL file.
     pub fn files(&self) -> Vec<File> {
         let sql_dir = self.dir.join("sql");
         let mut names = fs::read_dir(&sql_dir)
             .unwrap_or_else(|e| panic!("read {}: {e}", sql_dir.display()))
-            .map(|entry| entry.expect("read directory entry").path())
+            .flatten()
+            .map(|entry| entry.path())
             .filter(|path| path.extension().is_some_and(|x| x == "sql"))
-            .map(|path| path.file_stem().unwrap().to_string_lossy().into_owned())
+            .filter_map(|path| Some(path.file_stem()?.to_string_lossy().into_owned()))
             .collect::<Vec<_>>();
         names.sort();
-        self.check_no_orphan_verdicts(&names);
+        for dir in [VERDICTS_DIR, OUTPUT_TYPES_DIR] {
+            self.check_no_orphans(dir, &names);
+        }
         names.into_iter().map(|name| self.load(name)).collect()
     }
 
@@ -165,8 +213,7 @@ impl Version {
         let raw =
             fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
         let source = preprocess(&raw);
-        let verdicts_path = self.verdicts_path(&name);
-        let Ok(verdicts) = fs::read_to_string(&verdicts_path) else {
+        let Ok(verdicts) = fs::read_to_string(self.fixture_path(VERDICTS_DIR, &name)) else {
             self.out_of_date(&name, "no verdict file")
         };
         let mut statements = Vec::<Statement>::new();
@@ -188,6 +235,26 @@ impl Version {
             }
             statements.push(statement);
         }
+        let Ok(output_types) = fs::read_to_string(self.fixture_path(OUTPUT_TYPES_DIR, &name))
+        else {
+            self.out_of_date(&name, "no output types file")
+        };
+        for entry in output_types.lines() {
+            let statement = Statement::parse_output_types(entry).and_then(|(range, types)| {
+                let index = statements
+                    .binary_search_by_key(&range.start(), |x| x.range.start())
+                    .ok()?;
+                let statement = statements.get_mut(index)?;
+                (statement.range == range && statement.output_types.is_none())
+                    .then(|| statement.output_types = Some(types))
+            });
+            if statement.is_none() {
+                self.out_of_date(
+                    &name,
+                    &format!("output types `{entry}` don't fit the statements of the SQL file"),
+                );
+            }
+        }
         File {
             name,
             source,
@@ -195,21 +262,23 @@ impl Version {
         }
     }
 
-    fn check_no_orphan_verdicts(&self, names: &[String]) {
-        let Ok(entries) = fs::read_dir(self.dir.join("verdicts")) else {
+    fn check_no_orphans(&self, dir: &str, names: &[String]) {
+        let Ok(entries) = fs::read_dir(self.dir.join(dir)) else {
             return;
         };
-        for entry in entries {
-            let path = entry.expect("read directory entry").path();
-            let name = path.file_stem().unwrap().to_string_lossy();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_stem().map(|stem| stem.to_string_lossy()) else {
+                continue;
+            };
             if !names.iter().any(|x| *x == name) {
-                self.out_of_date(&name, "verdict file without SQL file");
+                self.out_of_date(&name, &format!("file in {dir} without SQL file"));
             }
         }
     }
 
-    fn verdicts_path(&self, name: &str) -> PathBuf {
-        self.dir.join("verdicts").join(format!("{name}.txt"))
+    fn fixture_path(&self, dir: &str, name: &str) -> PathBuf {
+        self.dir.join(dir).join(format!("{name}.txt"))
     }
 
     fn out_of_date(&self, name: &str, detail: &str) -> ! {
@@ -230,8 +299,9 @@ pub fn versions() -> Vec<Version> {
     let root = data_dir();
     let mut versions = fs::read_dir(&root)
         .unwrap_or_else(|e| panic!("read {}: {e}", root.display()))
+        .flatten()
         .filter_map(|entry| {
-            let dir = entry.expect("read directory entry").path();
+            let dir = entry.path();
             let major = dir.file_name()?.to_str()?.parse().ok()?;
             Some(version_in(dir, major))
         })
@@ -344,6 +414,17 @@ mod tests {
         for line in ["9..0 accepted", "0..9", "0-9 accepted", "0..9 rejected"] {
             assert!(Statement::parse(line).is_none(), "{line}");
         }
+        let line = "0..9\tpg_catalog.int4\tpg_temp.my type";
+        let (range, types) = Statement::parse_output_types(line).expect("an output types line");
+        let statement = Statement {
+            range,
+            verdict: Verdict::Accepted,
+            output_types: Some(types),
+        };
+        assert_eq!(statement.output_types_line().as_deref(), Some(line));
+        for line in ["0..9", "0..9\t", "0..9\tpg_catalog.int4\t"] {
+            assert!(Statement::parse_output_types(line).is_none(), "{line}");
+        }
     }
 
     #[test]
@@ -369,6 +450,14 @@ mod tests {
                     .flat_map(|file| &file.statements)
                     .any(|statement| statement.verdict == Verdict::Accepted),
                 "{} has no accepted statement",
+                version.major
+            );
+            assert!(
+                files
+                    .iter()
+                    .flat_map(|file| &file.statements)
+                    .any(|statement| statement.output_types.is_some()),
+                "{} has no statement with output types",
                 version.major
             );
         }

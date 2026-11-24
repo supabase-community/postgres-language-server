@@ -1,0 +1,7 @@
+4254..4387	pg_catalog.text
+5086..5175	pg_catalog.text
+5219..5309	pg_catalog.text
+5778..5876	pg_catalog.text
+5915..6013	pg_catalog.text
+6483..6572	pg_catalog.text
+6678..6820	pg_catalog.text

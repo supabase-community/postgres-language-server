@@ -37,7 +37,9 @@ pub(crate) fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
         }
         let token = lexed.range(index);
         let first = expansions.partition_point(|expansion| expansion.range.end() <= token.start());
-        let in_token = expansions[first..]
+        let in_token = expansions
+            .get(first..)
+            .unwrap_or_default()
             .iter()
             .take_while(|expansion| expansion.range.start() < token.end());
         if kind != SyntaxKind::IDENT {

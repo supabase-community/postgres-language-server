@@ -1,5 +1,6 @@
 //! Helpers to compute the edits of rule fixes from the tokens of a statement.
 
+use pgls_line_index::LineBreak;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -25,7 +26,12 @@ impl<'a> StatementTokens<'a> {
 
     /// The range of the token at `index`.
     pub fn range(&self, index: usize) -> TextRange {
-        let token = &self.tokens[index];
+        let Some(token) = self.tokens.get(index) else {
+            // Callers pass indices of tokens they found. An empty range at the end keeps a fix
+            // from touching the statement, and the fix is checked before it's offered.
+            debug_assert!(false, "token {index} of {}", self.tokens.len());
+            return TextRange::empty(TextSize::of(self.sql));
+        };
         TextRange::new(
             TextSize::from(token.start as u32),
             TextSize::from(token.end as u32),
@@ -177,7 +183,11 @@ impl<'a> StatementTokens<'a> {
     /// A fix that inserts the keywords ` <text>` after the token at `index`, in the case of that
     /// token if it is a keyword, or else of the statement's first keyword.
     pub fn insert_after(&self, index: usize, message: &str, text: &str) -> RuleFix {
-        let is_keyword = |index: usize| self.tokens[index].keyword_kind() != KeywordKind::NoKeyword;
+        let is_keyword = |index: usize| {
+            self.tokens
+                .get(index)
+                .is_some_and(|token| token.keyword_kind() != KeywordKind::NoKeyword)
+        };
         let like = Some(index)
             .filter(|index| is_keyword(*index))
             .or_else(|| (0..self.tokens.len()).find(|index| is_keyword(*index)))
@@ -221,25 +231,14 @@ impl<'a> StatementTokens<'a> {
                 replacement.push(' ');
                 replacement.push_str(self.sql[comment_range].trim_end());
                 if comment.token() == Token::SqlComment {
-                    replacement.push_str(line_break_after(
-                        &self.sql[usize::from(comment_range.end())..],
-                    ));
+                    // `\n` if the comment ends the input.
+                    let line_break =
+                        LineBreak::at_start_of(&self.sql[usize::from(comment_range.end())..]);
+                    replacement.push_str(line_break.unwrap_or(LineBreak::Lf).as_str());
                 }
             }
         }
         fix.replace(range, replacement)
-    }
-}
-
-/// The line break that ends a `--` comment followed by `text`: `\r\n`, `\r` or `\n`. `\n` at the
-/// end of the input.
-fn line_break_after(text: &str) -> &'static str {
-    if text.starts_with("\r\n") {
-        "\r\n"
-    } else if text.starts_with('\r') {
-        "\r"
-    } else {
-        "\n"
     }
 }
 

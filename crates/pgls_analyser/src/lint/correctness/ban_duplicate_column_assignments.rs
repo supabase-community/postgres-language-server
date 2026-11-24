@@ -59,6 +59,8 @@ declare_lint_rule! {
 
 impl LinterRule for BanDuplicateColumnAssignments {
     type Options = ();
+    // Postgres' rewriter raises `multiple assignments to same column`, without a position.
+    const REPORTS_DATABASE_ERROR: bool = true;
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let tokens = ctx.tokens();
@@ -429,7 +431,7 @@ fn column_list(
         .filter_map(|(index, name)| match &name.node {
             Some(NodeEnum::String(name)) => Some(Column {
                 name: name.sval.clone(),
-                span: spans.as_ref().map(|spans| spans[index]),
+                span: spans.as_ref().and_then(|spans| spans.get(index).copied()),
             }),
             _ => None,
         })

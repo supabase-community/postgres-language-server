@@ -1,0 +1,15 @@
+13767..13811	pg_catalog.void
+14169..14213	pg_catalog.int4
+14347..14391	pg_catalog.void
+14392..14436	pg_catalog.void
+14437..14489	pg_catalog.void
+14920..14973	pg_catalog.int4
+15005..15058	pg_catalog.int4
+15082..15135	pg_catalog.int4
+15176..15238	pg_catalog.int4
+15662..15706	pg_catalog.void
+15707..15749	pg_catalog.int4
+16227..16283	pg_catalog.text
+16348..16404	pg_catalog.text
+17662..17721	pg_catalog.text
+17723..17762	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text

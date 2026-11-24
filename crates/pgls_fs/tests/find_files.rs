@@ -5,14 +5,16 @@ use std::time::Instant;
 use pgls_fs::{ConfigName, FileSystem, FindFiles, OsFileSystem, SkipDirectory};
 
 /// Creates `files` below a new temporary directory.
-fn tree(files: &[&str]) -> tempfile::TempDir {
-    let root = tempfile::tempdir().unwrap();
+fn tree(files: &[&str]) -> std::io::Result<tempfile::TempDir> {
+    let root = tempfile::tempdir()?;
     for file in files {
         let path = root.path().join(file);
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, "{}").unwrap();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(path, "{}")?;
     }
-    root
+    Ok(root)
 }
 
 /// The files the search finds, relative to `root`, and whether it stopped at a limit.
@@ -22,8 +24,9 @@ fn find(root: &Path, search: FindFiles) -> (Vec<String>, bool) {
         .files
         .iter()
         .map(|file| {
+            // Every file the search finds is below `root`.
             file.strip_prefix(root)
-                .unwrap()
+                .unwrap_or(file)
                 .to_string_lossy()
                 .replace('\\', "/")
         })
@@ -44,7 +47,8 @@ fn skips_hidden_vendored_and_ignored_folders() {
         "target/postgres-language-server.jsonc",
         "build/postgres-language-server.jsonc",
         "db1/other.jsonc",
-    ]);
+    ])
+    .unwrap();
     std::fs::write(root.path().join(".gitignore"), "build/\n").unwrap();
 
     let (files, truncated) = find(root.path(), FindFiles::new(CONFIG));
@@ -64,7 +68,8 @@ fn honours_gitignore_files_only_if_asked() {
     let root = tree(&[
         "build/postgres-language-server.jsonc",
         "vendor/postgres-language-server.jsonc",
-    ]);
+    ])
+    .unwrap();
     std::fs::write(root.path().join(".gitignore"), "build/\n").unwrap();
     std::fs::write(root.path().join(".ignore"), "vendor/\n").unwrap();
 
@@ -86,7 +91,8 @@ fn skips_directories_up_to_the_first_file() {
         "legacy/app/postgres-language-server.jsonc",
         "db1/postgres-language-server.jsonc",
         "db1/legacy/postgres-language-server.jsonc",
-    ]);
+    ])
+    .unwrap();
     let skip_directory: SkipDirectory = Arc::new(|directory: &Path| directory.ends_with("legacy"));
 
     let (files, _) = find(
@@ -111,7 +117,8 @@ fn stops_at_the_limits() {
         "a/postgres-language-server.jsonc",
         "a/b/postgres-language-server.jsonc",
         "a/b/c/postgres-language-server.jsonc",
-    ]);
+    ])
+    .unwrap();
 
     let (files, truncated) = find(
         root.path(),

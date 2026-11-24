@@ -1,0 +1,11 @@
+576..630	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+839..893	pg_catalog.text	pg_catalog.text	pg_catalog.int4
+1101..1154	pg_catalog.text
+1298..1325	pg_catalog.text
+2736..2851	pg_catalog.regclass	pg_catalog.int8	pg_catalog.int8
+3196..3311	pg_catalog.regclass	pg_catalog.int8	pg_catalog.int8
+3531..3573	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+3574..3616	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+6379..6420	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+6790..6831	pg_catalog.int4	pg_catalog.text
+8769..8865	pg_catalog.regclass	pg_catalog.bool	pg_catalog.int8

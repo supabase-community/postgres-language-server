@@ -1,0 +1,6 @@
+38..160	pg_catalog.tid	pg_catalog.tid	pg_catalog.tid	pg_catalog.tid
+383..413	pg_catalog.tid
+414..444	pg_catalog.tid
+733..784	pg_catalog.tid
+883..930	pg_catalog.tid
+1688..1746	pg_catalog.tid

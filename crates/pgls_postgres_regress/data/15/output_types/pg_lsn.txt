@@ -1,0 +1,16 @@
+429..469	pg_catalog.pg_lsn	pg_catalog.pg_lsn
+508..549	pg_catalog.bool
+550..592	pg_catalog.bool
+593..634	pg_catalog.bool
+635..675	pg_catalog.bool
+676..725	pg_catalog.numeric
+726..775	pg_catalog.numeric
+776..817	pg_catalog.pg_lsn
+818..859	pg_catalog.pg_lsn
+860..901	pg_catalog.pg_lsn
+902..950	pg_catalog.pg_lsn
+1022..1056	pg_catalog.pg_lsn
+1114..1183	pg_catalog.pg_lsn
+1184..1267	pg_catalog.pg_lsn
+1393..1603	pg_catalog.text
+1605..1795	pg_catalog.pg_lsn

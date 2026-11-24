@@ -1,0 +1,9 @@
+470..659	pg_catalog.text	pg_catalog.char
+811..943	pg_catalog.regproc	pg_catalog.regproc
+945..1134	pg_catalog.text	pg_catalog.char
+1265..1397	pg_catalog.regproc	pg_catalog.regproc
+1399..1588	pg_catalog.text	pg_catalog.char
+1665..1797	pg_catalog.regproc	pg_catalog.regproc
+1799..1988	pg_catalog.text	pg_catalog.char
+2081..2213	pg_catalog.regproc	pg_catalog.regproc
+2215..2404	pg_catalog.text	pg_catalog.char

@@ -1,0 +1,15 @@
+4542..4630	pg_catalog.text	pg_catalog.text
+4632..4697	pg_catalog.text	pg_catalog.text
+5460..5531	pg_catalog.text
+5533..5610	pg_catalog.text
+5612..5695	pg_catalog.text
+5697..5793	pg_catalog.text
+5795..5891	pg_catalog.text
+5893..5989	pg_catalog.text
+5991..6052	pg_catalog.text
+6054..6115	pg_catalog.text
+6117..6154	pg_catalog.text
+6263..6313	pg_catalog.text	pg_catalog.text
+6315..6364	pg_catalog.text
+6366..6414	pg_catalog.text	pg_catalog.text	pg_catalog.text
+6416..6486	pg_catalog.text	pg_catalog.text	pg_catalog.text

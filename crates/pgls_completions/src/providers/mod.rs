@@ -7,10 +7,10 @@ mod roles;
 mod schemas;
 mod tables;
 
-pub use columns::*;
-pub use functions::*;
-pub use keywords::*;
-pub use policies::*;
-pub use roles::*;
-pub use schemas::*;
-pub use tables::*;
+pub(crate) use columns::*;
+pub(crate) use functions::*;
+pub(crate) use keywords::*;
+pub(crate) use policies::*;
+pub(crate) use roles::*;
+pub(crate) use schemas::*;
+pub(crate) use tables::*;

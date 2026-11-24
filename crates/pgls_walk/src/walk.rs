@@ -127,7 +127,9 @@ pub fn walk_statements(
     let roots: Vec<&pgls_query::NodeEnum> = params.stmts.iter().map(|s| &*s.root).collect();
 
     // The catalog after the up sections so far.
-    let mut catalog = Catalog::new(params.catalog_base);
+    let mut catalog = params
+        .catalog_base
+        .map_or_else(Catalog::without_database, Catalog::from_base);
     if params.best_effort {
         catalog = catalog.best_effort();
     }
@@ -174,7 +176,7 @@ pub fn walk_statements(
                 let unit_catalog = if is_down {
                     catalog.clone()
                 } else {
-                    std::mem::replace(&mut catalog, Catalog::new(None))
+                    std::mem::replace(&mut catalog, Catalog::without_database())
                 };
                 // Each section runs in a session and transaction of its own.
                 let session = Session::new(params.search_path.to_vec()).with_transaction_mode(
@@ -184,14 +186,18 @@ pub fn walk_statements(
                 (unit_catalog, session)
             }
         };
-        let stmts = &params.stmts[unit.stmts.clone()];
+        // The units split the statements, so their ranges lie inside them.
+        let stmts = params.stmts.get(unit.stmts.clone()).unwrap_or_default();
         let unit_unparsable = {
             let starts = |end: TextSize| {
                 params
                     .unparsable
                     .partition_point(|skipped| skipped.range.start() < end)
             };
-            &params.unparsable[starts(unit.start)..starts(unit.end)]
+            params
+                .unparsable
+                .get(starts(unit.start)..starts(unit.end))
+                .unwrap_or_default()
         };
         // The last statement of the unit, including those that don't parse. The statements of a
         // function body end within their `CREATE FUNCTION`.
@@ -222,15 +228,18 @@ pub fn walk_statements(
             .into_iter()
             .flat_map(|section| section.implicit_blocks(params.statement_ranges))
             .peekable();
-        let mut file_context =
-            AnalysedFileContext::new(&roots[unit.stmts.clone()], unit_catalog, session)
-                .with_resolve_options(params.resolve)
-                .with_positions(
-                    stmts.iter().map(|stmt| stmt.range.start()).collect(),
-                    last_end,
-                    terminated,
-                )
-                .with_stmt_count(statements_before(unit.end) - statements_before(unit.start));
+        let mut file_context = AnalysedFileContext::new(
+            roots.get(unit.stmts.clone()).unwrap_or_default(),
+            unit_catalog,
+            session,
+        )
+        .with_resolve_options(params.resolve)
+        .with_positions(
+            stmts.iter().map(|stmt| stmt.range.start()).collect(),
+            last_end,
+            terminated,
+        )
+        .with_stmt_count(statements_before(unit.end) - statements_before(unit.start));
         let state = |at: TextSize,
                      file_context: &AnalysedFileContext,
                      catalog: &Catalog,
@@ -482,7 +491,11 @@ fn migration_units<'a>(
     let mut first = 0;
     units
         .map(|(section, start, end)| {
-            let last = first + stmts[first..].partition_point(|stmt| stmt.range.start() < end);
+            let last = first
+                + stmts
+                    .get(first..)
+                    .unwrap_or_default()
+                    .partition_point(|stmt| stmt.range.start() < end);
             let unit = MigrationUnit {
                 section,
                 stmts: first..last,
@@ -550,7 +563,7 @@ fn may_change_catalog(sql: &str) -> bool {
 pub fn is_plain_query(root: &pgls_query::NodeEnum) -> bool {
     use pgls_query::NodeEnum;
     match root {
-        NodeEnum::SelectStmt(select) => select.into_clause.is_none(),
+        NodeEnum::SelectStmt(select) => select.into_clause_of_query().is_none(),
         NodeEnum::InsertStmt(_)
         | NodeEnum::UpdateStmt(_)
         | NodeEnum::DeleteStmt(_)
@@ -564,8 +577,6 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use pgls_text_size::{TextRange, TextSize};
-
-    use pgls_catalog::CatalogView;
 
     use super::{WalkParams, walk_statements};
     use crate::{AnalysableStatement, Direction, Unit, UnparsableStatement};
