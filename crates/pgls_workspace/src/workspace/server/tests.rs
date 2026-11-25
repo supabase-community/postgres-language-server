@@ -125,6 +125,64 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
     assert_eq!(pull(), Some(4));
 }
 
+/// A second open without a close replaces the document, so the diagnostics are for the new text.
+#[test]
+fn opening_an_open_file_again_replaces_it() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            disable_connection: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+    let open = |content: &str, version| {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version,
+            })
+            .expect("Unable to open test file");
+        workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key,
+                path: path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks: DatabaseChecks::Run,
+            })
+            .expect("Unable to pull diagnostics")
+    };
+
+    let first = open("select 1;", 1);
+    assert!(first.diagnostics.is_empty());
+
+    let second = open("select 1;\nseect 2;", 2);
+    assert_eq!(second.version, Some(2));
+    assert_eq!(
+        workspace
+            .get_file_content(crate::workspace::GetFileContentParams {
+                project_key,
+                path: path.clone(),
+            })
+            .expect("Unable to get the file content"),
+        "select 1;\nseect 2;"
+    );
+    let spans: Vec<_> = second
+        .diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.location().span)
+        .collect();
+    assert_eq!(spans, vec![Some(TextRange::new(10.into(), 18.into()))]);
+}
+
 #[pgls_test_utils::db_test]
 async fn test_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
