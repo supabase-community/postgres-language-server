@@ -175,6 +175,7 @@ define_categories! {
     "plpgsql_check",
     "internalError/panic",
     "syntax",
+    "migrations/psqlSyntax",
     "migrations/sectionMarkers",
     "dummy",
 

@@ -12,7 +12,7 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
-use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
+use pgls_migrations::{MigrationTool, Preprocessed, PsqlSyntaxDiagnostic, Script, Unit};
 
 use crate::diagnostics::FileTooLarge;
 use crate::workspace::ProjectKey;
@@ -395,6 +395,15 @@ impl Document {
 
     pub(crate) fn get_document_content(&self) -> &str {
         &self.content
+    }
+
+    /// The psql syntax in the document that its migration tool can't run, see
+    /// [`MigrationTool::psql_diagnostics`]. None in a document too large to analyse.
+    pub(crate) fn psql_diagnostics(&self) -> Vec<PsqlSyntaxDiagnostic> {
+        if self.too_large {
+            return Vec::new();
+        }
+        self.migration_tool.psql_diagnostics(self.text())
     }
 
     /// The text that is split and parsed: the content, with the placeholders of the migration
