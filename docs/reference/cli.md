@@ -16,16 +16,17 @@
   * [`postgres-language-server init`↴](#postgres-language-server-init)
   * [`postgres-language-server lsp-proxy`↴](#postgres-language-server-lsp-proxy)
   * [`postgres-language-server parse`↴](#postgres-language-server-parse)
-  * [`postgres-language-server clean`↴](#postgres-language-server-clean)
   * [`postgres-language-server schema-export`↴](#postgres-language-server-schema-export)
 
 ## postgres-language-server
 
 Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
 
-**Usage**: **`postgres-language-server`** _`COMMAND ...`_
+**Usage**: **`postgres-language-server`** (_`COMMAND ...`_ | **`--clean`**)
 
 **Available options:**
+- **`    --clean`** &mdash; 
+  Cleans the logs emitted by the daemon.
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 - **`-V`**, **`--version`** &mdash; 
@@ -52,8 +53,6 @@ Postgres Language Server official CLI. Use it to check the health of your projec
   Acts as a server for the Language Server Protocol over stdin/stdout.
 - **`parse`** &mdash; 
   Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
-- **`clean`** &mdash; 
-  Cleans the logs emitted by the daemon.
 - **`schema-export`** &mdash; 
   Exports the database schema to JSON for use with WASM bindings.
 
@@ -166,7 +165,7 @@ Lints your database schema.
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
-- **`    --search-path`**=_`ARG`_ &mdash; 
+- **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 - **`    --connection-string`**=_`ARG`_ &mdash; 
   A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.
@@ -180,9 +179,9 @@ Lints your database schema.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow-statement-executions-against`**=_`ARG`_ &mdash; 
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
   Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
-- **`    --conn-timeout-secs`**=_`ARG`_ &mdash; 
+- **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
   [default: Some(10)]
@@ -293,7 +292,7 @@ Runs everything to the requested files.
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
-- **`    --search-path`**=_`ARG`_ &mdash; 
+- **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 - **`    --connection-string`**=_`ARG`_ &mdash; 
   A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.
@@ -307,9 +306,9 @@ Runs everything to the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow-statement-executions-against`**=_`ARG`_ &mdash; 
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
   Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
-- **`    --conn-timeout-secs`**=_`ARG`_ &mdash; 
+- **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
   [default: Some(10)]
@@ -446,7 +445,7 @@ Formats the requested files.
   If `true`, the terminating semicolon goes on its own line when the statement spans several lines. Default: `false`.
 - **`    --skip-fn-bodies`**=_`<true|false>`_ &mdash; 
   If `true`, skip formatting of SQL function bodies (keep them verbatim). Default: `false`.
-- **`    --search-path`**=_`ARG`_ &mdash; 
+- **`    --search_path`**=_`ARG`_ &mdash; 
   Default search path schemas for type checking. Can be a list of schema names or glob patterns like ["public", "app_*"]. If not specified, defaults to ["public"].
 - **`    --connection-string`**=_`ARG`_ &mdash; 
   A connection string that encodes the full connection setup. When provided, it takes precedence over the individual fields. Can also be set via the `DATABASE_URL` environment variable.
@@ -460,9 +459,9 @@ Formats the requested files.
   The password to connect to the database. Can also be set via the `PGPASSWORD` environment variable.
 - **`    --database`**=_`ARG`_ &mdash; 
   The name of the database. Can also be set via the `PGDATABASE` environment variable.
-- **`    --allow-statement-executions-against`**=_`ARG`_ &mdash; 
+- **`    --allow_statement_executions_against`**=_`ARG`_ &mdash; 
   Glob patterns of the databases that code actions may execute statements against, matched against `host:port/database`. A pattern without a port, e.g. `localhost/*`, is matched against `host/database` and allows every port.
-- **`    --conn-timeout-secs`**=_`ARG`_ &mdash; 
+- **`    --conn_timeout_secs`**=_`ARG`_ &mdash; 
   The connection timeout in seconds.
    
   [default: Some(10)]
@@ -619,27 +618,6 @@ Parses a SQL file (or standard input) and writes the parse tree as a protobuf `P
   Path to the SQL file to parse. When omitted, the SQL is read from standard input.
 - **`    --stdin-file-path`**=_`PATH`_ &mdash; 
   Alias of --file, mirroring the format command.
-- **`-h`**, **`--help`** &mdash; 
-  Prints help information
-
-
-## postgres-language-server clean
-
-Cleans the logs emitted by the daemon.
-
-**Usage**: **`postgres-language-server`** **`clean`** 
-
-**Available options:**
-- **`    --log-prefix-name`**=_`STRING`_ &mdash; 
-  Allows to change the prefix applied to the file name of the logs.
-   
-  Uses environment variable **`PGLS_LOG_PREFIX_NAME`**
-   
-  [default: server.log]
-- **`    --log-path`**=_`PATH`_ &mdash; 
-  Allows to change the folder where logs are stored.
-   
-  Uses environment variable **`PGLS_LOG_PATH`**
 - **`-h`**, **`--help`** &mdash; 
   Prints help information
 
