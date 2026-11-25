@@ -30,8 +30,8 @@ pub(crate) fn source(p: &mut Splitter) -> SplitterResult {
             SyntaxKind::EOF => {
                 break;
             }
-            SyntaxKind::META_COMMAND => {
-                p.skip_meta_command();
+            SyntaxKind::META_COMMAND | SyntaxKind::COPY_DATA => {
+                p.skip_psql_input();
             }
             kind if TRIVIA_TOKENS.contains(&kind) || kind == SyntaxKind::LINE_ENDING => {
                 p.advance()?;

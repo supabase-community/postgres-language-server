@@ -1,7 +1,25 @@
-use pgls_tokenizer::tokenize;
+use pgls_tokenizer::{TokenKind, tokenize};
 
 use crate::SyntaxKind;
 use crate::lexed::{LexError, Lexed};
+
+/// How many words of a statement psql looks at to tell `COPY … FROM STDIN` (`init_idents`):
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/include/fe_utils/psqlscan_int.h#L129-L130
+const COPY_WORDS_MAX: usize = 8;
+
+/// How far the first words of the current statement match `COPY … FROM STDIN`, see
+/// [`Lexer::track_copy`].
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CopyFromStdin {
+    /// The statement isn't `COPY … FROM STDIN`.
+    No,
+    /// `COPY`, without `FROM` yet.
+    Copy,
+    /// `COPY … FROM`.
+    From,
+    /// `COPY … FROM STDIN`.
+    Stdin,
+}
 
 /// Lexer that processes input text into tokens and diagnostics
 pub struct Lexer<'a> {
@@ -13,6 +31,13 @@ pub struct Lexer<'a> {
     /// we store line ending counts outside of SyntaxKind because of the u16 represenation of SyntaxKind
     line_ending_counts: Vec<usize>,
     has_blank_line: bool,
+    /// The words of the current statement outside parentheses so far, up to
+    /// [`COPY_WORDS_MAX`], and the depth of its parentheses, see [`Lexer::track_copy`].
+    words: usize,
+    paren_depth: usize,
+    copy: CopyFromStdin,
+    /// Whether COPY data starts after the next line break.
+    copy_data_next: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -26,13 +51,24 @@ impl<'a> Lexer<'a> {
             offset: 0,
             line_ending_counts: Vec::new(),
             has_blank_line: false,
+            words: 0,
+            paren_depth: 0,
+            copy: CopyFromStdin::No,
+            copy_data_next: false,
         }
     }
 
     /// Lex the input text and return the result
     pub fn lex(mut self) -> Lexed<'a> {
-        for token in tokenize(&self.text[self.offset..]) {
+        let mut tokens = tokenize(self.text);
+        while let Some(token) = tokens.next() {
             let token_text = &self.text[self.offset..][..token.len as usize];
+            if self.copy_data_next && matches!(token.kind, TokenKind::LineEnding { .. }) {
+                self.copy_data(token_text);
+                tokens = tokenize(&self.text[self.offset..]);
+                continue;
+            }
+            self.track_copy(&token.kind, token_text);
             self.extend_token(&token.kind, token_text);
         }
 
@@ -73,6 +109,99 @@ impl<'a> Lexer<'a> {
             let token = (self.kind.len() - 1) as u32;
             let msg = err.to_owned();
             self.error.push(LexError { msg, token });
+        }
+    }
+
+    /// Follows the words, parentheses and `;` of the statements like psql does, to tell `COPY …
+    /// FROM STDIN`, whose data rows psql reads from the lines after it. Its first word is
+    /// `COPY`, and the word after its first `FROM` among its first [`COPY_WORDS_MAX`] words is
+    /// `STDIN` or `STDOUT`. Quoted identifiers and the words in parentheses, like a column list,
+    /// don't count. A `;` outside parentheses ends the statement, and so does a meta-command,
+    /// since the splitter ends the statement there. `\copy … from stdin` reads its data the same
+    /// way, and takes the arguments of `COPY`.
+    ///
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L960-L1046
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/copy.c#L224-L228
+    fn track_copy(&mut self, kind: &TokenKind, text: &str) {
+        match kind {
+            TokenKind::OpenParen => self.paren_depth += 1,
+            TokenKind::CloseParen => self.paren_depth = self.paren_depth.saturating_sub(1),
+            TokenKind::Ident if self.paren_depth == 0 && self.words < COPY_WORDS_MAX => {
+                let is = |word: &str| text.eq_ignore_ascii_case(word);
+                self.copy = match self.copy {
+                    _ if self.words == 0 && is("copy") => CopyFromStdin::Copy,
+                    _ if self.words == 0 => CopyFromStdin::No,
+                    // The word after `FROM` has to be among the first words too.
+                    CopyFromStdin::Copy if is("from") && self.words < COPY_WORDS_MAX - 1 => {
+                        CopyFromStdin::From
+                    }
+                    CopyFromStdin::From if is("stdin") || is("stdout") => CopyFromStdin::Stdin,
+                    CopyFromStdin::From => CopyFromStdin::No,
+                    copy => copy,
+                };
+                self.words += 1;
+            }
+            TokenKind::Semi if self.paren_depth == 0 => self.end_statement(),
+            TokenKind::MetaCommand => {
+                self.end_statement();
+                let Some(copy) = text
+                    .strip_prefix('\\')
+                    .filter(|copy| copy.starts_with("copy"))
+                else {
+                    return;
+                };
+                let mut rest = copy;
+                for token in tokenize(copy) {
+                    let Some((token_text, after)) = rest.split_at_checked(token.len as usize)
+                    else {
+                        break;
+                    };
+                    rest = after;
+                    // A meta-command after `\copy`'s arguments is its own.
+                    if token.kind != TokenKind::MetaCommand {
+                        self.track_copy(&token.kind, token_text);
+                    }
+                }
+                self.end_statement();
+            }
+            _ => {}
+        }
+    }
+
+    /// Ends the statement for [`Lexer::track_copy`]. COPY data follows the next line break if it
+    /// was `COPY … FROM STDIN`.
+    fn end_statement(&mut self) {
+        self.copy_data_next |= self.copy == CopyFromStdin::Stdin;
+        self.words = 0;
+        self.paren_depth = 0;
+        self.copy = CopyFromStdin::No;
+    }
+
+    /// Pushes the first line break of `line_ending`, and the COPY data rows after it as one
+    /// token, up to and including a line that is exactly `\.`, or to the end of the text. psql
+    /// reads the rows with `fgets`, so only a `\n` ends one.
+    ///
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/copy.c#L626-L640
+    fn copy_data(&mut self, line_ending: &str) {
+        self.copy_data_next = false;
+        let line_break = if line_ending.starts_with("\r\n") {
+            2
+        } else {
+            1
+        };
+        self.push(SyntaxKind::LINE_ENDING, line_break, None, Some(1));
+
+        let mut len = 0;
+        for line in self.text[self.offset..].split_inclusive('\n') {
+            if matches!(line, "\\.\n" | "\\.\r\n") {
+                // The line break after `\.` is a token of its own.
+                len += 2;
+                break;
+            }
+            len += line.len();
+        }
+        if len > 0 {
+            self.push(SyntaxKind::COPY_DATA, len, None, None);
         }
     }
 

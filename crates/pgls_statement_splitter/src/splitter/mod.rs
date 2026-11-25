@@ -266,19 +266,23 @@ impl<'a> Splitter<'a> {
         self.current_stmt_start = None;
     }
 
-    /// The kind of the current token. A psql meta-command is `EOF` here: it ends the statement
-    /// before it wherever it is, e.g. the query that `\gset` sends in `select 1 \gset`. Only
-    /// [`source`] sees it, and skips it.
+    /// The kind of the current token. psql input that isn't SQL, a meta-command or COPY data, is
+    /// `EOF` here: it ends the statement before it wherever it is, e.g. the query that `\gset`
+    /// sends in `select 1 \gset`. Only [`source`] sees it, and skips it.
     fn current(&self) -> SyntaxKind {
         match self.lexed.kind(self.current_pos) {
-            SyntaxKind::META_COMMAND => SyntaxKind::EOF,
+            SyntaxKind::META_COMMAND | SyntaxKind::COPY_DATA => SyntaxKind::EOF,
             kind => kind,
         }
     }
 
-    /// Moves past the psql meta-command at the current token, which belongs to no statement.
-    fn skip_meta_command(&mut self) {
-        debug_assert_eq!(self.lexed.kind(self.current_pos), SyntaxKind::META_COMMAND);
+    /// Moves past the psql meta-command or COPY data at the current token, which belong to no
+    /// statement.
+    fn skip_psql_input(&mut self) {
+        debug_assert!(matches!(
+            self.lexed.kind(self.current_pos),
+            SyntaxKind::META_COMMAND | SyntaxKind::COPY_DATA
+        ));
         self.current_pos += 1;
     }
 
