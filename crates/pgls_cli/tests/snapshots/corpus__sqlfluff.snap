@@ -69,10 +69,10 @@ check:
   lint/requireTypeSchema: 463
   lint/runningStatementWhileHoldingAccessExclusive: 187
   lint/transactionNesting: 24
-  syntax: 52
+  syntax: 45
 format:
-  format: 2303
-  syntax: 49
+  format: 2306
+  syntax: 42
 reformatted files: 225
   test/fixtures/dialects/postgres/alter_aggregate.sql
   test/fixtures/dialects/postgres/alter_collation.sql

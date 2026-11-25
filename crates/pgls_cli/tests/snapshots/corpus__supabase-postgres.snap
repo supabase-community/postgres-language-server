@@ -41,10 +41,10 @@ check:
   lint/requireTypeSchema: 727
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
-  syntax: 7
+  syntax: 4
 format:
-  format: 1451
-  syntax: 6
+  format: 1452
+  syntax: 3
 reformatted files: 213
   migrations/db/init-scripts/00000000000000-initial-schema.sql
   migrations/db/init-scripts/00000000000001-auth-schema.sql

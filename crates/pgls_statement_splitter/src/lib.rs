@@ -1287,6 +1287,31 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn revoke_alter_system() {
+        for stmt in [
+            "REVOKE ALTER SYSTEM ON PARAMETER work_mem FROM my_user CASCADE;",
+            "REVOKE GRANT OPTION FOR ALTER SYSTEM ON PARAMETER work_mem FROM my_user;",
+            "GRANT SET, ALTER SYSTEM ON PARAMETER work_mem TO my_user;",
+        ] {
+            Tester::from(stmt).expect_statements(vec![stmt]);
+        }
+    }
+
+    #[test]
+    fn alter_extension_update() {
+        Tester::from("ALTER EXTENSION hstore UPDATE TO '2.0';\nALTER EXTENSION repmgr UPDATE;")
+            .expect_statements(vec![
+                "ALTER EXTENSION hstore UPDATE TO '2.0';",
+                "ALTER EXTENSION repmgr UPDATE;",
+            ]);
+    }
+
+    #[test]
+    fn empty_statement() {
+        Tester::from(";select 1;;\n;\nselect 2;").expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
     fn revoke_create() {
         Tester::from("REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;")
             .expect_statements(vec![
