@@ -242,7 +242,7 @@ fn setup_tracing_subscriber(
 }
 
 pub(crate) fn default_pgls_log_path() -> PathBuf {
-    let env = &pgls_env::PGLS_ENV;
+    let env = pgls_env::pgls_env();
     match env
         .pgls_log_path
         .value()
