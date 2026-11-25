@@ -539,17 +539,17 @@ alter table rewriteme
 
 begin;
 
-set time zone 'UTC';
+set timezone = 'UTC';
 
 alter table rewriteme
   alter column bar type timestamp;
 
-set time zone '0';
+set timezone = '0';
 
 alter table rewriteme
   alter column bar type timestamptz;
 
-set time zone 'Europe/London';
+set timezone = 'Europe/London';
 
 alter table rewriteme
   alter column bar type timestamp;
