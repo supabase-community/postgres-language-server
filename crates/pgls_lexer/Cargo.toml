@@ -17,8 +17,14 @@ pgls_lexer_codegen.workspace = true
 pgls_text_size.workspace     = true
 pgls_tokenizer.workspace     = true
 
+pgls_query = { workspace = true, optional = true }
+
 [dev-dependencies]
-pgls_query.workspace = true
+pgls_lexer = { workspace = true, features = ["testing"] }
+
+[features]
+# `Lexed::scanner_difference`, for tests that compare the lexer with Postgres' scanner.
+testing = ["dep:pgls_query"]
 
 [lints]
 workspace = true

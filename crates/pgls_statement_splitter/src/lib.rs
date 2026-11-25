@@ -3,6 +3,8 @@
 //! This crate provides a function to split a SQL source string into individual statements.
 pub mod diagnostics;
 mod splitter;
+#[cfg(feature = "testing")]
+mod testing;
 
 use diagnostics::SplitDiagnostic;
 use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
