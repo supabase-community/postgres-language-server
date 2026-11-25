@@ -5,8 +5,9 @@ use diagnostics::create_type_error;
 use itertools::Itertools;
 use pgls_catalog::NamePosition;
 use pgls_text_size::TextSize;
-use sqlx::postgres::PgDatabaseError;
+use sqlx::pool::PoolConnection;
 pub use sqlx::postgres::PgSeverity;
+use sqlx::postgres::{PgDatabaseError, Postgres};
 use sqlx::{Executor, PgPool};
 
 #[derive(Debug)]
@@ -52,7 +53,11 @@ pub async fn check_sql(
         }
     };
 
-    let mut conn = params.conn.acquire().await?;
+    let mut session = CheckSession {
+        conn: params.conn.acquire().await?,
+        reset: false,
+    };
+    let conn = &mut session.conn;
 
     let res = async {
         if !params.search_path.is_empty() {
@@ -70,10 +75,8 @@ pub async fn check_sql(
 
     // The prepared statement and the search path stay in the session. `discard all` resets it,
     // so that the connection goes back to the pool as it came, and a prepared statement can't
-    // outlive a change of the schema (#291). A connection that can't be reset isn't reused.
-    if conn.execute(sqlx::raw_sql("discard all")).await.is_err() {
-        conn.close_on_drop();
-    }
+    // outlive a change of the schema (#291).
+    session.reset = conn.execute(sqlx::raw_sql("discard all")).await.is_ok();
 
     match res {
         Ok(_) => Ok(None),
@@ -85,6 +88,23 @@ pub async fn check_sql(
             Ok(Some(create_type_error(pg_err, tree, sql, source_offset)))
         }
         Err(err) => Err(err),
+    }
+}
+
+/// The connection of one check. It goes back to the pool only once its session was reset, and
+/// closes otherwise: a check that is dropped half-way, e.g. because another check of the same
+/// pull failed, would return it with the check's search path set, and the next statement a user
+/// executes on the pool would run with it.
+struct CheckSession {
+    conn: PoolConnection<Postgres>,
+    reset: bool,
+}
+
+impl Drop for CheckSession {
+    fn drop(&mut self) {
+        if !self.reset {
+            self.conn.close_on_drop();
+        }
     }
 }
 

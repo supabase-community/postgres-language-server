@@ -19,6 +19,20 @@ struct TestSetup<'a> {
 }
 
 impl TestSetup<'_> {
+    /// A pool of one connection without a statement cache, like the language server's statement
+    /// pool.
+    async fn pool(test_db: &PgPool) -> PgPool {
+        PgPoolOptions::new()
+            .max_connections(1)
+            .connect_with(
+                (*test_db.connect_options())
+                    .clone()
+                    .statement_cache_capacity(0),
+            )
+            .await
+            .expect("Failed to connect")
+    }
+
     async fn test(self) {
         if let Some(setup) = self.setup {
             self.test_db
@@ -38,16 +52,7 @@ impl TestSetup<'_> {
             .expect("Failed to parse query");
         let tree = parser.parse(self.query, None).unwrap();
 
-        // Without a statement cache, like the language server's statement pool.
-        let pool = PgPoolOptions::new()
-            .max_connections(1)
-            .connect_with(
-                (*self.test_db.connect_options())
-                    .clone()
-                    .statement_cache_capacity(0),
-            )
-            .await
-            .expect("Failed to connect");
+        let pool = Self::pool(self.test_db).await;
         let result = check_sql(TypecheckParams {
             conn: &pool,
             sql: self.query,
@@ -321,16 +326,7 @@ async fn check(
         .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
         .unwrap();
     let tree = parser.parse(sql, None).unwrap();
-    // Without a statement cache, like the language server's statement pool.
-    let pool = PgPoolOptions::new()
-        .max_connections(1)
-        .connect_with(
-            (*test_db.connect_options())
-                .clone()
-                .statement_cache_capacity(0),
-        )
-        .await
-        .unwrap();
+    let pool = TestSetup::pool(test_db).await;
     let message = check_sql(TypecheckParams {
         conn: &pool,
         sql,
@@ -355,15 +351,7 @@ async fn the_session_is_reset_after_a_check(test_db: PgPool) {
         .await
         .expect("Failed to set up the table");
     // One connection, so that the queries below run in the session of the checks.
-    let pool = PgPoolOptions::new()
-        .max_connections(1)
-        .connect_with(
-            (*test_db.connect_options())
-                .clone()
-                .statement_cache_capacity(0),
-        )
-        .await
-        .unwrap();
+    let pool = TestSetup::pool(&test_db).await;
     let mut parser = tree_sitter::Parser::new();
     parser
         .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
@@ -394,6 +382,67 @@ async fn the_session_is_reset_after_a_check(test_db: PgPool) {
         .await
         .unwrap();
     assert_eq!(prepared, 0);
+    let search_path: String = sqlx::query_scalar("show search_path")
+        .persistent(false)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(search_path, r#""$user", public"#);
+    pool.close().await;
+}
+
+/// A check that is dropped half-way, e.g. because another check of the same pull failed, closes
+/// its connection instead of returning it to the pool with its search path set.
+#[pgls_test_utils::db_test]
+async fn a_dropped_check_does_not_return_its_session(test_db: PgPool) {
+    test_db
+        .execute("create schema other; create table other.items (id int);")
+        .await
+        .expect("Failed to set up the table");
+    let pool = TestSetup::pool(&test_db).await;
+    let sql = "select id from items";
+    let root = pgls_query::parse(sql).unwrap().into_root().unwrap();
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&pgls_treesitter_grammar::LANGUAGE.into())
+        .unwrap();
+    let tree = parser.parse(sql, None).unwrap();
+
+    // The lock makes the check wait in `prepare`, after it set the search path.
+    let mut lock = test_db.begin().await.unwrap();
+    lock.execute("lock table other.items in access exclusive mode")
+        .await
+        .unwrap();
+    let search_path = ["other".to_string()];
+    let mut check = Box::pin(check_sql(TypecheckParams {
+        conn: &pool,
+        sql,
+        ast: &root,
+        tree: &tree,
+        search_path: &search_path,
+        duplicate_assignments_reported: false,
+    }));
+    // 100 polls of 50 ms: the check waits on the lock within a few round trips.
+    let polls_max = 100;
+    let mut waiting = false;
+    for _ in 0..polls_max {
+        tokio::select! {
+            result = &mut check => panic!("the check didn't wait for the lock: {result:?}"),
+            () = tokio::time::sleep(std::time::Duration::from_millis(50)) => {}
+        }
+        let blocked: i64 = sqlx::query_scalar("select count(*) from pg_locks where not granted")
+            .fetch_one(&test_db)
+            .await
+            .unwrap();
+        if blocked > 0 {
+            waiting = true;
+            break;
+        }
+    }
+    assert!(waiting, "the check never waited for the lock");
+    drop(check);
+    lock.rollback().await.unwrap();
+
     let search_path: String = sqlx::query_scalar("show search_path")
         .persistent(false)
         .fetch_one(&pool)
