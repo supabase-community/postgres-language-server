@@ -42,11 +42,9 @@ pub(crate) enum LayoutEvent {
 /// The emitter holds the configuration because some options decide which tokens exist at all,
 /// such as where a comma sits in a list, and not merely how a token is rendered.
 #[derive(Debug)]
-pub(crate) struct EventEmitter<'a> {
+pub(crate) struct EventEmitter {
     pub events: Vec<LayoutEvent>,
-    /// The configuration as given. Its `layout` is the configured one; `layout` below is the one
-    /// in effect.
-    config: &'a FormatConfig,
+    config: FormatConfig,
     /// Comments still waiting to be emitted before a node, by source location.
     /// Entries are removed as they are emitted so that a comment cannot be printed twice, and so
     /// that the caller can check the map is empty afterwards.
@@ -60,52 +58,45 @@ pub(crate) struct EventEmitter<'a> {
     leading_line_comments_require_break: bool,
     /// Line comments written after a list comma, waiting for the emitter to reach that comma.
     comments_after_separator: Vec<Comment>,
-    /// The layout in effect: `config.layout`, unless `with_layout` overrides it for part of a
-    /// statement.
-    layout: crate::Layout,
+    /// `config.layout` as configured, while `with_layout` overrides it for part of a statement.
+    configured_layout: crate::Layout,
     /// Identifiers the parser truncated, by their truncated name, as written in the source.
     truncated_identifiers: HashMap<String, String>,
     /// The locations comments are attached to, in source order.
     node_locations: Vec<i32>,
 }
 
-impl<'a> EventEmitter<'a> {
+impl EventEmitter {
     /// An emitter without comments, for unit tests that look at the events.
     #[cfg(test)]
-    pub(crate) fn new(config: &'a FormatConfig) -> Self {
+    pub(crate) fn new(config: FormatConfig) -> Self {
         Self::with_comments(config, HashMap::new(), HashMap::new())
     }
 
-    /// The configuration. Read the layout in effect with `layout`, not from here.
     pub(crate) fn config(&self) -> &FormatConfig {
-        self.config
-    }
-
-    /// The layout in effect, which `with_layout` overrides for part of a statement.
-    pub(crate) fn layout(&self) -> &crate::Layout {
-        &self.layout
+        &self.config
     }
 
     /// The layout from the configuration, which `with_layout` does not change.
     pub(crate) fn configured_layout(&self) -> crate::Layout {
-        self.config.layout.clone()
+        self.configured_layout.clone()
     }
 
     /// Emits `body` with `layout` in place of the configured one.
     pub(crate) fn with_layout(&mut self, layout: crate::Layout, body: impl FnOnce(&mut Self)) {
-        let previous = std::mem::replace(&mut self.layout, layout);
+        let previous = std::mem::replace(&mut self.config.layout, layout);
         body(self);
-        self.layout = previous;
+        self.config.layout = previous;
     }
 
     pub(crate) fn with_comments(
-        config: &'a FormatConfig,
+        config: FormatConfig,
         leading_comments: HashMap<i32, Vec<Comment>>,
         trailing_comments: HashMap<i32, Vec<Comment>>,
     ) -> Self {
         Self {
             events: Vec::new(),
-            layout: config.layout.clone(),
+            configured_layout: config.layout.clone(),
             config,
             leading_comments,
             trailing_comments,
@@ -151,7 +142,7 @@ impl<'a> EventEmitter<'a> {
     }
 
     /// `name` as written in the source, when the parser truncated it.
-    pub(crate) fn source_identifier<'n>(&'n self, name: &'n str) -> &'n str {
+    pub(crate) fn source_identifier<'a>(&'a self, name: &'a str) -> &'a str {
         self.truncated_identifiers
             .get(name)
             .map_or(name, String::as_str)

@@ -18,7 +18,7 @@ pub(super) fn emit_case_expr(e: &mut EventEmitter, n: &CaseExpr) {
 pub(super) fn emit_case_expr_as(e: &mut EventEmitter, n: &CaseExpr, branches: BranchPlacement) {
     e.group_start();
 
-    let expanded = matches!(e.layout(), crate::Layout::Expanded);
+    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
     let align = expanded && matches!(branches, BranchPlacement::Aligned);
     if align {
         e.align_start();

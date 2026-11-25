@@ -99,7 +99,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::emitter::{EventEmitter, LayoutEvent};
-    use crate::{Comment, FormatConfig, TokenKind};
+    use crate::{Comment, TokenKind};
 
     #[test]
     fn a_typed_child_emitter_consumes_the_comments_of_its_location() {
@@ -111,8 +111,7 @@ mod tests {
             before_keyword: None,
         };
         let leading = HashMap::from([(7, vec![comment])]);
-        let config = FormatConfig::default();
-        let mut e = EventEmitter::with_comments(&config, leading, HashMap::new());
+        let mut e = EventEmitter::with_comments(Default::default(), leading, HashMap::new());
 
         super::emit_with_comments_at(&mut e, 7, |e| e.token(TokenKind::ONLY_KW));
 
@@ -125,8 +124,7 @@ mod tests {
 
     #[test]
     fn a_negative_location_never_carries_a_comment() {
-        let config = FormatConfig::default();
-        let mut e = EventEmitter::new(&config);
+        let mut e = EventEmitter::new(Default::default());
 
         super::emit_with_comments_at(&mut e, -1, |e| e.token(TokenKind::ONLY_KW));
 

@@ -101,7 +101,7 @@ pub(crate) fn emit_parenthesized_condition_with(
 /// break propagates to every enclosing group and the whole statement opens up. That propagation is
 /// why expanded layout needs no renderer change.
 pub(crate) fn emit_layout_break(e: &mut EventEmitter) {
-    match e.layout() {
+    match e.config().layout {
         Layout::Expanded => e.line(LineType::Hard),
         Layout::Fit => e.line(LineType::SoftOrSpace),
     }
@@ -130,8 +130,7 @@ mod tests {
 
     #[test]
     fn fit_layout_emits_a_soft_or_space_break() {
-        let config = FormatConfig::default();
-        let mut e = EventEmitter::new(&config);
+        let mut e = EventEmitter::new(FormatConfig::default());
         super::emit_layout_break(&mut e);
         assert_eq!(e.events, vec![LayoutEvent::Line(LineType::SoftOrSpace)]);
     }
@@ -142,7 +141,7 @@ mod tests {
             layout: Layout::Expanded,
             ..Default::default()
         };
-        let mut e = EventEmitter::new(&config);
+        let mut e = EventEmitter::new(config);
         super::emit_layout_break(&mut e);
         assert_eq!(e.events, vec![LayoutEvent::Line(LineType::Hard)]);
     }

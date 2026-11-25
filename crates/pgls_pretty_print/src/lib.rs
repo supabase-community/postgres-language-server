@@ -196,7 +196,7 @@ fn render(
     truncated_identifiers: std::collections::HashMap<String, String>,
 ) -> Result<String, FormatError> {
     let mut emitter = emitter::EventEmitter::with_comments(
-        config,
+        config.clone(),
         attached.leading_by_location,
         attached.trailing_by_location,
     );

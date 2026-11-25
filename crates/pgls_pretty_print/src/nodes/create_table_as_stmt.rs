@@ -135,7 +135,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
     // Keep the statement header together in expanded layout. The query itself owns the following
     // break, so CTAS reads `CREATE TABLE name AS` rather than isolating `AS`. Fit layout retains
     // its existing width-dependent choice.
-    let expanded = matches!(e.layout(), crate::Layout::Expanded);
+    let expanded = matches!(e.config().layout, crate::Layout::Expanded);
     if let Some(ref query) = n.query {
         emit_comments_before_keyword(e, "as", query);
     }

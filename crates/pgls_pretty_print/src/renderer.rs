@@ -528,8 +528,7 @@ mod tests {
 
     #[test]
     fn test_keyword_case_upper() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.token(TokenKind::INT_NUMBER(1));
@@ -546,8 +545,7 @@ mod tests {
 
     #[test]
     fn test_keyword_case_lower() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.token(TokenKind::INT_NUMBER(1));
@@ -564,8 +562,7 @@ mod tests {
 
     #[test]
     fn test_constant_case_upper() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.token(TokenKind::NULL);
@@ -588,8 +585,7 @@ mod tests {
 
     #[test]
     fn test_constant_case_lower() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.token(TokenKind::NULL);
@@ -609,8 +605,7 @@ mod tests {
 
     #[test]
     fn test_mixed_case_settings() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.token(TokenKind::INT_NUMBER(1));
@@ -646,8 +641,7 @@ mod tests {
 
     #[test]
     fn a_block_comment_is_rendered_inline() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(Default::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.comment("/* why */".to_string(), false);
@@ -660,8 +654,7 @@ mod tests {
 
     #[test]
     fn a_line_comment_forces_the_group_to_break() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(Default::default());
         emitter.group_start();
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
@@ -676,8 +669,7 @@ mod tests {
 
     #[test]
     fn a_broken_statement_gets_its_semicolon_on_its_own_line() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.group_start();
         emitter.token(TokenKind::SELECT_KW);
         emitter.line(crate::emitter::LineType::Hard);
@@ -696,8 +688,7 @@ mod tests {
 
     #[test]
     fn a_single_line_statement_keeps_its_semicolon_attached() {
-        let format_config = crate::FormatConfig::default();
-        let mut emitter = EventEmitter::new(&format_config);
+        let mut emitter = EventEmitter::new(crate::FormatConfig::default());
         emitter.token(TokenKind::SELECT_KW);
         emitter.space();
         emitter.token(TokenKind::INT_NUMBER(1));

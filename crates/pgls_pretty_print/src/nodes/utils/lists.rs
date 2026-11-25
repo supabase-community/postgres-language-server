@@ -135,7 +135,7 @@ pub(crate) fn emit_comma_separated_list_with_layout_break<F>(
 ) where
     F: Fn(&mut EventEmitter, &Node),
 {
-    let spacing = match e.layout() {
+    let spacing = match e.config().layout {
         Layout::Expanded => ListSeparatorSpacing::Hard,
         Layout::Fit => ListSeparatorSpacing::SoftOrSpace,
     };

@@ -513,7 +513,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
 /// line when it fits. Once it breaks, expanded layout still puts each operand of its AND or OR chain
 /// on its own line, so the chain breaks with the parentheses rather than on its own.
 fn emit_check_condition(e: &mut EventEmitter, condition: &Node) {
-    let expanded = matches!(e.layout(), Layout::Expanded);
+    let expanded = matches!(e.config().layout, Layout::Expanded);
 
     e.with_layout(Layout::Fit, |e| {
         emit_parenthesized_condition_with(e, condition, |e, node| match node {

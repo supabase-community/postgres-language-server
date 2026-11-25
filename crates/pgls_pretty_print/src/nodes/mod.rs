@@ -867,9 +867,8 @@ mod tests {
             .expect("root");
 
         let attached = attach_comments(&Source::scan(sql), &ast);
-        let config = crate::FormatConfig::default();
         let mut e = EventEmitter::with_comments(
-            &config,
+            Default::default(),
             attached.leading_by_location,
             attached.trailing_by_location,
         );
