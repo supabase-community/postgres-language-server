@@ -96,7 +96,11 @@ impl LineIndex {
                 line: line_col.line,
                 col: line_col.col,
             },
-            PositionEncoding::Wide(enc) => self.to_wide(enc, line_col)?,
+            PositionEncoding::Wide(enc) => WideLineCol {
+                line: line_col.line,
+                col: u32::try_from(self.utf8_to_wide_col(enc, line_col.line, line_col.col.into()))
+                    .ok()?,
+            },
         };
         // An offset between the `\r` and the `\n` of a line break is the end of its line, so the
         // position maps back to the offset of `line_col`, not always to `offset`.
@@ -118,7 +122,12 @@ impl LineIndex {
                 line: position.line,
                 col: position.col,
             },
-            PositionEncoding::Wide(enc) => self.to_utf8(enc, position),
+            PositionEncoding::Wide(enc) => LineCol {
+                line: position.line,
+                col: self
+                    .wide_to_utf8_col(enc, position.line, position.col)
+                    .into(),
+            },
         };
         self.offset_clamped(line_col)
     }
@@ -211,22 +220,6 @@ impl LineIndex {
         let rest = self.wide_chars.get(first..).unwrap_or_default();
         rest.get(..rest.partition_point(|c| c.start < end))
             .unwrap_or_default()
-    }
-
-    fn to_wide(&self, enc: WideEncoding, line_col: LineCol) -> Option<WideLineCol> {
-        let col = self.utf8_to_wide_col(enc, line_col.line, line_col.col.into());
-        Some(WideLineCol {
-            line: line_col.line,
-            col: u32::try_from(col).ok()?,
-        })
-    }
-
-    fn to_utf8(&self, enc: WideEncoding, line_col: WideLineCol) -> LineCol {
-        let col = self.wide_to_utf8_col(enc, line_col.line, line_col.col);
-        LineCol {
-            line: line_col.line,
-            col: col.into(),
-        }
     }
 
     fn utf8_to_wide_col(&self, enc: WideEncoding, line: u32, col: TextSize) -> usize {

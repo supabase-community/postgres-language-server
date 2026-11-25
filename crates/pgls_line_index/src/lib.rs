@@ -32,7 +32,7 @@ pub enum WideEncoding {
 
 /// The code units that the column of a position counts, e.g. the encoding that an LSP client and
 /// server agreed on.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PositionEncoding {
     Utf8,
     Wide(WideEncoding),
