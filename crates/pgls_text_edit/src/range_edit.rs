@@ -3,13 +3,12 @@ use std::ops::Range;
 use pgls_text_size::{TextRange, TextSize};
 
 /// Replaces the text in `range` with `new_text`, e.g. an edit of a fix or a code action. Unlike
-/// [`TextEdit`](crate::TextEdit), which is a diff of a whole text, it only knows the range it
-/// replaces.
+/// `TextEdit`, which is a diff of a whole text, it only knows the range it replaces.
 ///
 /// The ranges come from rules and frontends, so every application checks them, in release builds
 /// too: an edit out of order, or one that doesn't lie on char boundaries, is rejected instead of
 /// panicking or changing the wrong text.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RangeEdit {

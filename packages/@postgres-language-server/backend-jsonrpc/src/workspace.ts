@@ -416,7 +416,7 @@ export type ActionCategory =
   | { Source: SourceActionKind }
   | { Other: string };
 /**
- * Replaces the text in `range` with `new_text`, e.g. an edit of a fix or a code action. Unlike [`TextEdit`](crate::TextEdit), which is a diff of a whole text, it only knows the range it replaces.
+ * Replaces the text in `range` with `new_text`, e.g. an edit of a fix or a code action. Unlike `TextEdit`, which is a diff of a whole text, it only knows the range it replaces.
 
 The ranges come from rules and frontends, so every application checks them, in release builds too: an edit out of order, or one that doesn't lie on char boundaries, is rejected instead of panicking or changing the wrong text.
  */
