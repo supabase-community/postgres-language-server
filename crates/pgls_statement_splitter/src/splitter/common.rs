@@ -420,10 +420,11 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     p.advance()?;
                 }
                 Some(SyntaxKind::WITH_KW) => {
+                    let prev = p.look_back(true);
                     // The query of a statement that takes one: `CREATE VIEW v AS`, `PREPARE p
                     // AS`, `DECLARE c CURSOR FOR` and the actions of a rule.
                     if !matches!(
-                        p.look_back(true),
+                        prev,
                         Some(
                             SyntaxKind::AS_KW
                                 | SyntaxKind::FOR_KW
@@ -431,7 +432,10 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                                 | SyntaxKind::INSTEAD_KW
                                 | SyntaxKind::ALSO_KW
                         )
-                    ) {
+                    )
+                        // a column label after a `.`, e.g. `t.with`; held back with its query
+                        && !(prev == Some(SyntaxKind::DOT) && p.hold_back())
+                    {
                         break;
                     }
                     cte_query = true;

@@ -1630,6 +1630,10 @@ VALUES
             "select testschema.select from t;",
             "select c2[2].select from t;",
             "select t.create from t;",
+            "select t.with from t;",
+            "select t.values from t;",
+            "select t.table from t;",
+            "SELECT pg_s.WITH REC$aRS",
             "create operator class alter.c for type int4 using btree as operator 1 <;",
             "create view update.v as select 1;",
         ] {
@@ -1640,6 +1644,9 @@ VALUES
         // After an unfinished statement, as for the keywords after other operators.
         Tester::from("select t.\nselect 1;")
             .expect_statements(vec!["select t.", "select 1;"])
+            .assert_no_errors();
+        Tester::from("select t.\nwith c as (select 1) select * from c;")
+            .expect_statements(vec!["select t.", "with c as (select 1) select * from c;"])
             .assert_no_errors();
     }
 
