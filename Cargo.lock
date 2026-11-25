@@ -2546,6 +2546,7 @@ version = "0.0.0"
 dependencies = [
  "pgls_diagnostics",
  "pgls_lexer_codegen",
+ "pgls_query",
  "pgls_text_size",
  "pgls_tokenizer",
 ]

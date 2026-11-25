@@ -3,15 +3,18 @@ mod token;
 use cursor::{Cursor, EOF_CHAR};
 pub use token::{Base, LiteralKind, NamedParamKind, Token, TokenKind};
 
-// via: https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L346
+// via: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
 // ident_start		[A-Za-z\200-\377_]
+// ident_cont		[A-Za-z\200-\377_0-9\$]
+//
+// `\200-\377` are bytes, so every non-ASCII character is part of an identifier: all bytes of
+// its UTF-8 encoding are in that range.
 const fn is_ident_start(c: char) -> bool {
-    matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '\u{80}'..='\u{FF}')
+    matches!(c, 'a'..='z' | 'A'..='Z' | '_') || !c.is_ascii()
 }
 
-// ident_cont		[A-Za-z\200-\377_0-9\$]
 const fn is_ident_cont(c: char) -> bool {
-    matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9' | '$' | '\u{80}'..='\u{FF}')
+    matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9' | '$') || !c.is_ascii()
 }
 
 // whitespace
@@ -155,7 +158,7 @@ impl Cursor<'_> {
                         '\'' => {
                             // Named parameter with colon prefix and single quotes.
                             self.bump();
-                            let terminated = self.single_quoted_string();
+                            let terminated = self.single_quoted_string(true);
                             let kind = NamedParamKind::ColonString { terminated };
                             TokenKind::NamedParam { kind }
                         }
@@ -233,11 +236,7 @@ impl Cursor<'_> {
             '%' => TokenKind::Percent,
 
             // String literal
-            '\'' => {
-                let terminated = self.single_quoted_string();
-                let kind = LiteralKind::Str { terminated };
-                TokenKind::Literal { kind }
-            }
+            '\'' => self.string_constant(|terminated| LiteralKind::Str { terminated }),
 
             // Quoted indentifiers
             '"' => {
@@ -351,9 +350,7 @@ impl Cursor<'_> {
         match self.first() {
             '\'' => {
                 self.bump();
-                let terminated = self.single_quoted_string();
-                let kind = mk_kind(terminated);
-                TokenKind::Literal { kind }
+                self.string_constant(mk_kind)
             }
             '"' if allows_double => {
                 self.bump();
@@ -467,7 +464,70 @@ impl Cursor<'_> {
         }
     }
 
-    fn single_quoted_string(&mut self) -> bool {
+    /// Eats a string constant after its opening quote, with the strings that continue it.
+    ///
+    /// `''` is a quote in it, except in a bit or hex string, where it ends the string and starts
+    /// an empty one (`xqdouble` only applies in `<xq,xe,xus>`):
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L633
+    fn string_constant(&mut self, kind: fn(bool) -> LiteralKind) -> TokenKind {
+        let doubled_quote = !matches!(
+            kind(true),
+            LiteralKind::BitStr { .. } | LiteralKind::ByteStr { .. }
+        );
+        let terminated = loop {
+            if !self.single_quoted_string(doubled_quote) {
+                break false;
+            }
+            if !self.eat_quote_continuation() {
+                break true;
+            }
+        };
+        TokenKind::Literal {
+            kind: kind(terminated),
+        }
+    }
+
+    /// Eats what continues a string constant after its closing quote, up to and including the
+    /// next string's opening quote: whitespace with at least one line break, and comments. Eats
+    /// nothing and returns false if no string continues it.
+    ///
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L224-L230
+    /// special_whitespace ({space}+|{comment}{newline})
+    /// non_newline_whitespace ({non_newline_space}|{comment})
+    /// whitespace_with_newline ({non_newline_whitespace}*{newline}{special_whitespace}*)
+    /// quotecontinue {whitespace_with_newline}{quote}
+    ///
+    /// A comment runs to a line break or the end of the input, so it's always followed by a
+    /// line break where a quote can follow at all.
+    fn eat_quote_continuation(&mut self) -> bool {
+        let mut ahead = self.clone();
+        let mut line_break = false;
+        loop {
+            match ahead.first() {
+                c if is_line_ending(c) => {
+                    ahead.bump();
+                    line_break = true;
+                }
+                c if is_space(c) || is_tab(c) || is_vertical_tab(c) || is_form_feed(c) => {
+                    ahead.bump();
+                }
+                '-' if ahead.second() == '-' => {
+                    ahead.bump();
+                    ahead.line_comment();
+                }
+                '\'' if line_break => {
+                    ahead.bump();
+                    *self = ahead;
+                    return true;
+                }
+                _ => return false,
+            }
+        }
+    }
+
+    /// Eats a quoted text after its opening quote and returns true if it's terminated. With
+    /// `doubled_quote`, `''` is a quote in it.
+    fn single_quoted_string(&mut self, doubled_quote: bool) -> bool {
         // Parse until either quotes are terminated or error is detected.
         loop {
             match self.first() {
@@ -477,7 +537,7 @@ impl Cursor<'_> {
 
                     match self.first() {
                         // encountered an escaped quote ''
-                        '\'' => {
+                        '\'' if doubled_quote => {
                             self.bump();
                         }
                         // encountered terminating quote
