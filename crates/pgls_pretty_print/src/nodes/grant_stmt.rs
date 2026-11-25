@@ -108,7 +108,6 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
         // Add explicit object type (singular). GRANT names a foreign server `FOREIGN SERVER`.
         let keywords = match objtype {
             ObjectType::ObjectForeignServer => Some("FOREIGN SERVER"),
-            ObjectType::ObjectParameterAcl => Some("PARAMETER"),
             objtype => object_type_keywords(objtype),
         };
         if let Some(keywords) = keywords {

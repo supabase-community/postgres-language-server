@@ -1,9 +1,7 @@
 //! The keywords that name an object type in DDL: `DROP MATERIALIZED VIEW`, `COMMENT ON TEXT
-//! SEARCH PARSER`, `ALTER FOREIGN DATA WRAPPER ... OWNER TO`, ..., and the name of a cast.
+//! SEARCH PARSER`, `ALTER FOREIGN DATA WRAPPER ... OWNER TO`, ...
 
 use pgls_query::protobuf::ObjectType;
-
-use crate::nodes::prelude::*;
 
 /// The keywords that name `object_type`, or `None` for a type that no statement names with
 /// keywords of its own, such as the members of an operator family.
@@ -33,6 +31,7 @@ pub(crate) fn object_type_keywords(object_type: ObjectType) -> Option<&'static s
         ObjectType::ObjectOpclass => "OPERATOR CLASS",
         ObjectType::ObjectOperator => "OPERATOR",
         ObjectType::ObjectOpfamily => "OPERATOR FAMILY",
+        ObjectType::ObjectParameterAcl => "PARAMETER",
         ObjectType::ObjectPolicy => "POLICY",
         ObjectType::ObjectProcedure => "PROCEDURE",
         ObjectType::ObjectPublication => "PUBLICATION",
@@ -60,28 +59,8 @@ pub(crate) fn object_type_keywords(object_type: ObjectType) -> Option<&'static s
         | ObjectType::ObjectAttribute
         | ObjectType::ObjectDefault
         | ObjectType::ObjectDefacl
-        | ObjectType::ObjectParameterAcl
         | ObjectType::ObjectPublicationNamespace
         | ObjectType::ObjectPublicationRel => return None,
     };
     Some(keywords)
-}
-
-/// Emits a cast as DDL names it, `(source AS target)`. The parser stores it as `[source, target]`.
-pub(crate) fn emit_cast_object(e: &mut EventEmitter, node: &Node) {
-    if let Some(NodeEnum::List(list)) = node.node.as_ref()
-        && let [source, target] = list.items.as_slice()
-    {
-        e.token(TokenKind::L_PAREN);
-        emit_node(e, source);
-        e.space();
-        e.token(TokenKind::AS_KW);
-        e.space();
-        emit_node(e, target);
-        e.token(TokenKind::R_PAREN);
-        return;
-    }
-
-    // Fallback for unexpected structure
-    emit_node(e, node);
 }

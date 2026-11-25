@@ -41,11 +41,9 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
             } else {
                 emit_node(e, object);
             }
-        } else if let Some(NodeEnum::List(list)) = object.node.as_ref() {
-            // A qualified name (`any_name`), such as the `table.column` of a column
-            emit_dot_separated_list(e, &list.items);
         } else {
-            emit_node(e, object);
+            // A qualified name, such as the `table.column` of a column
+            emit_any_name(e, object);
         }
     }
 

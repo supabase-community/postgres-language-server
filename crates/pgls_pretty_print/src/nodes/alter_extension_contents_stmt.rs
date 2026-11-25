@@ -34,10 +34,7 @@ pub(super) fn emit_alter_extension_contents_stmt(
 
     // Object name: a qualified name (`any_name`) is a list of its parts
     if let Some(ref object) = n.object {
-        match object.node.as_ref() {
-            Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-            _ => emit_node(e, object),
-        }
+        emit_any_name(e, object);
     }
 
     e.group_end();

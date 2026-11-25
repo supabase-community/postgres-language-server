@@ -38,22 +38,7 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L3814
     if !n.fdwoptions.is_empty() {
         e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list_with_spacing(
-            e,
-            &n.fdwoptions,
-            ListSeparatorSpacing::Space,
-            |e, opt| {
-                let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
-                    emit_node(e, opt);
-                    return;
-                };
-                emit_options_def_elem(e, def_elem);
-            },
-        );
-        e.token(TokenKind::R_PAREN);
+        emit_options_clause(e, &n.fdwoptions);
     }
 
     // Add NOT NULL constraint if specified

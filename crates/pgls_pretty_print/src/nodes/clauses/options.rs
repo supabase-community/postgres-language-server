@@ -12,7 +12,10 @@ pub(crate) fn emit_with_options(e: &mut EventEmitter, options: &[Node]) {
     emit_parenthesized_list(e, options, emit_node);
 }
 
-/// Emits an option of `VACUUM (...)`, `CLUSTER (...)` or `REINDEX (...)`: `name [value]`.
+/// Emits an option of `EXPLAIN (...)`, `VACUUM (...)`, `CLUSTER (...)` or `REINDEX (...)`:
+/// `name [value]`. The parser makes a word, a keyword (`true`, `on`) or a string constant all a
+/// string (`utility_option_arg`), so a string prints as a word where it can.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L11992
 pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
     let Some(NodeEnum::DefElem(def)) = n.node.as_ref() else {
         emit_node(e, n);
@@ -21,7 +24,12 @@ pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
     emit_keyword(e, &def.defname);
     if let Some(ref arg) = def.arg {
         e.space();
-        emit_node(e, arg);
+        match arg.node.as_ref() {
+            Some(NodeEnum::Boolean(b)) if b.boolval => e.token(TokenKind::TRUE_KW),
+            Some(NodeEnum::Boolean(_)) => e.token(TokenKind::FALSE_KW),
+            Some(NodeEnum::String(s)) => emit_word_or_string(e, &s.sval),
+            _ => emit_node(e, arg),
+        }
     }
 }
 
@@ -392,12 +400,8 @@ pub(crate) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::BY_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                // The arg is a list of identifiers that should be dot-separated (table.column)
-                if let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref() {
-                    emit_dot_separated_list(e, &list.items);
-                } else {
-                    emit_node(e, arg);
-                }
+                // `table.column`
+                emit_any_name(e, arg);
             }
         }
         "sequence_name" => {
@@ -406,11 +410,7 @@ pub(crate) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::NAME_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
-                    emit_dot_separated_list(e, &list.items);
-                } else {
-                    emit_node(e, arg);
-                }
+                emit_any_name(e, arg);
             }
         }
         "as" => {

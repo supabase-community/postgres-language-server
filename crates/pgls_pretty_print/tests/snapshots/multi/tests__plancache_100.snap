@@ -208,13 +208,13 @@ select name, generic_plans, custom_plans from pg_prepared_statements where name 
 
 set plan_cache_mode = auto;
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
 set plan_cache_mode = force_generic_plan;
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
@@ -234,11 +234,11 @@ execute test_mode_pp (1);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 set plan_cache_mode = force_custom_plan;
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 select name, generic_plans, custom_plans from pg_prepared_statements where name = 'test_mode_pp';
 

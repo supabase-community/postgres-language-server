@@ -20,10 +20,7 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
     // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L10019
     match (&n.object, &n.relation) {
         (Some(object), Some(relation)) => {
-            match object.node.as_ref() {
-                Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-                _ => emit_node(e, object),
-            }
+            emit_any_name(e, object);
             e.space();
             e.token(TokenKind::ON_KW);
             e.space();

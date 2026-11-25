@@ -17,7 +17,7 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
                 e.space();
                 match operator_class_parts(object) {
                     Some((method, name)) => emit_operator_class_name(e, method, name),
-                    None => emit_owner_object(e, object),
+                    None => emit_any_name(e, object),
                 }
             }
         }
@@ -32,7 +32,7 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
                         super::ObjectArguments::AggregateSignature,
                     );
                 } else {
-                    emit_owner_object(e, object);
+                    emit_any_name(e, object);
                 }
             }
         }
@@ -42,7 +42,7 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
                 super::emit_range_var(e, relation);
             } else if let Some(ref object) = n.object {
                 e.space();
-                emit_owner_object(e, object);
+                emit_any_name(e, object);
             }
         }
     }
@@ -58,11 +58,4 @@ pub(super) fn emit_alter_owner_stmt(e: &mut EventEmitter, n: &AlterOwnerStmt) {
     }
 
     e.group_end();
-}
-
-fn emit_owner_object(e: &mut EventEmitter, object: &pgls_query::Node) {
-    match &object.node {
-        Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-        _ => emit_node(e, object),
-    }
 }
