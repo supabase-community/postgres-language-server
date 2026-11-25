@@ -1,5 +1,5 @@
 use crate::cli_options::CliOptions;
-use crate::commands::{FileTargets, enforce_exit_codes, print_diagnostics, read_stdin_payload};
+use crate::commands::{Targets, enforce_exit_codes, print_diagnostics, read_stdin_payload};
 use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession, VcsIntegration};
@@ -9,7 +9,7 @@ use pgls_diagnostics::category;
 
 pub(crate) struct FormatArgs {
     pub configuration: Option<PartialConfiguration>,
-    pub targets: FileTargets,
+    pub targets: Targets,
     pub write: bool,
 }
 
@@ -18,8 +18,7 @@ pub(crate) fn format(
     cli_options: &CliOptions,
     args: FormatArgs,
 ) -> Result<(), CliDiagnostic> {
-    args.targets.validate()?;
-    if args.write && args.targets.stdin_file_path.is_some() {
+    if args.write && args.targets.stdin_file_path().is_some() {
         return Err(CliDiagnostic::incompatible_arguments(
             "stdin-file-path",
             "write",
@@ -32,11 +31,9 @@ pub(crate) fn format(
         VcsIntegration::Enabled,
     )?;
 
-    let mode = ExecutionMode::Format {
-        write: args.write,
-        vcs: args.targets.vcs(),
-    };
-    let execution = ExecutionConfig::new(mode, u32::MAX).with_skip_errors(cli_options.skip_errors);
+    let mode = ExecutionMode::Format { write: args.write };
+    let execution = ExecutionConfig::new(mode, u32::MAX, &args.targets)
+        .with_skip_errors(cli_options.skip_errors);
 
     let paths = args.targets.resolve_paths(session.fs(), &configuration)?;
     let configuration_errors = session.apply_nested_configurations(
@@ -44,7 +41,7 @@ pub(crate) fn format(
         &args.targets.nested_configuration_paths(&paths),
     )?;
 
-    if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {
+    if let Some(stdin_path) = args.targets.stdin_file_path() {
         print_diagnostics(session.console(), &configuration_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "format")?;
         let report = run_stdin(&mut session, &execution, payload)?;

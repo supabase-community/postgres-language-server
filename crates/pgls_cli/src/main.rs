@@ -63,6 +63,5 @@ fn run_workspace(console: &mut EnvConsole, command: PgLSCommand) -> Result<(), C
         workspace::server()
     };
 
-    let session = CliSession::new(&*workspace, console)?;
-    session.run(command)
+    CliSession::new(&*workspace, console).run(command)
 }
