@@ -2852,7 +2852,7 @@ dependencies = [
 name = "pgls_treesitter"
 version = "0.0.0"
 dependencies = [
- "pgls_catalog",
+ "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter_grammar",

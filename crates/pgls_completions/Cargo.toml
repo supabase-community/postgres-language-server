@@ -14,6 +14,7 @@ version              = "0.0.0"
 [dependencies]
 pgls_catalog              = { workspace = true }
 pgls_migrations           = { workspace = true }
+pgls_query                = { workspace = true }
 pgls_text_size            = { workspace = true, features = ["serde"] }
 pgls_treesitter.workspace = true
 
@@ -29,7 +30,6 @@ criterion.workspace       = true
 insta.workspace           = true
 pgls_catalog              = { workspace = true, features = ["db"] }
 pgls_postgres_regress     = { workspace = true }
-pgls_query                = { workspace = true }
 pgls_test_utils.workspace = true
 pgls_walk                 = { workspace = true }
 regex                     = "1.12.2"
