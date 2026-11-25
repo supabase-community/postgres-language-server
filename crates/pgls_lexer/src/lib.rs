@@ -2,6 +2,8 @@ mod codegen;
 mod lexed;
 mod lexer;
 mod params;
+#[cfg(feature = "testing")]
+mod testing;
 
 pub use crate::codegen::syntax_kind::{KeywordCategory, SyntaxKind};
 pub use crate::lexed::{LexDiagnostic, Lexed};
@@ -187,19 +189,7 @@ mod tests {
             "x'ab'''",
             "'it''s'",
         ] {
-            let lexed = lex(sql);
-            let lexer: Vec<_> = (0..lexed.len())
-                .map(|idx| lexed.range(idx))
-                .filter(|&range| !sql[range].trim().is_empty())
-                .map(|range| (u32::from(range.start()), u32::from(range.end())))
-                .collect();
-            let scanner: Vec<_> = pgls_query::scan(sql)
-                .unwrap()
-                .tokens
-                .iter()
-                .map(|token| (token.start as u32, token.end as u32))
-                .collect();
-            assert_eq!(lexer, scanner, "{sql:?}");
+            assert_eq!(lex(sql).scanner_difference(), None, "{sql:?}");
         }
     }
 
@@ -244,6 +234,17 @@ mod tests {
                 .map(|idx| lexed.text(idx))
                 .collect();
             assert_eq!(found, data, "{sql:?}");
+        }
+    }
+
+    /// The scanner reads meta-commands and COPY data as SQL, so a text with them isn't compared.
+    #[test]
+    fn psql_input_is_not_compared_with_the_scanner() {
+        for sql in [
+            "select 1 \\gset\n\\echo 'a'",
+            "copy t from stdin;\n1\t'a\n\\.\n",
+        ] {
+            assert_eq!(lex(sql).scanner_difference(), None, "{sql:?}");
         }
     }
 
