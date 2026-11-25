@@ -156,6 +156,9 @@ fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
 fn emit_operator_def_arg(e: &mut EventEmitter, arg: &Node) {
     match arg.node.as_ref() {
         Some(NodeEnum::List(list)) => emit_operator_list(e, list),
+        // A reserved keyword or a string constant (`def_arg` in gram.y). Quoted as an identifier,
+        // it would read as a type name.
+        Some(NodeEnum::String(s)) => emit_string_literal(e, s),
         _ => emit_node(e, arg),
     }
 }

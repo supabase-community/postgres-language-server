@@ -6,6 +6,7 @@ use crate::{
     TokenKind,
     codegen::token_kind::{KeywordCategory, keyword_category},
     emitter::EventEmitter,
+    identifiers::MAX_IDENTIFIER_LENGTH,
 };
 
 pub(crate) fn emit_string_literal(e: &mut EventEmitter, n: &PgString) {
@@ -44,6 +45,17 @@ pub(crate) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
         emit_identifier(e, &value);
     } else {
         e.token(TokenKind::IDENT(value));
+    }
+}
+
+/// Emits a language name (`NonReservedWord_or_Sconst` in gram.y). A name longer than an
+/// identifier can be was written as a string constant, which the parser keeps whole; written as an
+/// identifier, it would be cut down to 63 bytes.
+pub(crate) fn emit_language_name(e: &mut EventEmitter, value: &str) {
+    if value.len() > MAX_IDENTIFIER_LENGTH {
+        emit_single_quoted_str(e, value);
+    } else {
+        emit_identifier_maybe_quoted(e, value);
     }
 }
 
