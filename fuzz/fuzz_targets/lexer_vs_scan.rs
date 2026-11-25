@@ -1,10 +1,6 @@
 //! `pgls_lexer` cuts any text Postgres' scanner (`pgls_query::scan`) accepts into the same tokens.
 //! Whitespace and operators aren't compared, and named parameters (`:name`, `@name`, `$name`) are
 //! compared without their prefix, which the scanner reads as a token of its own.
-//!
-//! Two known differences are skipped, until the lexer handles them: string constants continued
-//! across a line break (`'a'\n'b'`), which the scanner reads as one token, and `''` in a bit or
-//! hex string (`b''''`), which the scanner reads as the end of the string and an empty one.
 
 #![no_main]
 
@@ -64,21 +60,6 @@ fuzz_target!(|data: &[u8]| {
     };
     if lexer.is_none() && scanner.is_none() {
         return;
-    }
-    // The two known differences, see the module's documentation.
-    if let (Some(lexer), Some(scanner)) = (lexer, scanner)
-        && lexer.start() == scanner.start()
-    {
-        let (lexer, scanner) = (&sql[lexer], &sql[scanner]);
-        let continued = scanner
-            .strip_prefix(lexer)
-            .is_some_and(|rest| lexer.ends_with('\'') && rest.contains(['\n', '\r']));
-        let bit_or_hex = lexer.len() > scanner.len()
-            && lexer.starts_with(['b', 'B', 'x', 'X'])
-            && lexer.contains("''");
-        if continued || bit_or_hex {
-            return;
-        }
     }
     let text = |range: Option<TextRange>| range.map(|range| &sql[range]);
     panic!(
