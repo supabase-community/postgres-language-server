@@ -40,6 +40,7 @@ pub struct Lexer<'a> {
     copy_data_next: bool,
     /// Whether no line after the current offset is `\.`, so no COPY data follows any more.
     copy_end_missing: bool,
+    copy_data: Vec<u32>,
 }
 
 impl<'a> Lexer<'a> {
@@ -58,6 +59,7 @@ impl<'a> Lexer<'a> {
             copy: CopyFromStdin::No,
             copy_data_next: false,
             copy_end_missing: false,
+            copy_data: Vec::new(),
         }
     }
 
@@ -87,6 +89,7 @@ impl<'a> Lexer<'a> {
             error: self.error,
             line_ending_counts: self.line_ending_counts,
             has_blank_line: self.has_blank_line,
+            copy_data: self.copy_data,
         }
     }
 
@@ -211,6 +214,7 @@ impl<'a> Lexer<'a> {
             if matches!(line, "\\.\n" | "\\.\r\n" | "\\.") {
                 self.push(SyntaxKind::LINE_ENDING, line_break, None, Some(1));
                 // The line break after `\.` is a token of its own.
+                self.copy_data.push(self.kind.len() as u32);
                 self.push(SyntaxKind::COPY_DATA, len + 2, None, None);
                 return true;
             }

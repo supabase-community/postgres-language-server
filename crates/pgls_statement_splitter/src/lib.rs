@@ -57,10 +57,7 @@ pub fn split(sql: &str) -> SplitResult {
         ranges: Vec::with_capacity(coarse.ranges.len()),
         lex_errors: errors.len(),
         errors,
-        copy_data: (0..lexed.len())
-            .filter(|&idx| lexed.kind(idx) == SyntaxKind::COPY_DATA)
-            .map(|idx| lexed.range(idx))
-            .collect(),
+        copy_data: lexed.copy_data().collect(),
     };
 
     for range in coarse.ranges {
