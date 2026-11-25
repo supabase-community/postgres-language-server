@@ -368,42 +368,35 @@ impl Cursor<'_> {
     }
 
     fn number(&mut self, first_digit: char) -> LiteralKind {
-        let mut base = Base::Decimal;
+        let base = Base::Decimal;
         if first_digit == '0' {
-            // Attempt to parse encoding base.
+            // Attempt to parse encoding base. A binary, octal or hexadecimal integer has no
+            // fraction or exponent, so `0b1.a` is `0b1`, `.` and `a`:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L387-L389
             match self.first() {
-                // https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L403
                 'b' | 'B' => {
-                    base = Base::Binary;
                     self.bump();
-                    if !self.eat_decimal_digits() {
-                        return LiteralKind::Int {
-                            base,
-                            empty_int: true,
-                        };
-                    }
+                    let empty_int = !self.eat_decimal_digits();
+                    return LiteralKind::Int {
+                        base: Base::Binary,
+                        empty_int,
+                    };
                 }
-                // https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L402
                 'o' | 'O' => {
-                    base = Base::Octal;
                     self.bump();
-                    if !self.eat_decimal_digits() {
-                        return LiteralKind::Int {
-                            base,
-                            empty_int: true,
-                        };
-                    }
+                    let empty_int = !self.eat_decimal_digits();
+                    return LiteralKind::Int {
+                        base: Base::Octal,
+                        empty_int,
+                    };
                 }
-                // https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L401
                 'x' | 'X' => {
-                    base = Base::Hexadecimal;
                     self.bump();
-                    if !self.eat_hexadecimal_digits() {
-                        return LiteralKind::Int {
-                            base,
-                            empty_int: true,
-                        };
-                    }
+                    let empty_int = !self.eat_hexadecimal_digits();
+                    return LiteralKind::Int {
+                        base: Base::Hexadecimal,
+                        empty_int,
+                    };
                 }
                 // Not a base prefix; consume additional digits.
                 '0'..='9' | '_' => {
@@ -911,6 +904,20 @@ $foo$hello$world$bar$
 0x42f
 0XFFFF
 "#))
+    }
+
+    /// Found by the `lexer_vs_scan` fuzz target.
+    #[test]
+    fn numeric_non_decimal_has_no_fraction() {
+        assert_debug_snapshot!(lex("SELECT 0b100000.a"), @r#"
+        [
+            "SELECT" @ Ident,
+            " " @ Space,
+            "0b100000" @ Literal { kind: Int { base: Binary, empty_int: false } },
+            "." @ Dot,
+            "a" @ Ident,
+        ]
+        "#);
     }
 
     #[test]
