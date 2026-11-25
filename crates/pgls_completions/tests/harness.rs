@@ -269,7 +269,19 @@ impl Harness {
         let (range, text) = match &item.completion_text {
             Some(completion) => {
                 let text = if completion.is_snippet {
-                    Snippet::before_first_stop(&completion.text)
+                    // The text a snippet inserts before its first tab stop or placeholder,
+                    // where the user types next: `f(${1:a}, ${2:b})` is `f(`. See
+                    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#snippet_syntax
+                    let mut text = String::with_capacity(completion.text.len());
+                    let mut chars = completion.text.chars();
+                    while let Some(c) = chars.next() {
+                        match c {
+                            '\\' => text.extend(chars.next()),
+                            '$' => break,
+                            c => text.push(c),
+                        }
+                    }
+                    text
                 } else {
                     completion.text.clone()
                 };
@@ -325,28 +337,6 @@ impl Viability {
         } else {
             Self::NotViable
         }
-    }
-}
-
-/// A snippet, see the [LSP specification].
-///
-/// [LSP specification]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#snippet_syntax
-struct Snippet;
-
-impl Snippet {
-    /// The text a snippet inserts before its first tab stop or placeholder, where the user types
-    /// next: `f(${1:a}, ${2:b})` is `f(`.
-    fn before_first_stop(snippet: &str) -> String {
-        let mut text = String::with_capacity(snippet.len());
-        let mut chars = snippet.chars();
-        while let Some(c) = chars.next() {
-            match c {
-                '\\' => text.extend(chars.next()),
-                '$' => break,
-                c => text.push(c),
-            }
-        }
-        text
     }
 }
 
