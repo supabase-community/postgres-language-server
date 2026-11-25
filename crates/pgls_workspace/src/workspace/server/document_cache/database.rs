@@ -5,12 +5,15 @@
 //! for the statements whose text is unchanged. The statement table (plan item P16) replaces this
 //! storage with a column of the statement.
 
-use pgls_diagnostics::{DiagnosticExt, category, serde::Diagnostic as SDiagnostic};
+use std::sync::Weak;
+
+use pgls_catalog::Snapshot;
+use pgls_diagnostics::{Diagnostic, DiagnosticExt, category, serde::Diagnostic as SDiagnostic};
 use pgls_suppressions::PendingDiagnostic;
 use pgls_text_size::TextRange;
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use crate::workspace::StatementId;
+use crate::{settings::PlPgSqlCheckSettings, workspace::StatementId};
 
 /// What the checks against the database found for one statement.
 #[derive(Default)]
@@ -37,6 +40,10 @@ pub(crate) struct DatabaseResults {
     /// The statements that edits added since the last run, which it didn't check. At most the
     /// statements of the document: an edit drops the ones it removed.
     unchecked: FxHashSet<StatementId>,
+    /// The snapshot and the settings that the last run ran plpgsql_check with. The snapshot only
+    /// for its identity: a `Weak` keeps the allocation, so that no other snapshot can have its
+    /// address, but not the snapshot.
+    pub(crate) checked_with: Option<(Weak<Snapshot>, PlPgSqlCheckSettings)>,
 }
 
 /// What [`DatabaseResults::reuse`] finds for the statements of a document.
@@ -98,7 +105,23 @@ impl DatabaseResults {
         Self {
             statements,
             unchecked: FxHashSet::default(),
+            checked_with: None,
         }
+    }
+
+    /// The plpgsql_check diagnostics that the last run found for the statement with the text
+    /// `text`, if it checked it. They depend only on the text, the snapshot and the settings, so
+    /// every occurrence of the text has those of the first.
+    pub(crate) fn plpgsql_check_diagnostics(&self, text: &StatementId) -> Option<Vec<SDiagnostic>> {
+        let result = self.statements.get(text)?.first()?;
+        result.plpgsql_checked.then(|| {
+            result
+                .diagnostics
+                .iter()
+                .filter(|diagnostic| diagnostic.category() == Some(category!("plpgsql_check")))
+                .cloned()
+                .collect()
+        })
     }
 
     /// The results for the top-level statements `statements`, `(text, range)` in document order,

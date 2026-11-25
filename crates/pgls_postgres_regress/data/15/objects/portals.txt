@@ -1,0 +1,5 @@
+function	f	public	nochange	1
+relation	r	public	current_check	currentid	pg_catalog.int4	payload	pg_catalog.text
+relation	r	public	current_check_1	currentid	pg_catalog.int4	payload	pg_catalog.text
+relation	r	public	current_check_2	currentid	pg_catalog.int4	payload	pg_catalog.text
+schema	public

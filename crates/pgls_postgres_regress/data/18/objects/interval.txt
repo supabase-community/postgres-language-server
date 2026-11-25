@@ -1,0 +1,4 @@
+function	f	public	eval	1
+relation	r	public	infinite_interval_tbl	i	pg_catalog.interval
+relation	r	public	interval_tbl	f1	pg_catalog.interval
+schema	public

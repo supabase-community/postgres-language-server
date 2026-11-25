@@ -28,8 +28,12 @@ tree-sitter.workspace             = true
 criterion.workspace       = true
 insta.workspace           = true
 pgls_catalog              = { workspace = true, features = ["db"] }
+pgls_postgres_regress     = { workspace = true }
+pgls_query                = { workspace = true }
 pgls_test_utils.workspace = true
+pgls_walk                 = { workspace = true }
 regex                     = "1.12.2"
+serde_json                = { workspace = true }
 sqlx.workspace            = true
 unindent                  = "0.2.4"
 

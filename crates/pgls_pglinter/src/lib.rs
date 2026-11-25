@@ -1,7 +1,7 @@
 //! pglinter Postgres extension integration for database linting
 
-mod cache;
 mod diagnostics;
+mod extension;
 pub mod registry;
 pub mod rule;
 pub mod rules;
@@ -11,8 +11,8 @@ use pgls_catalog::{Extension, Snapshot};
 use rustc_hash::FxHashMap;
 use sqlx::PgPool;
 
-pub use cache::{PglinterCache, RuleMessage};
 pub use diagnostics::{DatabaseObject, PglinterAdvices, PglinterDiagnostic};
+pub use extension::RuleMessage;
 pub use rule::PglinterRule;
 
 /// PostgreSQL catalog OIDs for different object types
@@ -81,17 +81,14 @@ fn collect_enabled_rules(filter: &AnalysisFilter<'_>) -> Vec<String> {
 pub async fn run_pglinter(
     params: PglinterParams<'_>,
     filter: &AnalysisFilter<'_>,
-    cache: Option<&PglinterCache>,
 ) -> Result<Vec<PglinterDiagnostic>, sqlx::Error> {
     let mut results = vec![];
 
     // Check extension installed
-    let extension_installed = cache.map(|c| c.extension_installed).unwrap_or_else(|| {
-        params
-            .snapshot
-            .extension("pglinter")
-            .is_some_and(Extension::is_installed)
-    });
+    let extension_installed = params
+        .snapshot
+        .extension("pglinter")
+        .is_some_and(Extension::is_installed);
 
     // Collect enabled rules from config
     let enabled_rules = collect_enabled_rules(filter);
@@ -108,10 +105,7 @@ pub async fn run_pglinter(
     }
 
     // Get disabled rules from extension
-    let disabled_in_extension = match cache {
-        Some(c) => c.disabled_rules.clone(),
-        None => cache::get_disabled_rules(params.conn).await?,
-    };
+    let disabled_in_extension = extension::get_disabled_rules(params.conn).await?;
 
     // Check for mismatches and collect runnable rules
     let mut runnable_rules = Vec::new();
@@ -127,16 +121,11 @@ pub async fn run_pglinter(
         return Ok(results);
     }
 
-    // Get rule messages from cache or fetch
-    let rule_messages = match cache {
-        Some(c) => c.rule_messages.clone(),
-        None => {
-            if cache::check_rule_messages_table_exists(params.conn).await? {
-                cache::fetch_rule_messages(params.conn).await?
-            } else {
-                FxHashMap::default()
-            }
-        }
+    // Get the rule messages, which pglinter has since v1.1.0
+    let rule_messages = if extension::check_rule_messages_table_exists(params.conn).await? {
+        extension::fetch_rule_messages(params.conn).await?
+    } else {
+        FxHashMap::default()
     };
 
     // Fetch all violations in one query

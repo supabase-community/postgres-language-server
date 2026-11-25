@@ -1,0 +1,4 @@
+relation	r	public	clstr_tst	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text	d	pg_catalog.text
+relation	r	public	clstr_tst_inh	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text	d	pg_catalog.text
+relation	r	public	clstr_tst_s	rf_a	pg_catalog.int4	b	pg_catalog.int4
+schema	public

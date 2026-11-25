@@ -1,0 +1,8 @@
+relation	r	public	bt_f8_heap	seqno	pg_catalog.float8	random	pg_catalog.int4
+relation	r	public	bt_i4_heap	seqno	pg_catalog.int4	random	pg_catalog.int4
+relation	r	public	bt_name_heap	seqno	pg_catalog.name	random	pg_catalog.int4
+relation	r	public	bt_txt_heap	seqno	pg_catalog.text	random	pg_catalog.int4
+relation	r	public	btree_tall_tbl	id	pg_catalog.int4	t	pg_catalog.text
+relation	r	public	dedup_unique_test_table	a	pg_catalog.int4
+relation	r	public	delete_test_table	a	pg_catalog.int8	b	pg_catalog.int8	c	pg_catalog.int8	d	pg_catalog.int8
+schema	public

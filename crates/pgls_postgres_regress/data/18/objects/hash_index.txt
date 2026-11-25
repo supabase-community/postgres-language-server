@@ -1,0 +1,5 @@
+relation	r	public	hash_f8_heap	seqno	pg_catalog.int4	random	pg_catalog.float8
+relation	r	public	hash_i4_heap	seqno	pg_catalog.int4	random	pg_catalog.int4
+relation	r	public	hash_name_heap	seqno	pg_catalog.int4	random	pg_catalog.name
+relation	r	public	hash_txt_heap	seqno	pg_catalog.int4	random	pg_catalog.text
+schema	public

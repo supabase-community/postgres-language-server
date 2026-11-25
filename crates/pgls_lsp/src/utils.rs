@@ -1,13 +1,14 @@
 use crate::adapters::from_lsp::text_range;
-use crate::adapters::{PositionEncoding, to_lsp};
+use crate::adapters::to_lsp;
 use anyhow::{Context, Result, ensure};
 use pgls_diagnostics::{Diagnostic, DiagnosticTags, Location, PrintDescription, Severity, Visit};
-use pgls_line_index::LineIndex;
+use pgls_line_index::{LineIndex, PositionEncoding};
+use pgls_text_edit::RangeEdit;
 use pgls_text_size::{TextRange, TextSize};
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
-use std::ops::{Add, Range};
+use std::ops::Add;
 use std::str::FromStr;
 use std::{io, mem};
 use tower_lsp_server::jsonrpc::Error as LspError;
@@ -212,12 +213,13 @@ pub(crate) fn apply_document_changes(
             }
             index_valid = range.start.line;
             if let Ok(range) = text_range(&line_index, range, position_encoding) {
+                let edit = RangeEdit::new(range, change.text);
+                let applied = edit.apply(&mut text);
                 debug_assert!(
-                    text.get(Range::<usize>::from(range)).is_some(),
+                    applied,
                     "{range:?} is not on char boundaries of a text of length {}",
                     text.len()
                 );
-                text.replace_range(Range::<usize>::from(range), &change.text);
             }
         }
     }
@@ -226,11 +228,10 @@ pub(crate) fn apply_document_changes(
 
 #[cfg(test)]
 mod tests {
-    use pgls_line_index::WideEncoding;
+    use pgls_line_index::{PositionEncoding, WideEncoding};
     use tower_lsp_server::ls_types::{Position, Range, TextDocumentContentChangeEvent};
 
     use super::apply_document_changes;
-    use crate::adapters::PositionEncoding;
 
     #[test]
     fn applies_changes_at_utf16_positions() {

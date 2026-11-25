@@ -1,0 +1,15 @@
+relation	r	public	query	expr	pg_catalog.text
+relation	r	public	xmldata	data	pg_catalog.xml
+relation	r	public	xmltest	id	pg_catalog.int4	data	pg_catalog.xml
+relation	r	public	xmltest2	x	pg_catalog.xml	_path	pg_catalog.text
+relation	v	public	xmltableview1	id	pg_catalog.int4	_id	pg_catalog.int4	country_name	pg_catalog.text	country_id	pg_catalog.text	region_id	pg_catalog.int4	size	pg_catalog.float8	unit	pg_catalog.text	premier_name	pg_catalog.text
+relation	v	public	xmltableview2	a	pg_catalog.int4
+relation	v	public	xmlview1	xmlcomment	pg_catalog.xml
+relation	v	public	xmlview2	xmlconcat	pg_catalog.xml
+relation	v	public	xmlview3	xmlelement	pg_catalog.xml
+relation	v	public	xmlview5	xmlparse	pg_catalog.xml
+relation	v	public	xmlview6	xmlpi	pg_catalog.xml
+relation	v	public	xmlview7	xmlroot	pg_catalog.xml
+relation	v	public	xmlview8	xmlserialize	pg_catalog.bpchar
+relation	v	public	xmlview9	xmlserialize	pg_catalog.text
+schema	public

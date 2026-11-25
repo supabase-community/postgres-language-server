@@ -1,6 +1,5 @@
-use crate::adapters::PositionEncoding;
 use anyhow::{Result, ensure};
-use pgls_line_index::{LineCol, LineIndex, WideLineCol};
+use pgls_line_index::{LineIndex, PositionEncoding, WideLineCol};
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
 
@@ -10,21 +9,11 @@ pub(crate) fn offset(
     position: ls_types::Position,
     position_encoding: PositionEncoding,
 ) -> Result<TextSize> {
-    let line_col = match position_encoding {
-        PositionEncoding::Utf8 => LineCol {
-            line: position.line,
-            col: position.character,
-        },
-        PositionEncoding::Wide(enc) => {
-            let line_col = WideLineCol {
-                line: position.line,
-                col: position.character,
-            };
-            line_index.to_utf8(enc, line_col)
-        }
+    let position = WideLineCol {
+        line: position.line,
+        col: position.character,
     };
-
-    Ok(line_index.offset_clamped(line_col))
+    Ok(line_index.offset_at(position, position_encoding))
 }
 
 /// The function is used to convert a LSP range to TextRange.

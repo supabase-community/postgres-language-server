@@ -24,9 +24,6 @@ pgls_catalog              = { workspace = true, features = ["db"] }
 pgls_console.workspace    = true
 pgls_test_utils.workspace = true
 
-[build-dependencies]
-ureq = "2.9"
-
 [lib]
 doctest = false
 

@@ -1,0 +1,6 @@
+function	f	public	bar_int4_text	1
+function	f	public	casttestfunc	1
+function	f	public	casttesttype_in	1
+function	f	public	casttesttype_out	1
+schema	public
+type	b	public	casttesttype

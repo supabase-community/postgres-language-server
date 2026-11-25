@@ -16,7 +16,6 @@ anyhow                   = { workspace = true }
 bpaf                     = { workspace = true, features = ["bright-color"] }
 crossbeam                = { workspace = true }
 dashmap                  = "5.5.3"
-hdrhistogram             = { version = "7.5.4", default-features = false }
 path-absolutize          = { version = "3.1.1", optional = false, features = ["use_unix_paths_on_wasm"] }
 pgls_analyse             = { workspace = true }
 pgls_catalog             = { workspace = true, features = ["db"] }
@@ -35,7 +34,6 @@ pgls_workspace           = { workspace = true }
 prost                    = { workspace = true }
 quick-junit              = "0.5.0"
 rayon                    = { workspace = true }
-rustc-hash               = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 sqlx                     = { workspace = true }

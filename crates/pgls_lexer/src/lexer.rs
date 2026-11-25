@@ -107,6 +107,7 @@ impl<'a> Lexer<'a> {
                 pgls_tokenizer::TokenKind::Semi => SyntaxKind::SEMICOLON,
                 pgls_tokenizer::TokenKind::Comma => SyntaxKind::COMMA,
                 pgls_tokenizer::TokenKind::Dot => SyntaxKind::DOT,
+                pgls_tokenizer::TokenKind::DotDot => SyntaxKind::DOT_DOT,
                 pgls_tokenizer::TokenKind::OpenParen => SyntaxKind::L_PAREN,
                 pgls_tokenizer::TokenKind::CloseParen => SyntaxKind::R_PAREN,
                 pgls_tokenizer::TokenKind::OpenBracket => SyntaxKind::L_BRACK,

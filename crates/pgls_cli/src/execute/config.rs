@@ -1,27 +1,28 @@
+use crate::commands::Targets;
 use pgls_configuration::RuleSelector;
 use pgls_diagnostics::{Diagnostic, category};
 use pgls_workspace::features::code_actions::FixFileMode;
 #[derive(Debug, Clone)]
-pub struct ExecutionConfig {
-    pub mode: ExecutionMode,
-    pub max_diagnostics: u32,
-    pub allow_writes: bool,
+pub(crate) struct ExecutionConfig {
+    pub(crate) mode: ExecutionMode,
+    max_diagnostics: u32,
+    /// Whether the files to process come from git, with `--staged` or `--changed`.
+    vcs_targeted: bool,
     /// Skip files with syntax errors instead of reporting them (`--skip-errors`).
-    pub skip_errors: bool,
+    pub(crate) skip_errors: bool,
 }
 
 impl ExecutionConfig {
-    pub fn new(mode: ExecutionMode, max_diagnostics: u32) -> Self {
-        let allow_writes = mode.allows_writes();
+    pub(crate) fn new(mode: ExecutionMode, max_diagnostics: u32, targets: &Targets) -> Self {
         Self {
             mode,
             max_diagnostics,
-            allow_writes,
+            vcs_targeted: targets.is_vcs(),
             skip_errors: false,
         }
     }
 
-    pub fn with_skip_errors(mut self, skip_errors: bool) -> Self {
+    pub(crate) fn with_skip_errors(mut self, skip_errors: bool) -> Self {
         self.skip_errors = skip_errors;
         self
     }
@@ -37,19 +38,26 @@ impl ExecutionConfig {
                 .any(|diagnostic| diagnostic.category() == Some(category!("syntax")))
     }
 
-    pub fn max_diagnostics(&self) -> u32 {
+    pub(crate) fn max_diagnostics(&self) -> u32 {
         self.max_diagnostics
     }
 
-    pub fn allows_writes(&self) -> bool {
-        self.allow_writes
+    pub(crate) fn allows_writes(&self) -> bool {
+        match &self.mode {
+            ExecutionMode::Check { fix, .. } => fix.is_some(),
+            ExecutionMode::Format { write } => *write,
+        }
+    }
+
+    /// Whether the files to process come from git, with `--staged` or `--changed`.
+    pub(crate) fn is_vcs_targeted(&self) -> bool {
+        self.vcs_targeted
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum ExecutionMode {
+pub(crate) enum ExecutionMode {
     Check {
-        vcs: VcsTargeting,
         /// Which fixes to apply and write, if any.
         fix: Option<FixFileMode>,
         /// The rules to run, if not those of the configuration.
@@ -59,51 +67,5 @@ pub enum ExecutionMode {
     },
     Format {
         write: bool,
-        vcs: VcsTargeting,
     },
-}
-
-impl ExecutionMode {
-    pub fn allows_writes(&self) -> bool {
-        match self {
-            ExecutionMode::Check { fix, .. } => fix.is_some(),
-            ExecutionMode::Format { write, .. } => *write,
-        }
-    }
-
-    pub fn vcs(&self) -> &VcsTargeting {
-        match self {
-            ExecutionMode::Check { vcs, .. } => vcs,
-            ExecutionMode::Format { vcs, .. } => vcs,
-        }
-    }
-
-    pub fn command_name(&self) -> &str {
-        match self {
-            ExecutionMode::Check { .. } => "check",
-            ExecutionMode::Format { .. } => "format",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct VcsTargeting {
-    pub staged: bool,
-    pub changed: bool,
-}
-
-impl VcsTargeting {
-    /// Whether the files to process come from git, with `--staged` or `--changed`.
-    pub fn is_targeted(&self) -> bool {
-        self.staged || self.changed
-    }
-}
-
-impl From<(bool, bool)> for VcsTargeting {
-    fn from(value: (bool, bool)) -> Self {
-        Self {
-            staged: value.0,
-            changed: value.1,
-        }
-    }
 }

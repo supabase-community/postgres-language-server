@@ -1,14 +1,11 @@
 //! Environment variables and configuration constants for Postgres Language Server.
 //!
 //! This module provides:
-//! - Environment variable definitions for runtime configuration
+//! - The environment variables that Postgres Language Server reads, in [`VARIABLES`]
 //! - Static constants like version information and website URL
 //! - Helper functions for checking build status
 
-use pgls_console::fmt::{Display, Formatter};
-use pgls_console::{DebugDisplay, KeyValuePair, markup};
 use std::env;
-use std::sync::OnceLock;
 
 /// Returns `true` if this is an unstable build of Postgres Language Server
 pub fn is_unstable() -> bool {
@@ -29,106 +26,24 @@ pub const VERSION: &str = match option_env!("PGLS_VERSION") {
 
 pub static PGLS_WEBSITE: &str = "https://pg-language-server.com";
 
-pub struct PgLSEnv {
-    pub pgls_log_path: PgLSEnvVariable,
-    pub pgls_log_level: PgLSEnvVariable,
-    pub pgls_log_prefix: PgLSEnvVariable,
-    pub pgls_config_path: PgLSEnvVariable,
-
-    // Standard Postgres connection env vars
-    pub database_url: PgLSEnvVariable,
-    pub pghost: PgLSEnvVariable,
-    pub pgport: PgLSEnvVariable,
-    pub pguser: PgLSEnvVariable,
-    pub pgpassword: PgLSEnvVariable,
-    pub pgpassfile: PgLSEnvVariable,
-    pub pgdatabase: PgLSEnvVariable,
-
-    // DEPRECATED - kept for backward compatibility
-    pub pgt_log_path: PgLSEnvVariable,
-    pub pgt_log_level: PgLSEnvVariable,
-    pub pgt_log_prefix: PgLSEnvVariable,
-    pub pgt_config_path: PgLSEnvVariable,
-}
-
-pub static PGT_ENV: OnceLock<PgLSEnv> = OnceLock::new();
-
-impl PgLSEnv {
-    fn new() -> Self {
-        Self {
-            pgls_log_path: PgLSEnvVariable::new(
-                "PGLS_LOG_PATH",
-                "The directory where the Daemon logs will be saved.",
-            ),
-            pgls_log_level: PgLSEnvVariable::new(
-                "PGLS_LOG_LEVEL",
-                "Allows to change the log level: `none`, `trace`, `debug`, `info`, `warn` or `error`. Default is debug for the language server and none for the other commands. This will only affect \"pgls*\" crates. All others are logged with info level.",
-            ),
-            pgls_log_prefix: PgLSEnvVariable::new(
-                "PGLS_LOG_PREFIX_NAME",
-                "A prefix that's added to the name of the log. Default: `server.log.`",
-            ),
-            pgls_config_path: PgLSEnvVariable::new(
-                "PGLS_CONFIG_PATH",
-                "A path to the configuration file, or to a folder with one, for the language server (`lsp-proxy`, `start`). `check` and `format` take `--config-path` instead.",
-            ),
-
-            database_url: PgLSEnvVariable::new(
-                "DATABASE_URL",
-                "A connection string that encodes the full database connection setup.",
-            ),
-            pghost: PgLSEnvVariable::new("PGHOST", "The host of the database server."),
-            pgport: PgLSEnvVariable::new("PGPORT", "The port of the database server."),
-            pguser: PgLSEnvVariable::new("PGUSER", "The username to connect to the database."),
-            pgpassword: PgLSEnvVariable::new(
-                "PGPASSWORD",
-                "The password to connect to the database.",
-            ),
-            pgpassfile: PgLSEnvVariable::new(
-                "PGPASSFILE",
-                "The password file to look up the password in when none is configured. Default: `~/.pgpass`.",
-            ),
-            pgdatabase: PgLSEnvVariable::new(
-                "PGDATABASE",
-                "The name of the database to connect to.",
-            ),
-
-            pgt_log_path: PgLSEnvVariable::new(
-                "PGT_LOG_PATH",
-                "The directory where the Daemon logs will be saved. Deprecated, use PGLS_LOG_PATH instead.",
-            ),
-            pgt_log_level: PgLSEnvVariable::new(
-                "PGT_LOG_LEVEL",
-                "Allows to change the log level. Default is debug. This will only affect \"pgls*\" crates. All others are logged with info level. Deprecated, use PGLS_LOG_LEVEL instead.",
-            ),
-            pgt_log_prefix: PgLSEnvVariable::new(
-                "PGT_LOG_PREFIX_NAME",
-                "A prefix that's added to the name of the log. Default: `server.log`. Deprecated, use PGLS_LOG_PREFIX_NAME instead.",
-            ),
-            pgt_config_path: PgLSEnvVariable::new(
-                "PGT_CONFIG_PATH",
-                "A path to the configuration file. Deprecated, use PGLS_CONFIG_PATH instead.",
-            ),
-        }
-    }
-}
-
-pub struct PgLSEnvVariable {
+/// An environment variable that Postgres Language Server reads.
+#[derive(Debug)]
+pub struct EnvVariable {
     /// The name of the environment variable
     name: &'static str,
-    /// The description of the variable.
-    // This field will be used in the website to automate its generation
+    /// The description of the variable, for the documentation.
     description: &'static str,
+    /// The name from before the rename to Postgres Language Server, which is still read when the
+    /// variable isn't set.
+    deprecated_alias: Option<&'static str>,
 }
 
-impl PgLSEnvVariable {
-    fn new(name: &'static str, description: &'static str) -> Self {
-        Self { name, description }
-    }
-
-    /// It attempts to read the value of the variable
+impl EnvVariable {
+    /// The value of the variable, or else of its deprecated alias.
     pub fn value(&self) -> Option<String> {
-        env::var(self.name).ok()
+        env::var(self.name)
+            .ok()
+            .or_else(|| self.deprecated_alias.and_then(|alias| env::var(alias).ok()))
     }
 
     /// It returns the description of the variable
@@ -140,117 +55,98 @@ impl PgLSEnvVariable {
     pub fn name(&self) -> &'static str {
         self.name
     }
-}
 
-pub fn pgls_env() -> &'static PgLSEnv {
-    PGT_ENV.get_or_init(PgLSEnv::new)
-}
-
-impl Display for PgLSEnv {
-    fn fmt(&self, fmt: &mut Formatter) -> std::io::Result<()> {
-        match self.pgls_log_path.value() {
-            None => {
-                KeyValuePair(self.pgls_log_path.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgls_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-        match self.pgls_log_level.value() {
-            None => {
-                KeyValuePair(self.pgls_log_level.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgls_log_level.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-        match self.pgls_log_prefix.value() {
-            None => {
-                KeyValuePair(self.pgls_log_prefix.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgls_log_prefix.name, markup! {{DebugDisplay(value)}})
-                    .fmt(fmt)?;
-            }
-        };
-
-        match self.pgls_config_path.value() {
-            None => {
-                KeyValuePair(self.pgls_config_path.name, markup! { <Dim>"unset"</Dim> })
-                    .fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgls_config_path.name, markup! {{DebugDisplay(value)}})
-                    .fmt(fmt)?;
-            }
-        };
-
-        let sensitive = [&self.database_url, &self.pgpassword];
-        let non_sensitive = [
-            &self.pghost,
-            &self.pgport,
-            &self.pguser,
-            &self.pgpassfile,
-            &self.pgdatabase,
-        ];
-
-        for var in sensitive {
-            match var.value() {
-                None => {
-                    KeyValuePair(var.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-                }
-                Some(_) => {
-                    KeyValuePair(var.name, markup! { <Dim>"set"</Dim> }).fmt(fmt)?;
-                }
-            };
-        }
-
-        for var in non_sensitive {
-            match var.value() {
-                None => {
-                    KeyValuePair(var.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-                }
-                Some(value) => {
-                    KeyValuePair(var.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-                }
-            };
-        }
-
-        match self.pgt_log_path.value() {
-            None => {
-                KeyValuePair(self.pgt_log_path.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_log_path.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-        match self.pgt_log_level.value() {
-            None => {
-                KeyValuePair(self.pgt_log_level.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_log_level.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-        match self.pgt_log_prefix.value() {
-            None => {
-                KeyValuePair(self.pgt_log_prefix.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_log_prefix.name, markup! {{DebugDisplay(value)}}).fmt(fmt)?;
-            }
-        };
-
-        match self.pgt_config_path.value() {
-            None => {
-                KeyValuePair(self.pgt_config_path.name, markup! { <Dim>"unset"</Dim> }).fmt(fmt)?;
-            }
-            Some(value) => {
-                KeyValuePair(self.pgt_config_path.name, markup! {{DebugDisplay(value)}})
-                    .fmt(fmt)?;
-            }
-        };
-
-        Ok(())
+    /// The name from before the rename to Postgres Language Server, if the variable had one.
+    pub fn deprecated_alias(&self) -> Option<&'static str> {
+        self.deprecated_alias
     }
 }
+
+pub static PGLS_LOG_PATH: EnvVariable = EnvVariable {
+    name: "PGLS_LOG_PATH",
+    description: "The directory where the Daemon logs will be saved.",
+    deprecated_alias: Some("PGT_LOG_PATH"),
+};
+
+pub static PGLS_LOG_LEVEL: EnvVariable = EnvVariable {
+    name: "PGLS_LOG_LEVEL",
+    description: "Allows to change the log level: `none`, `trace`, `debug`, `info`, `warn` or `error`. Default is debug for the language server and none for the other commands. This will only affect \"pgls*\" crates. All others are logged with info level.",
+    deprecated_alias: Some("PGT_LOG_LEVEL"),
+};
+
+pub static PGLS_LOG_KIND: EnvVariable = EnvVariable {
+    name: "PGLS_LOG_KIND",
+    description: "The format of the logs of the language server: `hierarchical` or `bunyan`. Default: `hierarchical`.",
+    deprecated_alias: Some("PGT_LOG_KIND"),
+};
+
+pub static PGLS_LOG_PREFIX_NAME: EnvVariable = EnvVariable {
+    name: "PGLS_LOG_PREFIX_NAME",
+    description: "A prefix that's added to the name of the log. Default: `server.log.`",
+    deprecated_alias: Some("PGT_LOG_PREFIX_NAME"),
+};
+
+pub static PGLS_CONFIG_PATH: EnvVariable = EnvVariable {
+    name: "PGLS_CONFIG_PATH",
+    description: "A path to the configuration file, or to a folder with one, for the language server (`lsp-proxy`, `start`). `check` and `format` take `--config-path` instead.",
+    deprecated_alias: Some("PGT_CONFIG_PATH"),
+};
+
+pub static DATABASE_URL: EnvVariable = EnvVariable {
+    name: "DATABASE_URL",
+    description: "A connection string that encodes the full database connection setup.",
+    deprecated_alias: None,
+};
+
+pub static PGHOST: EnvVariable = EnvVariable {
+    name: "PGHOST",
+    description: "The host of the database server.",
+    deprecated_alias: None,
+};
+
+pub static PGPORT: EnvVariable = EnvVariable {
+    name: "PGPORT",
+    description: "The port of the database server.",
+    deprecated_alias: None,
+};
+
+pub static PGUSER: EnvVariable = EnvVariable {
+    name: "PGUSER",
+    description: "The username to connect to the database.",
+    deprecated_alias: None,
+};
+
+pub static PGPASSWORD: EnvVariable = EnvVariable {
+    name: "PGPASSWORD",
+    description: "The password to connect to the database.",
+    deprecated_alias: None,
+};
+
+pub static PGPASSFILE: EnvVariable = EnvVariable {
+    name: "PGPASSFILE",
+    description: "The password file to look up the password in when none is configured. Default: `~/.pgpass`.",
+    deprecated_alias: None,
+};
+
+pub static PGDATABASE: EnvVariable = EnvVariable {
+    name: "PGDATABASE",
+    description: "The name of the database to connect to.",
+    deprecated_alias: None,
+};
+
+/// Every environment variable that Postgres Language Server reads, in the order of the
+/// documentation.
+pub static VARIABLES: &[&EnvVariable] = &[
+    &PGLS_LOG_PATH,
+    &PGLS_LOG_LEVEL,
+    &PGLS_LOG_KIND,
+    &PGLS_LOG_PREFIX_NAME,
+    &PGLS_CONFIG_PATH,
+    &DATABASE_URL,
+    &PGHOST,
+    &PGPORT,
+    &PGUSER,
+    &PGPASSWORD,
+    &PGPASSFILE,
+    &PGDATABASE,
+];

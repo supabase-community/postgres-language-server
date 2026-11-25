@@ -50,6 +50,8 @@ pub enum TokenKind {
     DoubleColon,
     /// `.`
     Dot,
+    /// `..`
+    DotDot,
     /// `=`
     Eq,
     /// `>`

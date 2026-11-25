@@ -1,0 +1,21 @@
+function	a	public	aggfns	1
+function	a	public	aggfstr	1
+function	a	public	cleast_agg	1
+function	a	public	least_agg	1
+function	a	public	newavg	1
+function	a	public	newcnt	2
+function	a	public	newsum	1
+function	a	public	oldcnt	1
+function	a	public	sum2	1
+function	a	public	sumdouble	1
+function	a	public	test_percentile_disc	1
+function	a	public	test_rank	1
+function	f	public	aggf_trans	1
+function	f	public	aggfns_trans	1
+function	f	public	cleast_accum	1
+function	f	public	float8mi_int	1
+function	f	public	float8mi_n	1
+function	f	public	least_accum	1
+function	f	public	sum3	1
+schema	public
+type	c	public	aggtype

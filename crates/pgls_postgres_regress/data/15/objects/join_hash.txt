@@ -1,0 +1,11 @@
+function	f	public	find_hash	1
+function	f	public	hash_join_batches	1
+relation	r	public	bigger_than_it_looks	id	pg_catalog.int4	?column?	pg_catalog.text
+relation	r	public	extremely_skewed	id	pg_catalog.int4	t	pg_catalog.text
+relation	r	public	hjtest_1	a	pg_catalog.text	b	pg_catalog.int4	id	pg_catalog.int4	c	pg_catalog.bool
+relation	r	public	hjtest_2	a	pg_catalog.bool	id	pg_catalog.int4	b	pg_catalog.text	c	pg_catalog.int4
+relation	r	public	join_bar	id	pg_catalog.int4	t	pg_catalog.text
+relation	r	public	join_foo	id	pg_catalog.int4	t	pg_catalog.text
+relation	r	public	simple	id	pg_catalog.int4	?column?	pg_catalog.text
+relation	r	public	wide	id	pg_catalog.int4	t	pg_catalog.text
+schema	public

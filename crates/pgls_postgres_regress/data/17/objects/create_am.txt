@@ -1,0 +1,18 @@
+relation	f	public	tableam_fdw_heapx
+relation	m	public	tableam_tblmv_heap2	f1	pg_catalog.int4
+relation	m	public	tableam_tblmv_heapx	f1	pg_catalog.int4
+relation	p	public	tableam_parted_heap2	a	pg_catalog.text	b	pg_catalog.int4
+relation	p	public	tableam_parted_heapx	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_parted_1_heapx	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_parted_2_heapx	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_parted_a_heap2	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_parted_b_heap2	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_parted_c_heap2	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_parted_d_heap2	a	pg_catalog.text	b	pg_catalog.int4
+relation	r	public	tableam_tbl_heap2	f1	pg_catalog.int4
+relation	r	public	tableam_tbl_heapx	f1	pg_catalog.int4
+relation	r	public	tableam_tblas_heap2	f1	pg_catalog.int4
+relation	r	public	tableam_tblas_heapx	f1	pg_catalog.int4
+relation	r	public	tableam_tblselectinto_heapx
+relation	v	public	tableam_view_heapx	f1	pg_catalog.int4
+schema	public

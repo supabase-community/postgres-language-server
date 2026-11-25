@@ -12,6 +12,7 @@ use std::{
     time::Duration,
 };
 
+use crate::commands::LogOptions;
 use pgls_lsp::{ServerConnection, ServerFactory};
 use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
@@ -23,7 +24,7 @@ use tracing::Instrument;
 /// Returns the name of the global named pipe used to communicate with the
 /// server daemon
 fn get_pipe_name() -> String {
-    format!(r"\\.\pipe\pgls-service-{}", pgls_configuration::VERSION)
+    format!(r"\\.\pipe\pgls-service-{}", pgls_env::VERSION)
 }
 
 /// Error code from the Win32 API
@@ -53,8 +54,7 @@ const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
 fn spawn_daemon(
     stop_on_disconnect: bool,
     config_path: Option<PathBuf>,
-    log_path: Option<PathBuf>,
-    log_file_name_prefix: Option<String>,
+    log_options: Option<&LogOptions>,
 ) -> io::Result<()> {
     let binary = env::current_exe()?;
 
@@ -68,11 +68,8 @@ fn spawn_daemon(
     if let Some(config_path) = config_path {
         cmd.arg(format!("--config-path={}", config_path.display()));
     }
-    if let Some(log_path) = log_path {
-        cmd.arg(format!("--log-path={}", log_path.display()));
-    }
-    if let Some(log_file_name_prefix) = log_file_name_prefix {
-        cmd.arg(format!("--log-prefix-name={log_file_name_prefix}"));
+    if let Some(log_options) = log_options {
+        cmd.args(log_options.args());
     }
     cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
 
@@ -168,8 +165,7 @@ impl AsyncWrite for ClientWriteHalf {
 pub(crate) async fn ensure_daemon(
     stop_on_disconnect: bool,
     config_path: Option<PathBuf>,
-    log_path: Option<PathBuf>,
-    log_file_name_prefix: Option<String>,
+    log_options: Option<&LogOptions>,
 ) -> io::Result<bool> {
     let mut did_spawn = false;
 
@@ -177,12 +173,7 @@ pub(crate) async fn ensure_daemon(
         match open_socket().await {
             Ok(Some(_)) => break,
             Ok(None) => {
-                spawn_daemon(
-                    stop_on_disconnect,
-                    config_path.clone(),
-                    log_path.clone(),
-                    log_file_name_prefix.clone(),
-                )?;
+                spawn_daemon(stop_on_disconnect, config_path.clone(), log_options)?;
                 did_spawn = true;
                 time::sleep(Duration::from_millis(50)).await;
             }
@@ -196,7 +187,7 @@ pub(crate) async fn ensure_daemon(
 /// Ensure the server daemon is running and ready to receive connections and
 /// print the global pipe name in the standard output
 pub(crate) async fn print_socket() -> io::Result<()> {
-    ensure_daemon(true, None, None, None).await?;
+    ensure_daemon(true, None, None).await?;
     println!("{}", get_pipe_name());
     Ok(())
 }

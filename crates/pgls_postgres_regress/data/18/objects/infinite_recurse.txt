@@ -1,0 +1,2 @@
+function	f	public	infinite_recurse	1
+schema	public

@@ -1,0 +1,58 @@
+function	f	public	func_with_set_params	1
+function	f	public	rtest_viewfunc1	1
+relation	r	public	rtest_admin	pname	pg_catalog.text	sysname	pg_catalog.text
+relation	r	public	rtest_comp	part	pg_catalog.text	unit	pg_catalog.bpchar	size	pg_catalog.float8
+relation	r	public	rtest_emp	ename	pg_catalog.bpchar	salary	pg_catalog.money
+relation	r	public	rtest_emplog	ename	pg_catalog.bpchar	who	pg_catalog.name	action	pg_catalog.bpchar	newsal	pg_catalog.money	oldsal	pg_catalog.money
+relation	r	public	rtest_empmass	ename	pg_catalog.bpchar	salary	pg_catalog.money
+relation	r	public	rtest_interface	sysname	pg_catalog.text	ifname	pg_catalog.text
+relation	r	public	rtest_nothn1	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_nothn2	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_nothn3	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_nothn4	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_order1	a	pg_catalog.int4
+relation	r	public	rtest_order2	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.text
+relation	r	public	rtest_person	pname	pg_catalog.text	pdesc	pg_catalog.text
+relation	r	public	rtest_system	sysname	pg_catalog.text	sysdesc	pg_catalog.text
+relation	r	public	rtest_t1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	rtest_t2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	rtest_t3	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	rtest_t4	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_t5	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_t6	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_t7	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_t8	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_t9	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_unitfact	unit	pg_catalog.bpchar	factor	pg_catalog.float8
+relation	r	public	rtest_view1	a	pg_catalog.int4	b	pg_catalog.text	v	pg_catalog.bool
+relation	r	public	rtest_view2	a	pg_catalog.int4
+relation	r	public	rtest_view3	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rtest_view4	a	pg_catalog.int4	b	pg_catalog.text	c	pg_catalog.int4
+relation	r	public	rule_and_refint_t1	id1a	pg_catalog.int4	id1b	pg_catalog.int4
+relation	r	public	rule_and_refint_t2	id2a	pg_catalog.int4	id2c	pg_catalog.int4
+relation	r	public	rule_and_refint_t3	id3a	pg_catalog.int4	id3b	pg_catalog.int4	id3c	pg_catalog.int4	data	pg_catalog.text
+relation	r	public	rule_merge1	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rule_merge2	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rules_log	f1	pg_catalog.int4	f2	pg_catalog.int4	tag	pg_catalog.text	id	pg_catalog.int4
+relation	r	public	rules_src	f1	pg_catalog.int4	f2	pg_catalog.int4
+relation	r	public	ruletest_tbl	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	ruletest_tbl2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	shoe_data	shoename	pg_catalog.bpchar	sh_avail	pg_catalog.int4	slcolor	pg_catalog.bpchar	slminlen	pg_catalog.float8	slmaxlen	pg_catalog.float8	slunit	pg_catalog.bpchar
+relation	r	public	shoelace_arrive	arr_name	pg_catalog.bpchar	arr_quant	pg_catalog.int4
+relation	r	public	shoelace_data	sl_name	pg_catalog.bpchar	sl_avail	pg_catalog.int4	sl_color	pg_catalog.bpchar	sl_len	pg_catalog.float8	sl_unit	pg_catalog.bpchar
+relation	r	public	shoelace_log	sl_name	pg_catalog.bpchar	sl_avail	pg_catalog.int4	log_who	pg_catalog.name	log_when	pg_catalog.timestamp
+relation	r	public	shoelace_ok	ok_name	pg_catalog.bpchar	ok_quant	pg_catalog.int4
+relation	r	public	unit	un_name	pg_catalog.bpchar	un_fact	pg_catalog.float8
+relation	v	public	rtest_v1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	v	public	rtest_vcomp	part	pg_catalog.text	size_in_cm	pg_catalog.float8
+relation	v	public	rtest_vview1	a	pg_catalog.int4	b	pg_catalog.text
+relation	v	public	rtest_vview2	a	pg_catalog.int4	b	pg_catalog.text
+relation	v	public	rtest_vview3	a	pg_catalog.int4	b	pg_catalog.text
+relation	v	public	rtest_vview4	a	pg_catalog.int4	b	pg_catalog.text	refcount	pg_catalog.int8
+relation	v	public	rtest_vview5	a	pg_catalog.int4	b	pg_catalog.text	refcount	pg_catalog.int4
+relation	v	public	shoe	shoename	pg_catalog.bpchar	sh_avail	pg_catalog.int4	slcolor	pg_catalog.bpchar	slminlen	pg_catalog.float8	slminlen_cm	pg_catalog.float8	slmaxlen	pg_catalog.float8	slmaxlen_cm	pg_catalog.float8	slunit	pg_catalog.bpchar
+relation	v	public	shoe_ready	shoename	pg_catalog.bpchar	sh_avail	pg_catalog.int4	sl_name	pg_catalog.bpchar	sl_avail	pg_catalog.int4	total_avail	pg_catalog.int4
+relation	v	public	shoelace	sl_name	pg_catalog.bpchar	sl_avail	pg_catalog.int4	sl_color	pg_catalog.bpchar	sl_len	pg_catalog.float8	sl_unit	pg_catalog.bpchar	sl_len_cm	pg_catalog.float8
+relation	v	public	shoelace_candelete	sl_name	pg_catalog.bpchar	sl_avail	pg_catalog.int4	sl_color	pg_catalog.bpchar	sl_len	pg_catalog.float8	sl_unit	pg_catalog.bpchar	sl_len_cm	pg_catalog.float8
+relation	v	public	shoelace_obsolete	sl_name	pg_catalog.bpchar	sl_avail	pg_catalog.int4	sl_color	pg_catalog.bpchar	sl_len	pg_catalog.float8	sl_unit	pg_catalog.bpchar	sl_len_cm	pg_catalog.float8
+schema	public

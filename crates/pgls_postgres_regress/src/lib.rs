@@ -9,6 +9,8 @@
 //!   range of the statement Postgres was sent, in the preprocessed source (see [`preprocess`])
 //! - `output_types/*.txt`: one `start..end` line per accepted statement that returns rows, with
 //!   the types of its columns after it, separated by tabs (see [`Statement::output_types`])
+//! - `objects/*.txt`: the objects of the database after the file ran, one per line (see
+//!   [`DatabaseObject`])
 //! - `catalog.json.gz`: the catalog of a fresh database on that version, as gzipped
 //!   `pgls_catalog::Snapshot` JSON
 //!
@@ -125,6 +127,89 @@ impl Statement {
     }
 }
 
+/// An object of the database after a file ran, outside of the system schemas: what the catalog
+/// follows of the statements of a file, without oids. Temporary objects are gone by then.
+///
+/// Each is one line of tab-separated fields in `objects/*.txt`, with Postgres' code for its kind:
+/// `schema name`, `relation relkind schema name [column type]...`, `type typtype schema name` and
+/// `function prokind schema name overloads`. Types are `schema.name`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DatabaseObject {
+    Schema {
+        name: String,
+    },
+    /// A table, partitioned table, view, materialized view or foreign table, with its columns
+    /// and their types in order.
+    Relation {
+        /// `pg_class.relkind`: `r`, `p`, `v`, `m` or `f`.
+        kind: char,
+        schema: String,
+        name: String,
+        columns: Vec<(String, String)>,
+    },
+    /// A base type, domain, enum, range or composite type that isn't the row type of a relation.
+    /// Array and multirange types come with another type and aren't listed.
+    Type {
+        /// `pg_type.typtype`.
+        kind: char,
+        schema: String,
+        name: String,
+    },
+    /// The overloads of a function name of one kind.
+    Function {
+        /// `pg_proc.prokind`: `f`, `p`, `a` or `w`.
+        kind: char,
+        schema: String,
+        name: String,
+        overloads: usize,
+    },
+}
+
+impl DatabaseObject {
+    /// An object from its line in an objects file.
+    pub fn parse(line: &str) -> Option<Self> {
+        let mut fields = line.split('\t');
+        let category = fields.next()?;
+        let kind = |field: Option<&str>| {
+            let mut chars = field?.chars();
+            let kind = chars.next()?;
+            chars.next().is_none().then_some(kind)
+        };
+        let object = match category {
+            "schema" => DatabaseObject::Schema {
+                name: fields.next()?.to_owned(),
+            },
+            "relation" => {
+                let kind = kind(fields.next())?;
+                let (schema, name) = (fields.next()?.to_owned(), fields.next()?.to_owned());
+                let mut columns = Vec::new();
+                while let Some(column) = fields.next() {
+                    columns.push((column.to_owned(), fields.next()?.to_owned()));
+                }
+                DatabaseObject::Relation {
+                    kind,
+                    schema,
+                    name,
+                    columns,
+                }
+            }
+            "type" => DatabaseObject::Type {
+                kind: kind(fields.next())?,
+                schema: fields.next()?.to_owned(),
+                name: fields.next()?.to_owned(),
+            },
+            "function" => DatabaseObject::Function {
+                kind: kind(fields.next())?,
+                schema: fields.next()?.to_owned(),
+                name: fields.next()?.to_owned(),
+                overloads: fields.next()?.parse().ok()?,
+            },
+            _ => return None,
+        };
+        fields.next().is_none().then_some(object)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct File {
     /// File name without the `.sql` extension, e.g. `join`.
@@ -132,6 +217,8 @@ pub struct File {
     /// The preprocessed source; see [`preprocess`].
     pub source: String,
     pub statements: Vec<Statement>,
+    /// The objects of the database after the file ran, in the order of their lines.
+    pub objects: Vec<DatabaseObject>,
 }
 
 impl File {
@@ -171,6 +258,10 @@ pub const VERDICTS_DIR: &str = "verdicts";
 /// The directory of the output types files in `data/<major>/`.
 pub const OUTPUT_TYPES_DIR: &str = "output_types";
 
+/// The directory of the files with the objects of the database after each file, in
+/// `data/<major>/`.
+pub const OBJECTS_DIR: &str = "objects";
+
 impl Version {
     /// The catalog of a fresh database on this version, as `pgls_catalog::Snapshot` JSON.
     pub fn catalog_json(&self) -> String {
@@ -191,7 +282,8 @@ impl Version {
 
     /// Loads every file of this version, sorted by name.
     ///
-    /// Panics if a verdict or output types file is missing or doesn't fit its SQL file.
+    /// Panics if a verdict, output types or objects file is missing or doesn't fit its SQL
+    /// file.
     pub fn files(&self) -> Vec<File> {
         let sql_dir = self.dir.join("sql");
         let mut names = fs::read_dir(&sql_dir)
@@ -202,7 +294,7 @@ impl Version {
             .filter_map(|path| Some(path.file_stem()?.to_string_lossy().into_owned()))
             .collect::<Vec<_>>();
         names.sort();
-        for dir in [VERDICTS_DIR, OUTPUT_TYPES_DIR] {
+        for dir in [VERDICTS_DIR, OUTPUT_TYPES_DIR, OBJECTS_DIR] {
             self.check_no_orphans(dir, &names);
         }
         names.into_iter().map(|name| self.load(name)).collect()
@@ -255,10 +347,22 @@ impl Version {
                 );
             }
         }
+        let Ok(objects) = fs::read_to_string(self.fixture_path(OBJECTS_DIR, &name)) else {
+            self.out_of_date(&name, "no objects file")
+        };
+        let objects = objects
+            .lines()
+            .map(|line| {
+                DatabaseObject::parse(line).unwrap_or_else(|| {
+                    self.out_of_date(&name, &format!("malformed object `{line}`"))
+                })
+            })
+            .collect();
         File {
             name,
             source,
             statements,
+            objects,
         }
     }
 
@@ -424,6 +528,51 @@ mod tests {
         assert_eq!(statement.output_types_line().as_deref(), Some(line));
         for line in ["0..9", "0..9\t", "0..9\tpg_catalog.int4\t"] {
             assert!(Statement::parse_output_types(line).is_none(), "{line}");
+        }
+    }
+
+    #[test]
+    fn objects_parse() {
+        assert_eq!(
+            DatabaseObject::parse("relation\tr\tpublic\tt\ta\tpg_catalog.int4\tb c\tpublic.d"),
+            Some(DatabaseObject::Relation {
+                kind: 'r',
+                schema: "public".into(),
+                name: "t".into(),
+                columns: vec![
+                    ("a".into(), "pg_catalog.int4".into()),
+                    ("b c".into(), "public.d".into())
+                ],
+            })
+        );
+        assert_eq!(
+            DatabaseObject::parse("relation\tv\tpublic\tv"),
+            Some(DatabaseObject::Relation {
+                kind: 'v',
+                schema: "public".into(),
+                name: "v".into(),
+                columns: Vec::new(),
+            })
+        );
+        assert_eq!(
+            DatabaseObject::parse("function\tf\tpublic\tf\t2"),
+            Some(DatabaseObject::Function {
+                kind: 'f',
+                schema: "public".into(),
+                name: "f".into(),
+                overloads: 2,
+            })
+        );
+        for line in [
+            "schema",
+            "schema\ta\tb",
+            "relation\tr\tpublic\tt\ta",
+            "relation\trr\tpublic\tt",
+            "type\te\tpublic",
+            "function\tf\tpublic\tf\ttwo",
+            "index\ti\tpublic\tx",
+        ] {
+            assert!(DatabaseObject::parse(line).is_none(), "{line}");
         }
     }
 

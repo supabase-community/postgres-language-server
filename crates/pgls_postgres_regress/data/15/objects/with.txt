@@ -1,0 +1,3 @@
+relation	v	public	nums	n	pg_catalog.int4
+relation	v	public	sums_1_100	sum	pg_catalog.int8
+schema	public

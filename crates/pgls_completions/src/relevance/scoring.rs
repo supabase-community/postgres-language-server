@@ -7,6 +7,56 @@ use crate::{providers::helper::word_at_cursor, sanitization};
 
 use super::CompletionRelevanceData;
 
+/// What scoring compares every candidate with, computed once per request: the typed text and
+/// one fuzzy matcher, whose buffers are reused across the candidates.
+pub(crate) struct TypedInput {
+    /// The word at the cursor, sanitized, without quotes and in ASCII lowercase. Keywords are
+    /// matched against it. `None` if nothing was typed.
+    word: Option<String>,
+    /// The text of the node under the cursor, in the same form. Every other candidate is matched
+    /// against it.
+    node: Option<String>,
+    matcher: SkimMatcherV2,
+}
+
+impl TypedInput {
+    pub(crate) fn new(ctx: &TreesitterContext) -> Self {
+        let normalized = |content: Option<String>| {
+            content
+                .filter(|c| !sanitization::is_sanitized_token(c))
+                .map(|c| {
+                    let mut c = sanitization::remove_sanitized_token(&c).replace('"', "");
+                    c.make_ascii_lowercase();
+                    c
+                })
+        };
+
+        Self {
+            word: normalized(ctx.text.get(word_at_cursor(ctx)).map(str::to_string)),
+            node: normalized(ctx.get_node_under_cursor_content()),
+            matcher: SkimMatcherV2::default(),
+        }
+    }
+
+    /// Whether the fuzzy matcher can match `typed` in the `candidate`'s bytes, checked on the
+    /// borrowed bytes before anything is copied. The matcher needs every typed character in order
+    /// and folds only ASCII case, and equal characters have equal bytes, so a candidate without
+    /// the typed bytes in order can't match. `typed` is in ASCII lowercase.
+    fn may_match(typed: &str, candidate: impl Iterator<Item = u8>) -> bool {
+        let mut typed = typed.bytes().peekable();
+        for byte in candidate {
+            match typed.peek() {
+                Some(t) if *t == byte.to_ascii_lowercase() => {
+                    typed.next();
+                }
+                Some(_) => {}
+                None => break,
+            }
+        }
+        typed.peek().is_none()
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct CompletionScore<'a> {
     score: i32,
@@ -33,14 +83,14 @@ impl CompletionScore<'_> {
         self.score
     }
 
-    pub(crate) fn calc_score(&mut self, ctx: &TreesitterContext) {
+    pub(crate) fn calc_score(&mut self, ctx: &TreesitterContext, input: &TypedInput) {
         self.check_is_keyword();
         self.check_is_user_defined();
         self.check_matches_schema(ctx);
-        self.check_matches_query_input(ctx);
+        self.check_matches_query_input(ctx, input);
         self.check_is_invocation(ctx);
         self.check_matching_clause_type(ctx);
-        self.check_without_content(ctx);
+        self.check_without_content(ctx, input);
         self.check_relations_in_stmt(ctx);
         self.check_columns_in_stmt(ctx);
         self.check_is_not_wellknown_migration(ctx);
@@ -52,44 +102,28 @@ impl CompletionScore<'_> {
         }
     }
 
-    fn check_matches_query_input(&mut self, ctx: &TreesitterContext) {
-        let content = match self.data {
-            CompletionRelevanceData::Keyword(_) => Some(ctx.text[word_at_cursor(ctx)].to_string()),
-            _ => ctx.get_node_under_cursor_content(),
+    fn check_matches_query_input(&mut self, ctx: &TreesitterContext, input: &TypedInput) {
+        let typed = match self.data {
+            CompletionRelevanceData::Keyword(_) => input.word.as_deref(),
+            _ => input.node.as_deref(),
         };
-        let content = match content {
-            Some(c) if !sanitization::is_sanitized_token(c.as_str()) => {
-                sanitization::remove_sanitized_token(&c).replace('"', "")
-            }
-            _ => {
-                return;
-            }
+        let Some(typed) = typed else {
+            return;
         };
 
-        let name = match self.data {
-            CompletionRelevanceData::Function(f) => f.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Table(t) => t.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Column(c) => c.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Schema(s) => s.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Policy(p) => p.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Role(r) => r.name.as_str().to_ascii_lowercase(),
-            CompletionRelevanceData::Keyword(k) => k.name.to_ascii_lowercase(),
-        };
+        let name = self.get_item_name();
 
-        let fz_matcher = SkimMatcherV2::default();
-
-        let check_against = match &ctx.identifier_qualifiers {
+        // What the text the user typed qualifies `name` with, if anything: `<qualifier>.<name>`.
+        let qualifier = match &ctx.identifier_qualifiers {
             // If both qualifiers are already written out, we must check the item's name itself.
-            (Some(_), Some(_)) => name.clone(),
+            (Some(_), Some(_)) => None,
 
             // If only one qualifier is written out, we might look at a schema, a table, or an alias.
             (None, Some(_)) => {
                 let qualifier = ctx.tail_qualifier_sanitized().unwrap_or_default();
                 let qualifier = qualifier.as_str();
                 if self.get_schema_name().is_some_and(|s| s == qualifier) {
-                    self.get_table_name()
-                        .map(|t| format!("{t}.{name}"))
-                        .unwrap_or(name.clone())
+                    self.get_table_name().map(str::to_string)
                 } else if self.get_table_name().is_some_and(|t| t == qualifier)
                     || ctx
                         .get_mentioned_table_for_alias(qualifier)
@@ -98,13 +132,13 @@ impl CompletionScore<'_> {
                                 .is_some_and(|item_tbl| alias_tbl == item_tbl)
                         })
                 {
-                    name.clone()
+                    None
                 } else {
                     // the qualifier does not match schema, table, or alias.
                     // what the hell is it?
                     // probably a typo.
                     self.skip = true;
-                    String::new()
+                    return;
                 }
             }
 
@@ -113,25 +147,35 @@ impl CompletionScore<'_> {
                 CompletionRelevanceData::Column(_) | CompletionRelevanceData::Policy(_) => self
                     .get_schema_name()
                     .zip(self.get_table_name())
-                    .and_then(|(schema, tbl)| ctx.get_used_alias_for_table(schema, tbl))
-                    .map(|t| format!("{t}.{name}"))
-                    .unwrap_or(name.clone()),
+                    .and_then(|(schema, tbl)| ctx.get_used_alias_for_table(schema, tbl)),
 
                 // everything else is just fuzzy matched against its name.
-                _ => name.clone(),
+                _ => None,
             },
         };
 
-        let content_lower = content.to_ascii_lowercase();
-        let check_against_lower = check_against.to_ascii_lowercase();
+        let candidate = qualifier
+            .iter()
+            .flat_map(|q| q.bytes().chain(*b"."))
+            .chain(name.bytes());
+        if !TypedInput::may_match(typed, candidate) {
+            self.skip = true;
+            return;
+        }
 
-        match fz_matcher.fuzzy_match(check_against_lower.as_str(), content_lower.as_str()) {
+        let mut check_against = match &qualifier {
+            Some(qualifier) => format!("{qualifier}.{name}"),
+            None => name.to_string(),
+        };
+        check_against.make_ascii_lowercase();
+
+        match input.matcher.fuzzy_match(check_against.as_str(), typed) {
             Some(score) => {
                 let mut scorei32 = i32::try_from(score).unwrap_or(i32::MAX);
 
                 // give a significant bonus for prefix matches since these are much more
                 // likely what the user is looking for
-                if check_against_lower.starts_with(&content_lower) {
+                if check_against.starts_with(typed) {
                     scorei32 = scorei32.saturating_add(20);
                 }
 
@@ -141,7 +185,7 @@ impl CompletionScore<'_> {
                 // - item: numeric_uplus, input: n, score: 31
                 // - item: settings, input: sett, score: 91
                 // - item: user_settings, input: sett, score: 82
-                self.score += if check_against == name {
+                self.score += if qualifier.is_none() {
                     scorei32 / 2
                 } else {
                     scorei32 / 3
@@ -232,12 +276,9 @@ impl CompletionScore<'_> {
     // so, what here? we want to handle the *no content* case.
     // in that case, we want to check the current node_kind.
 
-    fn check_without_content(&mut self, ctx: &TreesitterContext) {
+    fn check_without_content(&mut self, ctx: &TreesitterContext, input: &TypedInput) {
         // the function is only concerned with cases where the user hasn't typed anything yet.
-        if ctx
-            .get_node_under_cursor_content()
-            .is_some_and(|c| !sanitization::is_sanitized_token(c.as_str()))
-        {
+        if input.node.is_some() {
             return;
         }
 
@@ -485,6 +526,44 @@ impl CompletionScore<'_> {
             || table_name == Some("_sqlx_migrations")
         {
             self.score -= 10;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
+
+    use super::TypedInput;
+
+    #[test]
+    fn the_byte_filter_rejects_only_what_the_matcher_rejects() {
+        let matcher = SkimMatcherV2::default();
+        let candidates = [
+            "users",
+            "User_Settings",
+            "u.email",
+            "public.users",
+            "Счета",
+            "счета",
+            "café_id",
+            "ü",
+            "",
+        ];
+        let typed = [
+            "", "us", "usr", "sett", "u.em", "pu.us", "сч", "сЧ", "é", "fé", "ü", "x", "ti",
+        ];
+
+        for candidate in candidates {
+            let lower = candidate.to_ascii_lowercase();
+            for typed in typed {
+                let matches = matcher.fuzzy_match(&lower, typed).is_some();
+                assert_eq!(
+                    TypedInput::may_match(typed, candidate.bytes()),
+                    matches,
+                    "{typed:?} in {candidate:?}"
+                );
+            }
         }
     }
 }

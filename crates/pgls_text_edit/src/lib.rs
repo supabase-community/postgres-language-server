@@ -1,6 +1,7 @@
-//! Representation of a `TextEdit`.
+//! Edits of a text: [`TextEdit`], a diff of a whole text, and [`RangeEdit`], which replaces one
+//! range.
 //!
-//! This is taken from [biome's text_edit crate](https://github.com/biomejs/biome)
+//! `TextEdit` is taken from [biome's text_edit crate](https://github.com/biomejs/biome)
 
 #![warn(
     rust_2018_idioms,
@@ -8,9 +9,12 @@
     semicolon_in_expressions_from_macros
 )]
 
+mod range_edit;
+
 use std::{cmp::Ordering, num::NonZeroU32, ops::Range};
 
 use pgls_text_size::{TextRange, TextSize};
+pub use range_edit::RangeEdit;
 pub use similar::ChangeTag;
 use similar::{TextDiff, utils::TextDiffRemapper};
 

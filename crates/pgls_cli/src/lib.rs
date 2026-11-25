@@ -5,7 +5,7 @@
 //! execute the traversal of directory and files, based on the command that was passed.
 
 use cli_options::CliOptions;
-use commands::FileTargets;
+use commands::Targets;
 use commands::check::{self, CheckArgs};
 use commands::format::{self, FormatArgs};
 use pgls_configuration::PartialConfiguration;
@@ -31,7 +31,6 @@ mod commands;
 mod diagnostics;
 mod execute;
 mod logging;
-mod metrics;
 mod panic;
 mod reporter;
 mod service;
@@ -49,21 +48,21 @@ pub(crate) fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
 
 use crate::cli_options::ColorsArg;
 pub use crate::commands::{PgLSCommand, pg_l_s_command};
-pub use crate::logging::{LoggingLevel, setup_cli_subscriber};
+pub(crate) use crate::logging::{LoggingLevel, setup_cli_subscriber};
 use crate::reporter::Report;
 pub use diagnostics::CliDiagnostic;
-pub use execute::{ExecutionConfig, ExecutionMode, VcsTargeting};
+pub(crate) use execute::{ExecutionConfig, ExecutionMode};
 pub use panic::setup_panic_handler;
-pub use pgls_workspace::configuration::VcsIntegration;
-pub use reporter::{ReportConfig, Reporter, TraversalData};
-pub use service::{SocketTransport, open_transport};
+pub(crate) use pgls_workspace::configuration::VcsIntegration;
+use reporter::Reporter;
+pub use service::open_transport;
 
 pub(crate) use pgls_env::VERSION;
 
 /// Global context for an execution of the CLI
 pub struct CliSession<'app> {
     /// Instance of [App] used by this run of the CLI
-    pub app: App<'app>,
+    app: App<'app>,
     /// The project of the working directory, once [CliSession::configure_workspace] registered it
     project_key: ProjectKey,
     /// The files settings of the root configuration, which decide the folders to search for
@@ -75,11 +74,8 @@ pub struct CliSession<'app> {
 }
 
 impl<'app> CliSession<'app> {
-    pub fn new(
-        workspace: &'app dyn Workspace,
-        console: &'app mut dyn Console,
-    ) -> Result<Self, CliDiagnostic> {
-        Ok(Self {
+    pub fn new(workspace: &'app dyn Workspace, console: &'app mut dyn Console) -> Self {
+        Self {
             app: App::new(
                 DynRef::Owned(Box::<OsFileSystem>::default()),
                 console,
@@ -88,17 +84,12 @@ impl<'app> CliSession<'app> {
             project_key: ProjectKey::default(),
             root_files: None,
             layers: ConfigurationLayers::default(),
-        })
+        }
     }
 
     /// Main function to run the CLI
     pub fn run(self, command: PgLSCommand) -> Result<(), CliDiagnostic> {
-        let has_metrics = command.has_metrics();
-        if has_metrics {
-            crate::metrics::init_metrics();
-        }
-
-        let result = match command {
+        match command {
             PgLSCommand::Version(_) => commands::version::version(self),
             PgLSCommand::Dblint {
                 cli_options,
@@ -121,13 +112,7 @@ impl<'app> CliSession<'app> {
                 &cli_options,
                 CheckArgs {
                     configuration,
-                    targets: FileTargets {
-                        paths,
-                        stdin_file_path,
-                        staged,
-                        changed,
-                        since,
-                    },
+                    targets: Targets::new(paths, stdin_file_path, staged, changed, since)?,
                     fix,
                     unsafe_,
                     only,
@@ -148,13 +133,7 @@ impl<'app> CliSession<'app> {
                 &cli_options,
                 FormatArgs {
                     configuration,
-                    targets: FileTargets {
-                        paths,
-                        stdin_file_path,
-                        staged,
-                        changed,
-                        since,
-                    },
+                    targets: Targets::new(paths, stdin_file_path, staged, changed, since)?,
                     write,
                 },
             ),
@@ -166,34 +145,30 @@ impl<'app> CliSession<'app> {
                 let input = commands::parse::read_input(path.as_deref())?;
                 commands::parse::run_parse(&input, path.as_deref())
             }
-            PgLSCommand::Clean => commands::clean::clean(self),
+            PgLSCommand::Clean => commands::clean::clean(),
             PgLSCommand::Start {
                 config_path,
-                log_path,
-                log_prefix_name,
-            } => commands::daemon::start(self, config_path, Some(log_path), Some(log_prefix_name)),
+                log_options,
+            } => commands::daemon::start(self, config_path, &log_options),
             PgLSCommand::Stop => commands::daemon::stop(self),
             PgLSCommand::Init => commands::init::init(self),
             PgLSCommand::LspProxy {
                 config_path,
-                log_path,
-                log_prefix_name,
+                log_options,
                 ..
-            } => commands::daemon::lsp_proxy(config_path, Some(log_path), Some(log_prefix_name)),
+            } => commands::daemon::lsp_proxy(config_path, &log_options),
             PgLSCommand::RunServer {
                 stop_on_disconnect,
                 config_path,
-                log_path,
-                log_prefix_name,
+                log_options,
                 log_level,
                 log_kind,
             } => commands::daemon::run_server(
                 stop_on_disconnect,
                 config_path,
-                Some(log_path),
-                Some(log_prefix_name),
+                &log_options,
                 log_level,
-                Some(log_kind),
+                &log_kind,
             ),
             PgLSCommand::PrintSocket => commands::daemon::print_socket(),
             PgLSCommand::SchemaExport {
@@ -201,7 +176,7 @@ impl<'app> CliSession<'app> {
                 output,
             } => {
                 let connection_string = connection_string
-                    .or_else(|| std::env::var("DATABASE_URL").ok())
+                    .or_else(|| pgls_env::DATABASE_URL.value())
                     .ok_or_else(|| {
                         CliDiagnostic::missing_argument(
                             "--connection-string (or DATABASE_URL env var)",
@@ -214,24 +189,18 @@ impl<'app> CliSession<'app> {
                     output.as_deref(),
                 ))
             }
-        };
-
-        if has_metrics {
-            metrics::print_metrics();
         }
-
-        result
     }
 
-    pub fn fs(&self) -> &DynRef<'app, dyn FileSystem> {
+    pub(crate) fn fs(&self) -> &DynRef<'app, dyn FileSystem> {
         &self.app.fs
     }
 
-    pub fn console(&mut self) -> &mut (dyn Console + 'app) {
+    pub(crate) fn console(&mut self) -> &mut (dyn Console + 'app) {
         &mut *self.app.console
     }
 
-    pub fn workspace(&self) -> &(dyn Workspace + 'app) {
+    pub(crate) fn workspace(&self) -> &(dyn Workspace + 'app) {
         &*self.app.workspace
     }
 
@@ -240,7 +209,7 @@ impl<'app> CliSession<'app> {
     /// and the VCS integration. Relative paths in the configuration file are relative to its
     /// folder, and relative paths in the arguments to the working directory. Returns the
     /// configuration as applied.
-    pub fn configure_workspace(
+    pub(crate) fn configure_workspace(
         &mut self,
         cli_options: &CliOptions,
         mut cli_configuration: Option<PartialConfiguration>,
@@ -320,7 +289,7 @@ impl<'app> CliSession<'app> {
     }
 
     /// The project of the working directory, which every file of this run belongs to
-    pub fn project_key(&self) -> ProjectKey {
+    pub(crate) fn project_key(&self) -> ProjectKey {
         self.project_key
     }
 
@@ -331,7 +300,7 @@ impl<'app> CliSession<'app> {
     ///
     /// The folder of a configuration file that can't be loaded uses the default settings. Returns
     /// an error diagnostic for each such file.
-    pub fn apply_nested_configurations(
+    pub(crate) fn apply_nested_configurations(
         &mut self,
         cli_options: &CliOptions,
         paths: &[OsString],
@@ -380,7 +349,7 @@ impl<'app> CliSession<'app> {
         Ok(errors)
     }
 
-    pub fn report(
+    pub(crate) fn report(
         &mut self,
         command_name: &str,
         cli_options: &CliOptions,

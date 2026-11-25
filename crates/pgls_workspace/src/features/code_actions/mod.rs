@@ -6,7 +6,8 @@ use crate::workspace::StatementId;
 use pgls_analyse::Applicability;
 use pgls_configuration::RuleSelector;
 use pgls_fs::PgLSPath;
-use pgls_text_size::{TextRange, TextSize};
+pub use pgls_text_edit::RangeEdit;
+use pgls_text_size::TextSize;
 use std::borrow::Cow;
 
 pub(crate) mod execute_statement;
@@ -62,14 +63,7 @@ pub struct EditAction {
     pub category: ActionCategory,
     pub applicability: Applicability,
     /// Non-overlapping edits of the file, ordered by their position.
-    pub edits: Vec<TextEdit>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-pub struct TextEdit {
-    pub range: TextRange,
-    pub new_text: String,
+    pub edits: Vec<RangeEdit>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

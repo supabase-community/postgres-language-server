@@ -295,6 +295,7 @@ mod tests {
         tokens
             .replace_keeping_comments(RuleFix::new(""), range, "text")
             .apply(sql)
+            .unwrap()
     }
 
     #[test]

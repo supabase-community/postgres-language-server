@@ -13,7 +13,7 @@ use pgls_text_size::{TextRange, TextSize};
 use tracing::warn;
 
 use super::{
-    ActionCategory, CodeAction, CodeActionKind, EditAction, SUPPRESSION_ACTION_CATEGORY, TextEdit,
+    ActionCategory, CodeAction, CodeActionKind, EditAction, RangeEdit, SUPPRESSION_ACTION_CATEGORY,
 };
 use crate::workspace::Document;
 
@@ -69,7 +69,7 @@ pub(crate) fn lint_actions<'a>(
         // A fix must not write the placeholder of an `ENVSUB` expansion into the file, and must
         // keep the SQL valid.
         if let Some(fix) = diagnostic.get_fix().filter(|fix| {
-            !fix.edits
+            !fix.edits()
                 .iter()
                 .any(|edit| doc.touches_placeholder(edit.range))
                 && fix.keeps_sql_valid(doc.text(), doc.statement_ranges())
@@ -80,14 +80,7 @@ pub(crate) fn lint_actions<'a>(
                     rule: Some(category.to_string()),
                     category: ActionCategory::QuickFix(Cow::Owned(rule.to_string())),
                     applicability: fix.applicability,
-                    edits: fix
-                        .edits
-                        .iter()
-                        .map(|edit| TextEdit {
-                            range: edit.range,
-                            new_text: edit.replacement.clone(),
-                        })
-                        .collect(),
+                    edits: fix.edits().to_vec(),
                 }),
                 disabled_reason: None,
             });
@@ -147,7 +140,7 @@ pub(crate) fn fix_file(
             .iter()
             .filter_map(LinterDiagnostic::get_fix)
             .filter(|fix| {
-                !fix.edits
+                !fix.edits()
                     .iter()
                     .any(|edit| doc.touches_placeholder(edit.range))
                     && fix.keeps_sql_valid(doc.text(), doc.statement_ranges())
@@ -163,26 +156,32 @@ pub(crate) fn fix_file(
         fixes.sort_by_key(|fix| fix.range().map(TextRange::start));
 
         // Applies the fixes that don't touch the text of an earlier fix in this pass.
-        let mut combined = RuleFix::new("");
+        let mut edits: Vec<RangeEdit> = Vec::new();
         let mut applied = 0;
         for fix in fixes {
             let Some(range) = fix.range() else {
                 continue;
             };
-            if combined
-                .range()
-                .is_some_and(|previous| range.start() <= previous.end())
+            if edits
+                .last()
+                .is_some_and(|previous| range.start() <= previous.range.end())
             {
                 continue;
             }
-            combined.edits.extend(fix.edits.iter().cloned());
+            edits.extend_from_slice(fix.edits());
             applied += 1;
         }
         if applied == 0 {
             converged = true;
             break;
         }
-        let code = combined.apply(doc.get_document_content());
+        let Some(code) = RangeEdit::apply_all(doc.get_document_content(), 0.into(), &edits) else {
+            warn!(
+                ?path,
+                "The edits of the fixes don't fit the file, none applied"
+            );
+            break;
+        };
         fixes_applied += applied;
         // `pass` is at most `MAX_PASSES`.
         let version = i32::try_from(pass).unwrap_or(i32::MAX);
@@ -205,7 +204,7 @@ pub(crate) fn fix_file(
 /// The edit that adds `-- pgls-ignore <rule>` on its own line above the statement at `offset`,
 /// with the statement's indentation and the file's line ending. Above the statement, the comment
 /// suppresses the rule for all of the statement, including the bodies of its functions.
-fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
+fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> RangeEdit {
     let content = doc.get_document_content();
     let start = doc
         .statement_ranges()
@@ -223,7 +222,7 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         .take_while(|c| *c == ' ' || *c == '\t')
         .collect();
     if before.trim().is_empty() {
-        TextEdit {
+        RangeEdit {
             range: TextRange::empty(start - TextSize::of(before)),
             new_text: format!("{indentation}-- pgls-ignore {rule}{line_ending}"),
         }
@@ -231,7 +230,7 @@ fn suppression_edit(doc: &Document, offset: TextSize, rule: &str) -> TextEdit {
         // The statement starts after another one on the same line, so it moves to a line of its
         // own.
         let previous_end = start - (TextSize::of(before) - TextSize::of(before.trim_end()));
-        TextEdit {
+        RangeEdit {
             range: TextRange::new(previous_end, start),
             new_text: format!(
                 "{line_ending}{indentation}-- pgls-ignore {rule}{line_ending}{indentation}"

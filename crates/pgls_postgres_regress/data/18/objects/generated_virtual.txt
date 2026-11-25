@@ -1,0 +1,50 @@
+function	f	generated_virtual_tests	gtest_trigger_func	1
+function	f	generated_virtual_tests	gtest_trigger_func3	1
+function	f	generated_virtual_tests	gtest_trigger_func4	1
+function	f	generated_virtual_tests	gtestdomain1multirange	3
+function	f	generated_virtual_tests	gtestdomain1range	2
+relation	p	generated_virtual_tests	gtest_parent	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	p	generated_virtual_tests	gtestnn_parent	f1	pg_catalog.int4	f2	pg_catalog.int8	f3	pg_catalog.int8	c	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest0	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest10	a	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest10a	a	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest1_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest1_y	a	pg_catalog.int4	b	pg_catalog.int4	x	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest20	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest20a	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.float8
+relation	r	generated_virtual_tests	gtest20b	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest20c	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest21a	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest21b	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest22c	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest23a	x	pg_catalog.int4	y	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest24at	a	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest24ata	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest25	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4	x	pg_catalog.int4	d	pg_catalog.float8	y	pg_catalog.float8
+relation	r	generated_virtual_tests	gtest26	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest27	a	pg_catalog.int8	b	pg_catalog.int8	x	pg_catalog.int8
+relation	r	generated_virtual_tests	gtest28a	b	pg_catalog.int4	c	pg_catalog.int4	x	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest28b	b	pg_catalog.int4	c	pg_catalog.int4	x	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest29	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest3	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest30	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest30_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtest3a	a	pg_catalog.text	b	pg_catalog.text
+relation	r	generated_virtual_tests	gtest_child	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	generated_virtual_tests	gtest_child2	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	generated_virtual_tests	gtest_child3	f1	pg_catalog.date	f2	pg_catalog.int8	f3	pg_catalog.int8
+relation	r	generated_virtual_tests	gtest_tableoid	a	pg_catalog.int4	b	pg_catalog.bool	c	pg_catalog.regclass
+relation	r	generated_virtual_tests	gtestnn_child	f1	pg_catalog.int4	f2	pg_catalog.int8	f3	pg_catalog.int8	c	pg_catalog.int4
+relation	r	generated_virtual_tests	gtestnn_childdef	f1	pg_catalog.int4	f2	pg_catalog.int8	f3	pg_catalog.int8	c	pg_catalog.int4
+relation	r	generated_virtual_tests	gtestx	a	pg_catalog.int4	b	pg_catalog.int4	x	pg_catalog.int4
+relation	r	generated_virtual_tests	gtestxx_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtestxx_3	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	generated_virtual_tests	gtestxx_4	b	pg_catalog.int4	a	pg_catalog.int4
+relation	r	generated_virtual_tests	gtesty	x	pg_catalog.int4	b	pg_catalog.int4
+schema	generated_virtual_tests
+schema	public
+type	d	generated_virtual_tests	gtestdomain1
+type	d	generated_virtual_tests	gtestdomainnn
+type	r	generated_virtual_tests	gtestdomain1range

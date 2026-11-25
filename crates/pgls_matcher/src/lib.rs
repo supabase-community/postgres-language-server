@@ -3,9 +3,7 @@ pub mod pattern;
 pub use pattern::{MatchOptions, Pattern, PatternError};
 use pgls_console::markup;
 use pgls_diagnostics::Diagnostic;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{PoisonError, RwLock};
 
 /// A data structure to use when there's need to match a string or a path a against
 /// a unix shell style patterns
@@ -14,8 +12,6 @@ pub struct Matcher {
     root: Option<PathBuf>,
     patterns: Vec<Pattern>,
     options: MatchOptions,
-    /// Whether the string was already checked
-    already_checked: RwLock<HashMap<String, bool>>,
 }
 
 impl Matcher {
@@ -27,7 +23,6 @@ impl Matcher {
             root: None,
             patterns: Vec::new(),
             options,
-            already_checked: RwLock::new(HashMap::default()),
         }
     }
 
@@ -36,7 +31,6 @@ impl Matcher {
             root: None,
             patterns: Vec::new(),
             options: MatchOptions::default(),
-            already_checked: RwLock::new(HashMap::default()),
         }
     }
 
@@ -56,22 +50,9 @@ impl Matcher {
     /// It returns [true] if at least one pattern matches the whole string: `public.users` doesn't
     /// match `public.users_archive`.
     pub fn matches(&self, source: &str) -> bool {
-        // A panic while the lock was held leaves the map consistent: each entry is a finished result.
-        let mut already_ignored = self
-            .already_checked
-            .write()
-            .unwrap_or_else(PoisonError::into_inner);
-        if let Some(matches) = already_ignored.get(source) {
-            return *matches;
-        }
-        for pattern in &self.patterns {
-            if pattern.matches_with(source, self.options) {
-                already_ignored.insert(source.to_string(), true);
-                return true;
-            }
-        }
-        already_ignored.insert(source.to_string(), false);
-        false
+        self.patterns
+            .iter()
+            .any(|pattern| pattern.matches_with(source, self.options))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -82,52 +63,21 @@ impl Matcher {
     ///
     /// It returns [true] if there's at least one match
     pub fn matches_path(&self, source: &Path) -> bool {
-        if self.is_empty() {
-            return false;
-        }
-        let mut already_checked = self
-            .already_checked
-            .write()
-            .unwrap_or_else(PoisonError::into_inner);
-        let source_as_string = source.to_str();
-        if let Some(source_as_string) = source_as_string
-            && let Some(matches) = already_checked.get(source_as_string)
-        {
-            return *matches;
-        }
-        let matches = self.run_match(source);
-
-        if let Some(source_as_string) = source_as_string {
-            already_checked.insert(source_as_string.to_string(), matches);
-        }
-
-        matches
-    }
-
-    fn run_match(&self, source: &Path) -> bool {
-        for pattern in &self.patterns {
-            let matches = if pattern.matches_path_with(source, self.options) {
-                true
-            } else {
-                // Here we cover cases where the user specifies single files inside the patterns.
-                // The pattern library doesn't support single files, we here we just do a check
-                // on contains
-                //
-                // Given the pattern `out`:
-                // - `out/index.html` -> matches
-                // - `out/` -> matches
-                // - `layout.tsx` -> does not match
-                // - `routes/foo.ts` -> does not match
-                source
+        self.patterns.iter().any(|pattern| {
+            // Here we cover cases where the user specifies single files inside the patterns.
+            // The pattern library doesn't support single files, we here we just do a check
+            // on contains
+            //
+            // Given the pattern `out`:
+            // - `out/index.html` -> matches
+            // - `out/` -> matches
+            // - `layout.tsx` -> does not match
+            // - `routes/foo.ts` -> does not match
+            pattern.matches_path_with(source, self.options)
+                || source
                     .ancestors()
                     .any(|ancestor| ancestor.ends_with(pattern.as_str()))
-            };
-
-            if matches {
-                return true;
-            }
-        }
-        false
+        })
     }
 }
 

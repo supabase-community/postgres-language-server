@@ -147,7 +147,7 @@ fn truncate(sql: &str, truncated: &str, occurrences: &[Occurrence]) -> Option<Ru
         };
         fix = fix.replace(occurrence.range, replacement);
     }
-    (!fix.edits.is_empty()).then_some(fix)
+    (!fix.edits().is_empty()).then_some(fix)
 }
 
 /// Whether `sql` may contain an identifier longer than 63 bytes, without scanning it. A name is

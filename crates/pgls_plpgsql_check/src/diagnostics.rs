@@ -3,9 +3,9 @@ use std::io;
 use pgls_console::markup;
 use pgls_diagnostics::{Advices, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit};
 use pgls_line_index::offset_of_char_position;
-use pgls_text_size::{TextRange, TextSize};
+use pgls_text_size::TextRange;
 
-use crate::{PlpgSqlCheckIssue, PlpgSqlCheckResult, Query};
+use crate::{FunctionBody, PlPgSqlCheckIssue, PlPgSqlCheckResult, Query};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct ByteOffset(usize);
@@ -134,7 +134,7 @@ fn non_empty(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|value| !value.is_empty())
 }
 
-fn message_with_detail_and_hint(issue: &PlpgSqlCheckIssue) -> MessageAndDescription {
+fn message_with_detail_and_hint(issue: &PlPgSqlCheckIssue) -> MessageAndDescription {
     let mut message = MessageAndDescription::from(issue.message.clone());
     let mut description = issue.message.clone();
 
@@ -152,40 +152,42 @@ fn message_with_detail_and_hint(issue: &PlpgSqlCheckIssue) -> MessageAndDescript
     message
 }
 
-/// Convert plpgsql_check results into diagnostics with optional relation info for triggers
-pub(crate) fn create_diagnostics_from_check_result(
-    result: &PlpgSqlCheckResult,
-    fn_body: &str,
-    offset: usize,
-    relation: Option<String>,
-) -> Vec<PlPgSqlCheckDiagnostic> {
-    result
-        .issues
-        .iter()
-        .map(|issue| {
-            let severity = match issue.level.as_str() {
-                "error" => Severity::Error,
-                "warning" => Severity::Warning,
-                "notice" => Severity::Hint,
-                _ => Severity::Information,
-            };
+impl PlPgSqlCheckResult {
+    /// The diagnostics of the issues in the function with the body `body`, with spans in the
+    /// statement. `relation` is the table that a trigger function was checked for.
+    pub(crate) fn diagnostics(
+        &self,
+        body: &FunctionBody<'_>,
+        relation: Option<String>,
+    ) -> Vec<PlPgSqlCheckDiagnostic> {
+        self.issues
+            .iter()
+            .map(|issue| {
+                let severity = match issue.level.as_str() {
+                    "error" => Severity::Error,
+                    "warning" => Severity::Warning,
+                    "notice" => Severity::Hint,
+                    _ => Severity::Information,
+                };
 
-            PlPgSqlCheckDiagnostic {
-                message: message_with_detail_and_hint(issue),
-                severity,
-                span: resolve_span(issue, fn_body, offset),
-                advices: PlPgSqlCheckAdvices {
-                    code: issue.sql_state.clone(),
-                    detail: issue.detail.clone(),
-                    hint: issue.hint.clone(),
-                    relation: relation.clone(),
-                },
-            }
-        })
-        .collect()
+                PlPgSqlCheckDiagnostic {
+                    message: message_with_detail_and_hint(issue),
+                    severity,
+                    span: resolve_span(issue, body.value).map(|span| body.to_statement(span)),
+                    advices: PlPgSqlCheckAdvices {
+                        code: issue.sql_state.clone(),
+                        detail: issue.detail.clone(),
+                        hint: issue.hint.clone(),
+                        relation: relation.clone(),
+                    },
+                }
+            })
+            .collect()
+    }
 }
 
-fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Option<TextRange> {
+/// The range of the issue in `fn_body`, the value of the function's body.
+fn resolve_span(issue: &PlPgSqlCheckIssue, fn_body: &str) -> Option<TextRange> {
     let stmt = match issue.statement.as_ref() {
         Some(s) => s,
         None => {
@@ -197,17 +199,15 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
                 .and_then(|q| query_token_range(q, fn_body, 0))
                 .filter(|range| !range.is_empty())
             {
-                return Some(range + TextSize::from(offset as u32));
+                return Some(range);
             }
 
             let leading_whitespace = fn_body.len() - fn_body.trim_ascii_start().len();
             let trailing_whitespace = fn_body.len() - fn_body.trim_ascii_end().len();
 
             return Some(TextRange::new(
-                (offset + leading_whitespace).try_into().ok()?,
-                (offset + fn_body.len() - trailing_whitespace)
-                    .try_into()
-                    .ok()?,
+                leading_whitespace.try_into().ok()?,
+                (fn_body.len() - trailing_whitespace).try_into().ok()?,
             ));
         }
     };
@@ -236,8 +236,7 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
     let stmt_offset = line_offset + start;
 
     if let Some(q) = &issue.query {
-        return query_token_range(q, fn_body, stmt_offset)
-            .map(|range| range + TextSize::from(offset as u32));
+        return query_token_range(q, fn_body, stmt_offset);
     }
 
     // if no query is present, the end range covers
@@ -251,8 +250,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
         if let Some(then_pos) = find_ascii_case_insensitive(remaining, "THEN") {
             let end = then_pos + "THEN".len();
             return Some(TextRange::new(
-                ((offset + stmt_offset) as u32).into(),
-                ((offset + stmt_offset + end) as u32).into(),
+                stmt_offset.try_into().ok()?,
+                (stmt_offset + end).try_into().ok()?,
             ));
         }
     }
@@ -272,8 +271,8 @@ fn resolve_span(issue: &PlpgSqlCheckIssue, fn_body: &str, offset: usize) -> Opti
         .unwrap_or(remaining.len());
 
     Some(TextRange::new(
-        ((offset + stmt_offset) as u32).into(),
-        ((offset + stmt_offset + end) as u32).into(),
+        stmt_offset.try_into().ok()?,
+        (stmt_offset + end).try_into().ok()?,
     ))
 }
 
@@ -323,13 +322,26 @@ fn query_token_range(q: &Query, fn_body: &str, search_from: usize) -> Option<Tex
 
 #[cfg(test)]
 mod tests {
+    use pgls_query_ext::function_body::OffsetMap;
+    use pgls_text_size::TextSize;
+
     use super::*;
     use crate::{Query, Statement};
 
+    impl<'a> FunctionBody<'a> {
+        /// A body at `offset` in the statement, written as its value is, like a `$$` body.
+        fn at(value: &'a str, offset: u32) -> Self {
+            Self {
+                value,
+                range: TextRange::at(offset.into(), TextSize::of(value)),
+                offsets: OffsetMap::default(),
+            }
+        }
+    }
+
     fn diagnostic_span_for(fn_body: &str, query_text: &str, position: usize) -> String {
-        let result = PlpgSqlCheckResult {
-            function: "public.f1".to_string(),
-            issues: vec![PlpgSqlCheckIssue {
+        let result = PlPgSqlCheckResult {
+            issues: vec![PlPgSqlCheckIssue {
                 level: "error".to_string(),
                 message: "column does not exist".to_string(),
                 detail: None,
@@ -346,16 +358,15 @@ mod tests {
             }],
         };
 
-        let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
+        let diagnostics = result.diagnostics(&FunctionBody::at(fn_body, 0), None);
         let span = diagnostics[0].span.expect("expected diagnostic span");
         fn_body[usize::from(span.start())..usize::from(span.end())].to_string()
     }
 
     /// The text of the span of an issue of a statement without a query.
     fn statement_span_for(fn_body: &str, line_number: &str, text: &str) -> Option<String> {
-        let result = PlpgSqlCheckResult {
-            function: "public.f1".to_string(),
-            issues: vec![PlpgSqlCheckIssue {
+        let result = PlPgSqlCheckResult {
+            issues: vec![PlPgSqlCheckIssue {
                 level: "warning".to_string(),
                 message: "unused variable".to_string(),
                 detail: None,
@@ -368,7 +379,7 @@ mod tests {
                 sql_state: None,
             }],
         };
-        let diagnostics = create_diagnostics_from_check_result(&result, fn_body, 0, None);
+        let diagnostics = result.diagnostics(&FunctionBody::at(fn_body, 0), None);
         let span = diagnostics[0].span?;
         Some(fn_body[usize::from(span.start())..usize::from(span.end())].to_string())
     }
@@ -403,9 +414,8 @@ mod tests {
     #[test]
     fn a_statement_without_a_valid_line_number_has_no_span() {
         for line_number in ["", "unknown", "0"] {
-            let result = PlpgSqlCheckResult {
-                function: "public.f1".to_string(),
-                issues: vec![PlpgSqlCheckIssue {
+            let result = PlPgSqlCheckResult {
+                issues: vec![PlPgSqlCheckIssue {
                     level: "error".to_string(),
                     message: "column does not exist".to_string(),
                     detail: None,
@@ -420,7 +430,7 @@ mod tests {
             };
 
             let diagnostics =
-                create_diagnostics_from_check_result(&result, "BEGIN\n  RETURN 1;\nEND", 0, None);
+                result.diagnostics(&FunctionBody::at("BEGIN\n  RETURN 1;\nEND", 0), None);
 
             assert_eq!(diagnostics.len(), 1);
             assert_eq!(diagnostics[0].span, None, "line number {line_number:?}");
@@ -464,9 +474,8 @@ mod tests {
     }
 
     fn compile_error_span_for(fn_body: &str, position: usize) -> String {
-        let result = PlpgSqlCheckResult {
-            function: "public.f1".to_string(),
-            issues: vec![PlpgSqlCheckIssue {
+        let result = PlPgSqlCheckResult {
+            issues: vec![PlPgSqlCheckIssue {
                 level: "error".to_string(),
                 message: "syntax error".to_string(),
                 detail: None,
@@ -481,7 +490,7 @@ mod tests {
         };
 
         let offset = 10;
-        let diagnostics = create_diagnostics_from_check_result(&result, fn_body, offset, None);
+        let diagnostics = result.diagnostics(&FunctionBody::at(fn_body, 10), None);
         let span = diagnostics[0].span.expect("expected diagnostic span");
         fn_body[usize::from(span.start()) - offset..usize::from(span.end()) - offset].to_string()
     }
@@ -518,9 +527,8 @@ mod tests {
 
     #[test]
     fn omits_empty_detail_and_hint_from_description() {
-        let result = PlpgSqlCheckResult {
-            function: "public.f1".to_string(),
-            issues: vec![PlpgSqlCheckIssue {
+        let result = PlPgSqlCheckResult {
+            issues: vec![PlPgSqlCheckIssue {
                 level: "error".to_string(),
                 message: "column does not exist".to_string(),
                 detail: Some("   ".to_string()),
@@ -531,7 +539,7 @@ mod tests {
             }],
         };
 
-        let diagnostics = create_diagnostics_from_check_result(&result, "BEGIN\nEND", 0, None);
+        let diagnostics = result.diagnostics(&FunctionBody::at("BEGIN\nEND", 0), None);
 
         assert_eq!(
             pgls_diagnostics::PrintDescription(&diagnostics[0]).to_string(),
@@ -541,9 +549,8 @@ mod tests {
 
     #[test]
     fn includes_detail_and_hint_in_description_and_advices() {
-        let result = PlpgSqlCheckResult {
-            function: "public.f1".to_string(),
-            issues: vec![PlpgSqlCheckIssue {
+        let result = PlPgSqlCheckResult {
+            issues: vec![PlPgSqlCheckIssue {
                 level: "error".to_string(),
                 message: "cannot cast type text to uuid".to_string(),
                 detail: Some("Input has to match the uuid format.".to_string()),
@@ -554,7 +561,7 @@ mod tests {
             }],
         };
 
-        let diagnostics = create_diagnostics_from_check_result(&result, "BEGIN\nEND", 0, None);
+        let diagnostics = result.diagnostics(&FunctionBody::at("BEGIN\nEND", 0), None);
         let diagnostic = &diagnostics[0];
 
         assert_eq!(

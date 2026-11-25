@@ -6,6 +6,7 @@ mod identifiers;
 mod nodes;
 mod normalize;
 mod renderer;
+mod source;
 
 use std::collections::HashSet;
 
@@ -20,6 +21,7 @@ pub use crate::config::{
     LogicalOperatorPlacement,
 };
 pub use crate::normalize::normalize_ast;
+use crate::source::Source;
 
 /// Error type for formatting operations.
 #[derive(Debug, Error)]
@@ -84,24 +86,26 @@ pub fn format_statement(
 ) -> Result<FormatResult, FormatError> {
     const MAX_COMMENT_FORMAT_PASSES: usize = 6;
 
-    let attached = comments::attach_comments(sql, ast);
+    let source = Source::scan(sql);
+    let attached = comments::attach_comments(&source, ast);
     let has_comments = !attached.leading_by_location.is_empty()
         || !attached.trailing_by_location.is_empty()
         || !attached.before_case_end_by_location.is_empty()
         || !attached.unattached.is_empty();
 
     if !has_comments {
-        return format_statement_once(ast, sql, config, attached);
+        return format_statement_once(ast, &source, config, attached);
     }
 
-    let mut current_sql = sql.to_string();
+    let mut source = source;
+    let mut current_sql: String;
     let mut current_ast = ast.clone();
     let mut attached = attached;
-    let mut seen_layouts = HashSet::from([current_sql.clone()]);
+    let mut seen_layouts = HashSet::from([sql.to_string()]);
 
     for pass in 1..=MAX_COMMENT_FORMAT_PASSES {
-        let result = format_statement_once(&current_ast, &current_sql, config, attached)?;
-        if result.formatted == current_sql {
+        let result = format_statement_once(&current_ast, &source, config, attached)?;
+        if result.formatted == source.sql {
             return Ok(result);
         }
 
@@ -110,6 +114,7 @@ pub fn format_statement(
         }
 
         current_sql = result.formatted;
+        source = Source::scan(&current_sql);
         current_ast = pgls_query::parse(&current_sql)
             .map_err(|e| FormatError::ParseError {
                 message: format!("Formatted SQL failed to parse: {e}"),
@@ -118,7 +123,7 @@ pub fn format_statement(
             .ok_or_else(|| FormatError::ParseError {
                 message: "No root node in parsed output (expected single statement)".to_string(),
             })?;
-        attached = comments::attach_comments(&current_sql, &current_ast);
+        attached = comments::attach_comments(&source, &current_ast);
     }
 
     Err(FormatError::NonIdempotentCommentLayout {
@@ -129,7 +134,7 @@ pub fn format_statement(
 /// Formats a statement exactly once, including semantic verification.
 fn format_statement_once(
     ast: &NodeEnum,
-    sql: &str,
+    source: &Source<'_>,
     config: &FormatConfig,
     attached: AttachedComments,
 ) -> Result<FormatResult, FormatError> {
@@ -145,7 +150,7 @@ fn format_statement_once(
         ast,
         config,
         attached,
-        identifiers::truncated_identifiers(sql),
+        identifiers::truncated_identifiers(source),
     )?;
 
     // BETA: Verify formatted output parses to semantically equivalent AST

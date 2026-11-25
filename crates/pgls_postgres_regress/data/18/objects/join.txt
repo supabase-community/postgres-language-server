@@ -1,0 +1,12 @@
+relation	r	public	emp1	id	pg_catalog.int4	code	pg_catalog.int4
+relation	r	public	fkest	x	pg_catalog.int4	x10	pg_catalog.int4	x10b	pg_catalog.int4	x100	pg_catalog.int4
+relation	r	public	fkest1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	sj	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4
+relation	r	public	sj_t1	id	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	sj_t2	id	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	sj_t3	id	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	sj_t4	id	pg_catalog.int4	a	pg_catalog.int4
+relation	r	public	sk	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	sl	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4	bool_col	pg_catalog.bool
+schema	public
+type	c	public	mycomptype

@@ -5,12 +5,16 @@ use diagnostics::create_type_error;
 use itertools::Itertools;
 use pgls_catalog::NamePosition;
 use pgls_text_size::TextSize;
-use sqlx::postgres::PgDatabaseError;
+use sqlx::pool::PoolConnection;
 pub use sqlx::postgres::PgSeverity;
+use sqlx::postgres::{PgDatabaseError, Postgres};
 use sqlx::{Executor, PgPool};
 
 #[derive(Debug)]
 pub struct TypecheckParams<'a> {
+    /// A pool without a statement cache (`statement_cache_capacity(0)`). The check prepares the
+    /// statement on one of its connections and resets the session with `discard all`
+    /// afterwards, which also drops what a statement cache would hold.
     pub conn: &'a PgPool,
     pub sql: &'a str,
     pub ast: &'a pgls_query::NodeEnum,
@@ -49,25 +53,30 @@ pub async fn check_sql(
         }
     };
 
-    let mut conn = params.conn.acquire().await?;
+    let mut session = CheckSession {
+        conn: params.conn.acquire().await?,
+        reset: false,
+    };
+    let conn = &mut session.conn;
 
-    // Postgres caches prepared statements within the current DB session (connection).
-    // This can cause issues if the underlying table schema changes while statements
-    // are cached. By closing the connection after use, we ensure a fresh state for
-    // each typecheck operation.
-    conn.close_on_drop();
-
-    if !params.search_path.is_empty() {
-        let schemas = params
-            .search_path
-            .iter()
-            .map(|schema| pgls_catalog::quote_identifier(schema, NamePosition::ColId))
-            .join(", ");
-        conn.execute(&*format!("SET search_path TO {schemas};"))
-            .await?;
+    let res = async {
+        if !params.search_path.is_empty() {
+            let schemas = params
+                .search_path
+                .iter()
+                .map(|schema| pgls_catalog::quote_identifier(schema, NamePosition::ColId))
+                .join(", ");
+            conn.execute(&*format!("SET search_path TO {schemas};"))
+                .await?;
+        }
+        conn.prepare(sql).await.map(drop)
     }
+    .await;
 
-    let res = conn.prepare(sql).await;
+    // The prepared statement and the search path stay in the session. `discard all` resets it,
+    // so that the connection goes back to the pool as it came, and a prepared statement can't
+    // outlive a change of the schema (#291).
+    session.reset = conn.execute(sqlx::raw_sql("discard all")).await.is_ok();
 
     match res {
         Ok(_) => Ok(None),
@@ -79,6 +88,23 @@ pub async fn check_sql(
             Ok(Some(create_type_error(pg_err, tree, sql, source_offset)))
         }
         Err(err) => Err(err),
+    }
+}
+
+/// The connection of one check. It goes back to the pool only once its session was reset, and
+/// closes otherwise: a check that is dropped half-way, e.g. because another check of the same
+/// pull failed, would return it with the check's search path set, and the next statement a user
+/// executes on the pool would run with it.
+struct CheckSession {
+    conn: PoolConnection<Postgres>,
+    reset: bool,
+}
+
+impl Drop for CheckSession {
+    fn drop(&mut self) {
+        if !self.reset {
+            self.conn.close_on_drop();
+        }
     }
 }
 
@@ -130,13 +156,26 @@ fn typecheck_target<'a>(
     }
 }
 
+/// The first `create_query` node in pre-order. A loop with a cursor, since tree-sitter doesn't
+/// bound the depth of its trees.
 fn find_create_query(node: tree_sitter::Node<'_>) -> Option<tree_sitter::Node<'_>> {
-    if node.kind() == "create_query" {
-        return Some(node);
-    }
-
     let mut cursor = node.walk();
-    node.children(&mut cursor).find_map(find_create_query)
+    loop {
+        if cursor.node().kind() == "create_query" {
+            return Some(cursor.node());
+        }
+
+        if cursor.goto_first_child() {
+            continue;
+        }
+
+        // The cursor can't leave `node`: it starts there, and `goto_parent` fails at its start.
+        while !cursor.goto_next_sibling() {
+            if !cursor.goto_parent() {
+                return None;
+            }
+        }
+    }
 }
 
 #[cfg(test)]

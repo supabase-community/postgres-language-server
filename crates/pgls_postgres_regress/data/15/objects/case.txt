@@ -1,0 +1,9 @@
+function	f	public	ad_eq	1
+function	f	public	inline_eq	1
+function	f	public	make_ad	1
+function	f	public	vol	1
+function	f	public	volfoo	1
+schema	public
+type	d	public	arrdomain
+type	d	public	foodomain
+type	e	public	casetestenum

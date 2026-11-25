@@ -1,0 +1,5 @@
+function	f	public	execute_text_query_heap	1
+function	f	public	execute_text_query_index	1
+function	f	public	explain_query_json	1
+relation	r	public	gin_test_tbl	i	pg_catalog._int4
+schema	public
