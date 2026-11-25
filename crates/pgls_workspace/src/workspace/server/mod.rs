@@ -865,7 +865,10 @@ impl Workspace for WorkspaceServer {
         let (settings_version, migration_tool, max_size) =
             self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
-        documents.entry(params.path.clone()).or_insert_with(|| {
+        // A client that opens the file again without closing it sends its current text, which
+        // replaces the document and its caches like a close and an open.
+        documents.insert(
+            params.path.clone(),
             Arc::new(Document::open(
                 params.project_key,
                 settings_version,
@@ -873,8 +876,9 @@ impl Workspace for WorkspaceServer {
                 max_size,
                 params.content,
                 params.version,
-            ))
-        });
+            )),
+        );
+        self.document_caches.remove(&params.path);
 
         Ok(())
     }
