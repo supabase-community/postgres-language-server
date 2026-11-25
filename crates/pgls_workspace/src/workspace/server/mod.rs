@@ -27,9 +27,7 @@ use document::Document;
 use document_cache::{CacheBudget, CacheKey};
 pub use document_cache::{DOCUMENT_CACHE_ENTRIES_MAX, DocumentCacheStats};
 #[cfg(feature = "db")]
-use document_cache::{
-    DatabaseDiagnostics, DatabaseResults, DatabaseRun, StatementDatabaseResult, TypecheckInput,
-};
+use document_cache::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 #[cfg(feature = "db")]
 use futures::{StreamExt, TryStreamExt, stream};
 use parking_lot::{Mutex, RwLock};
@@ -462,9 +460,10 @@ impl WorkspaceServer {
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
     /// unchanged database objects, and plpgsql_check. With [`DatabaseChecks::Run`] it checks the
-    /// statements whose last result isn't still valid (see [`DatabaseResults::still_valid`]) and
-    /// keeps the results of each one in the document, with [`DatabaseChecks::Reuse`] it returns
-    /// what the last run found for the statements that are unchanged since.
+    /// statements, reusing plpgsql_check's diagnostics of the functions it checked with the same
+    /// snapshot and settings, and keeps the results of each one in the document, with
+    /// [`DatabaseChecks::Reuse`] it returns what the last run found for the statements that are
+    /// unchanged since.
     ///
     /// `None` if `should_stop` stopped it: no new check starts then, and the ones that run
     /// finish, since a query can't be stopped half way through.
@@ -502,45 +501,38 @@ impl WorkspaceServer {
         let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
             let snapshot = self.snapshot.load(pool)?;
-            let run = DatabaseRun::new(&snapshot, typecheck_enabled, plpgsql_check.clone());
+            // plpgsql_check finds the same for an unchanged function with the same snapshot and
+            // settings, so the last run's diagnostics are reused.
+            let reuse_plpgsql_check = doc
+                .cache()
+                .database_results()
+                .checked_with
+                .as_ref()
+                .is_some_and(|(checked, settings)| {
+                    std::sync::Weak::ptr_eq(checked, &Arc::downgrade(&snapshot))
+                        && *settings == plpgsql_check
+                });
             // Only top-level statements are checked: the static typecheck rules cover the
             // statements of SQL function bodies, whose parameters they resolve.
-            let statements = doc
+            let input = doc
                 .statements()
                 .filter(|stmt| !stmt.id().is_child() && !analysis.is_skipped(stmt.range().start()))
                 .map(|stmt| {
-                    let typecheck = analysis
-                        .statement(stmt.range())
-                        .filter(|statement| typecheck_enabled && statement.database_only)
-                        .map(|statement| TypecheckInput {
-                            search_path: statement.search_path.clone(),
-                            duplicate_assignments_reported: statement.reported_database_error,
-                        });
-                    (stmt, typecheck)
+                    let range = stmt.range();
+                    let ast = doc.parse(&stmt).as_ref().as_ref().ok().cloned();
+                    let cst = doc.tree(&stmt);
+                    let statement = analysis.statement(range).cloned();
+                    let reused = reuse_plpgsql_check
+                        .then(|| {
+                            doc.cache()
+                                .database_results()
+                                .plpgsql_check_diagnostics(stmt.id())
+                        })
+                        .flatten();
+                    (stmt.id().clone(), range, ast, cst, statement, reused)
                 })
                 .collect::<Vec<_>>();
-            // The statements whose last result is still valid aren't checked again.
-            let still_valid = doc.cache().database_results().still_valid(
-                &run,
-                statements
-                    .iter()
-                    .map(|(stmt, typecheck)| (stmt.id(), typecheck.as_ref())),
-            );
-            let input = statements
-                .into_iter()
-                .zip(still_valid)
-                .map(|((stmt, typecheck), last)| {
-                    let check = match last {
-                        Some(result) => DatabaseCheck::Reuse(result),
-                        None => DatabaseCheck::Run {
-                            ast: doc.parse(&stmt).as_ref().as_ref().ok().cloned(),
-                            tree: doc.tree(&stmt),
-                            typecheck,
-                        },
-                    };
-                    (stmt.id().clone(), stmt.range(), check)
-                })
-                .collect::<Vec<_>>();
+            let checked_with = (Arc::downgrade(&snapshot), plpgsql_check.clone());
             let pool = pool.clone();
             let path = path.clone();
             let stopped = Arc::clone(&stop);
@@ -552,23 +544,13 @@ impl WorkspaceServer {
                             .take_while(move |_| {
                                 std::future::ready(!stopped.load(Ordering::Relaxed))
                             })
-                            .map(|(id, range, check)| {
+                            .map(|(id, range, ast, cst, statement, reused)| {
                                 let pool = pool.clone();
                                 let path = path.clone();
                                 let snapshot = Arc::clone(&snapshot);
                                 let plpgsql_check = plpgsql_check.clone();
 
                                 async move {
-                                    let (ast, cst, typecheck) = match check {
-                                        DatabaseCheck::Reuse(result) => {
-                                            return Ok((id, range, result));
-                                        }
-                                        DatabaseCheck::Run {
-                                            ast,
-                                            tree,
-                                            typecheck,
-                                        } => (ast, tree, typecheck),
-                                    };
                                     let mut result = StatementDatabaseResult::default();
                                     // The spans are relative to the statement, see `DatabaseResults`.
                                     let relative = |span: TextRange| {
@@ -580,7 +562,10 @@ impl WorkspaceServer {
                                         return Ok((id, range, result));
                                     };
 
-                                    if let Some(typecheck) = &typecheck {
+                                    let statement = statement.filter(|statement| {
+                                        typecheck_enabled && statement.database_only
+                                    });
+                                    if let Some(statement) = statement {
                                         let conversion = convert_to_positional_params_with_metadata(
                                             id.content(),
                                         );
@@ -592,9 +577,9 @@ impl WorkspaceServer {
                                                     sql: conversion.sql.as_str(),
                                                     ast: &ast,
                                                     tree: &cst,
-                                                    search_path: &typecheck.search_path,
-                                                    duplicate_assignments_reported: typecheck
-                                                        .duplicate_assignments_reported,
+                                                    search_path: &statement.search_path,
+                                                    duplicate_assignments_reported: statement
+                                                        .reported_database_error,
                                                 })
                                                 .await?;
 
@@ -613,9 +598,10 @@ impl WorkspaceServer {
                                         }
                                     }
 
-                                    result.typecheck = typecheck;
-
-                                    if plpgsql_check.enabled {
+                                    if let Some(diagnostics) = reused {
+                                        result.plpgsql_checked = true;
+                                        result.diagnostics.extend(diagnostics);
+                                    } else if plpgsql_check.enabled {
                                         let checked = pgls_plpgsql_check::check(
                                             pgls_plpgsql_check::PlPgSqlCheckParams {
                                                 conn: &pool,
@@ -648,7 +634,6 @@ impl WorkspaceServer {
                                             Ok(None) => Vec::new(),
                                             Err(err) => {
                                                 debug!("plpgsql_check failed: {err}");
-                                                result.failed = true;
                                                 Vec::new()
                                             }
                                         };
@@ -675,7 +660,7 @@ impl WorkspaceServer {
                     &stop,
                     should_stop,
                 )?
-                .map(|checked| (run, checked))
+                .map(|checked| (checked_with, checked))
                 .map_err(WorkspaceError::from)
         });
         if stop.load(Ordering::Relaxed) {
@@ -688,10 +673,11 @@ impl WorkspaceServer {
                     .set_database_results(DatabaseResults::default(), doc.generation());
                 Ok(Some(DatabaseDiagnostics::default()))
             }
-            Some(Ok((run, checked))) => {
+            Some(Ok((checked_with, checked))) => {
                 // The diagnostics of this pull are the results it keeps, at the statements'
                 // places.
-                let results = DatabaseResults::new(run, checked);
+                let mut results = DatabaseResults::new(checked);
+                results.checked_with = Some(checked_with);
                 let diagnostics = results.reuse(checked_statements());
                 doc.cache().set_database_results(results, doc.generation());
                 Ok(Some(diagnostics))
@@ -737,20 +723,6 @@ impl DatabaseCheckSettings {
             plpgsql_check: settings.plpgsql_check.clone(),
         }
     }
-}
-
-/// What a run of the database checks does with a statement, see
-/// [`WorkspaceServer::database_diagnostics`].
-#[cfg(feature = "db")]
-enum DatabaseCheck {
-    /// The statement's last result is still valid, see [`DatabaseResults::still_valid`].
-    Reuse(StatementDatabaseResult),
-    /// The statement is checked.
-    Run {
-        ast: Option<Arc<pgls_query::NodeEnum>>,
-        tree: Arc<tree_sitter::Tree>,
-        typecheck: Option<TypecheckInput>,
-    },
 }
 
 /// Check whether a file is a migration up to `migrations.after`. Both versions are read in the

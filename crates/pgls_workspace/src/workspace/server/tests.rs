@@ -1391,108 +1391,6 @@ async fn test_database_checks_reuse_the_results_of_unchanged_statements(test_db:
     );
 }
 
-/// A run checks only the statements whose result can differ from the last run's: the ones whose
-/// text changed, and all of them once the snapshot is loaded again. An unchanged function isn't
-/// checked again, so a change of the database shows only in the functions that are checked.
-#[cfg(all(test, not(target_os = "windows")))]
-#[pgls_test_utils::db_test]
-async fn test_database_checks_run_only_the_statements_that_can_change(test_db: PgPool) {
-    test_db
-        .execute(
-            "CREATE EXTENSION IF NOT EXISTS plpgsql_check;
-            CREATE TABLE public.rerun_items (id int);",
-        )
-        .await
-        .expect("setup sql failed");
-    let mut conf = PartialConfiguration::init();
-    conf.merge_with(PartialConfiguration {
-        db: Some(PartialDatabaseConfiguration {
-            database: Some(
-                test_db
-                    .connect_options()
-                    .get_database()
-                    .unwrap()
-                    .to_string(),
-            ),
-            ..Default::default()
-        }),
-        ..Default::default()
-    });
-    let (workspace, project_key) =
-        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
-    let path = PgLSPath::new("test.sql");
-    let function = |name: &str, comment: &str| {
-        format!(
-            "CREATE FUNCTION public.{name}() RETURNS int LANGUAGE plpgsql AS $$\nBEGIN\n    RETURN (SELECT id FROM public.rerun_items LIMIT 1);{comment}\nEND;\n$$;\n"
-        )
-    };
-    // The functions that a run reports plpgsql_check diagnostics for, if `g` starts at `g`.
-    let reported = |g: usize| {
-        let mut functions = workspace
-            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
-                project_key,
-                path: path.clone(),
-                categories: RuleCategories::all(),
-                max_diagnostics: 100,
-                only: vec![],
-                skip: vec![],
-                database_checks: DatabaseChecks::Run,
-            })
-            .expect("Unable to pull diagnostics")
-            .diagnostics
-            .iter()
-            .filter(|d| d.category().is_some_and(|c| c.name() == "plpgsql_check"))
-            .map(|d| {
-                if usize::from(d.location().span.expect("a span").start()) < g {
-                    "f"
-                } else {
-                    "g"
-                }
-            })
-            .collect::<Vec<_>>();
-        functions.dedup();
-        functions
-    };
-
-    let f = function("f", "");
-    workspace
-        .open_file(OpenFileParams {
-            project_key,
-            path: path.clone(),
-            content: format!("{f}{}", function("g", "")),
-            version: 1,
-        })
-        .expect("Unable to open test file");
-    assert_eq!(reported(f.len()), Vec::<&str>::new());
-
-    test_db
-        .execute("ALTER TABLE public.rerun_items RENAME COLUMN id TO other_id;")
-        .await
-        .expect("Unable to rename the column");
-    // Nothing changed since the last run.
-    assert_eq!(reported(f.len()), Vec::<&str>::new());
-
-    // Only the edited function is checked again.
-    let f = function("f", " -- edited");
-    workspace
-        .change_file(crate::workspace::ChangeFileParams {
-            project_key,
-            path: path.clone(),
-            version: 2,
-            content: format!("{f}{}", function("g", "")),
-        })
-        .expect("Unable to change the file");
-    assert_eq!(reported(f.len()), ["f"]);
-
-    // A new snapshot checks every function again.
-    workspace
-        .invalidate_schema_cache(crate::workspace::InvalidateSchemaCacheParams {
-            scope: crate::workspace::SchemaCacheScope::All,
-        })
-        .expect("Unable to invalidate the schema cache");
-    assert_eq!(reported(f.len()), ["f", "g"]);
-}
-
 /// A database-check suppression of a statement that changed since the last run of the checks
 /// isn't reported as unused while the statement has no result: whether it's used is only known
 /// at the next run. A lint suppression is still reported.
@@ -7976,7 +7874,7 @@ async fn test_settings_update_during_database_checks_does_not_block_requests(tes
         .open_file(OpenFileParams {
             project_key,
             path: path.clone(),
-            content: "select 1;".into(),
+            content: content.into(),
             version: 1,
         })
         .expect("Unable to open test file");
@@ -7998,15 +7896,6 @@ async fn test_settings_update_during_database_checks_does_not_block_requests(tes
     // Loads the snapshot, so that the next pull only waits for the typecheck of the statement.
     let slow_pull = pull.clone();
     pull().expect("Unable to pull diagnostics");
-    // A statement that the last run didn't check, which the next one typechecks.
-    workspace
-        .change_file(crate::workspace::ChangeFileParams {
-            project_key,
-            path: path.clone(),
-            version: 2,
-            content: content.into(),
-        })
-        .expect("Unable to change the file");
 
     // The typecheck of the statement waits for this lock.
     let mut lock = test_db.begin().await.expect("Unable to begin");
@@ -8062,7 +7951,7 @@ async fn test_settings_update_during_database_checks_does_not_block_requests(tes
                 .change_file(crate::workspace::ChangeFileParams {
                     project_key,
                     path: path.clone(),
-                    version: 3,
+                    version: 2,
                     content: format!("{content}\n"),
                 })
                 .expect("Unable to change the file");

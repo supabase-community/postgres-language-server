@@ -32,9 +32,7 @@ mod walk;
 
 pub(crate) use budget::CacheBudget;
 #[cfg(feature = "db")]
-pub(crate) use database::{
-    DatabaseDiagnostics, DatabaseResults, DatabaseRun, StatementDatabaseResult, TypecheckInput,
-};
+pub(crate) use database::{DatabaseDiagnostics, DatabaseResults, StatementDatabaseResult};
 pub(crate) use parse::ParseResult;
 use parse::{ParseEntries, PgQueryStore};
 use tree::TreeSitterStore;
@@ -182,9 +180,8 @@ pub(crate) struct DocumentCache {
     analysing: Mutex<()>,
     /// What the last run of the database checks found per statement. It isn't a cache: only
     /// checking against the database again recomputes it, so [`Self::clear`] keeps it. An edit
-    /// drops the results of the statements it removed, and the next run replaces all of it,
-    /// checking again only the statements whose result can differ, see
-    /// [`DatabaseResults::still_valid`].
+    /// drops the results of the statements it removed, and the next run replaces all of it. The
+    /// language server runs the checks again whenever the settings or the database schema change.
     #[cfg(feature = "db")]
     database: Mutex<DatabaseResults>,
 }
