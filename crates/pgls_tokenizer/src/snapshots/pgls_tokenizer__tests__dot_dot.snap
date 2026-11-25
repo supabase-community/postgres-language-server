@@ -1,0 +1,16 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: "lex(\"deep... 1..10 ..5\")"
+---
+[
+    "deep" @ Ident,
+    ".." @ DotDot,
+    "." @ Dot,
+    " " @ Space,
+    "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    ".." @ DotDot,
+    "10" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    " " @ Space,
+    ".." @ DotDot,
+    "5" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+]
