@@ -5,16 +5,14 @@ use super::prelude::*;
 pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
     e.group_start();
 
-    // Emit namespace if present (namespace.name syntax)
+    // `namespace.name`: both parts are any word, keywords included.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L6529
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L3082
     if !n.defnamespace.is_empty() {
-        emit_identifier_maybe_quoted(e, &n.defnamespace);
+        emit_label_maybe_quoted(e, &n.defnamespace);
         e.token(TokenKind::DOT);
     }
-
-    // Emit the option name - use maybe_quoted to preserve case for mixed-case identifiers
-    if !n.defname.is_empty() {
-        emit_identifier_maybe_quoted(e, &n.defname);
-    }
+    emit_label_maybe_quoted(e, &n.defname);
 
     // Emit the option value if present
     if let Some(ref arg) = n.arg {

@@ -229,14 +229,16 @@ fn emit_function_name(e: &mut EventEmitter, funcname: &[Node]) {
         }
 
         let is_unqualified = parts.len() == 1;
+        if !is_unqualified && index == parts.len() - 1 {
+            // A qualified function name can be any word, keywords included.
+            emit_label_maybe_quoted(e, part);
+            continue;
+        }
         let needs_quoting = if is_unqualified {
             // `overlay(a, b)` and `substring(a, b)` have a plain-call form in the grammar that
             // keeps the name unqualified.
             needs_quoting_as_function_or_type_name(part)
                 && !matches!(*part, "overlay" | "substring")
-        } else if index == parts.len() - 1 {
-            // A qualified function name can be any word, keywords included.
-            needs_quoting_as_label(part)
         } else {
             needs_quoting_as_column_name(part)
         };

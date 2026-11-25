@@ -830,14 +830,14 @@ order by nspname,
 create text search parser alt_ts_prs1 (
   start = prsd_start,
   gettoken = prsd_nexttoken,
-  "end" = prsd_end,
+  end = prsd_end,
   lextypes = prsd_lextype
 );
 
 create text search parser alt_ts_prs2 (
   start = prsd_start,
   gettoken = prsd_nexttoken,
-  "end" = prsd_end,
+  end = prsd_end,
   lextypes = prsd_lextype
 );
 
@@ -850,7 +850,7 @@ alter text search parser alt_ts_prs2 set schema alt_nsp2;
 create text search parser alt_ts_prs2 (
   start = prsd_start,
   gettoken = prsd_nexttoken,
-  "end" = prsd_end,
+  end = prsd_end,
   lextypes = prsd_lextype
 );
 
