@@ -1604,6 +1604,23 @@ VALUES
         }
     }
 
+    /// `*` at the end of an operator like `~*` needs an operand too. A `*` on its own can end a
+    /// statement.
+    #[test]
+    fn statement_keywords_after_an_operator_ending_in_star() {
+        for sql in [
+            "select~*alter from t;",
+            "select 'a' !~* update from t;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from("select t.*\nalter table t add c int;")
+            .expect_statements(vec!["select t.*", "alter table t add c int;"])
+            .assert_no_errors();
+    }
+
     /// If the statement doesn't parse with the keyword, but a statement starting at the keyword
     /// does, a `;` is missing before it.
     #[test]
