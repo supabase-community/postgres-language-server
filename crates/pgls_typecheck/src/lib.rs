@@ -156,13 +156,26 @@ fn typecheck_target<'a>(
     }
 }
 
+/// The first `create_query` node in pre-order. A loop with a cursor, since tree-sitter doesn't
+/// bound the depth of its trees.
 fn find_create_query(node: tree_sitter::Node<'_>) -> Option<tree_sitter::Node<'_>> {
-    if node.kind() == "create_query" {
-        return Some(node);
-    }
-
     let mut cursor = node.walk();
-    node.children(&mut cursor).find_map(find_create_query)
+    loop {
+        if cursor.node().kind() == "create_query" {
+            return Some(cursor.node());
+        }
+
+        if cursor.goto_first_child() {
+            continue;
+        }
+
+        // The cursor can't leave `node`: it starts there, and `goto_parent` fails at its start.
+        while !cursor.goto_next_sibling() {
+            if !cursor.goto_parent() {
+                return None;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
