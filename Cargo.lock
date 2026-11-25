@@ -2903,6 +2903,7 @@ dependencies = [
  "pgls_text_size",
  "pgls_treesitter_grammar",
  "sqlx",
+ "tokio",
  "tree-sitter",
 ]
 
