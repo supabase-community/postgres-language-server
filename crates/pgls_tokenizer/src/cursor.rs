@@ -8,6 +8,7 @@ use std::str::Chars;
 /// - <https://github.com/rust-lang/rust/blob/d1b7355d3d7b4ead564dbecb1d240fcc74fff21b/compiler/rustc_lexer/src/cursor.rs>
 /// - <https://github.com/astral-sh/ruff/blob/d1079680bb29f6b797b5df15327195300f635f3c/crates/ruff_python_parser/src/lexer/cursor.rs>
 ///
+#[derive(Clone)]
 pub(crate) struct Cursor<'a> {
     /// Iterator over chars. Slightly faster than a &str.
     chars: Chars<'a>,
