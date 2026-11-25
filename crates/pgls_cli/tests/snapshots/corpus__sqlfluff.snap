@@ -71,7 +71,7 @@ check:
   lint/transactionNesting: 24
   syntax: 47
 format:
-  format: 2308
+  format: 2302
   syntax: 46
 reformatted files: 226
   test/fixtures/dialects/postgres/alter_aggregate.sql
