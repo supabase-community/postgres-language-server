@@ -632,7 +632,7 @@ mod tests {
             result
                 .map(|(diagnostics, _)| diagnostics.len())
                 .map_err(|err| err.to_string()),
-            Err("skipped: ArgumentTypeReference".to_string())
+            Err("skipped".to_string())
         );
     }
 
