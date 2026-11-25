@@ -15,7 +15,7 @@
 
 mod common;
 
-use common::{MIB, count_native_allocations, current, mib, peak, reset_peak};
+use common::{MIB, count_native_allocations, current, mib, migration_file, peak, reset_peak};
 use pgls_analyse::RuleCategories;
 use pgls_configuration::{Merge, PartialConfiguration, database::PartialDatabaseConfiguration};
 use pgls_fs::PgLSPath;
@@ -38,20 +38,6 @@ use sqlx::PgPool;
 
 fn env(name: &str, default: usize) -> usize {
     std::env::var(name).map_or(default, |value| value.parse().unwrap())
-}
-
-/// A migration-style file: per group a table, an index, a SQL function and a query.
-fn migration_file(document: usize, groups: usize) -> String {
-    let mut sql = String::new();
-    for i in 0..groups {
-        sql.push_str(&format!(
-            "create table t{document}_{i} (id bigint primary key, name text not null, status text, created_at timestamp default now());\n\
-             create index t{document}_{i}_name_idx on t{document}_{i} (name);\n\
-             create function f{document}_{i}(a int, b text) returns int language sql stable as $$ select count(*)::int from t{document}_{i} where id = a and name = b $$;\n\
-             select t.id, t.name, f{document}_{i}(1, 'x') from t{document}_{i} t where t.status = 'active' order by t.created_at;\n"
-        ));
-    }
-    sql
 }
 
 fn workspace(test_db: &PgPool) -> (Box<dyn Workspace>, ProjectKey) {
