@@ -355,3 +355,32 @@ fn identifiers_longer_than_postgres_keeps_are_written_in_full() {
         format!("create table {table} (id int);")
     );
 }
+
+/// Found by the `formatter_roundtrip` fuzz target. A reserved keyword as an operator's argument is
+/// a string, the same as a string constant; quoted as an identifier, it would be a type name.
+#[test]
+fn a_keyword_in_an_operator_definition_stays_a_string() {
+    assert_eq!(
+        format("CREATE OPERATOR @+@ ( leftarg =union, rightarg = int4, procedure = int4pl );"),
+        "create operator @+@ (leftarg = 'union', rightarg = int4, procedure = int4pl);"
+    );
+}
+
+/// Found by the `formatter_roundtrip` fuzz target. A language written as a string constant is
+/// kept whole; written as an identifier, the parser would cut it down to 63 bytes.
+#[test]
+fn a_language_longer_than_an_identifier_stays_a_string() {
+    let language = format!("sql{}", "Q".repeat(70));
+    assert_eq!(
+        format(&format!(
+            "CREATE FUNCTION f(int) RETURNS bool LANGUAGE '{language}' AS 'SELECT $1 < 0';"
+        )),
+        format!(
+            "create function f(int)\nreturns bool\nlanguage '{language}'\nas $$SELECT $1 < 0$$;"
+        )
+    );
+    assert_eq!(
+        format(&format!("DO LANGUAGE '{language}' 'select 1'")),
+        format!("do\nlanguage '{language}'\n$$select 1$$;")
+    );
+}

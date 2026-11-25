@@ -6,7 +6,7 @@ use crate::source::Source;
 
 /// The longest identifier Postgres keeps, `NAMEDATALEN - 1` bytes. The parser cuts longer ones
 /// down, so the AST only has their first 63 bytes.
-const MAX_IDENTIFIER_LENGTH: usize = 63;
+pub(crate) const MAX_IDENTIFIER_LENGTH: usize = 63;
 
 /// The identifiers of the statement that are longer than Postgres keeps, by the name the parser cut them
 /// down to.
