@@ -52,27 +52,27 @@ check:
   lint/renamingColumn: 8
   lint/renamingObject: 36
   lint/renamingTable: 1
-  lint/requireColumnQualifier: 553
+  lint/requireColumnQualifier: 557
   lint/requireConcurrentDetachPartition: 1
   lint/requireConcurrentIndexCreation: 20
   lint/requireConcurrentIndexDeletion: 10
   lint/requireConcurrentRefreshMatview: 3
   lint/requireConcurrentReindex: 7
   lint/requireEnumValueOrdering: 1
-  lint/requireFunctionSchema: 156
+  lint/requireFunctionSchema: 157
   lint/requireIdleInTransactionTimeout: 232
   lint/requireOperatorSchema: 465
-  lint/requireRelationSchema: 611
+  lint/requireRelationSchema: 613
   lint/requireSeparateConstraintValidation: 1
   lint/requireStatementTimeout: 232
   lint/requireTableSchema: 299
   lint/requireTypeSchema: 463
   lint/runningStatementWhileHoldingAccessExclusive: 187
   lint/transactionNesting: 24
-  syntax: 47
+  syntax: 43
 format:
-  format: 2308
-  syntax: 46
+  format: 2313
+  syntax: 42
 reformatted files: 226
   test/fixtures/dialects/postgres/alter_aggregate.sql
   test/fixtures/dialects/postgres/alter_collation.sql
