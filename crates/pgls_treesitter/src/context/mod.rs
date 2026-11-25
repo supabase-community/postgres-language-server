@@ -68,6 +68,8 @@ struct TableAlias {
     table: String,
     /// The alias as written, like `"U"`.
     text: String,
+    /// Where the alias starts in the statement.
+    start: usize,
 }
 
 /// `old` or `new` in a RETURNING list, or the name that `RETURNING WITH (...)` gives them. Since
@@ -270,6 +272,7 @@ impl<'a> TreesitterContext<'a> {
                                 .map(identifier_name),
                             table: identifier_name(&table_alias_match.get_table(sql)),
                             text,
+                            start: table_alias_match.alias.start_byte(),
                         },
                     );
                 }
@@ -376,7 +379,7 @@ impl<'a> TreesitterContext<'a> {
          * If there is no node under the users position, however, the cursor won't enter the next level – it
          * will stay on the Program node.
          *
-         * This might lead to an unexpected context or infinite recursion.
+         * This might lead to an unexpected context or an endless loop.
          *
          * We'll therefore adjust the cursor position such that it meets the last node of the AST.
          * `select * from use           {}` becomes `select * from use{}`.
@@ -404,90 +407,104 @@ impl<'a> TreesitterContext<'a> {
         self.gather_context_from_node(cursor, current_node);
     }
 
+    /// Walks down from `cursor`'s node to the node under the cursor, one tree level per iteration.
+    /// A loop, since tree-sitter doesn't bound the depth of its trees: `a + a + ... + a` nests one
+    /// level per operator.
     fn gather_context_from_node(
         &mut self,
         mut cursor: tree_sitter::TreeCursor<'a>,
-        parent_node: tree_sitter::Node<'a>,
+        mut parent_node: tree_sitter::Node<'a>,
     ) {
-        let current_node = cursor.node();
+        loop {
+            let current_node = cursor.node();
 
-        let parent_node_kind = parent_node.kind();
-        let current_node_kind = current_node.kind();
+            let parent_node_kind = parent_node.kind();
+            let current_node_kind = current_node.kind();
 
-        if ["comment", "marginalia"].contains(&current_node_kind) {
-            return;
-        }
-
-        self.scope_tracker.register(current_node, self.position);
-
-        // prevent infinite recursion – this can happen with ERROR nodes
-        if current_node_kind == parent_node_kind && ["ERROR", "program"].contains(&parent_node_kind)
-        {
-            self.node_under_cursor = current_node;
-            return;
-        }
-
-        match current_node_kind {
-            "statement" | "subquery" => {
-                self.wrapping_statement_range = Some(current_node.range());
+            if ["comment", "marginalia"].contains(&current_node_kind) {
+                return;
             }
 
-            "object_reference" | "column_reference" => {
-                if let Some((head, middle, _)) = parts_of_reference_query(current_node, self.text) {
-                    self.identifier_qualifiers = (
-                        head.and_then(|h| self.get_ts_node_content(&h)),
-                        middle.and_then(|m| self.get_ts_node_content(&m)),
-                    );
+            self.scope_tracker.register(current_node, self.position);
+
+            // prevent an endless loop – this can happen with ERROR nodes
+            if current_node_kind == parent_node_kind
+                && ["ERROR", "program"].contains(&parent_node_kind)
+            {
+                self.node_under_cursor = current_node;
+                return;
+            }
+
+            match current_node_kind {
+                "statement" | "subquery" => {
+                    self.wrapping_statement_range = Some(current_node.range());
                 }
-            }
 
-            "table_reference" | "type_reference" | "function_reference" => {
-                if let Some((_, middle, _)) = parts_of_reference_query(current_node, self.text) {
-                    self.identifier_qualifiers =
-                        (None, middle.and_then(|m| self.get_ts_node_content(&m)));
+                "object_reference" | "column_reference" => {
+                    if let Some((head, middle, _)) =
+                        parts_of_reference_query(current_node, self.text)
+                    {
+                        self.identifier_qualifiers = (
+                            head.and_then(|h| self.get_ts_node_content(&h)),
+                            middle.and_then(|m| self.get_ts_node_content(&m)),
+                        );
+                    }
                 }
-            }
 
-            "relation" | "binary_expression" | "assignment" => {
-                self.wrapping_node_kind = current_node_kind.try_into().ok();
-            }
+                "table_reference" | "type_reference" | "function_reference" => {
+                    if let Some((_, middle, _)) = parts_of_reference_query(current_node, self.text)
+                    {
+                        self.identifier_qualifiers =
+                            (None, middle.and_then(|m| self.get_ts_node_content(&m)));
+                    }
+                }
 
-            "list" => {
-                if current_node
-                    .prev_sibling()
-                    .is_none_or(|n| n.kind() != "keyword_values")
-                {
+                "relation" | "binary_expression" | "assignment" => {
                     self.wrapping_node_kind = current_node_kind.try_into().ok();
                 }
-            }
 
-            "insert_columns" => {
-                self.wrapping_node_kind = Some(WrappingNode::List);
-            }
+                "list" => {
+                    if current_node
+                        .prev_sibling()
+                        .is_none_or(|n| n.kind() != "keyword_values")
+                    {
+                        self.wrapping_node_kind = current_node_kind.try_into().ok();
+                    }
+                }
 
-            "invocation" => self.is_invocation = true,
+                "insert_columns" => {
+                    self.wrapping_node_kind = Some(WrappingNode::List);
+                }
 
-            _ => {
-                if let Some(clause_type) =
-                    self.get_wrapping_clause_from_current_node(current_node, &mut cursor)
-                {
-                    self.wrapping_clause_type = Some(clause_type);
+                "invocation" => self.is_invocation = true,
+
+                _ => {
+                    if let Some(clause_type) =
+                        self.get_wrapping_clause_from_current_node(current_node, &mut cursor)
+                    {
+                        self.wrapping_clause_type = Some(clause_type);
+                    }
                 }
             }
-        }
 
-        // We have arrived at the leaf node. That's also the case if no child contains the
-        // cursor, like the word that tree-sitter skipped in the `ERROR` of `analyze (word)`.
-        if current_node
-            .first_child_for_byte(self.position)
-            .is_none_or(|child| child.start_byte() > self.position)
-        {
-            self.node_under_cursor = current_node;
-            return;
-        }
+            // We have arrived at the leaf node. That's also the case if no child contains the
+            // cursor, like the word that tree-sitter skipped in the `ERROR` of `analyze (word)`.
+            if current_node
+                .first_child_for_byte(self.position)
+                .is_none_or(|child| child.start_byte() > self.position)
+            {
+                self.node_under_cursor = current_node;
+                return;
+            }
 
-        cursor.goto_first_child_for_byte(self.position);
-        self.gather_context_from_node(cursor, current_node);
+            // The check above found that child, so the cursor goes one level down, and the loop
+            // ends at the latest at a leaf.
+            if cursor.goto_first_child_for_byte(self.position).is_none() {
+                self.node_under_cursor = current_node;
+                return;
+            }
+            parent_node = current_node;
+        }
     }
 
     fn get_wrapping_clause_from_current_node(
@@ -682,16 +699,17 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// An alias of the table `schema_name.table_name`, as written. An alias of a table that
-    /// names the same schema comes first, then one of a table without a schema.
+    /// names the same schema comes first, then one of a table without a schema. Of several, like
+    /// in a self-join, the first in the statement.
     pub fn get_used_alias_for_table(&self, schema_name: &str, table_name: &str) -> Option<String> {
-        let aliases = || {
+        let first = |schema: Option<&str>| {
             self.mentioned_table_aliases
                 .values()
-                .filter(|alias| alias.table == table_name)
+                .filter(|alias| alias.table == table_name && alias.schema.as_deref() == schema)
+                .min_by_key(|alias| alias.start)
         };
-        aliases()
-            .find(|alias| alias.schema.as_deref() == Some(schema_name))
-            .or_else(|| aliases().find(|alias| alias.schema.is_none()))
+        first(Some(schema_name))
+            .or_else(|| first(None))
             .map(|alias| alias.text.clone())
     }
 
@@ -872,6 +890,26 @@ mod tests {
                 ctx.get_mentioned_table_for_alias(alias).map(String::as_str),
                 Some(expected_table),
                 "{query}"
+            );
+        }
+    }
+
+    #[test]
+    fn uses_the_first_alias_of_a_table() {
+        let query = "select 1 from emp e1 join emp e2 on true join emp e3 on e2.id = e3.id;";
+        let tree = get_tree(query);
+        // The aliases are kept in a hash map, so that a choice by its order would differ between
+        // contexts.
+        for _ in 0..16 {
+            let ctx = TreesitterContext::new(TreeSitterContextParams {
+                position: 0.into(),
+                text: query,
+                tree: &tree,
+                server_version_num: None,
+            });
+            assert_eq!(
+                ctx.get_used_alias_for_table("public", "emp").as_deref(),
+                Some("e1")
             );
         }
     }
@@ -1213,5 +1251,36 @@ mod tests {
                 ctx.position, case.context_position
             );
         }
+    }
+
+    #[test]
+    fn walks_a_deep_tree_on_a_small_stack() {
+        // `a + a + ... + a` nests one level per operator, and the last `a` is the deepest node.
+        let operands_max = 10_000;
+        let query = format!("select {}a from t;", "a + ".repeat(operands_max));
+        let last_operand = query.len() - " from t;".len() - 1;
+
+        // Far less stack than a walk with one frame per tree level needs.
+        let stack_bytes = 256 * 1024;
+        let kind = std::thread::Builder::new()
+            .stack_size(stack_bytes)
+            .spawn(move || {
+                let tree = get_tree(&query);
+                let params = TreeSitterContextParams {
+                    position: u32::try_from(last_operand)
+                        .expect("the query is short")
+                        .into(),
+                    text: &query,
+                    tree: &tree,
+                    server_version_num: None,
+                };
+
+                TreesitterContext::new(params).node_under_cursor.kind()
+            })
+            .expect("spawns the test thread")
+            .join()
+            .expect("walks the tree without overflowing the stack");
+
+        assert_eq!(kind, "any_identifier");
     }
 }

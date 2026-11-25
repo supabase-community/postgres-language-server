@@ -498,7 +498,8 @@ impl WorkspaceServer {
         }
 
         let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
+        let db_diagnostics = self.connection.with_pools(&settings.db, |pools| {
+            let pool = &pools.pool;
             let snapshot = self.snapshot.load(pool)?;
             // Only top-level statements are checked: the static typecheck rules cover the
             // statements of SQL function bodies, whose parameters they resolve.
@@ -515,6 +516,9 @@ impl WorkspaceServer {
                 .filter(|(id, ..)| !id.is_child())
                 .collect::<Vec<_>>();
             let pool = pool.clone();
+            // The typecheck prepares statements, which the statement pool's connections don't
+            // cache, see `TypecheckParams::conn`.
+            let statement_pool = pools.statement_pool.clone();
             let path = path.clone();
             let stopped = Arc::clone(&stop);
 
@@ -527,6 +531,7 @@ impl WorkspaceServer {
                             })
                             .map(|(id, range, ast, cst, statement)| {
                                 let pool = pool.clone();
+                                let statement_pool = statement_pool.clone();
                                 let path = path.clone();
                                 let snapshot = Arc::clone(&snapshot);
                                 let plpgsql_check = plpgsql_check.clone();
@@ -554,7 +559,7 @@ impl WorkspaceServer {
                                         if !conversion.has_identifier_parameters {
                                             let typecheck =
                                                 pgls_typecheck::check_sql(TypecheckParams {
-                                                    conn: &pool,
+                                                    conn: &statement_pool,
                                                     sql: conversion.sql.as_str(),
                                                     ast: &ast,
                                                     tree: &cst,
@@ -860,7 +865,10 @@ impl Workspace for WorkspaceServer {
         let (settings_version, migration_tool, max_size) =
             self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
-        documents.entry(params.path.clone()).or_insert_with(|| {
+        // A client that opens the file again without closing it sends its current text, which
+        // replaces the document and its caches like a close and an open.
+        documents.insert(
+            params.path.clone(),
             Arc::new(Document::open(
                 params.project_key,
                 settings_version,
@@ -868,8 +876,9 @@ impl Workspace for WorkspaceServer {
                 max_size,
                 params.content,
                 params.version,
-            ))
-        });
+            )),
+        );
+        self.document_caches.remove(&params.path);
 
         Ok(())
     }
@@ -1501,10 +1510,10 @@ impl Workspace for WorkspaceServer {
                             conn: &pool,
                             snapshot,
                         };
-                        // Without a cache, each run reads the rules and the messages of the
-                        // extension again, so that changes to them show on the next run.
+                        // Each run reads the rules and the messages of the extension again, so
+                        // that changes to them show on the next run.
                         pglinter_diagnostics =
-                            pgls_pglinter::run_pglinter(pglinter_params, &filter, None).await?;
+                            pgls_pglinter::run_pglinter(pglinter_params, &filter).await?;
                     }
                     None if pglinter_enabled => {
                         debug!("pglinter needs the database snapshot. Skipping pglinter checks.");

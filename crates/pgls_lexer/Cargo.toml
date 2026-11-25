@@ -17,5 +17,8 @@ pgls_lexer_codegen.workspace = true
 pgls_text_size.workspace     = true
 pgls_tokenizer.workspace     = true
 
+[dev-dependencies]
+pgls_query.workspace = true
+
 [lints]
 workspace = true

@@ -21,11 +21,10 @@ export type RuleCategories = RuleCategory[];
  */
 export type DatabaseChecks = "run" | "reuse";
 export type RuleCode = string;
+/**
+ * A path of a file of the workspace.
+ */
 export interface PgLSPath {
-  /**
-   * Determines the kind of the file inside Postgres Language Server. Some files are considered as configuration files, others as manifest files, and others as files to handle
-   */
-  kind: FileKind;
   path: string;
   /**
    * Whether this path (usually a file) was fixed as a result of a format/lint/check command with the `--write` filag.
@@ -40,11 +39,6 @@ export interface ProjectKey {
   version: number;
 }
 export type RuleCategory = "Lint";
-export type FileKind = FileKind2[];
-/**
- * The priority of the file
- */
-export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
 export interface PullDiagnosticsResult {
   diagnostics: Diagnostic[];
   /**
@@ -214,6 +208,7 @@ export type Category =
   | "splinter/security/unsupportedRegTypes"
   | "stdin"
   | "check"
+  | "dblint"
   | "format"
   | "configuration"
   | "database/connection"

@@ -140,7 +140,7 @@ impl LanguageServer for LSPServer {
             capabilities: server_capabilities,
             server_info: Some(ServerInfo {
                 name: String::from(env!("CARGO_PKG_NAME")),
-                version: Some(pgls_configuration::VERSION.to_string()),
+                version: Some(pgls_env::VERSION.to_string()),
             }),
             offset_encoding: None,
         };

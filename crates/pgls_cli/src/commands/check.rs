@@ -1,5 +1,5 @@
 use crate::cli_options::CliOptions;
-use crate::commands::{FileTargets, enforce_exit_codes, print_diagnostics, read_stdin_payload};
+use crate::commands::{Targets, enforce_exit_codes, print_diagnostics, read_stdin_payload};
 use crate::diagnostics::DatabaseUnavailable;
 use crate::execute::{run_files, run_stdin};
 use crate::reporter::Report;
@@ -12,7 +12,7 @@ use pgls_workspace::features::diagnostics::CheckDatabaseConnectionParams;
 
 pub(crate) struct CheckArgs {
     pub configuration: Option<PartialConfiguration>,
-    pub targets: FileTargets,
+    pub targets: Targets,
     pub fix: bool,
     pub unsafe_: bool,
     pub only: Vec<RuleSelector>,
@@ -24,8 +24,6 @@ pub(crate) fn check(
     cli_options: &CliOptions,
     args: CheckArgs,
 ) -> Result<(), CliDiagnostic> {
-    args.targets.validate()?;
-
     let configuration = session.configure_workspace(
         cli_options,
         args.configuration.clone(),
@@ -50,16 +48,15 @@ pub(crate) fn check(
         (false, false) => None,
     };
     let mode = ExecutionMode::Check {
-        vcs: args.targets.vcs(),
         fix,
         only: args.only.clone(),
         skip: args.skip.clone(),
     };
-    let execution =
-        ExecutionConfig::new(mode, max_diagnostics).with_skip_errors(cli_options.skip_errors);
+    let execution = ExecutionConfig::new(mode, max_diagnostics, &args.targets)
+        .with_skip_errors(cli_options.skip_errors);
 
     let database_errors = check_database_connection(&session)?;
-    if let Some(stdin_path) = args.targets.stdin_file_path.as_deref() {
+    if let Some(stdin_path) = args.targets.stdin_file_path() {
         // Stdout gets the checked code, so the diagnostics go to stderr. The errors of nested
         // configuration files are only printed, the database errors also fail the command.
         print_diagnostics(session.console(), &configuration_errors);

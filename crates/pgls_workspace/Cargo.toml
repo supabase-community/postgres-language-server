@@ -25,7 +25,7 @@ pgls_configuration                = { workspace = true }
 pgls_console                      = { workspace = true }
 pgls_diagnostics                  = { workspace = true }
 pgls_env                          = { workspace = true }
-pgls_fs                           = { workspace = true, features = ["serde"] }
+pgls_fs                           = { workspace = true }
 pgls_hover                        = { workspace = true }
 pgls_inlay_hints                  = { workspace = true }
 pgls_lexer                        = { workspace = true }

@@ -1,6 +1,5 @@
-use crate::adapters::{PositionEncoding, from_lsp};
 use anyhow::{Context, Result};
-use pgls_line_index::LineIndex;
+use pgls_line_index::{LineIndex, PositionEncoding};
 use pgls_text_edit::{CompressedOp, DiffOp, TextEdit};
 use pgls_text_size::{TextRange, TextSize};
 use tower_lsp_server::ls_types;
@@ -11,28 +10,10 @@ pub(crate) fn position(
     offset: TextSize,
     position_encoding: PositionEncoding,
 ) -> Result<ls_types::Position> {
-    let line_col = line_index
-        .line_col(offset)
-        .with_context(|| format!("could not convert offset {offset:?} into a line-column index"))?;
-
-    let position = match position_encoding {
-        PositionEncoding::Utf8 => ls_types::Position::new(line_col.line, line_col.col),
-        PositionEncoding::Wide(enc) => {
-            let line_col = line_index
-                .to_wide(enc, line_col)
-                .with_context(|| format!("could not convert {line_col:?} into wide line column"))?;
-            ls_types::Position::new(line_col.line, line_col.col)
-        }
-    };
-    // An offset between the `\r` and the `\n` of a line break is the end of its line, so the
-    // position maps back to the offset of `line_col`, not always to `offset`.
-    debug_assert_eq!(
-        from_lsp::offset(line_index, position, position_encoding).ok(),
-        line_index.offset(line_col),
-        "{position:?} doesn't map back to offset {offset:?}"
-    );
-
-    Ok(position)
+    let position = line_index
+        .position(offset, position_encoding)
+        .with_context(|| format!("could not convert offset {offset:?} into a position"))?;
+    Ok(ls_types::Position::new(position.line, position.col))
 }
 
 /// The function is used to convert TextRange to a LSP range.
@@ -113,7 +94,7 @@ mod tests {
     use tower_lsp_server::ls_types as lsp;
 
     use super::text_edits;
-    use crate::adapters::PositionEncoding;
+    use pgls_line_index::PositionEncoding;
 
     #[test]
     fn test_diff_1() {

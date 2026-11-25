@@ -10,112 +10,36 @@ pub fn generate_env_variables(docs_dir: &Path) -> Result<()> {
 
     let mut content = vec![];
 
-    let env = pgls_env::pgls_env();
-
     writeln!(content, "\n",)?;
 
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgls_log_path.name(),
-        env.pgls_log_path.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgls_log_level.name(),
-        env.pgls_log_level.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgls_log_prefix.name(),
-        env.pgls_log_prefix.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgls_config_path.name(),
-        env.pgls_config_path.description()
-    )?;
-
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.database_url.name(),
-        env.database_url.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pghost.name(),
-        env.pghost.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgport.name(),
-        env.pgport.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pguser.name(),
-        env.pguser.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgpassword.name(),
-        env.pgpassword.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgpassfile.name(),
-        env.pgpassfile.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgdatabase.name(),
-        env.pgdatabase.description()
-    )?;
+    for variable in pgls_env::VARIABLES {
+        writeln!(
+            content,
+            "### `{}`\n\n {}\n",
+            variable.name(),
+            variable.description()
+        )?;
+    }
 
     writeln!(content, "## Deprecated\n")?;
     writeln!(
         content,
         "The names from before the rename to Postgres Language Server still work. Use the `PGLS_*` names above instead.\n"
     )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgt_log_path.name(),
-        env.pgt_log_path.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgt_log_level.name(),
-        env.pgt_log_level.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgt_log_prefix.name(),
-        env.pgt_log_prefix.description()
-    )?;
-    writeln!(
-        content,
-        "### `{}`\n\n {}\n",
-        env.pgt_config_path.name(),
-        env.pgt_config_path.description()
-    )?;
+    for variable in pgls_env::VARIABLES {
+        if let Some(alias) = variable.deprecated_alias() {
+            writeln!(
+                content,
+                "### `{alias}`\n\n Deprecated, use `{}` instead.\n",
+                variable.name()
+            )?;
+        }
+    }
 
     let data = fs::read_to_string(&file_path)?;
 
-    let conent_str = String::from_utf8(content)?;
-    let new_data = replace_section(&data, "ENV_VARS", &conent_str)?;
+    let content = String::from_utf8(content)?;
+    let new_data = replace_section(&data, "ENV_VARS", &content)?;
 
     fs::write(file_path, new_data)?;
 

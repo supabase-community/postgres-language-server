@@ -178,19 +178,19 @@ select cast('Jan 01 00:00:00 1000 LMT' as timestamptz);
 
 select cast('Jan 01 00:00:00 2024 LMT' as timestamptz);
 
-set time zone 'Europe/London';
+set timezone = 'Europe/London';
 
 select cast('Jan 01 00:00:00 1000 LMT' as timestamptz);
 
 select cast('Jan 01 00:00:00 2024 LMT' as timestamptz);
 
-set time zone 'UTC';
+set timezone = 'UTC';
 
 select cast('Jan 01 00:00:00 2024 LMT' as timestamptz);
 
 select cast('1912-01-01 00:00 MMT' as timestamptz);
 
-set time zone 'America/Montevideo';
+set timezone = 'America/Montevideo';
 
 select cast('1912-01-01 00:00' as timestamptz);
 
@@ -668,77 +668,77 @@ from
   )
   as d (d);
 
-set time zone '00:00';
+set timezone = '00:00';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '+02:00';
+set timezone = '+02:00';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '-13:00';
+set timezone = '-13:00';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '-00:30';
+set timezone = '-00:30';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '00:30';
+set timezone = '00:30';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '-04:30';
+set timezone = '-04:30';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '04:30';
+set timezone = '04:30';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '-04:15';
+set timezone = '-04:15';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
-set time zone '04:15';
+set timezone = '04:15';
 
 select to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 
 reset timezone;
 
-set time zone '00:00';
+set timezone = '00:00';
 
 select to_char(now(), 'of') as "Of", to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '+02:00';
+set timezone = '+02:00';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '-13:00';
+set timezone = '-13:00';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '-00:30';
+set timezone = '-00:30';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '00:30';
+set timezone = '00:30';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '-04:30';
+set timezone = '-04:30';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '04:30';
+set timezone = '04:30';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '-04:15';
+set timezone = '-04:15';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
-set time zone '04:15';
+set timezone = '04:15';
 
 select to_char(now(), 'of') as of, to_char(now(), 'tzh:tzm') as "tzh:tzm";
 
@@ -765,7 +765,7 @@ select * from timestamptz_tst order by a;
 
 drop table timestamptz_tst;
 
-set time zone 'America/New_York';
+set timezone = 'America/New_York';
 
 select make_timestamptz(1973, 7, 15, 8, 15, 55.33);
 
@@ -891,7 +891,7 @@ select
     cast('-infinity' as interval)
   );
 
-set time zone 'UTC';
+set timezone = 'UTC';
 
 select
   date_add(
@@ -931,7 +931,7 @@ from
 
 reset timezone;
 
-set time zone 'UTC';
+set timezone = 'UTC';
 
 select cast('2011-03-27 00:00:00 Europe/Moscow' as timestamptz);
 
@@ -1063,7 +1063,7 @@ select to_timestamp(cast('-Infinity' as double precision));
 
 select to_timestamp(cast('NaN' as double precision));
 
-set time zone 'Europe/Moscow';
+set timezone = 'Europe/Moscow';
 
 select cast('2011-03-26 21:00:00 UTC' as timestamptz);
 
@@ -1175,7 +1175,7 @@ values
 
 values ((cast('1978-07-07 19:38' as timestamp) at local));
 
-set local time zone 'UTC';
+set local timezone = 'UTC';
 
 create view timestamp_local_view
 as select

@@ -38,6 +38,7 @@ const PUNCT: &[(&str, &str)] = &[
     ("%", "PERCENT"),
     ("_", "UNDERSCORE"),
     (".", "DOT"),
+    ("..", "DOT_DOT"),
     (":", "COLON"),
     ("::", "DOUBLE_COLON"),
     ("=", "EQ"),

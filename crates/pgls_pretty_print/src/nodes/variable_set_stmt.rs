@@ -82,10 +82,15 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
 
     e.space();
 
+    // `SET TIME ZONE` takes a single value and no keyword such as `zone`, so it is only kept where
+    // it was written. The grammar sets `jumble_args` for that spelling, not for `SET timezone = ...`.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1709
+    let time_zone = n.jumble_args && n.name.eq_ignore_ascii_case("timezone");
+
     if n.kind == 1 {
         // Handle special PostgreSQL SET variants
         match n.name.to_lowercase().as_str() {
-            "timezone" => {
+            "timezone" if time_zone => {
                 e.token(TokenKind::TIME_KW);
                 e.space();
                 e.token(TokenKind::ZONE_KW);
@@ -139,10 +144,7 @@ fn emit_variable_set_stmt_inner(e: &mut EventEmitter, n: &VariableSetStmt) {
                     | "search_path"
             );
 
-            let no_connector = matches!(
-                n.name.to_lowercase().as_str(),
-                "session_authorization" | "timezone"
-            );
+            let no_connector = time_zone || n.name.eq_ignore_ascii_case("session_authorization");
 
             e.space();
             if !no_connector {

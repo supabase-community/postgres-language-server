@@ -1356,7 +1356,7 @@ select jsonb_path_query('"12:34:56 +5:30"', '$.time_tz().string()');
 
 begin;
 
-set local time zone 'UTC-10';
+set local timezone = 'UTC-10';
 
 select jsonb_path_query_tz('"12:34:56"', '$.time_tz().string()');
 
@@ -1368,7 +1368,7 @@ select jsonb_path_query('"2023-08-15"', '$.date().string()');
 
 begin;
 
-set local time zone 'UTC';
+set local timezone = 'UTC';
 
 set local datestyle = 'German';
 

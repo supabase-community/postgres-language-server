@@ -8,8 +8,6 @@ use check::check_file;
 use format::format_file;
 use pgls_diagnostics::Error;
 use pgls_fs::PgLSPath;
-use std::marker::PhantomData;
-use std::ops::Deref;
 
 #[derive(Debug)]
 pub(crate) enum FileStatus {
@@ -60,30 +58,6 @@ where
 ///   `skipped` counter
 pub(crate) type FileResult = Result<FileStatus, Message>;
 
-/// Data structure that allows to pass [TraversalOptions] to multiple consumers, bypassing the
-/// compiler constraints set by the lifetimes of the [TraversalOptions]
-pub(crate) struct SharedTraversalOptions<'ctx, 'app> {
-    inner: &'app TraversalOptions<'ctx, 'app>,
-    _p: PhantomData<&'app ()>,
-}
-
-impl<'ctx, 'app> SharedTraversalOptions<'ctx, 'app> {
-    fn new(t: &'app TraversalOptions<'ctx, 'app>) -> Self {
-        Self {
-            _p: PhantomData,
-            inner: t,
-        }
-    }
-}
-
-impl<'ctx, 'app> Deref for SharedTraversalOptions<'ctx, 'app> {
-    type Target = TraversalOptions<'ctx, 'app>;
-
-    fn deref(&self) -> &Self::Target {
-        self.inner
-    }
-}
-
 /// This function performs the actual processing: it reads the file from disk
 /// and parse it; analyze and / or format it; then it either fails if error
 /// diagnostics were emitted, or compare the formatted code with the original
@@ -91,11 +65,9 @@ impl<'ctx, 'app> Deref for SharedTraversalOptions<'ctx, 'app> {
 /// write mode is enabled
 pub(crate) fn process_file(ctx: &TraversalOptions, pgls_path: &PgLSPath) -> FileResult {
     tracing::trace_span!("process_file", path = ?pgls_path).in_scope(move || {
-        let shared_context = &SharedTraversalOptions::new(ctx);
-
         match ctx.config.mode {
-            ExecutionMode::Check { .. } => check_file(shared_context, pgls_path.as_path()),
-            ExecutionMode::Format { .. } => format_file(shared_context, pgls_path.as_path()),
+            ExecutionMode::Check { .. } => check_file(ctx, pgls_path.as_path()),
+            ExecutionMode::Format { .. } => format_file(ctx, pgls_path.as_path()),
         }
     })
 }
