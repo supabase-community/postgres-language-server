@@ -555,7 +555,8 @@ use utils::comments::emit_node_with;
 /// separate their children with `;`: `BEGIN ATOMIC` bodies and rules with several actions.
 ///
 /// The terminator goes in a group around the statement, so that `isolate_semicolon` puts it on
-/// its own line exactly when the statement breaks.
+/// its own line exactly when the statement breaks. A top-level statement without one, see
+/// [`crate::Terminator::Omitted`], is emitted with [`emit_node_enum`].
 pub(crate) fn emit_statement(e: &mut EventEmitter, stmt: &NodeEnum) {
     e.group_start();
     emit_node_enum(e, stmt);

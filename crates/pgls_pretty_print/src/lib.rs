@@ -18,7 +18,7 @@ use crate::comments::AttachedComments;
 pub(crate) use crate::comments::Comment;
 pub use crate::config::{
     CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout,
-    LogicalOperatorPlacement,
+    LogicalOperatorPlacement, Terminator,
 };
 pub use crate::normalize::normalize_ast;
 use crate::source::Source;
@@ -203,7 +203,10 @@ fn render(
     emitter.set_comments_before_case_end(attached.before_case_end_by_location);
     emitter.set_node_locations(attached.node_locations);
     emitter.set_truncated_identifiers(truncated_identifiers);
-    nodes::emit_statement(&mut emitter, ast);
+    match config.terminator {
+        Terminator::Semicolon => nodes::emit_statement(&mut emitter, ast),
+        Terminator::Omitted => nodes::emit_node_enum(&mut emitter, ast),
+    }
     let pending = emitter.pending_comments();
     if pending > 0 {
         return Err(FormatError::UnplaceableComment { count: pending });
@@ -234,6 +237,21 @@ mod tests {
         assert!(!result.formatted.is_empty());
         // Default keyword_case is Lower, so check for lowercase
         assert!(result.formatted.contains("select"));
+    }
+
+    #[test]
+    fn a_statement_with_an_omitted_terminator_has_no_semicolon() {
+        let sql = "SELECT a, b FROM t ORDER BY 1";
+        let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
+        let config = FormatConfig {
+            terminator: Terminator::Omitted,
+            isolate_semicolon: true,
+            ..FormatConfig::default()
+        };
+
+        let result = format_statement(&ast, sql, &config).unwrap();
+
+        assert_eq!(result.formatted, "select a, b from t order by 1");
     }
 
     #[test]
