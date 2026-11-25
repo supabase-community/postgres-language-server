@@ -187,7 +187,10 @@ impl<'a> Splitter<'a> {
     /// back. Notes the keyword in either case: [`crate::split`] decides with Postgres' parser
     /// whether it starts a statement after all.
     fn hold_back(&mut self) -> bool {
-        let Some(prev) = (0..self.current_pos).rev().find(|&idx| !self.is_trivia(idx)) else {
+        let Some(prev) = (0..self.current_pos)
+            .rev()
+            .find(|&idx| !self.is_trivia(idx))
+        else {
             return false;
         };
         if !NEEDS_OPERAND.contains(&self.lexed.kind(prev)) && !self.ends_operator(prev) {

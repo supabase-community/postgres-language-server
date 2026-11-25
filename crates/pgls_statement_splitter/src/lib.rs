@@ -1608,10 +1608,7 @@ VALUES
     /// statement.
     #[test]
     fn statement_keywords_after_an_operator_ending_in_star() {
-        for sql in [
-            "select~*alter from t;",
-            "select 'a' !~* update from t;",
-        ] {
+        for sql in ["select~*alter from t;", "select 'a' !~* update from t;"] {
             Tester::from(sql)
                 .expect_statements(vec![sql])
                 .assert_no_errors();
