@@ -204,7 +204,7 @@ mod tests {
     }
 
     /// The data rows after `COPY … FROM STDIN` are one token, up to a line that is exactly `\.`,
-    /// or to the end of the text, and aren't lexed as SQL.
+    /// and aren't lexed as SQL. Without a `\.`, they stay SQL.
     #[test]
     fn copy_data() {
         for (sql, data) in [
@@ -213,8 +213,13 @@ mod tests {
                 "COPY public.actor (actor_id, name) FROM stdin;\n1\tPENELOPE\t\\N\ta\\\\b\n2\tselect 1;\tx\n\\.\n\nSELECT 1;",
                 vec!["1\tPENELOPE\t\\N\ta\\\\b\n2\tselect 1;\tx\n\\."],
             ),
-            // no `\.` at the end of the text
-            ("copy t from STDIN;\n1\n'2\n", vec!["1\n'2\n"]),
+            // no `\.`, or one at the end of the text
+            ("copy t from STDIN;\n1\n'2\n", vec![]),
+            (
+                "copy t from stdin;\nselect 1;\ncopy u from stdin;\n1\n",
+                vec![],
+            ),
+            ("copy t from STDIN;\n1\n\\.", vec!["1\n\\."]),
             // two blocks in a row, with options, and `\.` inside a row
             (
                 "copy a from stdin;\n1\n\\.\ncopy b (x) from stdin with (format csv); -- c\n2 \\.\n\\.\r\nselect 1;",

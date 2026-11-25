@@ -38,6 +38,8 @@ pub struct Lexer<'a> {
     copy: CopyFromStdin,
     /// Whether COPY data starts after the next line break.
     copy_data_next: bool,
+    /// Whether no line after the current offset is `\.`, so no COPY data follows any more.
+    copy_end_missing: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -55,6 +57,7 @@ impl<'a> Lexer<'a> {
             paren_depth: 0,
             copy: CopyFromStdin::No,
             copy_data_next: false,
+            copy_end_missing: false,
         }
     }
 
@@ -64,9 +67,11 @@ impl<'a> Lexer<'a> {
         while let Some(token) = tokens.next() {
             let token_text = &self.text[self.offset..][..token.len as usize];
             if self.copy_data_next && matches!(token.kind, TokenKind::LineEnding { .. }) {
-                self.copy_data(token_text);
-                tokens = tokenize(&self.text[self.offset..]);
-                continue;
+                self.copy_data_next = false;
+                if self.copy_data(token_text) {
+                    tokens = tokenize(&self.text[self.offset..]);
+                    continue;
+                }
             }
             self.track_copy(&token.kind, token_text);
             self.extend_token(&token.kind, token_text);
@@ -178,31 +183,41 @@ impl<'a> Lexer<'a> {
     }
 
     /// Pushes the first line break of `line_ending`, and the COPY data rows after it as one
-    /// token, up to and including a line that is exactly `\.`, or to the end of the text. psql
+    /// token, up to and including a line that is exactly `\.`, and returns whether it did. psql
     /// reads the rows with `fgets`, so only a `\n` ends one.
     ///
+    /// psql reads to the end of the file if no `\.` comes, but here the lines stay SQL: a file
+    /// is mostly edited, not run, and a `COPY … FROM STDIN` typed above other statements
+    /// shouldn't turn all of them into data. It also keeps the statements after a COPY in
+    /// Postgres' regression files, whose data `preprocess` blanks. Once no `\.` is left, the
+    /// lines aren't searched again, so all COPY statements together cost one pass at most.
+    ///
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/copy.c#L626-L640
-    fn copy_data(&mut self, line_ending: &str) {
-        self.copy_data_next = false;
+    fn copy_data(&mut self, line_ending: &str) -> bool {
+        if self.copy_end_missing {
+            return false;
+        }
         let line_break = if line_ending.starts_with("\r\n") {
             2
         } else {
             1
         };
-        self.push(SyntaxKind::LINE_ENDING, line_break, None, Some(1));
-
         let mut len = 0;
-        for line in self.text[self.offset..].split_inclusive('\n') {
-            if matches!(line, "\\.\n" | "\\.\r\n") {
+        let rows = self
+            .text
+            .get(self.offset + line_break..)
+            .unwrap_or_default();
+        for line in rows.split_inclusive('\n') {
+            if matches!(line, "\\.\n" | "\\.\r\n" | "\\.") {
+                self.push(SyntaxKind::LINE_ENDING, line_break, None, Some(1));
                 // The line break after `\.` is a token of its own.
-                len += 2;
-                break;
+                self.push(SyntaxKind::COPY_DATA, len + 2, None, None);
+                return true;
             }
             len += line.len();
         }
-        if len > 0 {
-            self.push(SyntaxKind::COPY_DATA, len, None, None);
-        }
+        self.copy_end_missing = true;
+        false
     }
 
     fn extend_token(&mut self, kind: &pgls_tokenizer::TokenKind, token_text: &str) {

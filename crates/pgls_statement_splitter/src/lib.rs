@@ -1600,8 +1600,9 @@ VALUES
                 "copy b from stdin;",
                 "select 1;",
             ]);
+        // Without a `\.`, the lines after it stay SQL.
         Tester::from("copy t from stdin;\nselect 1;\n")
-            .expect_statements(vec!["copy t from stdin;"]);
+            .expect_statements(vec!["copy t from stdin;", "select 1;"]);
         Tester::from("\\copy t from stdin\n1\n\\.\nselect 1;").expect_statements(vec!["select 1;"]);
     }
 
