@@ -11,7 +11,7 @@ snapshot_kind: text
     "\n" @ LineEnding { count: 1 },
     "4." @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
     "\n" @ LineEnding { count: 1 },
-    ".001" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    ".001" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
     "\n" @ LineEnding { count: 1 },
     ".123e10" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
     "\n" @ LineEnding { count: 1 },
