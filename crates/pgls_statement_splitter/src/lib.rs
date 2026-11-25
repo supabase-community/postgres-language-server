@@ -1604,6 +1604,27 @@ VALUES
         }
     }
 
+    /// Next to a `.` a keyword is a name, even a reserved one: a column label after it, a
+    /// qualifier before it.
+    #[test]
+    fn statement_keywords_next_to_a_dot() {
+        for sql in [
+            "select testschema.select from t;",
+            "select c2[2].select from t;",
+            "select t.create from t;",
+            "create operator class alter.c for type int4 using btree as operator 1 <;",
+            "create view update.v as select 1;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        // After an unfinished statement, as for the keywords after other operators.
+        Tester::from("select t.\nselect 1;")
+            .expect_statements(vec!["select t.", "select 1;"])
+            .assert_no_errors();
+    }
+
     /// If the statement doesn't parse with the keyword, but a statement starting at the keyword
     /// does, a `;` is missing before it.
     #[test]
