@@ -120,7 +120,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_semantic_tokens` - Semantic highlighting of resolved names
 - `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
 - `pgls_walk` - The walk over a file's statements that lint and the editor features share: the catalog and session as each statement sees them
-- `pgls_typecheck` - EXPLAIN fallback for typecheck
+- `pgls_typecheck` - Fallback type check that `PREPARE`s a statement against the database
 - `pgls_catalog` - Database snapshot, the file's DDL on top of it, and Postgres' type rules
 - `pgls_resolve` - Name resolution and type inference of a statement against the catalog: its findings, the output columns of its query, and what its names refer to
 
@@ -201,13 +201,17 @@ INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
 **IMPORTANT**: Always run `cargo clippy --workspace --all-targets -- -D warnings` (the command CI runs) and fix all warnings after making code changes. Clippy warnings must be resolved before committing code to maintain code quality standards. Before pushing, `just check` runs everything CI's Rust jobs gate on: the format check, this clippy command and the codegen check.
 
 ### Engineering Rules
-**IMPORTANT**: Follow the "Engineering rules" in `CONTRIBUTING.md`. In short: no recursion whose depth grows with the input (per statement, file or config); a named limit (`*_max`, unit last) on every loop, walk, queue and cache over external input, logged when hit; no `unwrap`/`expect`/indexing on data from the client, database, file system or config; paired `debug_assert!`s where ranges cross a boundary (statement → file offsets → LSP positions, fix edits → document); coalesce external events; set stack sizes, timeouts, pool sizes and recursion limits explicitly; state the cost and a 20k-statement timing for work on the request path; turn "Not covered" lists into issues.
+**IMPORTANT**: Follow the "Engineering rules" and the "API conventions" in `CONTRIBUTING.md`. The conventions in short: no standalone helper functions, every helper is a method or associated function on the type it's about; keep logic in its owning crate instead of copying it; data-oriented design with flat arrays and indices; no caches for costs we control, only for libpg_query's parse, database round trips and connection handshakes; refactors and behaviour changes in separate PRs. `ARCHITECTURE.md` has the target layering.
+
+The engineering rules in short: no recursion whose depth grows with the input (per statement, file or config); a named limit (`*_max`, unit last) on every loop, walk, queue and cache over external input, logged when hit; no `unwrap`/`expect`/indexing on data from the client, database, file system or config; paired `debug_assert!`s where ranges cross a boundary (statement → file offsets → LSP positions, fix edits → document); coalesce external events; set stack sizes, timeouts, pool sizes and recursion limits explicitly; state the cost and a 20k-statement timing for work on the request path; turn "Not covered" lists into issues.
 
 ### Git Commit and PR Guidelines
 **IMPORTANT**: NEVER add "Claude" or any AI assistant name to commit messages or pull request descriptions. Commits and PRs should appear as authored by the human developer only.
 
 ### Code Generation
 Many parser structures are generated from PostgreSQL's protobuf definitions using procedural macros in `pgls_query_macros`. Run `just gen-lint` after modifying analyzer rules or configurations.
+
+Don't edit generated files by hand; change the generator and re-run it. `just check-codegen` fails when the checked-in output differs from what the generators write. The target for all generated code is in "API conventions" in `CONTRIBUTING.md`: inputs read from the libpg_query submodule only, `xtask` generators writing `src/generated/`, and build scripts that write only to `OUT_DIR` and never use the network. The parser codegen crates (`pgls_query_macros`, `pgls_lexer_codegen`, `pgls_pretty_print_codegen`) don't follow it yet.
 
 To upgrade libpg_query, check out the new tag in `crates/pgls_query/vendor/libpg_query` and copy its `protobuf/pg_query.proto` and `src/postgres/include/parser/kwlist.h` into the vendor directories of `pgls_query_macros`, `pgls_lexer_codegen` and `pgls_pretty_print_codegen` (renaming them to the new tag). `crates/pgls_query/src/protobuf.rs` is only regenerated when `protoc` is on the `PATH`, which the Nix shell doesn't provide: `nix build --print-out-paths nixpkgs#protobuf` and prepend its `bin` to `PATH` for one `cargo build -p pgls_query`.
 
