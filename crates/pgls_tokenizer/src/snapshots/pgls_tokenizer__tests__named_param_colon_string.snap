@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_tokenizer/src/lib.rs
 expression: result
-snapshot_kind: text
 ---
 [
     "select" @ Ident,
@@ -18,6 +17,6 @@ snapshot_kind: text
     " " @ Space,
     "=" @ Eq,
     " " @ Space,
-    ":'id'" @ NamedParam { kind: ColonString { terminated: true } },
+    ":'id'" @ NamedParam { kind: ColonString },
     ";" @ Semi,
 ]

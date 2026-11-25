@@ -217,7 +217,8 @@ fn analyse(
                 stmts.push(
                     AnalysableStatement::new(root, *r)
                         .with_sql(text)
-                        .with_identifier_parameters(conversion.has_identifier_parameters),
+                        .with_identifier_parameters(conversion.has_identifier_parameters)
+                        .with_unknown_values(!conversion.string_replacements.is_empty()),
                 );
                 stmts.extend(body);
             }

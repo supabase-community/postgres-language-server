@@ -139,18 +139,7 @@ impl<'a> Lexer<'a> {
                 pgls_tokenizer::TokenKind::Eof => SyntaxKind::EOF,
                 pgls_tokenizer::TokenKind::Backtick => SyntaxKind::BACKTICK,
                 pgls_tokenizer::TokenKind::PositionalParam => SyntaxKind::POSITIONAL_PARAM,
-                pgls_tokenizer::TokenKind::NamedParam { kind } => {
-                    match kind {
-                        pgls_tokenizer::NamedParamKind::ColonIdentifier { terminated: false } => {
-                            err = "Missing trailing \" to terminate the named parameter";
-                        }
-                        pgls_tokenizer::NamedParamKind::ColonString { terminated: false } => {
-                            err = "Missing trailing ' to terminate the named parameter";
-                        }
-                        _ => {}
-                    };
-                    SyntaxKind::NAMED_PARAM
-                }
+                pgls_tokenizer::TokenKind::NamedParam { .. } => SyntaxKind::NAMED_PARAM,
                 pgls_tokenizer::TokenKind::QuotedIdent { terminated } => {
                     if !terminated {
                         err = "Missing trailing \" to terminate the quoted identifier"
