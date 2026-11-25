@@ -92,8 +92,11 @@ impl Cursor<'_> {
             }
 
             // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-UESCAPE
-            'u' | 'U' => match self.first() {
-                '&' => {
+            //
+            // Only `U&'` and `U&"` start one, so `U&x` is `U`, `&` and `x`:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L301-L304
+            'u' | 'U' => match (self.first(), self.second()) {
+                ('&', '\'' | '"') => {
                     self.bump();
                     self.prefixed_string(
                         |terminated| LiteralKind::UnicodeEscStr { terminated },
@@ -129,10 +132,9 @@ impl Cursor<'_> {
                 TokenKind::Literal { kind: literal_kind }
             }
             '.' => match self.first() {
-                '0'..='9' => {
-                    let literal_kind = self.number('.');
-                    TokenKind::Literal { kind: literal_kind }
-                }
+                '0'..='9' => TokenKind::Literal {
+                    kind: self.fraction(),
+                },
                 // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L339
                 // dot_dot			\.\.
                 '.' => {
@@ -142,7 +144,7 @@ impl Cursor<'_> {
                 _ => TokenKind::Dot,
             },
             '@' => {
-                if is_ident_start(self.first()) {
+                if is_ident_start(self.first()) && !self.at_prefixed_string() {
                     // Named parameter with @ prefix.
                     self.eat_while(is_ident_cont);
                     TokenKind::NamedParam {
@@ -164,7 +166,7 @@ impl Cursor<'_> {
                         '\'' => {
                             // Named parameter with colon prefix and single quotes.
                             self.bump();
-                            let terminated = self.single_quoted_string(true);
+                            let terminated = self.single_quoted_string(true, false);
                             let kind = NamedParamKind::ColonString { terminated };
                             TokenKind::NamedParam { kind }
                         }
@@ -175,7 +177,7 @@ impl Cursor<'_> {
                             let kind = NamedParamKind::ColonIdentifier { terminated };
                             TokenKind::NamedParam { kind }
                         }
-                        c if is_ident_start(c) => {
+                        c if is_ident_start(c) && !self.at_prefixed_string() => {
                             // Named parameter with colon prefix.
                             self.eat_while(is_ident_cont);
                             TokenKind::NamedParam {
@@ -199,7 +201,9 @@ impl Cursor<'_> {
             '?' => TokenKind::Question,
             '$' => {
                 // Dollar quoted strings
-                if is_ident_start(self.first()) || self.first() == '$' {
+                if (is_ident_start(self.first()) && !self.at_prefixed_string())
+                    || self.first() == '$'
+                {
                     // Get the start sequence of the dollar quote, i.e., 'foo' in $foo$hello$foo$
                     // if ident does not continue and there is no terminating dollar
                     // sign, we have a positional param `$name`
@@ -424,32 +428,8 @@ impl Cursor<'_> {
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L396
             // numericfail		{decinteger}\.\.
             '.' if self.second() != '.' => {
-                // might have stuff after the ., and if it does, it needs to start
-                // with a number
                 self.bump();
-                let mut empty_exponent = false;
-                if self.first().is_ascii_digit() {
-                    self.eat_decimal_digits();
-                    match self.first() {
-                        'e' | 'E' => {
-                            self.bump();
-                            empty_exponent = !self.eat_float_exponent();
-                        }
-                        _ => (),
-                    }
-                } else {
-                    match self.first() {
-                        'e' | 'E' => {
-                            self.bump();
-                            empty_exponent = !self.eat_float_exponent();
-                        }
-                        _ => (),
-                    }
-                }
-                LiteralKind::Float {
-                    base,
-                    empty_exponent,
-                }
+                self.fraction()
             }
             'e' | 'E' => {
                 self.bump();
@@ -466,18 +446,55 @@ impl Cursor<'_> {
         }
     }
 
+    /// Eats the rest of a number after its `.`: the digits of the fraction, if any, and the
+    /// exponent. A number has one fraction, so `.1.2` is `.1` and `.2`:
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L395
+    /// numeric (({decinteger}\.{decinteger}?)|(\.{decinteger}))
+    fn fraction(&mut self) -> LiteralKind {
+        if self.first().is_ascii_digit() {
+            self.eat_decimal_digits();
+        }
+        let mut empty_exponent = false;
+        if matches!(self.first(), 'e' | 'E') {
+            self.bump();
+            empty_exponent = !self.eat_float_exponent();
+        }
+        LiteralKind::Float {
+            base: Base::Decimal,
+            empty_exponent,
+        }
+    }
+
+    /// Whether a prefixed string or identifier starts here: `E'`, `B'`, `X'`, `U&'` or `U&"`.
+    /// Postgres takes the longest match, so `:e'a'`, `@b'1'` and `$U&'a'` are an operator or
+    /// `$` and a string, not a named parameter:
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L250-L304
+    fn at_prefixed_string(&self) -> bool {
+        let mut chars = self.as_str().chars();
+        matches!(
+            (chars.next(), chars.next(), chars.next()),
+            (Some('e' | 'E' | 'b' | 'B' | 'x' | 'X'), Some('\''), _)
+                | (Some('u' | 'U'), Some('&'), Some('\'' | '"'))
+        )
+    }
+
     /// Eats a string constant after its opening quote, with the strings that continue it.
     ///
     /// `''` is a quote in it, except in a bit or hex string, where it ends the string and starts
     /// an empty one (`xqdouble` only applies in `<xq,xe,xus>`):
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L633
+    ///
+    /// In an escape string, a backslash escapes the next character, so `E'\''` is one quote
+    /// (`xeescape` only applies in `<xe>`):
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L706
     fn string_constant(&mut self, kind: fn(bool) -> LiteralKind) -> TokenKind {
         let doubled_quote = !matches!(
             kind(true),
             LiteralKind::BitStr { .. } | LiteralKind::ByteStr { .. }
         );
+        let backslash_escape = matches!(kind(true), LiteralKind::EscStr { .. });
         let terminated = loop {
-            if !self.single_quoted_string(doubled_quote) {
+            if !self.single_quoted_string(doubled_quote, backslash_escape) {
                 break false;
             }
             if !self.eat_quote_continuation() {
@@ -528,8 +545,9 @@ impl Cursor<'_> {
     }
 
     /// Eats a quoted text after its opening quote and returns true if it's terminated. With
-    /// `doubled_quote`, `''` is a quote in it.
-    fn single_quoted_string(&mut self, doubled_quote: bool) -> bool {
+    /// `doubled_quote`, `''` is a quote in it; with `backslash_escape`, a backslash escapes the
+    /// next character.
+    fn single_quoted_string(&mut self, doubled_quote: bool, backslash_escape: bool) -> bool {
         // Parse until either quotes are terminated or error is detected.
         loop {
             match self.first() {
@@ -545,6 +563,10 @@ impl Cursor<'_> {
                         // encountered terminating quote
                         _ => return true,
                     }
+                }
+                '\\' if backslash_escape => {
+                    self.bump();
+                    self.bump();
                 }
                 // End of file, stop parsing.
                 EOF_CHAR if self.is_eof() => break,
@@ -920,6 +942,20 @@ $foo$hello$world$bar$
         "#);
     }
 
+    /// Found by the `lexer_vs_scan` fuzz target.
+    #[test]
+    fn numeric_has_one_fraction() {
+        assert_debug_snapshot!(lex("-.5228787.(0"), @r#"
+        [
+            "-" @ Minus,
+            ".5228787" @ Literal { kind: Float { base: Decimal, empty_exponent: false } },
+            "." @ Dot,
+            "(" @ OpenParen,
+            "0" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+        ]
+        "#);
+    }
+
     #[test]
     fn numeric_with_seperators() {
         assert_debug_snapshot!(lex(r#"
@@ -1000,6 +1036,52 @@ e'\x0\x11\xFF'
 e'\uAAAA \UFFFFFFFF'
 
 "#))
+    }
+
+    /// Found by the `lexer_vs_scan` fuzz target.
+    #[test]
+    fn string_with_escaped_quote() {
+        assert_debug_snapshot!(lex(r"trim(E'\'\\000'::bytea)"), @r#"
+        [
+            "trim" @ Ident,
+            "(" @ OpenParen,
+            "E'\\'\\\\000'" @ Literal { kind: EscStr { terminated: true } },
+            "::" @ DoubleColon,
+            "bytea" @ Ident,
+            ")" @ CloseParen,
+        ]
+        "#);
+    }
+
+    /// Found by the `lexer_vs_scan` fuzz target.
+    #[test]
+    fn unicode_prefix_needs_a_quote() {
+        assert_debug_snapshot!(lex("U&ER"), @r#"
+        [
+            "U" @ Ident,
+            "&" @ And,
+            "ER" @ Ident,
+        ]
+        "#);
+    }
+
+    /// Found by the `lexer_vs_scan` fuzz target.
+    #[test]
+    fn prefixed_string_after_param_prefix() {
+        assert_debug_snapshot!(lex(r":e'Infinity' @x'0080' $U&'\1100' :eb"), @r#"
+        [
+            ":" @ Colon,
+            "e'Infinity'" @ Literal { kind: EscStr { terminated: true } },
+            " " @ Space,
+            "@" @ At,
+            "x'0080'" @ Literal { kind: ByteStr { terminated: true } },
+            " " @ Space,
+            "$" @ PositionalParam,
+            "U&'\\1100'" @ Literal { kind: UnicodeEscStr { terminated: true } },
+            " " @ Space,
+            ":eb" @ NamedParam { kind: ColonRaw },
+        ]
+        "#);
     }
 
     #[test]

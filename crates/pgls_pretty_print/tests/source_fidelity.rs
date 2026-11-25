@@ -384,3 +384,64 @@ fn a_language_longer_than_an_identifier_stays_a_string() {
         format!("do\nlanguage '{language}'\n$$select 1$$;")
     );
 }
+
+/// Found by the `formatter_roundtrip` fuzz target. A string constant longer than an identifier
+/// stays a string: written as a word, the parser would cut it down to 63 bytes.
+#[test]
+fn a_string_longer_than_an_identifier_stays_a_string() {
+    let value = format!("n{}", "n".repeat(70));
+    assert_eq!(
+        format(&format!("SET my.option TO '{value}'")),
+        format!("set my.option = '{value}';")
+    );
+    assert_eq!(
+        format(&format!(
+            "CREATE TRIGGER t BEFORE UPDATE ON t FOR EACH ROW EXECUTE PROCEDURE f('{value}')"
+        )),
+        format!(
+            "create trigger t\nbefore update\non t\nfor each row\nexecute function f('{value}');"
+        )
+    );
+    // A trigger argument that a word cannot spell is a string, not a quoted identifier, which
+    // the parser would cut down to 63 bytes as well.
+    assert_eq!(
+        format(
+            "CREATE TRIGGER t BEFORE UPDATE ON t FOR EACH ROW EXECUTE PROCEDURE f('a, b.*', x, 1)"
+        ),
+        "create trigger t before update on t for each row execute function f('a, b.*', x, '1');"
+    );
+}
+
+/// Found by the `formatter_roundtrip` fuzz target. A foreign-data wrapper's handler or validator
+/// is a qualified function name.
+#[test]
+fn a_foreign_data_wrapper_function_is_a_qualified_name() {
+    assert_eq!(
+        format("ALTER FOREIGN DATA WRAPPER f HANDLER te.t_fdw_handler VALIDATOR s.v"),
+        "alter foreign data wrapper f handler te.t_fdw_handler validator s.v;"
+    );
+    assert!(
+        format("CREATE FOREIGN DATA WRAPPER f HANDLER te.t_fdw_handler VALIDATOR s.v")
+            .starts_with("create foreign data wrapper f handler te.t_fdw_handler validator s.v")
+    );
+}
+
+/// Found by the `formatter_roundtrip` fuzz target. A storage parameter name that needs quotes
+/// keeps them.
+#[test]
+fn a_storage_parameter_name_keeps_its_quotes() {
+    assert_eq!(
+        format(
+            r#"CREATE TABLE t WITH ("Fill*factor" = 10, toast.autovacuum_enabled = false) AS SELECT 1 a"#
+        ),
+        r#"create table t with ("Fill*factor" = 10, toast.autovacuum_enabled = 'false') as select 1 as a;"#
+    );
+    assert_eq!(
+        format(r#"CREATE INDEX ON t USING gist (a gist_ops ("Sig len" = 8))"#),
+        r#"create index on t using gist (a gist_ops("Sig len" = 8));"#
+    );
+    assert_eq!(
+        format(r#"ALTER TYPE t SET ("Rec eive" = r)"#),
+        r#"alter type t set ("Rec eive" = r);"#
+    );
+}

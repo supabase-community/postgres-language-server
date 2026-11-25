@@ -6,7 +6,7 @@ create table unknowntab (u unknown);
 
 create type unknown_comptype as (u unknown);
 
-create table tas_case with (fillfactor = 10) as select 1 as a;
+create table tas_case with ("Fillfactor" = 10) as select 1 as a;
 
 create unlogged table unlogged1 (a int primary key);
 
