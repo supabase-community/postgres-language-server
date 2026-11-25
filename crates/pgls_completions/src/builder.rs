@@ -1,7 +1,10 @@
 use crate::{
     CompletionItemKind, CompletionText,
     item::CompletionItem,
-    relevance::{filtering::CompletionFilter, scoring::CompletionScore},
+    relevance::{
+        filtering::CompletionFilter,
+        scoring::{CompletionScore, TypedInput},
+    },
 };
 
 use pgls_treesitter::TreesitterContext;
@@ -40,8 +43,9 @@ impl<'a> CompletionBuilder<'a> {
             .filter(|i| i.filter.is_relevant(self.ctx, &mut shared_tree).is_some())
             .collect();
 
+        let input = TypedInput::new(self.ctx);
         for item in items.iter_mut() {
-            item.score.calc_score(self.ctx);
+            item.score.calc_score(self.ctx, &input);
         }
 
         items.retain(|i| !i.score.should_skip());
