@@ -103,13 +103,13 @@ corpus:
 # Fuzzes a target of fuzz/ (splitter_vs_parser, formatter_roundtrip, lexer_vs_scan, lsp_messages) for the given seconds, with debug assertions, e.g. just fuzz splitter_vs_parser 600.
 # With CC=$PWD/fuzz/asan-cc RUSTFLAGS="-Clinker=clang -Clink-arg=-fsanitize=address", libpg_query and the tree-sitter grammar run under AddressSanitizer.
 # Seeded from the regression SQL, with Postgres' keywords as the dictionary; extra arguments go to libFuzzer. A crash is saved in fuzz/artifacts/<target>/ and reruns with
-# cargo fuzz run --fuzz-dir fuzz -s none -a <target> <file>
+# cargo fuzz run --fuzz-dir fuzz -s none -a <target> <file>. The target is the host's: a prebuilt cargo-fuzz builds for its own (musl) otherwise.
 fuzz target seconds="300" *args:
 	cp Cargo.lock fuzz/Cargo.lock
 	env -u CC -u RUSTFLAGS cargo run --manifest-path fuzz/Cargo.toml --example seeds
 	grep -o '"[a-z_]*"' crates/pgls_query/vendor/libpg_query/src/postgres/include/parser/kwlist.h > fuzz/seeds/keywords.dict
 	mkdir -p fuzz/corpus/{{target}}
-	cargo fuzz run --fuzz-dir fuzz -s none -a {{target}} fuzz/corpus/{{target}} fuzz/seeds/inputs crates/pgls_statement_splitter/tests/data -- -dict=fuzz/seeds/keywords.dict -max_len=4096 -timeout=30 -max_total_time={{seconds}} {{args}}
+	cargo fuzz run --fuzz-dir fuzz -s none -a --target "$(rustc -vV | sed -n 's/^host: //p')" {{target}} fuzz/corpus/{{target}} fuzz/seeds/inputs crates/pgls_statement_splitter/tests/data -- -dict=fuzz/seeds/keywords.dict -max_len=4096 -timeout=30 -max_total_time={{seconds}} {{args}}
 
 # Alias for `cargo clippy`, it runs clippy on the whole codebase
 lint:
