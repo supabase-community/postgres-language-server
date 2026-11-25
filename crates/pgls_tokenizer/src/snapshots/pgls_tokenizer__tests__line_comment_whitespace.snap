@@ -7,10 +7,6 @@ snapshot_kind: text
     "\n" @ LineEnding { count: 1 },
     "select" @ Ident,
     " " @ Space,
-    "'Hello'" @ Literal { kind: Str { terminated: true } },
-    " " @ Space,
-    "-- This is a comment" @ LineComment,
-    "\n" @ LineEnding { count: 1 },
-    "' World'" @ Literal { kind: Str { terminated: true } },
+    "'Hello' -- This is a comment\n' World'" @ Literal { kind: Str { terminated: true } },
     ";" @ Semi,
 ]

@@ -170,6 +170,39 @@ mod tests {
         assert_eq!(non_whitespace.len(), 2); // SELECT and id
     }
 
+    /// The lexer cuts what the fuzz target `lexer_vs_scan` found into the tokens of Postgres'
+    /// scanner: non-ASCII characters in identifiers, string constants continued across a line
+    /// break, and `''` in bit and hex strings.
+    #[test]
+    fn tokens_are_the_scanners() {
+        for sql in [
+            "SELECT\u{6dd}1",
+            "ΑΣ",
+            "SELECT ΑΣ, aΑ1, $ΑΣ$x$ΑΣ$",
+            "'foo'\n'bar'",
+            "SELECT 'a' -- c\n\n  -- d\n\t'b'\r\n'c' AS x",
+            "E'a'\n'b', U&'a'\n'b', b'1'\n'0', x'a'\n'b'",
+            "'a' 'b', 'a'\n-- c",
+            "b''''",
+            "x'ab'''",
+            "'it''s'",
+        ] {
+            let lexed = lex(sql);
+            let lexer: Vec<_> = (0..lexed.len())
+                .map(|idx| lexed.range(idx))
+                .filter(|&range| !sql[range].trim().is_empty())
+                .map(|range| (u32::from(range.start()), u32::from(range.end())))
+                .collect();
+            let scanner: Vec<_> = pgls_query::scan(sql)
+                .unwrap()
+                .tokens
+                .iter()
+                .map(|token| (token.start as u32, token.end as u32))
+                .collect();
+            assert_eq!(lexer, scanner, "{sql:?}");
+        }
+    }
+
     #[test]
     fn finds_lex_errors() {
         // Test with unterminated block comment

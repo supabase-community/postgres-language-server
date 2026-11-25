@@ -759,7 +759,7 @@ values (int4range(125, 125, '[]'), int4range(1, 1, '[]'), '[2010-01-02 10:10, 20
 
 select int8range(cast(10000000000 as int8), cast(20000000000 as int8), '(]');
 
-set time zone '-08';
+set timezone = '-08';
 
 select cast('[2010-01-01 01:00:00 -05, 2010-01-01 02:00:00 -08)' as tstzrange);
 

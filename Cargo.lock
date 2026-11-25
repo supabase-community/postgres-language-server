@@ -2546,6 +2546,7 @@ version = "0.0.0"
 dependencies = [
  "pgls_diagnostics",
  "pgls_lexer_codegen",
+ "pgls_query",
  "pgls_text_size",
  "pgls_tokenizer",
 ]
@@ -2903,6 +2904,7 @@ dependencies = [
  "pgls_text_size",
  "pgls_treesitter_grammar",
  "sqlx",
+ "tokio",
  "tree-sitter",
 ]
 

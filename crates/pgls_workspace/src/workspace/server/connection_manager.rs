@@ -83,9 +83,11 @@ fn connection_string_options(uri: &str) -> Result<PgConnectOptions, sqlx::Error>
 pub(crate) struct DatabasePools {
     /// The pool for the language server's own queries.
     pub(crate) pool: PgPool,
-    /// The pool for the statements a user executes. Its connections never run the language
-    /// server's own queries, so the session state that a statement leaves behind can't leak into
-    /// them.
+    /// The pool for the statements a user executes, and for the typecheck, which prepares
+    /// statements. Its connections never run the language server's other queries, so the
+    /// session state that a statement leaves behind can't leak into them. They cache no
+    /// prepared statements, and each user of a connection resets its session with `discard all`
+    /// before returning it.
     pub(crate) statement_pool: PgPool,
 }
 
