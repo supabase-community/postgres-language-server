@@ -193,6 +193,15 @@ mod tests {
         }
     }
 
+    /// The scanner reads a meta-command as SQL, so a text with one isn't compared.
+    #[test]
+    fn meta_commands_are_not_compared_with_the_scanner() {
+        assert_eq!(
+            lex("select 1 \\gset\n\\echo 'a'").scanner_difference(),
+            None
+        );
+    }
+
     #[test]
     fn finds_lex_errors() {
         // Test with unterminated block comment
