@@ -1,8 +1,8 @@
 use crate::adapters::from_lsp::text_range;
-use crate::adapters::{PositionEncoding, to_lsp};
+use crate::adapters::to_lsp;
 use anyhow::{Context, Result, ensure};
 use pgls_diagnostics::{Diagnostic, DiagnosticTags, Location, PrintDescription, Severity, Visit};
-use pgls_line_index::LineIndex;
+use pgls_line_index::{LineIndex, PositionEncoding};
 use pgls_text_size::{TextRange, TextSize};
 use std::any::Any;
 use std::borrow::Cow;
@@ -226,11 +226,10 @@ pub(crate) fn apply_document_changes(
 
 #[cfg(test)]
 mod tests {
-    use pgls_line_index::WideEncoding;
+    use pgls_line_index::{PositionEncoding, WideEncoding};
     use tower_lsp_server::ls_types::{Position, Range, TextDocumentContentChangeEvent};
 
     use super::apply_document_changes;
-    use crate::adapters::PositionEncoding;
 
     #[test]
     fn applies_changes_at_utf16_positions() {

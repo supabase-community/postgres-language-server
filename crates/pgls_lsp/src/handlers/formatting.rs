@@ -1,4 +1,4 @@
-use pgls_line_index::LineIndex;
+use pgls_line_index::{LineIndex, PositionEncoding};
 use pgls_text_edit::TextEdit as PglsTextEdit;
 use pgls_workspace::features::format::{PullFileFormattingParams, PullFormattingResult};
 use tower_lsp_server::ls_types::{
@@ -6,7 +6,7 @@ use tower_lsp_server::ls_types::{
 };
 
 use crate::{
-    adapters::{PositionEncoding, from_lsp, to_lsp},
+    adapters::{from_lsp, to_lsp},
     diagnostics::LspError,
     session::Session,
 };

@@ -11,8 +11,8 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
+memchr         = { workspace = true }
 pgls_text_size = { workspace = true }
-rustc-hash     = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
