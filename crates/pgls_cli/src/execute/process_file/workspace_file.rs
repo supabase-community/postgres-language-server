@@ -1,5 +1,5 @@
 use crate::execute::diagnostics::{ResultExt, ResultIoExt};
-use crate::execute::process_file::SharedTraversalOptions;
+use crate::execute::walk::TraversalOptions;
 use pgls_diagnostics::{Error, category};
 use pgls_fs::{File, OpenOptions, PgLSPath};
 use pgls_workspace::workspace::{FileGuard, OpenFileParams};
@@ -7,23 +7,18 @@ use pgls_workspace::{Workspace, WorkspaceError};
 use std::path::{Path, PathBuf};
 
 /// Small wrapper that holds information and operations around the current processed file
-pub(crate) struct WorkspaceFile<'ctx, 'app> {
-    guard: FileGuard<'app, dyn Workspace + 'ctx>,
-    /// File handle for the underlying filesystem entry, if backed by a real file.
-    /// Not present for stdin execution where content is provided as a temporary buffer.
-    /// Currently unused but will be needed when autofix/write operations are implemented.
-    #[expect(dead_code, reason = "TEMP-CHECK")]
-    file: Option<Box<dyn File>>,
+pub(crate) struct WorkspaceFile<'ctx> {
+    guard: FileGuard<'ctx, dyn Workspace + 'ctx>,
+    /// The file on disk, opened through the file system of the traversal, so that the writes go
+    /// through it too.
+    file: Box<dyn File>,
     pub(crate) path: PathBuf,
 }
 
-impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
+impl<'ctx> WorkspaceFile<'ctx> {
     /// It attempts to read the file from disk, creating a [FileGuard] and
     /// saving these information internally
-    pub(crate) fn new(
-        ctx: &SharedTraversalOptions<'ctx, 'app>,
-        path: &Path,
-    ) -> Result<Self, Error> {
+    pub(crate) fn new(ctx: &TraversalOptions<'ctx, '_>, path: &Path) -> Result<Self, Error> {
         let pgls_path = PgLSPath::new(path);
         let open_options = OpenOptions::default()
             .read(true)
@@ -43,23 +38,30 @@ impl<'ctx, 'app> WorkspaceFile<'ctx, 'app> {
                 project_key: ctx.project_key,
                 path: pgls_path,
                 version: 0,
-                content: input.clone(),
+                content: input,
             },
         )
         .with_file_path_and_code(path.display().to_string(), category!("internalError/fs"))?;
 
         Ok(Self {
-            file: Some(file),
+            file,
             guard,
             path: PathBuf::from(path),
         })
     }
 
-    pub(crate) fn guard(&self) -> &FileGuard<'app, dyn Workspace + 'ctx> {
+    pub(crate) fn guard(&self) -> &FileGuard<'ctx, dyn Workspace + 'ctx> {
         &self.guard
     }
 
     pub(crate) fn input(&self) -> Result<String, WorkspaceError> {
         self.guard().get_file_content()
+    }
+
+    /// Writes `content` to the file on disk.
+    pub(crate) fn write(&mut self, content: &str) -> Result<(), Error> {
+        self.file
+            .set_content(content.as_bytes())
+            .with_file_path(self.path.display().to_string())
     }
 }

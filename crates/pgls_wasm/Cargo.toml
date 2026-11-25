@@ -19,7 +19,7 @@ pgls_completions   = { workspace = true }
 pgls_configuration = { workspace = true }
 pgls_diagnostics   = { workspace = true }
 pgls_env           = { workspace = true }
-pgls_fs            = { workspace = true, features = ["serde"] }
+pgls_fs            = { workspace = true }
 pgls_line_index    = { workspace = true }
 pgls_query         = { workspace = true }
 pgls_text_size     = { workspace = true }

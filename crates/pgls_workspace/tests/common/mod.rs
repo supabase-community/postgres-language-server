@@ -1,4 +1,5 @@
-//! A global allocator that counts the bytes allocated by the test binary, for the memory tests.
+//! A global allocator that counts the allocations and bytes of the test binary, for the memory
+//! and scale tests.
 //! Each test binary that uses it runs a single test, so that nothing else allocates at the same
 //! time.
 //!
@@ -18,11 +19,16 @@ struct Counting;
 
 pub(crate) static CURRENT: AtomicUsize = AtomicUsize::new(0);
 pub(crate) static PEAK: AtomicUsize = AtomicUsize::new(0);
+/// Every allocation and growing reallocation, and the bytes they asked for.
+pub(crate) static ALLOCATIONS: AtomicUsize = AtomicUsize::new(0);
+pub(crate) static ALLOCATED: AtomicUsize = AtomicUsize::new(0);
 
 unsafe impl GlobalAlloc for Counting {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = unsafe { System.alloc(layout) };
         if !ptr.is_null() {
+            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
+            ALLOCATED.fetch_add(layout.size(), Ordering::Relaxed);
             let current = CURRENT.fetch_add(layout.size(), Ordering::Relaxed) + layout.size();
             PEAK.fetch_max(current, Ordering::Relaxed);
         }
@@ -39,6 +45,8 @@ unsafe impl GlobalAlloc for Counting {
         if !new.is_null() {
             if new_size >= layout.size() {
                 let grown = new_size - layout.size();
+                ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
+                ALLOCATED.fetch_add(grown, Ordering::Relaxed);
                 let current = CURRENT.fetch_add(grown, Ordering::Relaxed) + grown;
                 PEAK.fetch_max(current, Ordering::Relaxed);
             } else {
@@ -73,6 +81,31 @@ pub(crate) fn current() -> usize {
 /// The most bytes allocated at once since the last [`reset_peak`].
 pub(crate) fn peak() -> usize {
     PEAK.load(Ordering::Relaxed)
+}
+
+/// The number of allocations and the bytes allocated so far.
+pub(crate) fn allocated() -> (usize, usize) {
+    (
+        ALLOCATIONS.load(Ordering::Relaxed),
+        ALLOCATED.load(Ordering::Relaxed),
+    )
+}
+
+/// A migration-style file: per group a table, an index, a SQL function and a query.
+pub(crate) fn migration_file(document: usize, groups: usize) -> String {
+    let mut sql = String::new();
+    for i in 0..groups {
+        // Names of one width, so that statements at the end of a larger file don't format
+        // differently.
+        let i = format!("{i:04}");
+        sql.push_str(&format!(
+            "create table t{document}_{i} (id bigint primary key, name text not null, status text, created_at timestamp default now());\n\
+             create index t{document}_{i}_name_idx on t{document}_{i} (name);\n\
+             create function f{document}_{i}(a int, b text) returns int language sql stable as $$ select count(*)::int from t{document}_{i} where id = a and name = b $$;\n\
+             select t.id, t.name, f{document}_{i}(1, 'x') from t{document}_{i} t where t.status = 'active' order by t.created_at;\n"
+        ));
+    }
+    sql
 }
 
 /// Makes tree-sitter allocate through the counting allocator. Call it before anything uses

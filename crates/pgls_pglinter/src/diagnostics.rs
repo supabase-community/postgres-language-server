@@ -1,6 +1,6 @@
 //! Pglinter diagnostic types
 
-use crate::cache::RuleMessage;
+use crate::extension::RuleMessage;
 use pgls_diagnostics::{
     Advices, Category, Diagnostic, LogCategory, MessageAndDescription, Severity, Visit,
 };

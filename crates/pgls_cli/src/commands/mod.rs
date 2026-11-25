@@ -1,7 +1,6 @@
 use crate::changed::{get_changed_files, get_staged_files};
 use crate::cli_options::{CliOptions, CliReporter, ColorsArg, cli_options};
-use crate::execute::{StdinPayload, VcsTargeting};
-use crate::logging::LoggingKind;
+use crate::execute::StdinPayload;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
@@ -146,28 +145,9 @@ pub enum PgLSCommand {
     /// Starts the daemon server process.
     #[bpaf(command)]
     Start {
-        /// Allows to change the prefix applied to the file name of the logs.
-        #[bpaf(
-            env("PGLS_LOG_PREFIX_NAME"),
-            env("PGT_LOG_PREFIX_NAME"),
-            long("log-prefix-name"),
-            argument("STRING"),
-            hide_usage,
-            fallback(String::from("server.log")),
-            display_fallback
-        )]
-        log_prefix_name: String,
+        #[bpaf(external(log_options), hide_usage)]
+        log_options: LogOptions,
 
-        /// Allows to change the folder where logs are stored.
-        #[bpaf(
-            env("PGLS_LOG_PATH"),
-            env("PGT_LOG_PATH"),
-            long("log-path"),
-            argument("PATH"),
-            hide_usage,
-            fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
-        )]
-        log_path: PathBuf,
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
@@ -190,27 +170,9 @@ pub enum PgLSCommand {
     /// Acts as a server for the Language Server Protocol over stdin/stdout.
     #[bpaf(command("lsp-proxy"))]
     LspProxy {
-        /// Allows to change the prefix applied to the file name of the logs.
-        #[bpaf(
-            env("PGLS_LOG_PREFIX_NAME"),
-            env("PGT_LOG_PREFIX_NAME"),
-            long("log-prefix-name"),
-            argument("STRING"),
-            hide_usage,
-            fallback(String::from("server.log")),
-            display_fallback
-        )]
-        log_prefix_name: String,
-        /// Allows to change the folder where logs are stored.
-        #[bpaf(
-            env("PGLS_LOG_PATH"),
-            env("PGT_LOG_PATH"),
-            long("log-path"),
-            argument("PATH"),
-            hide_usage,
-            fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
-        )]
-        log_path: PathBuf,
+        #[bpaf(external(log_options), hide_usage)]
+        log_options: LogOptions,
+
         /// Allows to set a custom file path to the configuration file,
         /// or a custom directory path to find `postgres-language-server.jsonc`
         #[bpaf(
@@ -225,7 +187,6 @@ pub enum PgLSCommand {
         stdio: bool,
     },
 
-    #[bpaf(command)]
     /// Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
     #[bpaf(command)]
     Parse {
@@ -257,28 +218,8 @@ pub enum PgLSCommand {
 
     #[bpaf(command("__run_server"), hide)]
     RunServer {
-        /// Allows to change the prefix applied to the file name of the logs.
-        #[bpaf(
-            env("PGLS_LOG_PREFIX_NAME"),
-            env("PGT_LOG_PREFIX_NAME"),
-            long("log-prefix-name"),
-            argument("STRING"),
-            hide_usage,
-            fallback(String::from("server.log")),
-            display_fallback
-        )]
-        log_prefix_name: String,
-
-        /// Allows to change the folder where logs are stored.
-        #[bpaf(
-            env("PGLS_LOG_PATH"),
-            env("PGT_LOG_PATH"),
-            long("log-path"),
-            argument("PATH"),
-            hide_usage,
-            fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
-        )]
-        log_path: PathBuf,
+        #[bpaf(external(log_options), hide_usage)]
+        log_options: LogOptions,
 
         /// Allows to change the log level. Default is debug. This will only affect "pgls*" crates. All others are logged with info level.
         #[bpaf(
@@ -317,6 +258,42 @@ pub enum PgLSCommand {
     PrintSocket,
 }
 
+// Where the language server writes its logs. Not a doc comment: bpaf would print it as a
+// heading above the options.
+#[derive(Debug, Clone, Bpaf)]
+pub struct LogOptions {
+    /// Allows to change the prefix applied to the file name of the logs.
+    #[bpaf(
+        env("PGLS_LOG_PREFIX_NAME"),
+        env("PGT_LOG_PREFIX_NAME"),
+        long("log-prefix-name"),
+        argument("STRING"),
+        fallback(String::from("server.log")),
+        display_fallback
+    )]
+    pub(crate) log_prefix_name: String,
+
+    /// Allows to change the folder where logs are stored.
+    #[bpaf(
+        env("PGLS_LOG_PATH"),
+        env("PGT_LOG_PATH"),
+        long("log-path"),
+        argument("PATH"),
+        fallback(pgls_fs::ensure_cache_dir().join("pgls-logs")),
+    )]
+    pub(crate) log_path: PathBuf,
+}
+
+impl LogOptions {
+    /// The arguments that pass the options on to the language server process.
+    pub(crate) fn args(&self) -> [String; 2] {
+        [
+            format!("--log-path={}", self.log_path.display()),
+            format!("--log-prefix-name={}", self.log_prefix_name),
+        ]
+    }
+}
+
 impl PgLSCommand {
     const fn cli_options(&self) -> Option<&CliOptions> {
         match self {
@@ -343,12 +320,6 @@ impl PgLSCommand {
                 if matches!(cli_options.reporter, CliReporter::GitHub) {
                     return Some(&ColorsArg::Off);
                 }
-                // We want force colors in CI, to give e better UX experience
-                // Unless users explicitly set the colors flag
-                // if matches!(self, Postgres ToolsCommand::Ci { .. }) && cli_options.colors.is_none() {
-                //     return Some(&ColorsArg::Force);
-                // }
-                // Normal behaviors
                 cli_options.colors.as_ref()
             }
             None => None,
@@ -362,44 +333,41 @@ impl PgLSCommand {
         }
     }
 
-    pub const fn has_metrics(&self) -> bool {
-        false
-    }
-
     pub fn is_verbose(&self) -> bool {
         self.cli_options()
             .is_some_and(|cli_options| cli_options.verbose)
-    }
-
-    pub fn log_level(&self) -> LoggingLevel {
-        self.cli_options()
-            .map_or(LoggingLevel::default(), |cli_options| cli_options.log_level)
-    }
-
-    pub fn log_kind(&self) -> LoggingKind {
-        self.cli_options()
-            .map_or(LoggingKind::default(), |cli_options| cli_options.log_kind)
     }
 }
 
 /// The files that `check` and `format` process: the given paths, the files changed or staged in
 /// git, or the code piped to `stdin`.
-pub(crate) struct FileTargets {
-    pub paths: Vec<OsString>,
-    pub stdin_file_path: Option<String>,
-    pub staged: bool,
-    pub changed: bool,
-    pub since: Option<String>,
+#[derive(Debug)]
+pub(crate) enum Targets {
+    /// The given paths, or the working directory without any.
+    Paths(Vec<OsString>),
+    /// The code piped to `stdin`, with the virtual path of the file it is.
+    Stdin(String),
+    /// The files staged in git.
+    Staged,
+    /// The files changed in git compared to `since`, or else the default branch.
+    Changed { since: Option<String> },
 }
 
-impl FileTargets {
-    /// Rejects the arguments that can't be combined, before the workspace is set up.
-    pub(crate) fn validate(&self) -> Result<(), CliDiagnostic> {
-        if self.stdin_file_path.is_some() {
+impl Targets {
+    /// The targets of the arguments. Rejects the arguments that can't be combined, before the
+    /// workspace is set up. With `--staged` or `--changed`, the paths are ignored.
+    pub(crate) fn new(
+        paths: Vec<OsString>,
+        stdin_file_path: Option<String>,
+        staged: bool,
+        changed: bool,
+        since: Option<String>,
+    ) -> Result<Self, CliDiagnostic> {
+        if stdin_file_path.is_some() {
             let incompatible = [
-                ("PATH", !self.paths.is_empty()),
-                ("staged", self.staged),
-                ("changed", self.changed),
+                ("PATH", !paths.is_empty()),
+                ("staged", staged),
+                ("changed", changed),
             ];
             if let Some((argument, _)) = incompatible.iter().find(|(_, is_set)| *is_set) {
                 return Err(CliDiagnostic::incompatible_arguments(
@@ -409,20 +377,38 @@ impl FileTargets {
             }
         }
 
-        if self.since.is_some() {
-            if !self.changed {
+        if since.is_some() {
+            if !changed {
                 return Err(CliDiagnostic::incompatible_arguments("since", "changed"));
             }
-            if self.staged {
+            if staged {
                 return Err(CliDiagnostic::incompatible_arguments("since", "staged"));
             }
         }
 
-        if self.changed && self.staged {
+        if changed && staged {
             return Err(CliDiagnostic::incompatible_arguments("changed", "staged"));
         }
 
-        Ok(())
+        Ok(match (stdin_file_path, staged, changed) {
+            (Some(path), _, _) => Self::Stdin(path),
+            (None, true, _) => Self::Staged,
+            (None, false, true) => Self::Changed { since },
+            (None, false, false) => Self::Paths(paths),
+        })
+    }
+
+    /// The virtual path of the code piped to `stdin`.
+    pub(crate) fn stdin_file_path(&self) -> Option<&str> {
+        match self {
+            Self::Stdin(path) => Some(path),
+            Self::Paths(_) | Self::Staged | Self::Changed { .. } => None,
+        }
+    }
+
+    /// Whether the files come from git, with `--staged` or `--changed`.
+    pub(crate) fn is_vcs(&self) -> bool {
+        matches!(self, Self::Staged | Self::Changed { .. })
     }
 
     /// The paths to process: the changed or staged files, else the given paths, else the working
@@ -432,40 +418,28 @@ impl FileTargets {
         fs: &DynRef<'_, dyn FileSystem>,
         configuration: &PartialConfiguration,
     ) -> Result<Vec<OsString>, CliDiagnostic> {
-        if self.stdin_file_path.is_some() {
-            return Ok(Vec::new());
+        match self {
+            Self::Stdin(_) => Ok(Vec::new()),
+            Self::Changed { since } => get_changed_files(fs, configuration, since.as_deref()),
+            Self::Staged => get_staged_files(fs),
+            Self::Paths(paths) => {
+                let mut paths = paths.clone();
+                if paths.is_empty()
+                    && let Some(current_dir) = fs.working_directory()
+                {
+                    paths.push(current_dir.into_os_string());
+                }
+                Ok(paths)
+            }
         }
-
-        if self.changed {
-            return get_changed_files(fs, configuration, self.since.as_deref());
-        }
-        if self.staged {
-            return get_staged_files(fs);
-        }
-
-        let mut paths = self.paths.clone();
-        if paths.is_empty()
-            && let Some(current_dir) = fs.working_directory()
-        {
-            paths.push(current_dir.into_os_string());
-        }
-
-        Ok(paths)
     }
 
     /// The paths whose nested configuration files apply: the virtual path of the code piped to
     /// `stdin`, or else the paths to process.
     pub(crate) fn nested_configuration_paths(&self, paths: &[OsString]) -> Vec<OsString> {
-        match &self.stdin_file_path {
-            Some(path) => vec![OsString::from(path)],
-            None => paths.to_vec(),
-        }
-    }
-
-    pub(crate) fn vcs(&self) -> VcsTargeting {
-        VcsTargeting {
-            staged: self.staged,
-            changed: self.changed,
+        match self {
+            Self::Stdin(path) => vec![OsString::from(path)],
+            Self::Paths(_) | Self::Staged | Self::Changed { .. } => paths.to_vec(),
         }
     }
 }
@@ -541,16 +515,6 @@ mod tests {
             .unwrap()
     }
 
-    fn file_targets() -> FileTargets {
-        FileTargets {
-            paths: Vec::new(),
-            stdin_file_path: None,
-            staged: false,
-            changed: false,
-            since: None,
-        }
-    }
-
     fn traversal(unchanged: usize) -> TraversalData {
         TraversalData {
             evaluated_paths: BTreeSet::new(),
@@ -560,7 +524,6 @@ mod tests {
             suggested_fixes_skipped: 0,
             fixable_diagnostics: 0,
             writes: false,
-            diagnostics_not_printed: 0,
             workspace_root: None,
             vcs_targeted: false,
         }
@@ -568,27 +531,33 @@ mod tests {
 
     #[test]
     fn stdin_file_path_rejects_the_other_targets() {
-        let stdin = || FileTargets {
-            stdin_file_path: Some("virtual.sql".into()),
-            ..file_targets()
-        };
-        assert!(stdin().validate().is_ok());
-        for targets in [
-            FileTargets {
-                paths: vec!["file.sql".into()],
-                ..stdin()
-            },
-            FileTargets {
-                staged: true,
-                ..stdin()
-            },
-            FileTargets {
-                changed: true,
-                ..stdin()
-            },
+        let stdin = Some(String::from("virtual.sql"));
+        assert!(matches!(
+            Targets::new(Vec::new(), stdin.clone(), false, false, None),
+            Ok(Targets::Stdin(_))
+        ));
+        for (paths, staged, changed) in [
+            (vec![OsString::from("file.sql")], false, false),
+            (Vec::new(), true, false),
+            (Vec::new(), false, true),
         ] {
             assert!(matches!(
-                targets.validate(),
+                Targets::new(paths, stdin.clone(), staged, changed, None),
+                Err(CliDiagnostic::IncompatibleArguments(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn since_needs_changed() {
+        let since = || Some(String::from("main"));
+        assert!(matches!(
+            Targets::new(Vec::new(), None, false, true, since()),
+            Ok(Targets::Changed { since: Some(_) })
+        ));
+        for (staged, changed) in [(false, false), (true, false), (true, true)] {
+            assert!(matches!(
+                Targets::new(Vec::new(), None, staged, changed, since()),
                 Err(CliDiagnostic::IncompatibleArguments(_))
             ));
         }

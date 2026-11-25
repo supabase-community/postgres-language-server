@@ -97,7 +97,7 @@ Shows the version information and quit.
    
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash; 
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
    
   [default: info]
 
@@ -224,7 +224,7 @@ Lints your database schema.
    
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash; 
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
    
   [default: info]
 
@@ -351,7 +351,7 @@ Runs everything to the requested files.
    
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash; 
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
    
   [default: info]
 
@@ -504,7 +504,7 @@ Formats the requested files.
    
   [default: pretty]
 - **`    --diagnostic-level`**=_`<info|warn|error>`_ &mdash; 
-  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Tools to print only diagnostics that contain only errors.
+  The level of diagnostics to show. In order, from the lowest to the most important: info, warn, error. Passing `--diagnostic-level=error` will cause Postgres Language Server to print only diagnostics that contain only errors.
    
   [default: info]
 

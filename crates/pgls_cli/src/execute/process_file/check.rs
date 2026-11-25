@@ -4,25 +4,19 @@ use pgls_diagnostics::{Error, category};
 use crate::execute::config::ExecutionMode;
 use crate::execute::diagnostics::ResultExt;
 use crate::execute::process_file::workspace_file::WorkspaceFile;
-use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
+use crate::execute::process_file::{FileResult, FileStatus, Message};
+use crate::execute::walk::TraversalOptions;
 use pgls_fs::PgLSPath;
-use pgls_workspace::WorkspaceError;
 use pgls_workspace::features::code_actions::FixFileParams;
 use std::path::Path;
 
 /// Lints a single file and returns a [FileResult]
-pub(crate) fn check_file<'ctx>(
-    ctx: &'ctx SharedTraversalOptions<'ctx, '_>,
-    path: &Path,
-) -> FileResult {
+pub(crate) fn check_file(ctx: &TraversalOptions, path: &Path) -> FileResult {
     let mut workspace_file = WorkspaceFile::new(ctx, path)?;
     check_with_guard(ctx, &mut workspace_file)
 }
 
-pub(crate) fn check_with_guard<'ctx>(
-    ctx: &'ctx SharedTraversalOptions<'ctx, '_>,
-    workspace_file: &mut WorkspaceFile,
-) -> FileResult {
+fn check_with_guard(ctx: &TraversalOptions, workspace_file: &mut WorkspaceFile) -> FileResult {
     tracing::info_span!("Processes check", path =? workspace_file.path.display()).in_scope(
         move || {
             let mut input = workspace_file.input()?;
@@ -71,11 +65,7 @@ pub(crate) fn check_with_guard<'ctx>(
                     )?;
 
                 if fixed.fixes_applied > 0 && fixed.code != input {
-                    std::fs::write(&workspace_file.path, &fixed.code).map_err(|e| {
-                        Message::from(WorkspaceError::runtime(&format!(
-                            "Could not write to file: {e}"
-                        )))
-                    })?;
+                    workspace_file.write(&fixed.code)?;
                     workspace_file
                         .guard()
                         .change_file(1, fixed.code.clone())

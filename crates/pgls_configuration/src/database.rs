@@ -133,12 +133,12 @@ impl PartialDatabaseConfiguration {
     /// Reads `DATABASE_URL`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, and `PGDATABASE`.
     /// Returns `None` if no relevant env vars are set.
     pub fn from_env() -> Option<Self> {
-        let database_url = std::env::var("DATABASE_URL").ok();
-        let pghost = std::env::var("PGHOST").ok();
-        let pgport = std::env::var("PGPORT").ok().and_then(|p| p.parse().ok());
-        let pguser = std::env::var("PGUSER").ok();
-        let pgpassword = std::env::var("PGPASSWORD").ok();
-        let pgdatabase = std::env::var("PGDATABASE").ok();
+        let database_url = pgls_env::DATABASE_URL.value();
+        let pghost = pgls_env::PGHOST.value();
+        let pgport = pgls_env::PGPORT.value().and_then(|p| p.parse().ok());
+        let pguser = pgls_env::PGUSER.value();
+        let pgpassword = pgls_env::PGPASSWORD.value();
+        let pgdatabase = pgls_env::PGDATABASE.value();
 
         let has_any = database_url.is_some()
             || pghost.is_some()

@@ -85,36 +85,31 @@ pub fn goto_closest_unfinished_parent_clause(node: Node<'_>) -> Option<Node<'_>>
     None
 }
 
+/// Whether the node before `node` is complete: a single token, or a node with its `end` whose last
+/// child is complete too, down to a leaf. A loop over the last children, since tree-sitter doesn't
+/// bound the depth of its trees.
 pub fn previous_sibling_completed(node: tree_sitter::Node) -> bool {
-    if let Some(prev) = node.prev_sibling() {
-        let explicit_skip = SINGLE_TOKEN_RULES.contains(&prev.kind());
-        let is_parent = prev.child_count() > 0;
-        let is_finished = prev.child_by_field_name("end").is_some();
+    let Some(prev) = node.prev_sibling() else {
+        return true;
+    };
+
+    let mut cursor = prev.walk();
+    loop {
+        let current = cursor.node();
+        let explicit_skip = SINGLE_TOKEN_RULES.contains(&current.kind());
+        let is_parent = current.child_count() > 0;
+        let is_finished = current.child_by_field_name("end").is_some();
 
         if explicit_skip || !is_parent {
             return true;
         }
 
-        is_finished && last_children_completed(prev)
-    } else {
-        true
-    }
-}
-
-fn last_children_completed(node: tree_sitter::Node) -> bool {
-    let mut cursor = node.walk();
-
-    if let Some(last_child) = node.children(&mut cursor).last() {
-        let explicit_skip = SINGLE_TOKEN_RULES.contains(&last_child.kind());
-        let is_parent = last_child.child_count() > 0;
-        let is_finished = last_child.child_by_field_name("end").is_some();
-
-        if explicit_skip || !is_parent {
-            return true;
+        if !is_finished {
+            return false;
         }
 
-        is_finished && last_children_completed(last_child)
-    } else {
-        true
+        if !cursor.goto_last_child() {
+            return true;
+        }
     }
 }
