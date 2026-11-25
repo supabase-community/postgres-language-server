@@ -27,7 +27,7 @@ pub use linter_options::{LinterOptions, LinterRules, RuleOptions};
 pub use linter_registry::{
     LinterRegistryRuleParams, LinterRuleRegistry, LinterRuleRegistryBuilder,
 };
-pub use linter_rule::{FixEdit, LinterDiagnostic, LinterRule, RuleFix};
+pub use linter_rule::{LinterDiagnostic, LinterRule, RuleFix};
 pub use pgls_walk::{
     AnalysableStatement, AnalysedFileContext, Direction, ResolveOptions, STOP_CHECK_INTERVAL, Unit,
     UnparsableStatement, Walk, WalkParams, WalkState, is_plain_query, walk_statements,
@@ -349,7 +349,7 @@ fn debug_assert_in_statement(diagnostic: &LinterDiagnostic, stmt: &AnalysableSta
         );
     }
     let len = stmt.sql.as_deref().map_or(stmt.range.len(), TextSize::of);
-    for edit in diagnostic.fix.iter().flat_map(|fix| &fix.edits) {
+    for edit in diagnostic.fix.iter().flat_map(RuleFix::edits) {
         debug_assert!(
             edit.range.start() >= len || in_statement(edit.range),
             "{category}: fix edit {:?} is not on char boundaries of the statement at {:?}",

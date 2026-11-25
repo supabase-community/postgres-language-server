@@ -36,7 +36,7 @@ use crate::{
         ActionCategory, CodeActionKind, CodeActionsParams, CommandAction, CommandActionCategory,
         EXECUTE_STATEMENT_MAX_RESULT_SIZE, EXECUTE_STATEMENT_MAX_ROWS,
         EXECUTE_STATEMENT_MAX_VALUE_SIZE, ExecuteStatementError, ExecuteStatementParams,
-        ExecuteStatementResult, FixFileMode, FixFileParams, RefactorKind, TextEdit,
+        ExecuteStatementResult, FixFileMode, FixFileParams, RangeEdit, RefactorKind,
     },
     features::diagnostics::{DatabaseChecks, PullDatabaseDiagnosticsParams},
     features::format::PullFileFormattingParams,
@@ -3767,7 +3767,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     assert_eq!(fix.applicability, Applicability::Always);
     assert_eq!(
         fix.edits,
-        vec![TextEdit {
+        vec![RangeEdit {
             range: TextRange::empty(44.into()),
             new_text: " concurrently".into(),
         }]
@@ -3780,7 +3780,7 @@ fn test_code_actions_fix_and_suppress_lint_diagnostics() {
     );
     assert_eq!(
         suppression.edits,
-        vec![TextEdit {
+        vec![RangeEdit {
             range: TextRange::empty(32.into()),
             new_text: "  -- pgls-ignore requireConcurrentIndexDeletion\n".into(),
         }]
@@ -4972,7 +4972,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     );
     assert_eq!(
         edit.edits,
-        vec![TextEdit {
+        vec![RangeEdit {
             range: range_of("*"),
             new_text: r#"i.id, i."Label", t.id, t.item_id, t.select"#.into(),
         }]
@@ -4984,7 +4984,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     assert_eq!(actions[0].0, "Expand `t.*` into its columns");
     assert_eq!(
         actions[0].1.edits,
-        vec![TextEdit {
+        vec![RangeEdit {
             range: range_of("t.*"),
             new_text: r#"t.id, t.item_id, t.select"#.into(),
         }]
@@ -4995,7 +4995,7 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     assert_eq!(actions.len(), 1, "{actions:?}");
     assert_eq!(
         actions[0].1.edits,
-        vec![TextEdit {
+        vec![RangeEdit {
             range: TextRange::at(range_of("* from star_items'").start(), 1.into()),
             new_text: r#"id, "Label""#.into(),
         }]
@@ -5108,7 +5108,7 @@ fn test_non_transactional_statement_in_a_function_body() {
 
 /// The edit of the action that suppresses `rule` at `cursor`, and the lint diagnostics of `rule`
 /// that are left once it is applied.
-fn suppress(content: &str, cursor: usize, rule: &str) -> (TextEdit, usize) {
+fn suppress(content: &str, cursor: usize, rule: &str) -> (RangeEdit, usize) {
     let (workspace, project_key) =
         get_test_workspace(None).expect("Unable to create test workspace");
     let path = PgLSPath::new("test.sql");
@@ -5141,7 +5141,7 @@ fn suppress(content: &str, cursor: usize, rule: &str) -> (TextEdit, usize) {
         .expect("expected a suppression action");
 
     let mut suppressed = content.to_string();
-    suppressed.replace_range(std::ops::Range::<usize>::from(edit.range), &edit.new_text);
+    assert!(edit.apply(&mut suppressed), "{edit:?}");
     let path = PgLSPath::new("suppressed.sql");
     workspace
         .open_file(OpenFileParams {
@@ -5186,7 +5186,7 @@ fn test_suppression_goes_above_the_statement() {
     );
     assert_eq!(
         edit,
-        TextEdit {
+        RangeEdit {
             range: TextRange::empty(10.into()),
             new_text: "  -- pgls-ignore identifierTooLong\n".into(),
         }
@@ -5201,7 +5201,7 @@ fn test_suppression_of_a_statement_in_a_function_body() {
     let (edit, left) = suppress(content, content.find("drop table").unwrap(), "banDropTable");
     assert_eq!(
         edit,
-        TextEdit {
+        RangeEdit {
             range: TextRange::empty(0.into()),
             new_text: "-- pgls-ignore banDropTable\n".into(),
         }
@@ -5215,7 +5215,7 @@ fn test_suppression_of_a_statement_in_the_middle_of_a_line() {
     let (edit, left) = suppress(content, content.find("drop").unwrap(), "banDropTable");
     assert_eq!(
         edit,
-        TextEdit {
+        RangeEdit {
             range: TextRange::new(11.into(), 12.into()),
             new_text: "\n  -- pgls-ignore banDropTable\n  ".into(),
         }
@@ -5238,7 +5238,7 @@ fn test_suppression_keeps_lone_cr_line_endings() {
     let (edit, left) = suppress(content, 12, "banDropTable");
     assert_eq!(
         edit,
-        TextEdit {
+        RangeEdit {
             range: TextRange::empty(10.into()),
             new_text: "-- pgls-ignore banDropTable\r".into(),
         }
