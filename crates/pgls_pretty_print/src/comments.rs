@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use pgls_query::{NodeEnum, NodeRef, protobuf::BoolExprType, protobuf::Token};
 
 use crate::codegen::node_location::node_location;
+use crate::source::Source;
 
 /// A comment found in the source of a statement.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,16 +59,16 @@ enum Placement {
     Trailing(i32),
 }
 
-/// Attaches every comment of `sql` to a nearby AST node.
+/// Attaches every comment of the statement to a nearby AST node.
 ///
 /// Attachment is positional because libpg_query drops comments from the AST, and positional is
 /// enough: nodes carrying an i32 location field preserve the byte offset they were parsed from.
 /// A comment preceded only by whitespace on its line is leading and belongs to the next node. A
 /// comment following SQL on the same line is trailing and belongs to the previous node.
-pub(crate) fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
+pub(crate) fn attach_comments(source: &Source<'_>, ast: &NodeEnum) -> AttachedComments {
     let mut attached = AttachedComments::default();
 
-    let comments = collect_comments(sql);
+    let comments = collect_comments(source);
     if comments.is_empty() {
         return attached;
     }
@@ -81,7 +82,8 @@ pub(crate) fn attach_comments(sql: &str, ast: &NodeEnum) -> AttachedComments {
             _ => None,
         })
         .collect();
-    let keyword_after = keywords_after_comments(sql, &locations, &case_locations);
+    let sql = source.sql;
+    let keyword_after = keywords_after_comments(source, &locations, &case_locations);
     let mut group_placements = HashMap::new();
 
     for mut source_comment in comments {
@@ -251,22 +253,18 @@ struct KeywordAnchor {
 /// there. A comma counts as such a keyword, but anchors only the comment right before it. Matching
 /// CASE and END tokens identifies the expression that owns a closing comment.
 fn keywords_after_comments(
-    sql: &str,
+    source: &Source<'_>,
     locations: &[i32],
     case_locations: &HashSet<i32>,
 ) -> HashMap<usize, KeywordAnchor> {
     use pgls_query::protobuf::KeywordKind;
-
-    let Ok(scan) = pgls_query::scan(sql) else {
-        return HashMap::new();
-    };
 
     let mut keywords = HashMap::new();
     let mut pending_comments = Vec::new();
     let mut cases = Vec::new();
     let mut parentheses = 0usize;
     let mut previous_token = None;
-    for token in &scan.tokens {
+    for token in &source.tokens {
         let kind = Token::try_from(token.token).ok();
         let case_location = match kind {
             Some(Token::SqlComment | Token::CComment) => {
@@ -300,7 +298,7 @@ fn keywords_after_comments(
         if !pending_comments.is_empty()
             && (token.keyword_kind != KeywordKind::NoKeyword as i32 || is_comma)
             && locations.binary_search(&token.start).is_err()
-            && let Some(keyword) = sql.get(token.start as usize..token.end as usize)
+            && let Some(keyword) = source.sql.get(token.start as usize..token.end as usize)
         {
             // A comma anchors only the comment right before it, in a group of its own: the
             // comments before it may belong to different items, and placing them together moves
@@ -331,12 +329,9 @@ fn keywords_after_comments(
 }
 
 /// Every comment of the statement, with its source range, in source order.
-fn collect_comments(sql: &str) -> Vec<SourceComment> {
-    let Ok(scan) = pgls_query::scan(sql) else {
-        return Vec::new();
-    };
-
-    scan.tokens
+fn collect_comments(source: &Source<'_>) -> Vec<SourceComment> {
+    source
+        .tokens
         .iter()
         .filter_map(|token| {
             let kind = Token::try_from(token.token).ok()?;
@@ -348,7 +343,7 @@ fn collect_comments(sql: &str) -> Vec<SourceComment> {
 
             let start = usize::try_from(token.start).ok()?;
             let end = usize::try_from(token.end).ok()?;
-            let text = sql.get(start..end)?.trim_end().to_string();
+            let text = source.sql.get(start..end)?.trim_end().to_string();
 
             Some(SourceComment {
                 start,
@@ -407,7 +402,7 @@ mod tests {
     #[test]
     fn a_comment_attaches_to_the_node_that_follows_it() {
         let sql = "SELECT\n-- pick the magic value\n1 FROM s.t";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert_eq!(attached.leading_by_location.len(), 1);
@@ -426,7 +421,7 @@ mod tests {
     #[test]
     fn a_block_comment_is_not_a_line_comment() {
         let sql = "SELECT /* inline */ 1 FROM s.t";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         let comments = attached
             .leading_by_location
@@ -440,7 +435,7 @@ mod tests {
     #[test]
     fn a_trailing_comment_attaches_to_the_node_that_precedes_it() {
         let sql = "SELECT * FROM t WHERE a = 1 -- context\nAND b = 2";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert!(attached.leading_by_location.is_empty());
@@ -458,7 +453,7 @@ mod tests {
     #[test]
     fn a_comment_after_a_clause_header_attaches_to_the_node_that_follows_it() {
         let sql = "SELECT * FROM t ORDER BY -- sort by name\nname";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert_eq!(attached.leading_by_location.len(), 1);
@@ -476,7 +471,7 @@ mod tests {
     #[test]
     fn a_line_comment_after_a_comma_stays_with_the_item_before_it() {
         let sql = "SELECT a, -- the first column\nb FROM t";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert!(attached.leading_by_location.is_empty());
@@ -494,7 +489,7 @@ mod tests {
     #[test]
     fn a_comment_after_an_opening_parenthesis_attaches_to_the_node_that_follows_it() {
         let sql = "SELECT f( -- the argument\na) FROM t";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert_eq!(attached.leading_by_location.len(), 1);
@@ -504,7 +499,7 @@ mod tests {
     #[test]
     fn a_comment_with_no_node_after_it_falls_back_to_the_previous_node() {
         let sql = "SELECT 1 FROM s.t -- trailing";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.unattached.is_empty());
         assert_eq!(attached.trailing_by_location.len(), 1);
@@ -519,7 +514,7 @@ mod tests {
     #[test]
     fn a_comment_after_a_statement_terminator_stays_unattached() {
         let sql = "SELECT 1 FROM s.t; -- trailing";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert_eq!(attached.unattached.len(), 1);
         assert_eq!(attached.unattached[0].text, "-- trailing");
@@ -528,7 +523,7 @@ mod tests {
     #[test]
     fn a_comment_before_a_keyword_records_the_keyword() {
         let sql = "SELECT CASE WHEN a THEN 'x' /* why */ ELSE 'y' END";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         let comments = attached
             .leading_by_location
@@ -545,7 +540,7 @@ mod tests {
             ("SELECT a\n/* why */, b", None),
             ("SELECT a /* why\n */, b", None),
         ] {
-            let attached = attach_comments(sql, &parse(sql));
+            let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
             let comments = attached
                 .leading_by_location
@@ -559,7 +554,7 @@ mod tests {
     #[test]
     fn a_comment_before_end_is_anchored_to_its_case() {
         let sql = "SELECT CASE WHEN a THEN 1 ELSE 2 /* last */ END FROM t";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.leading_by_location.is_empty());
         assert!(attached.trailing_by_location.is_empty());
@@ -573,7 +568,7 @@ mod tests {
     #[test]
     fn a_statement_without_comments_produces_an_empty_map() {
         let sql = "SELECT 1 FROM s.t";
-        let attached = attach_comments(sql, &parse(sql));
+        let attached = attach_comments(&Source::scan(sql), &parse(sql));
 
         assert!(attached.leading_by_location.is_empty());
         assert!(attached.trailing_by_location.is_empty());
