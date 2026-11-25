@@ -187,14 +187,47 @@ impl<'a> Splitter<'a> {
     /// back. Notes the keyword in either case: [`crate::split`] decides with Postgres' parser
     /// whether it starts a statement after all.
     fn hold_back(&mut self) -> bool {
-        if !self
-            .look_back(true)
-            .is_some_and(|kind| NEEDS_OPERAND.contains(&kind))
-        {
+        let Some(prev) = (0..self.current_pos)
+            .rev()
+            .find(|&idx| !self.is_trivia(idx))
+        else {
+            return false;
+        };
+        if !NEEDS_OPERAND.contains(&self.lexed.kind(prev)) && !self.ends_operator(prev) {
             return false;
         }
         self.operand_keywords.push(self.current_pos);
         self.hold_back_statement_starts
+    }
+
+    /// Whether the `*` at `idx` ends an operator of several characters, e.g. `~*`, which needs
+    /// an operand. A `*` on its own can end a statement, e.g. `select t.*`. Postgres reads a run
+    /// of operator characters as one operator:
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367-L368
+    fn ends_operator(&self, idx: usize) -> bool {
+        self.lexed.kind(idx) == SyntaxKind::STAR
+            && idx.checked_sub(1).is_some_and(|before| {
+                matches!(
+                    self.lexed.kind(before),
+                    SyntaxKind::TILDE
+                        | SyntaxKind::BANG
+                        | SyntaxKind::AT
+                        | SyntaxKind::POUND
+                        | SyntaxKind::CARET
+                        | SyntaxKind::AMP
+                        | SyntaxKind::PIPE
+                        | SyntaxKind::BACKTICK
+                        | SyntaxKind::QUESTION
+                        | SyntaxKind::PLUS
+                        | SyntaxKind::MINUS
+                        | SyntaxKind::STAR
+                        | SyntaxKind::SLASH
+                        | SyntaxKind::PERCENT
+                        | SyntaxKind::L_ANGLE
+                        | SyntaxKind::R_ANGLE
+                        | SyntaxKind::EQ
+                )
+            })
     }
 
     pub(crate) fn start_stmt(&mut self) {
