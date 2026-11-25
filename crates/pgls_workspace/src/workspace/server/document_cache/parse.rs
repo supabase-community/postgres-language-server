@@ -190,6 +190,13 @@ impl PgQueryStore {
                 // ignore `is not a known variable` for composite types because libpg_query reports a false positive.
                 // https://github.com/pganalyze/libpg_query/issues/159
                 pgls_query::Error::Parse(err) if is_composite_type_error(err) => Ok(()),
+                pgls_query::Error::Parse(err)
+                    if NO_CATALOG_ERRORS
+                        .iter()
+                        .any(|message| err.contains(message)) =>
+                {
+                    Ok(())
+                }
                 _ => Err(e),
             })
             .map_err(|e| SyntaxDiagnostic::new(e.to_string(), range));
@@ -201,6 +208,18 @@ impl PgQueryStore {
         Some(r)
     }
 }
+
+/// Errors libpg_query reports on valid PL/pgSQL functions because it compiles them without a
+/// catalog: it only knows the types of `pg_catalog`, reads an unknown type in `public` as
+/// `record`, so an array of one as `_record`, finds no element type for a `VARIADIC` array, and
+/// fails with `Not implemented` on anything else, e.g. a type in another schema.
+/// https://github.com/pganalyze/libpg_query/blob/18.1.0/src/postgres/src_backend_utils_cache_syscache.c#L332-L344
+const NO_CATALOG_ERRORS: &[&str] = &[
+    "Not implemented",
+    "cannot accept type _record",
+    "cannot return type _record",
+    "VARIADIC parameter must be an array",
+];
 
 #[expect(
     clippy::unwrap_used,
@@ -480,6 +499,20 @@ $$;
         let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
 
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn plpgsql_valid_without_a_catalog() {
+        for input in [
+            "create function f(x my_enum[]) returns void language plpgsql as $$ begin end $$",
+            "create function f() returns my_enum[] language plpgsql as $$ begin return null; end $$",
+            "create function f() returns void language plpgsql as $$ declare u auth.users; begin end $$",
+            "create function f(variadic b int[]) returns void language plpgsql as $$ begin end $$",
+        ] {
+            let store = PgQueryStore::new();
+            let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
+            assert!(matches!(res, Some(Ok(()))), "{input}: {res:?}");
+        }
     }
 
     #[test]
