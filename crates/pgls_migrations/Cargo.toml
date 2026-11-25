@@ -13,7 +13,7 @@ version              = "0.0.0"
 
 [dependencies]
 pgls_diagnostics = { workspace = true }
-pgls_fs          = { workspace = true, features = ["serde"] }
+pgls_fs          = { workspace = true }
 pgls_lexer       = { workspace = true }
 pgls_text_size   = { workspace = true }
 schemars         = { workspace = true, optional = true }

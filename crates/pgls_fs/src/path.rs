@@ -4,8 +4,18 @@ use std::{
 };
 
 /// A path of a file of the workspace.
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct PgLSPath {
     path: PathBuf,

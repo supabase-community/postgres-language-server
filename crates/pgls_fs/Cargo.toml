@@ -28,8 +28,6 @@ tempfile = "3.15.0"
 
 [features]
 schema = ["dep:schemars", "pgls_diagnostics/schema"]
-# Serializes `PgLSPath`, which the workspace's wire types contain.
-serde = []
 
 [lib]
 doctest = false
