@@ -242,7 +242,7 @@ create index wowidx1 on test_tsvector using gist (
 );
 
 create index wowidx1 on test_tsvector using gist (
-  a tsvector_ops(siglen = 100, foo = bar)
+  a tsvector_ops(siglen = 100, foo = 'bar')
 );
 
 create index wowidx1 on test_tsvector using gist (
@@ -1158,7 +1158,7 @@ before insert or update
 on test_tsvector
 for each row
 execute function tsvector_update_trigger(a,
-"pg_catalog.english",
+'pg_catalog.english',
 t);
 
 select count(*) from test_tsvector where a @@ to_tsquery('345&qwerty');

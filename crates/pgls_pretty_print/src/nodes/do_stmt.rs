@@ -62,7 +62,7 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
             e.line(LineType::SoftOrSpace);
             emit_keyword(e, "LANGUAGE");
             e.space();
-            emit_language_name(e, lang);
+            emit_word_or_string(e, lang);
         }
         if let Some((code, _)) = &body {
             e.line(LineType::SoftOrSpace);
@@ -77,7 +77,7 @@ pub(super) fn emit_do_stmt(e: &mut EventEmitter, n: &DoStmt) {
             e.line(LineType::SoftOrSpace);
             emit_keyword(e, "LANGUAGE");
             e.space();
-            emit_language_name(e, lang);
+            emit_word_or_string(e, lang);
         }
     }
 

@@ -100,7 +100,7 @@ pub(crate) fn format_function_option(e: &mut EventEmitter, d: &pgls_query::proto
             e.space();
             if let Some(ref arg) = d.arg {
                 if let Some(pgls_query::NodeEnum::String(s)) = &arg.node {
-                    emit_language_name(e, &s.sval);
+                    emit_word_or_string(e, &s.sval);
                 } else {
                     emit_node(e, arg);
                 }

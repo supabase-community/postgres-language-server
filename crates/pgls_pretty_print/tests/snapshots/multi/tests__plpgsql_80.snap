@@ -379,31 +379,31 @@ create trigger tg_chkslotname
 before insert
 on pslot
 for each row
-execute function tg_chkslotname("PS");
+execute function tg_chkslotname('PS');
 
 create trigger tg_chkslotname
 before insert
 on wslot
 for each row
-execute function tg_chkslotname("WS");
+execute function tg_chkslotname('WS');
 
 create trigger tg_chkslotname
 before insert
 on pline
 for each row
-execute function tg_chkslotname("PL");
+execute function tg_chkslotname('PL');
 
 create trigger tg_chkslotname
 before insert
 on iface
 for each row
-execute function tg_chkslotname("IF");
+execute function tg_chkslotname('IF');
 
 create trigger tg_chkslotname
 before insert
 on phone
 for each row
-execute function tg_chkslotname("PH");
+execute function tg_chkslotname('PH');
 
 create function tg_chkslotlink()
 returns trigger
@@ -696,19 +696,19 @@ create trigger tg_backlink_a
 after insert or delete or update
 on pslot
 for each row
-execute function tg_backlink_a("PS");
+execute function tg_backlink_a('PS');
 
 create trigger tg_backlink_a
 after insert or delete or update
 on wslot
 for each row
-execute function tg_backlink_a("WS");
+execute function tg_backlink_a('WS');
 
 create trigger tg_backlink_a
 after insert or delete or update
 on pline
 for each row
-execute function tg_backlink_a("PL");
+execute function tg_backlink_a('PL');
 
 create function tg_backlink_set(myname bpchar, blname bpchar)
 returns int
@@ -848,31 +848,31 @@ create trigger tg_slotlink_a
 after insert or delete or update
 on pslot
 for each row
-execute function tg_slotlink_a("PS");
+execute function tg_slotlink_a('PS');
 
 create trigger tg_slotlink_a
 after insert or delete or update
 on wslot
 for each row
-execute function tg_slotlink_a("WS");
+execute function tg_slotlink_a('WS');
 
 create trigger tg_slotlink_a
 after insert or delete or update
 on iface
 for each row
-execute function tg_slotlink_a("IF");
+execute function tg_slotlink_a('IF');
 
 create trigger tg_slotlink_a
 after insert or delete or update
 on hslot
 for each row
-execute function tg_slotlink_a("HS");
+execute function tg_slotlink_a('HS');
 
 create trigger tg_slotlink_a
 after insert or delete or update
 on phone
 for each row
-execute function tg_slotlink_a("PH");
+execute function tg_slotlink_a('PH');
 
 create function tg_slotlink_set(bpchar, bpchar)
 returns int
