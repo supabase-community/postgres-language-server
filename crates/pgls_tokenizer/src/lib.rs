@@ -133,6 +133,12 @@ impl Cursor<'_> {
                     let literal_kind = self.number('.');
                     TokenKind::Literal { kind: literal_kind }
                 }
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L339
+                // dot_dot			\.\.
+                '.' => {
+                    self.bump();
+                    TokenKind::DotDot
+                }
                 _ => TokenKind::Dot,
             },
             '@' => {
@@ -421,7 +427,10 @@ impl Cursor<'_> {
         };
 
         match self.first() {
-            '.' => {
+            // `1..10` is `1`, `..` and `10`:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L396
+            // numericfail		{decinteger}\.\.
+            '.' if self.second() != '.' => {
                 // might have stuff after the ., and if it does, it needs to start
                 // with a number
                 self.bump();
@@ -920,6 +929,11 @@ $foo$hello$world$bar$
         assert_debug_snapshot!(lex(r#"
 select public.users;
 "#))
+    }
+
+    #[test]
+    fn dot_dot() {
+        assert_debug_snapshot!(lex("deep... 1..10 ..5"))
     }
 
     #[test]
