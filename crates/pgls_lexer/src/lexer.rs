@@ -132,6 +132,7 @@ impl<'a> Lexer<'a> {
                 pgls_tokenizer::TokenKind::Percent => SyntaxKind::PERCENT,
                 pgls_tokenizer::TokenKind::Unknown => SyntaxKind::ERROR,
                 pgls_tokenizer::TokenKind::Backslash => SyntaxKind::BACKSLASH,
+                pgls_tokenizer::TokenKind::MetaCommand => SyntaxKind::META_COMMAND,
                 pgls_tokenizer::TokenKind::UnknownPrefix => {
                     err = "unknown literal prefix";
                     SyntaxKind::IDENT

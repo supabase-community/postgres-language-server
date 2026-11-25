@@ -190,7 +190,12 @@ impl Cursor<'_> {
             }
             // One-symbol tokens.
             ';' => TokenKind::Semi,
-            '\\' => TokenKind::Backslash,
+            // `\;` and `\:` put a `;` or `:` into the query, any other `\` starts a meta-command:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L695-L715
+            '\\' => match self.first() {
+                ';' | ':' => TokenKind::Backslash,
+                _ => self.meta_command(),
+            },
             ',' => TokenKind::Comma,
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
@@ -313,6 +318,87 @@ impl Cursor<'_> {
         TokenKind::BlockComment {
             terminated: depth == 0,
         }
+    }
+
+    /// Eats a psql meta-command after its `\`: the command name, and its arguments up to the end
+    /// of the line or to an unquoted `\`. A `\\` there ends the command and is eaten with it, so
+    /// the text after it is SQL again; any other `\` starts the next meta-command.
+    ///
+    /// psql scans a meta-command one line at a time, so nothing in it spans lines. The name runs
+    /// to whitespace or a `\` (`xslashcmd`). `'…'` (with `''` and backslash escapes), `` `…` ``
+    /// and `"…"` quote a `\` in the arguments (`xslasharg`, `xslashquote`, ...). Variables like
+    /// `:'x'` don't change where the arguments end, so they aren't told apart. A few commands
+    /// take the rest of the line as their argument (`OT_WHOLE_LINE`), and `\g`, `\o` and `\w`
+    /// do when it starts with `|` (`OT_FILEPIPE`).
+    ///
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/psqlscanslash.l#L142-L447
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/command.c#L355-L477
+    fn meta_command(&mut self) -> TokenKind {
+        let space = |c| is_space(c) || is_tab(c) || is_vertical_tab(c) || is_form_feed(c);
+        let rest = self.as_str();
+        self.eat_while(|c| !space(c) && !is_line_ending(c) && c != '\\');
+        let name = &rest[..rest.len() - self.as_str().len()];
+        self.eat_while(space);
+
+        let whole_line = matches!(
+            name,
+            "copy" | "ef" | "ev" | "h" | "help" | "sf" | "sf+" | "sv" | "sv+" | "unrestrict" | "!"
+        ) || (matches!(name, "g" | "gx" | "o" | "out" | "w" | "write")
+            && self.first() == '|');
+        if whole_line {
+            self.eat_while(|c| !is_line_ending(c));
+            return TokenKind::MetaCommand;
+        }
+
+        loop {
+            match self.first() {
+                '\\' => {
+                    if self.second() == '\\' {
+                        self.bump();
+                        self.bump();
+                    }
+                    break;
+                }
+                '\'' => {
+                    self.bump();
+                    loop {
+                        match self.first() {
+                            '\'' => {
+                                self.bump();
+                                if self.first() != '\'' {
+                                    break;
+                                }
+                                self.bump();
+                            }
+                            '\\' => {
+                                self.bump();
+                                if !is_line_ending(self.first()) {
+                                    self.bump();
+                                }
+                            }
+                            c if is_line_ending(c) => break,
+                            EOF_CHAR if self.is_eof() => break,
+                            _ => {
+                                self.bump();
+                            }
+                        }
+                    }
+                }
+                quote @ ('`' | '"') => {
+                    self.bump();
+                    self.eat_while(|c| c != quote && !is_line_ending(c));
+                    if self.first() == quote {
+                        self.bump();
+                    }
+                }
+                c if is_line_ending(c) => break,
+                EOF_CHAR if self.is_eof() => break,
+                _ => {
+                    self.bump();
+                }
+            }
+        }
+        TokenKind::MetaCommand
     }
 
     // invariant: we care about the number of consecutive newlines so we count them.
@@ -779,6 +865,44 @@ mod tests {
     fn named_param_colon_identifier() {
         let result = lex("select 1 from c where id = :\"id\";");
         assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn meta_commands() {
+        let result = lex(concat!(
+            "\\set x 1\n",
+            "select :x \\gset\n",
+            "\\echo don't\n",
+            "\\echo 'a \\\\ b' \"c \\ d\" `e \\ f` \\\\ select 1;\n",
+            "\\if :c \\echo a\n",
+            "\\copy t from stdin \\\\ x\n",
+            "\\g | cat \\\\ x\n",
+            "\\endif",
+        ));
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn backslash_semicolon_and_colon_are_sql() {
+        let result = lex("select 1 \\; select 2\\: x");
+        assert_debug_snapshot!(result, @r#"
+        [
+            "select" @ Ident,
+            " " @ Space,
+            "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+            " " @ Space,
+            "\\" @ Backslash,
+            ";" @ Semi,
+            " " @ Space,
+            "select" @ Ident,
+            " " @ Space,
+            "2" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+            "\\" @ Backslash,
+            ":" @ Colon,
+            " " @ Space,
+            "x" @ Ident,
+        ]
+        "#);
     }
 
     #[test]
