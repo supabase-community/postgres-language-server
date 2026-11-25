@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/timetz.sql
-snapshot_kind: text
 ---
 create table timetz_tbl (f1 time(2) with time zone);
 
@@ -106,7 +105,7 @@ select date_part('epoch', cast('2020-05-26 13:30:25.575401-04' as time with time
 
 begin;
 
-set local time zone 'UTC';
+set local timezone = 'UTC';
 
 create view timetz_local_view
 as select

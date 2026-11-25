@@ -16,7 +16,9 @@ pub(super) fn emit_alter_database_stmt(e: &mut EventEmitter, n: &AlterDatabaseSt
 
     if !n.options.is_empty() {
         e.line(LineType::SoftOrSpace);
-        emit_comma_separated_list(e, &n.options, emit_node);
+        // The options are space-separated, as in CREATE DATABASE.
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L11456
+        emit_space_separated_list(e, &n.options, emit_node);
     }
 
     e.group_end();
