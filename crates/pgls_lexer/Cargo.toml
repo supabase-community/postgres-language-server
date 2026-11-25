@@ -26,5 +26,9 @@ pgls_lexer = { workspace = true, features = ["testing"] }
 # `Lexed::scanner_difference`, for tests that compare the lexer with Postgres' scanner.
 testing = ["dep:pgls_query"]
 
+[package.metadata.cargo-shear]
+# The dev-dependency on itself only turns on `testing` for the unit tests.
+ignored = ["pgls_lexer"]
+
 [lints]
 workspace = true
