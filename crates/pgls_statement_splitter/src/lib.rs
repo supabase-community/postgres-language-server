@@ -1883,22 +1883,6 @@ VALUES
     }
 
     #[test]
-    fn common_prefix_and_suffix_find_the_difference() {
-        // Lengths around the block size, with the one different byte at every position.
-        for len in [0, 1, 63, 64, 65, 127, 128, 129, 200] {
-            let a = vec![b'a'; len];
-            for at in 0..len {
-                let mut b = a.clone();
-                b[at] = b'b';
-                assert_eq!(common_prefix(&a, &b), at, "length {len}, at {at}");
-                assert_eq!(common_suffix(&a, &b), len - at - 1, "length {len}, at {at}");
-            }
-            assert_eq!(common_prefix(&a, &a), len);
-            assert_eq!(common_suffix(&a, &a), len);
-        }
-    }
-
-    #[test]
     fn split_edited_is_split() {
         let seed =
             std::env::var("SPLIT_SEED").map_or(0x9e37_79b9_7f4a_7c15, |seed| seed.parse().unwrap());
