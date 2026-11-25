@@ -33,17 +33,7 @@ pub(super) fn emit_index_elem(e: &mut EventEmitter, n: &IndexElem) {
 
         // Optional opclass options (e.g., tsvector_ops(siglen = 1000))
         if !n.opclassopts.is_empty() {
-            emit_parenthesized_list(e, &n.opclassopts, |emitter, node| {
-                if let Some(pgls_query::NodeEnum::DefElem(def)) = node.node.as_ref() {
-                    emitter.token(TokenKind::IDENT(def.defname.clone()));
-                    if let Some(ref arg) = def.arg {
-                        emitter.space();
-                        emitter.token(TokenKind::IDENT("=".to_string()));
-                        emitter.space();
-                        emit_node(emitter, arg);
-                    }
-                }
-            });
+            emit_parenthesized_list(e, &n.opclassopts, emit_node);
         }
     }
 

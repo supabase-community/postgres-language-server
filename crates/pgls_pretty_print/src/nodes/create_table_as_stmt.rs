@@ -71,17 +71,7 @@ pub(super) fn emit_create_table_as_stmt(e: &mut EventEmitter, n: &CreateTableAsS
             e.space();
             e.token(TokenKind::WITH_KW);
             e.space();
-            emit_parenthesized_list(e, &into.options, |emitter, node| {
-                if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
-                    emitter.token(TokenKind::IDENT(def.defname.to_lowercase()));
-                    if let Some(ref arg) = def.arg {
-                        emitter.space();
-                        emitter.token(TokenKind::IDENT("=".to_string()));
-                        emitter.space();
-                        emit_node(emitter, arg);
-                    }
-                }
-            });
+            emit_parenthesized_list(e, &into.options, emit_node);
         }
 
         // ON COMMIT

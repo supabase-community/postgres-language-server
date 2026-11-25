@@ -146,8 +146,12 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     emit_dot_separated_list(e, &n.funcname);
     e.token(TokenKind::L_PAREN);
     if !n.args.is_empty() {
-        // Arguments are string literals
-        emit_comma_separated_list(e, &n.args, emit_node);
+        // `TriggerFuncArg` in gram.y: a word or a constant, which the parser turns into a string.
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L6198
+        emit_comma_separated_list(e, &n.args, |e, arg| match arg.node.as_ref() {
+            Some(NodeEnum::String(s)) => emit_word_or_string(e, &s.sval),
+            _ => emit_node(e, arg),
+        });
     }
     e.token(TokenKind::R_PAREN);
 
