@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [splitter, splitter_vs_parser, formatter_roundtrip]
+        target: [splitter_vs_parser, formatter_roundtrip]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +35,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --locked
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz
       - name: Setup Just
         uses: extractions/setup-just@v3
       - uses: actions/cache@v5

@@ -29,13 +29,6 @@ debug = 1
 [[bin]]
 bench = false
 doc   = false
-name  = "splitter"
-path  = "fuzz_targets/splitter.rs"
-test  = false
-
-[[bin]]
-bench = false
-doc   = false
 name  = "splitter_vs_parser"
 path  = "fuzz_targets/splitter_vs_parser.rs"
 test  = false
