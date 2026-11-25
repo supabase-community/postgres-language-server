@@ -68,6 +68,8 @@ struct TableAlias {
     table: String,
     /// The alias as written, like `"U"`.
     text: String,
+    /// Where the alias starts in the statement.
+    start: usize,
 }
 
 /// `old` or `new` in a RETURNING list, or the name that `RETURNING WITH (...)` gives them. Since
@@ -270,6 +272,7 @@ impl<'a> TreesitterContext<'a> {
                                 .map(identifier_name),
                             table: identifier_name(&table_alias_match.get_table(sql)),
                             text,
+                            start: table_alias_match.alias.start_byte(),
                         },
                     );
                 }
@@ -696,16 +699,17 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// An alias of the table `schema_name.table_name`, as written. An alias of a table that
-    /// names the same schema comes first, then one of a table without a schema.
+    /// names the same schema comes first, then one of a table without a schema. Of several, like
+    /// in a self-join, the first in the statement.
     pub fn get_used_alias_for_table(&self, schema_name: &str, table_name: &str) -> Option<String> {
-        let aliases = || {
+        let first = |schema: Option<&str>| {
             self.mentioned_table_aliases
                 .values()
-                .filter(|alias| alias.table == table_name)
+                .filter(|alias| alias.table == table_name && alias.schema.as_deref() == schema)
+                .min_by_key(|alias| alias.start)
         };
-        aliases()
-            .find(|alias| alias.schema.as_deref() == Some(schema_name))
-            .or_else(|| aliases().find(|alias| alias.schema.is_none()))
+        first(Some(schema_name))
+            .or_else(|| first(None))
             .map(|alias| alias.text.clone())
     }
 
@@ -886,6 +890,26 @@ mod tests {
                 ctx.get_mentioned_table_for_alias(alias).map(String::as_str),
                 Some(expected_table),
                 "{query}"
+            );
+        }
+    }
+
+    #[test]
+    fn uses_the_first_alias_of_a_table() {
+        let query = "select 1 from emp e1 join emp e2 on true join emp e3 on e2.id = e3.id;";
+        let tree = get_tree(query);
+        // The aliases are kept in a hash map, so that a choice by its order would differ between
+        // contexts.
+        for _ in 0..16 {
+            let ctx = TreesitterContext::new(TreeSitterContextParams {
+                position: 0.into(),
+                text: query,
+                tree: &tree,
+                server_version_num: None,
+            });
+            assert_eq!(
+                ctx.get_used_alias_for_table("public", "emp").as_deref(),
+                Some("e1")
             );
         }
     }
