@@ -1,5 +1,6 @@
 //! When the whole input parses, the splitter's statements parse one by one to the same statements
-//! as the whole: the splitter neither cuts a statement in pieces nor merges two.
+//! as the whole: the splitter neither cuts a statement in pieces nor merges two. On any text, its
+//! ranges are ordered, not empty, in bounds and on char boundaries.
 //!
 //! One kind of cut is by design: where a `;` is missing, the splitter starts a statement at a
 //! statement keyword, even where Postgres reads it as a bare column label (`select 1 select;`,
@@ -10,7 +11,7 @@
 use libfuzzer_sys::fuzz_target;
 use pgls_pretty_print::normalize_ast;
 use pgls_query::NodeEnum;
-use pgls_text_size::TextRange;
+use pgls_text_size::{TextRange, TextSize};
 
 /// Longer inputs mostly cost time; the splitter's decisions are local.
 const INPUT_LEN_MAX: usize = 3000;
@@ -24,12 +25,25 @@ fuzz_target!(|data: &[u8]| {
     }
     // libpg_query's own splitter mustn't panic on any text either.
     let _ = pgls_query::split_with_parser(sql);
-    let Some(whole) = Statements::parse(sql) else {
-        return;
-    };
     let split = Split {
         sql,
         ranges: pgls_statement_splitter::split(sql).ranges,
+    };
+    // On any text, the statements are ordered, not empty, and in bounds and on char boundaries.
+    let mut end = TextSize::from(0);
+    for &range in &split.ranges {
+        assert!(
+            !range.is_empty()
+                && range.start() >= end
+                && sql.get(std::ops::Range::<usize>::from(range)).is_some(),
+            "splitter_vs_parser: statement empty, overlapping, out of bounds or off a char \
+             boundary\nrange {range:?} of {:?}\ninput: {sql:?}",
+            split.ranges
+        );
+        end = range.end();
+    }
+    let Some(whole) = Statements::parse(sql) else {
+        return;
     };
     let mut pieces = Vec::new();
     for &range in &split.ranges {

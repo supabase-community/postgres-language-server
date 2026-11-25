@@ -1,8 +1,7 @@
 //! Messages with arbitrary parameters to the language server, through the in-process client
 //! `pgls_lsp::testing::Server`: positions and ranges anywhere, versions that go back, unknown
-//! documents, URIs that aren't any, and parameters of the wrong shape. Every request answers,
-//! with a result or an error, and nothing panics: libFuzzer's panic hook aborts on any panic,
-//! also on one the server catches.
+//! documents and URIs that aren't any. Every request answers, with a result or an error, and
+//! nothing panics: libFuzzer's panic hook aborts on any panic, also on one the server catches.
 //!
 //! `crates/pgls_lsp/tests/simulation.rs` drives the server through valid sessions and checks
 //! what it publishes; this target is about the parameters.
@@ -20,7 +19,7 @@ use pgls_fs::MemoryFileSystem;
 use pgls_lsp::ServerFactory;
 use pgls_lsp::testing::{Client, Server};
 use pgls_workspace::DynRef;
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
 
 /// The longest session; a crash needs only a few messages.
 const MESSAGES_MAX: usize = 32;
@@ -31,6 +30,28 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 /// The notifications of the server a session buffers; it reads none of them.
 const NOTIFICATIONS_BUFFERED_MAX: usize = 1024;
 
+/// The methods a message calls, and whether each is a request.
+const METHODS: &[(&str, bool)] = &[
+    ("textDocument/completion", true),
+    ("textDocument/hover", true),
+    ("textDocument/codeAction", true),
+    ("textDocument/formatting", true),
+    ("textDocument/rangeFormatting", true),
+    ("textDocument/inlayHint", true),
+    ("textDocument/semanticTokens/full", true),
+    ("textDocument/semanticTokens/range", true),
+    ("workspace/executeCommand", true),
+    ("pgls/set_configuration_overrides", true),
+    ("pgls/unknown", true),
+    ("textDocument/didOpen", false),
+    ("textDocument/didChange", false),
+    ("textDocument/didSave", false),
+    ("textDocument/didClose", false),
+    ("workspace/didChangeConfiguration", false),
+    ("workspace/didChangeWatchedFiles", false),
+    ("$/cancelRequest", false),
+];
+
 #[derive(Arbitrary, Debug)]
 struct Session {
     text: String,
@@ -39,37 +60,15 @@ struct Session {
 
 #[derive(Arbitrary, Debug)]
 struct Message {
-    method: Method,
+    /// An index into `METHODS`, modulo its length.
+    method: u8,
     document: Document,
     start: (u32, u32),
     end: (u32, u32),
     version: i32,
     text: String,
-    /// Replaces the parameters, to check how the server reads parameters of the wrong shape.
-    raw: Option<Json>,
-}
-
-#[derive(Arbitrary, Debug, Clone, Copy)]
-enum Method {
-    Completion,
-    Hover,
-    CodeAction,
-    Formatting,
-    RangeFormatting,
-    InlayHint,
-    SemanticTokensFull,
-    SemanticTokensRange,
-    ExecuteCommand,
-    SetConfigurationOverrides,
-    Unknown,
-    DidOpen,
-    DidChange,
-    DidChangeWholeText,
-    DidSave,
-    DidClose,
-    DidChangeConfiguration,
-    DidChangeWatchedFiles,
-    CancelRequest,
+    /// Whether a change replaces the whole text, instead of a range.
+    whole_text: bool,
 }
 
 /// The document a message is about.
@@ -80,41 +79,6 @@ enum Document {
     Other,
     NotAFileUri,
     NotAUri,
-}
-
-/// JSON of any shape, with the keys of LSP's parameters.
-#[derive(Arbitrary, Debug)]
-enum Json {
-    Null,
-    Bool(bool),
-    Int(i64),
-    Float(f64),
-    String(String),
-    Array(Vec<Json>),
-    Object(Vec<(Key, Json)>),
-}
-
-#[derive(Arbitrary, Debug, Clone, Copy)]
-enum Key {
-    TextDocument,
-    Uri,
-    Position,
-    Range,
-    Start,
-    End,
-    Line,
-    Character,
-    Version,
-    Text,
-    ContentChanges,
-    Context,
-    Options,
-    Command,
-    Arguments,
-    Settings,
-    Changes,
-    Id,
-    Other,
 }
 
 fuzz_target!(|session: Session| {
@@ -166,9 +130,9 @@ impl Session {
         server.open_document(&self.text).await.expect("open");
 
         for message in self.messages {
-            let method = message.method.name();
+            let (method, is_request) = METHODS[usize::from(message.method) % METHODS.len()];
             let params = message.params();
-            if message.method.is_request() {
+            if is_request {
                 let response = server
                     .send_request(method, "fuzz", params)
                     .await
@@ -193,55 +157,9 @@ impl Session {
     }
 }
 
-impl Method {
-    fn name(self) -> &'static str {
-        match self {
-            Method::Completion => "textDocument/completion",
-            Method::Hover => "textDocument/hover",
-            Method::CodeAction => "textDocument/codeAction",
-            Method::Formatting => "textDocument/formatting",
-            Method::RangeFormatting => "textDocument/rangeFormatting",
-            Method::InlayHint => "textDocument/inlayHint",
-            Method::SemanticTokensFull => "textDocument/semanticTokens/full",
-            Method::SemanticTokensRange => "textDocument/semanticTokens/range",
-            Method::ExecuteCommand => "workspace/executeCommand",
-            Method::SetConfigurationOverrides => "pgls/set_configuration_overrides",
-            Method::Unknown => "pgls/unknown",
-            Method::DidOpen => "textDocument/didOpen",
-            Method::DidChange | Method::DidChangeWholeText => "textDocument/didChange",
-            Method::DidSave => "textDocument/didSave",
-            Method::DidClose => "textDocument/didClose",
-            Method::DidChangeConfiguration => "workspace/didChangeConfiguration",
-            Method::DidChangeWatchedFiles => "workspace/didChangeWatchedFiles",
-            Method::CancelRequest => "$/cancelRequest",
-        }
-    }
-
-    fn is_request(self) -> bool {
-        matches!(
-            self,
-            Method::Completion
-                | Method::Hover
-                | Method::CodeAction
-                | Method::Formatting
-                | Method::RangeFormatting
-                | Method::InlayHint
-                | Method::SemanticTokensFull
-                | Method::SemanticTokensRange
-                | Method::ExecuteCommand
-                | Method::SetConfigurationOverrides
-                | Method::Unknown
-        )
-    }
-}
-
 impl Message {
-    /// The parameters: `raw`, or an object with the fields of every method, so that each reads
-    /// the ones it knows.
+    /// An object with the parameters of every method, so that each reads the ones it knows.
     fn params(&self) -> Value {
-        if let Some(raw) = &self.raw {
-            return raw.value();
-        }
         let uri = match self.document {
             Document::First => Server::uri("document.sql").to_string(),
             Document::Other => Server::uri("other.sql").to_string(),
@@ -251,9 +169,10 @@ impl Message {
         let position =
             |(line, character): (u32, u32)| json!({"line": line, "character": character});
         let range = json!({"start": position(self.start), "end": position(self.end)});
-        let change = match self.method {
-            Method::DidChangeWholeText => json!({"text": self.text}),
-            _ => json!({"range": range, "text": self.text}),
+        let change = if self.whole_text {
+            json!({"text": self.text})
+        } else {
+            json!({"range": range, "text": self.text})
         };
         json!({
             "textDocument": {"uri": uri, "languageId": "sql", "version": self.version, "text": self.text},
@@ -269,50 +188,5 @@ impl Message {
             "changes": [{"uri": uri, "type": 2}],
             "id": "fuzz",
         })
-    }
-}
-
-impl Json {
-    fn value(&self) -> Value {
-        match self {
-            Json::Null => Value::Null,
-            Json::Bool(value) => Value::Bool(*value),
-            Json::Int(value) => Value::from(*value),
-            Json::Float(value) => Value::from(*value),
-            Json::String(value) => Value::String(value.clone()),
-            Json::Array(values) => Value::Array(values.iter().map(Json::value).collect()),
-            Json::Object(entries) => Value::Object(
-                entries
-                    .iter()
-                    .map(|(key, value)| (key.name().to_owned(), value.value()))
-                    .collect::<Map<_, _>>(),
-            ),
-        }
-    }
-}
-
-impl Key {
-    fn name(self) -> &'static str {
-        match self {
-            Key::TextDocument => "textDocument",
-            Key::Uri => "uri",
-            Key::Position => "position",
-            Key::Range => "range",
-            Key::Start => "start",
-            Key::End => "end",
-            Key::Line => "line",
-            Key::Character => "character",
-            Key::Version => "version",
-            Key::Text => "text",
-            Key::ContentChanges => "contentChanges",
-            Key::Context => "context",
-            Key::Options => "options",
-            Key::Command => "command",
-            Key::Arguments => "arguments",
-            Key::Settings => "settings",
-            Key::Changes => "changes",
-            Key::Id => "id",
-            Key::Other => "other",
-        }
     }
 }

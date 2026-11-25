@@ -1,7 +1,6 @@
-//! `pgls_lexer` cuts any text Postgres' scanner (`pgls_query::scan`) accepts into the same tokens,
-//! as `crates/pgls_postgres_regress/tests/lexer.rs` checks on the regression suite: whitespace and
-//! operators aren't compared, and named parameters (`:name`, `@name`, `$name`) are compared without
-//! their prefix, which the scanner reads as a token of its own.
+//! `pgls_lexer` cuts any text Postgres' scanner (`pgls_query::scan`) accepts into the same tokens.
+//! Whitespace and operators aren't compared, and named parameters (`:name`, `@name`, `$name`) are
+//! compared without their prefix, which the scanner reads as a token of its own.
 //!
 //! Two known differences are skipped, until the lexer handles them: string constants continued
 //! across a line break (`'a'\n'b'`), which the scanner reads as one token, and `''` in a bit or
@@ -29,6 +28,11 @@ fuzz_target!(|data: &[u8]| {
     let Ok(scanned) = pgls_query::scan(sql) else {
         return;
     };
+    // Everything but whitespace, operators and the `$` of `$name` is compared.
+    let compared = |range: TextRange| {
+        let text = &sql[range];
+        !text.trim().is_empty() && text != "$" && !text.chars().all(|c| OPERATOR_CHARS.contains(c))
+    };
     let scanner = scanned
         .tokens
         .iter()
@@ -38,7 +42,7 @@ fuzz_target!(|data: &[u8]| {
                 TextSize::from(u32::try_from(token.end).ok()?),
             ))
         })
-        .filter(|&range| Token::compared(sql, range));
+        .filter(|&range| compared(range));
     let lexed = pgls_lexer::lex(sql);
     let lexer = (0..lexed.len())
         .map(|index| {
@@ -49,7 +53,7 @@ fuzz_target!(|data: &[u8]| {
                 range
             }
         })
-        .filter(|&range| Token::compared(sql, range));
+        .filter(|&range| compared(range));
     let mut pairs = lexer
         .map(Some)
         .chain(std::iter::repeat(None))
@@ -61,10 +65,20 @@ fuzz_target!(|data: &[u8]| {
     if lexer.is_none() && scanner.is_none() {
         return;
     }
+    // The two known differences, see the module's documentation.
     if let (Some(lexer), Some(scanner)) = (lexer, scanner)
-        && Token::known_difference(sql, lexer, scanner)
+        && lexer.start() == scanner.start()
     {
-        return;
+        let (lexer, scanner) = (&sql[lexer], &sql[scanner]);
+        let continued = scanner
+            .strip_prefix(lexer)
+            .is_some_and(|rest| lexer.ends_with('\'') && rest.contains(['\n', '\r']));
+        let bit_or_hex = lexer.len() > scanner.len()
+            && lexer.starts_with(['b', 'B', 'x', 'X'])
+            && lexer.contains("''");
+        if continued || bit_or_hex {
+            return;
+        }
     }
     let text = |range: Option<TextRange>| range.map(|range| &sql[range]);
     panic!(
@@ -74,28 +88,3 @@ fuzz_target!(|data: &[u8]| {
         text(scanner)
     );
 });
-
-struct Token;
-
-impl Token {
-    /// Whether a token is compared: everything but whitespace, operators and the `$` of `$name`.
-    fn compared(sql: &str, range: TextRange) -> bool {
-        let text = &sql[range];
-        !text.trim().is_empty() && text != "$" && !text.chars().all(|c| OPERATOR_CHARS.contains(c))
-    }
-
-    /// Whether the first difference is one of the two known ones, see the module's documentation.
-    fn known_difference(sql: &str, lexer: TextRange, scanner: TextRange) -> bool {
-        if lexer.start() != scanner.start() {
-            return false;
-        }
-        let (lexer, scanner) = (&sql[lexer], &sql[scanner]);
-        let continued = scanner
-            .strip_prefix(lexer)
-            .is_some_and(|rest| lexer.ends_with('\'') && rest.contains(['\n', '\r']));
-        let bit_or_hex = lexer.len() > scanner.len()
-            && lexer.starts_with(['b', 'B', 'x', 'X'])
-            && lexer.contains("''");
-        continued || bit_or_hex
-    }
-}
