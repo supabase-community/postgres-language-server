@@ -295,10 +295,13 @@ pub(crate) struct TraversalOptions<'ctx, 'app> {
 impl TraversalOptions<'_, '_> {
     pub(crate) fn increment_changed(&self, path: &PgLSPath) {
         self.changed.fetch_add(1, Ordering::Relaxed);
-        self.evaluated_paths
+        let mut evaluated_paths = self
+            .evaluated_paths
             .write()
-            .unwrap_or_else(PoisonError::into_inner)
-            .replace(path.to_written());
+            .unwrap_or_else(PoisonError::into_inner);
+        // `was_written` is part of the order, so the written path doesn't replace the stored one.
+        evaluated_paths.remove(&PgLSPath::new(path.as_path()));
+        evaluated_paths.insert(path.to_written());
     }
     pub(crate) fn increment_unchanged(&self) {
         self.unchanged.fetch_add(1, Ordering::Relaxed);

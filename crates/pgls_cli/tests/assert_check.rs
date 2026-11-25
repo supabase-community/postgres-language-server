@@ -1720,6 +1720,20 @@ fn check_fix_without_section_markers_needs_unsafe() {
     );
 }
 
+/// `--verbose` lists a fixed file once among the processed files and once among the fixed ones.
+#[test]
+fn check_fix_verbose_lists_a_fixed_file_once() {
+    let (fixed, output) = check_file(
+        "fix-verbose",
+        "",
+        &["--fix", "--unsafe", "--verbose"],
+        "reindex index my_index;\n",
+    );
+    assert_eq!(fixed, "reindex index concurrently my_index;\n", "{output}");
+    assert!(output.contains("Files fixed:"), "{output}");
+    assert_eq!(output.matches("migration.sql").count(), 2, "{output}");
+}
+
 #[test]
 fn check_reports_fixable_diagnostics() {
     let (_, output) = check_file("fixable", "", &[], "reindex index my_index;\n");
