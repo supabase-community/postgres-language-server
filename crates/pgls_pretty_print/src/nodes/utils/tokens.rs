@@ -48,14 +48,17 @@ pub(crate) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
     }
 }
 
-/// Emits a language name (`NonReservedWord_or_Sconst` in gram.y). A name longer than an
-/// identifier can be was written as a string constant, which the parser keeps whole; written as an
-/// identifier, it would be cut down to 63 bytes.
-pub(crate) fn emit_language_name(e: &mut EventEmitter, value: &str) {
-    if value.len() > MAX_IDENTIFIER_LENGTH {
+/// Emits a string that the grammar takes as a word or a string constant, both of which give the
+/// same string: a language (`NonReservedWord_or_Sconst`), a trigger argument (`TriggerFuncArg`) or
+/// a `SET` value (`var_value`). It is a word only if it needs no quotes and fits in an identifier:
+/// the parser cuts a longer word down to 63 bytes, but keeps a string constant whole.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L1092
+pub(crate) fn emit_word_or_string(e: &mut EventEmitter, value: &str) {
+    let word = e.source_identifier(value).to_string();
+    if value.len() > MAX_IDENTIFIER_LENGTH || needs_quoting(&word) {
         emit_single_quoted_str(e, value);
     } else {
-        emit_identifier_maybe_quoted(e, value);
+        e.token(TokenKind::IDENT(word));
     }
 }
 

@@ -30,7 +30,12 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::HANDLER_KW);
                         e.space();
-                        emit_node(e, arg);
+                        // `handler_name` in gram.y: a qualified function name, not a list.
+                        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L5141
+                        match arg.node.as_ref() {
+                            Some(NodeEnum::List(name)) => emit_dot_separated_list(e, &name.items),
+                            _ => emit_node(e, arg),
+                        }
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
@@ -41,7 +46,11 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
                     if let Some(ref arg) = def_elem.arg {
                         e.token(TokenKind::VALIDATOR_KW);
                         e.space();
-                        emit_node(e, arg);
+                        // `handler_name` in gram.y, as for HANDLER.
+                        match arg.node.as_ref() {
+                            Some(NodeEnum::List(name)) => emit_dot_separated_list(e, &name.items),
+                            _ => emit_node(e, arg),
+                        }
                     } else {
                         e.token(TokenKind::NO_KW);
                         e.space();
