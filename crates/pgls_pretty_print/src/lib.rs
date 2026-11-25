@@ -18,7 +18,7 @@ use crate::comments::AttachedComments;
 pub(crate) use crate::comments::Comment;
 pub use crate::config::{
     CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout,
-    LogicalOperatorPlacement, Terminator,
+    LogicalOperatorPlacement,
 };
 pub use crate::normalize::normalize_ast;
 use crate::source::Source;
@@ -61,6 +61,41 @@ pub struct FormatResult {
     pub formatted: String,
 }
 
+/// What the formatter writes after a statement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Terminator {
+    /// `;`.
+    Semicolon,
+    /// Nothing, for a statement that a psql meta-command like `\gexec` ends: psql would run it
+    /// at a `;` and again at the command.
+    Omitted,
+}
+
+/// The inputs of [`format_statement`].
+#[derive(Debug, Clone, Copy)]
+pub struct FormatStatementParams<'a> {
+    /// The parsed AST of the statement.
+    pub ast: &'a NodeEnum,
+    /// The source text of the statement, for its comments and identifiers as written.
+    pub sql: &'a str,
+    /// What follows the statement.
+    pub terminator: Terminator,
+    /// The user's style.
+    pub config: &'a FormatConfig,
+}
+
+impl<'a> FormatStatementParams<'a> {
+    /// The inputs for a statement that ends with `;`.
+    pub fn new(ast: &'a NodeEnum, sql: &'a str, config: &'a FormatConfig) -> Self {
+        Self {
+            ast,
+            sql,
+            terminator: Terminator::Semicolon,
+            config,
+        }
+    }
+}
+
 /// Format a single SQL statement from its AST.
 ///
 /// This function takes an already-parsed AST, formats it according to the
@@ -70,21 +105,19 @@ pub struct FormatResult {
 /// comparing normalized ASTs. If the formatted output would have
 /// different semantics, it returns a `BetaUnsupported` error.
 ///
-/// # Arguments
-///
-/// * `ast` - The parsed AST of the SQL statement
-/// * `config` - Formatting configuration options
-///
 /// # Returns
 ///
 /// * `Ok(FormatResult)` - The formatted SQL
 /// * `Err(FormatError)` - If formatting fails or beta safety check fails
-pub fn format_statement(
-    ast: &NodeEnum,
-    sql: &str,
-    config: &FormatConfig,
-) -> Result<FormatResult, FormatError> {
+pub fn format_statement(params: FormatStatementParams<'_>) -> Result<FormatResult, FormatError> {
     const MAX_COMMENT_FORMAT_PASSES: usize = 6;
+
+    let FormatStatementParams {
+        ast,
+        sql,
+        terminator,
+        config,
+    } = params;
 
     let source = Source::scan(sql);
     let attached = comments::attach_comments(&source, ast);
@@ -94,7 +127,7 @@ pub fn format_statement(
         || !attached.unattached.is_empty();
 
     if !has_comments {
-        return format_statement_once(ast, &source, config, attached);
+        return format_statement_once(ast, &source, terminator, config, attached);
     }
 
     let mut source = source;
@@ -104,7 +137,7 @@ pub fn format_statement(
     let mut seen_layouts = HashSet::from([sql.to_string()]);
 
     for pass in 1..=MAX_COMMENT_FORMAT_PASSES {
-        let result = format_statement_once(&current_ast, &source, config, attached)?;
+        let result = format_statement_once(&current_ast, &source, terminator, config, attached)?;
         if result.formatted == source.sql {
             return Ok(result);
         }
@@ -135,6 +168,7 @@ pub fn format_statement(
 fn format_statement_once(
     ast: &NodeEnum,
     source: &Source<'_>,
+    terminator: Terminator,
     config: &FormatConfig,
     attached: AttachedComments,
 ) -> Result<FormatResult, FormatError> {
@@ -148,6 +182,7 @@ fn format_statement_once(
 
     let output = render(
         ast,
+        terminator,
         config,
         attached,
         identifiers::truncated_identifiers(source),
@@ -185,12 +220,19 @@ pub fn format_statement_unchecked(
     ast: &NodeEnum,
     config: &FormatConfig,
 ) -> Result<String, FormatError> {
-    render(ast, config, AttachedComments::default(), Default::default())
+    render(
+        ast,
+        Terminator::Semicolon,
+        config,
+        AttachedComments::default(),
+        Default::default(),
+    )
 }
 
 /// Emits the layout events of a statement and renders them.
 fn render(
     ast: &NodeEnum,
+    terminator: Terminator,
     config: &FormatConfig,
     attached: AttachedComments,
     truncated_identifiers: std::collections::HashMap<String, String>,
@@ -203,7 +245,7 @@ fn render(
     emitter.set_comments_before_case_end(attached.before_case_end_by_location);
     emitter.set_node_locations(attached.node_locations);
     emitter.set_truncated_identifiers(truncated_identifiers);
-    match config.terminator {
+    match terminator {
         Terminator::Semicolon => nodes::emit_statement(&mut emitter, ast),
         Terminator::Omitted => nodes::emit_node_enum(&mut emitter, ast),
     }
@@ -232,7 +274,7 @@ mod tests {
         let ast = parsed.into_root().unwrap();
 
         let config = FormatConfig::default();
-        let result = format_statement(&ast, sql, &config).unwrap();
+        let result = format_statement(FormatStatementParams::new(&ast, sql, &config)).unwrap();
 
         assert!(!result.formatted.is_empty());
         // Default keyword_case is Lower, so check for lowercase
@@ -244,12 +286,15 @@ mod tests {
         let sql = "SELECT a, b FROM t ORDER BY 1";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig {
-            terminator: Terminator::Omitted,
             isolate_semicolon: true,
             ..FormatConfig::default()
         };
 
-        let result = format_statement(&ast, sql, &config).unwrap();
+        let result = format_statement(FormatStatementParams {
+            terminator: Terminator::Omitted,
+            ..FormatStatementParams::new(&ast, sql, &config)
+        })
+        .unwrap();
 
         assert_eq!(result.formatted, "select a, b from t order by 1");
     }
@@ -267,7 +312,12 @@ mod tests {
         let sql = "SELECT\n-- pick the magic value\n1 FROM s.t";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- pick the magic value"));
         assert!(result.formatted.contains("select"));
@@ -278,8 +328,12 @@ mod tests {
         let sql = "SELECT 1 FROM s.t; -- trailing";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let error = format_statement(&ast, sql, &FormatConfig::default())
-            .expect_err("the comment belongs to the next statement");
+        let error = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect_err("the comment belongs to the next statement");
 
         assert!(matches!(error, FormatError::UnplaceableComment { .. }));
     }
@@ -290,11 +344,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -308,11 +362,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -326,11 +380,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -344,11 +398,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -367,11 +421,11 @@ mod tests {
             ..Default::default()
         };
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -384,7 +438,12 @@ mod tests {
         let sql = "UPDATE s.t AS x -- remove the strays\nSET a = 1";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- remove the strays\nset a = 1"));
     }
@@ -394,7 +453,12 @@ mod tests {
         let sql = "DELETE FROM s.t -- only the strays\nWHERE a = 1";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- only the strays\nwhere"));
     }
@@ -405,11 +469,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -421,7 +485,12 @@ mod tests {
         let sql = "INSERT INTO s.t\n(\n  a\n, b -- the management type\n, c\n)\nVALUES (1, 2, 3)";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- the management type"));
     }
@@ -432,11 +501,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -448,7 +517,12 @@ mod tests {
         let sql = "CREATE TABLE s.t (\n\ta int -- the magic column\n\t, b int\n)";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- the magic column"));
     }
@@ -459,11 +533,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -475,7 +549,12 @@ mod tests {
         let sql = "SELECT 1 FROM s.t -- trailing";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- trailing"));
     }
@@ -485,7 +564,12 @@ mod tests {
         let sql = "CREATE TABLE s.t (\n\tid uuid,\n\tkind text,\n\tmigration jsonb\n--\t\"createdAt\" timestamp,\n--\t\"updatedAt\" timestamp\n)";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("\"createdAt\" timestamp"));
         assert!(!result.formatted.contains("migration jsonb --"));
@@ -497,11 +581,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -515,7 +599,12 @@ mod tests {
             "UPDATE s.t SET\n-- the reason is deducted from the WHERE below\na = 1 WHERE b = 2";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(
             result
@@ -531,11 +620,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -547,7 +636,12 @@ mod tests {
         let sql = "SELECT bool_or(a <> b) -- has_decimal\nOVER (PARTITION BY c) FROM s.t";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- has_decimal"));
     }
@@ -558,11 +652,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -575,7 +669,12 @@ mod tests {
             "INSERT INTO s.u\n-- how this table is fed\nWITH c AS (SELECT 1 AS a)\nSELECT a FROM c";
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
 
-        let result = format_statement(&ast, sql, &FormatConfig::default()).expect("formatted");
+        let result = format_statement(FormatStatementParams::new(
+            &ast,
+            sql,
+            &FormatConfig::default(),
+        ))
+        .expect("formatted");
 
         assert!(result.formatted.contains("-- how this table is fed"));
     }
@@ -587,11 +686,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -606,11 +705,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -627,11 +726,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -654,11 +753,11 @@ mod tests {
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
         let config = FormatConfig::default();
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -702,11 +801,11 @@ WHERE
         let config = FormatConfig::default();
 
         let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -732,7 +831,7 @@ WHERE
             line_width: 80,
             ..FormatConfig::default()
         };
-        let result = format_statement(&ast, sql, &config).unwrap();
+        let result = format_statement(FormatStatementParams::new(&ast, sql, &config)).unwrap();
 
         assert_eq!(
             result.formatted,
@@ -768,7 +867,7 @@ WHERE
             comma_style: CommaStyle::Leading,
             ..FormatConfig::default()
         };
-        let result = format_statement(&ast, sql, &config).unwrap();
+        let result = format_statement(FormatStatementParams::new(&ast, sql, &config)).unwrap();
 
         assert_eq!(
             result.formatted,
@@ -803,7 +902,7 @@ WHERE
             layout: Layout::Expanded,
             ..FormatConfig::default()
         };
-        let result = format_statement(&ast, sql, &config).unwrap();
+        let result = format_statement(FormatStatementParams::new(&ast, sql, &config)).unwrap();
 
         assert!(
             result
@@ -838,11 +937,11 @@ WHERE
             ..Default::default()
         };
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -865,11 +964,11 @@ WHERE
             ..Default::default()
         };
 
-        let first = format_statement(&ast, sql, &config)
+        let first = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("first pass")
             .formatted;
         let reparsed = pgls_query::parse(&first).unwrap().into_root().unwrap();
-        let second = format_statement(&reparsed, &first, &config)
+        let second = format_statement(FormatStatementParams::new(&reparsed, &first, &config))
             .expect("second pass")
             .formatted;
 
@@ -890,7 +989,7 @@ WHERE
             ..Default::default()
         };
 
-        let formatted = format_statement(&ast, sql, &config)
+        let formatted = format_statement(FormatStatementParams::new(&ast, sql, &config))
             .expect("formatted")
             .formatted;
 

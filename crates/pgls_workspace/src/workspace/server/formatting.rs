@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use pgls_analyser::STOP_CHECK_INTERVAL;
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
-use pgls_pretty_print::{FormatConfig, Terminator};
+use pgls_pretty_print::{FormatConfig, FormatStatementParams, Terminator};
 use pgls_text_size::TextRange;
 
 use super::{StatementId, document::Document, sql_function};
@@ -30,7 +30,6 @@ fn format_config(settings: &FormatterSettings) -> FormatConfig {
         cast_style: settings.cast_style.into(),
         clause_body_style: settings.clause_body_style.into(),
         isolate_semicolon: settings.isolate_semicolon,
-        terminator: Terminator::Semicolon,
         function_argument_groups: settings
             .function_argument_groups
             .iter()
@@ -99,7 +98,9 @@ pub(super) fn format_document(
             };
 
             let text = doc.sql(stmt);
-            let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
+            let Ok(result) =
+                pgls_pretty_print::format_statement(FormatStatementParams::new(ast, text, &config))
+            else {
                 continue;
             };
 
@@ -169,17 +170,15 @@ pub(super) fn format_document(
                 }
 
                 // A meta-command like `\gexec` ends the statement in place of the `;`.
-                let unterminated;
-                let config = if doc.ends_at_meta_command(stmt_range) {
-                    unterminated = FormatConfig {
-                        terminator: Terminator::Omitted,
-                        ..config.clone()
-                    };
-                    &unterminated
+                let terminator = if doc.ends_at_meta_command(stmt_range) {
+                    Terminator::Omitted
                 } else {
-                    &config
+                    Terminator::Semicolon
                 };
-                match pgls_pretty_print::format_statement(&ast, text, config) {
+                match pgls_pretty_print::format_statement(FormatStatementParams {
+                    terminator,
+                    ..FormatStatementParams::new(&ast, text, &config)
+                }) {
                     Ok(result) => match restore_named_parameters(text, &result.formatted, &ast) {
                         Some(formatted) => {
                             if text != formatted {

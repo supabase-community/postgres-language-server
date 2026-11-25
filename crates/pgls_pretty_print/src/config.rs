@@ -71,17 +71,6 @@ pub enum LogicalOperatorPlacement {
     Leading,
 }
 
-/// What the formatter writes after a statement.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum Terminator {
-    /// `;`.
-    #[default]
-    Semicolon,
-    /// Nothing, for a statement that a psql meta-command like `\gexec` ends: psql would run it
-    /// at a `;` and again at the command.
-    Omitted,
-}
-
 /// Configuration for the SQL formatter.
 #[derive(Debug, Clone)]
 pub struct FormatConfig {
@@ -113,8 +102,6 @@ pub struct FormatConfig {
     /// Put the terminating semicolon on its own line when the statement spans several lines.
     /// Default: false.
     pub isolate_semicolon: bool,
-    /// What follows the statement. Default: Semicolon.
-    pub terminator: Terminator,
     /// Function names mapped to the number of adjacent arguments in one logical group.
     pub function_argument_groups: BTreeMap<String, usize>,
 }
@@ -135,7 +122,6 @@ impl Default for FormatConfig {
             cast_style: CastStyle::default(),
             clause_body_style: ClauseBodyStyle::default(),
             isolate_semicolon: false,
-            terminator: Terminator::default(),
             function_argument_groups: BTreeMap::new(),
         }
     }
@@ -158,7 +144,6 @@ impl From<&FormatConfig> for RenderConfig {
             cast_style: _,
             clause_body_style: _,
             isolate_semicolon,
-            terminator: _,
             function_argument_groups: _,
         } = config;
 
