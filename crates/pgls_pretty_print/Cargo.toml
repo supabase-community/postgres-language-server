@@ -25,5 +25,9 @@ pgls_statement_splitter.workspace = true
 rayon.workspace                   = true
 regex.workspace                   = true
 
+[features]
+# `FormatResult::formats_to_itself`, for tests that check that formatting is idempotent.
+testing = []
+
 [lints]
 workspace = true

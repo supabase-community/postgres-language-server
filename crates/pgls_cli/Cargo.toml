@@ -57,8 +57,9 @@ tikv-jemallocator = "0.6.0"
 [dev-dependencies]
 assert_cmd              = "2.1.2"
 insta                   = { workspace = true, features = ["yaml"] }
-pgls_pretty_print       = { workspace = true }
-pgls_statement_splitter = { workspace = true }
+pgls_lexer              = { workspace = true, features = ["testing"] }
+pgls_pretty_print       = { workspace = true, features = ["testing"] }
+pgls_statement_splitter = { workspace = true, features = ["testing"] }
 pgls_test_utils         = { workspace = true }
 pgls_text_size          = { workspace = true }
 sqlx                    = { workspace = true }

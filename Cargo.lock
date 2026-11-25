@@ -2534,6 +2534,7 @@ name = "pgls_lexer"
 version = "0.0.0"
 dependencies = [
  "pgls_diagnostics",
+ "pgls_lexer",
  "pgls_lexer_codegen",
  "pgls_query",
  "pgls_text_size",
@@ -2786,6 +2787,7 @@ dependencies = [
  "ntest",
  "pgls_diagnostics",
  "pgls_lexer",
+ "pgls_pretty_print",
  "pgls_query",
  "pgls_text_size",
 ]

@@ -7,10 +7,10 @@
 //! the number of diagnostics per category, the files `format` would change and the crashes, so a
 //! change to a rule, the parser or the formatter shows up as a changed snapshot.
 //!
-//! Next to the CLI, the test checks every file with the fuzzers' oracles and counts where they fail:
-//! the formatter's output of a statement parses back to the same AST and formats to itself, the
-//! splitter's statements of a file that parses parse to the file's statements, and the lexer's
-//! tokens are the scanner's.
+//! Next to the CLI, the test checks every file with the fuzzers' oracles, which live in their crates
+//! behind the `testing` features, and counts where they fail: `format_statement` doesn't refuse a
+//! statement for a failed round trip and its output formats to itself, the splitter's statements
+//! of a file that parses parse to the file's statements, and the lexer's tokens are the scanner's.
 //!
 //! The run takes about a minute in release. In debug, `format` of GitLab's schema runs into the time
 //! limit, so the test refuses to run there. It is ignored in the regular run; CI runs it with
@@ -28,9 +28,8 @@
 )]
 
 use pgls_line_index::LineIndex;
-use pgls_pretty_print::{FormatConfig, format_statement_unchecked, normalize_ast};
-use pgls_query::NodeEnum;
-use pgls_text_size::{TextRange, TextSize};
+use pgls_pretty_print::{FormatConfig, FormatError, format_statement};
+use pgls_text_size::TextSize;
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -61,11 +60,6 @@ const REFORMATTED_LISTED_MAX: usize = 20;
 
 /// How many of the places where an oracle fails the summary lists. The count covers the rest.
 const FINDINGS_LISTED_MAX: usize = 5;
-
-/// The characters of Postgres' operators (`op_chars` in `scan.l`), and `:` of `::` and `:=`.
-///
-/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367
-const OPERATOR_CHARS: &str = "~!@#^&|`?+-*/%<>=:";
 
 /// The first line the CLI's panic hook writes to stderr.
 const PANIC_LINE: &str = "Encountered an unexpected error";
@@ -130,8 +124,8 @@ struct Summary {
 /// Where the fuzzers' oracles fail, as `path:line`, in the order of the files.
 #[derive(Default)]
 struct Oracles {
-    /// Statements whose formatted output doesn't parse, parses to a different AST or doesn't
-    /// format to itself.
+    /// Statements that `format_statement` refuses because its output doesn't parse or parses to a
+    /// different AST, or whose output doesn't format to itself.
     format: Vec<String>,
     /// Files that parse, but whose splitter's statements don't parse to the file's statements. At
     /// the first statement that differs.
@@ -306,7 +300,7 @@ impl Summary {
             summary.run(command, source, dir, config);
         }
         let started = Instant::now();
-        summary.oracles = Oracles::of(source, dir);
+        summary.check_oracles(source, dir);
         eprintln!(
             "{}: the oracles took {:.1?}",
             source.name,
@@ -471,16 +465,17 @@ impl Summary {
     }
 }
 
-impl Oracles {
-    /// Checks the SQL files of the source checked out in `dir`. An oracle that panics fails.
-    fn of(source: &Source, dir: &Path) -> Self {
-        let mut oracles = Self::default();
+impl Summary {
+    /// Checks the SQL files of the source checked out in `dir` with the oracles. An oracle that
+    /// panics fails.
+    fn check_oracles(&mut self, source: &Source, dir: &Path) {
         let listing = source.git(dir, &["ls-files", "-z"], "");
         let mut paths: Vec<_> = listing
             .split('\0')
             .filter(|path| !path.is_empty())
             .collect();
         paths.sort_unstable();
+        let config = FormatConfig::default();
         for path in paths {
             let file = dir.join(path);
             if fs::metadata(&file).unwrap().len() > FILE_BYTES_MAX {
@@ -497,128 +492,38 @@ impl Oracles {
                     .map_or(0, |line_col| line_col.line + 1);
                 format!("{path}:{line}")
             };
-            let ranges = pgls_statement_splitter::split(&sql).ranges;
-            for &range in &ranges {
-                if !catch_unwind(|| Oracles::round_trips(&sql[range])).unwrap_or(false) {
-                    oracles.format.push(at(range.start()));
+            let split = pgls_statement_splitter::split(&sql);
+            for &range in &split.ranges {
+                let statement = &sql[range];
+                // Text that doesn't parse as one statement, and refusals other than a failed round
+                // trip, pass.
+                let round_trips = catch_unwind(|| {
+                    let Some(ast) = pgls_query::parse(statement)
+                        .ok()
+                        .and_then(|parsed| parsed.into_root())
+                    else {
+                        return true;
+                    };
+                    match format_statement(&ast, statement, &config) {
+                        Ok(result) => result.formats_to_itself(&config),
+                        Err(
+                            FormatError::ParseError { .. } | FormatError::BetaUnsupported { .. },
+                        ) => false,
+                        Err(_) => true,
+                    }
+                });
+                if !round_trips.unwrap_or(false) {
+                    self.oracles.format.push(at(range.start()));
                 }
             }
-            let split = catch_unwind(AssertUnwindSafe(|| Oracles::split_differs(&sql, &ranges)));
+            let split = catch_unwind(AssertUnwindSafe(|| split.parser_difference(&sql)));
             if let Some(offset) = split.unwrap_or(Some(TextSize::from(0))) {
-                oracles.split.push(at(offset));
+                self.oracles.split.push(at(offset));
             }
-            let lex = catch_unwind(|| Oracles::tokens_differ(&sql));
+            let lex = catch_unwind(|| pgls_lexer::lex(&sql).scanner_difference());
             if let Some(offset) = lex.unwrap_or(Some(TextSize::from(0))) {
-                oracles.lex.push(at(offset));
+                self.oracles.lex.push(at(offset));
             }
         }
-        oracles
-    }
-
-    /// Whether a statement that parses formats to a text that parses back to the same AST and
-    /// formats to itself, as `fuzz/fuzz_targets/formatter_roundtrip.rs` checks. Text that doesn't
-    /// parse as one statement, and statements the formatter refuses, pass.
-    fn round_trips(sql: &str) -> bool {
-        let Some(ast) = pgls_query::parse(sql)
-            .ok()
-            .and_then(|parsed| parsed.into_root())
-        else {
-            return true;
-        };
-        let config = FormatConfig::default();
-        let Ok(output) = format_statement_unchecked(&ast, &config) else {
-            return true;
-        };
-        let Some(reparsed) = pgls_query::parse(&output)
-            .ok()
-            .and_then(|parsed| parsed.into_root())
-        else {
-            return false;
-        };
-        let (mut expected, mut actual) = (ast, reparsed.clone());
-        normalize_ast(&mut expected);
-        normalize_ast(&mut actual);
-        expected == actual
-            && format_statement_unchecked(&reparsed, &config).is_ok_and(|again| again == output)
-    }
-
-    /// Where the splitter's statements of a text that parses first differ from the text's, as
-    /// `fuzz/fuzz_targets/splitter_vs_parser.rs` checks.
-    fn split_differs(sql: &str, ranges: &[TextRange]) -> Option<TextSize> {
-        let whole = Oracles::statements(sql)?;
-        let mut whole = whole.iter();
-        for &range in ranges {
-            let Some(pieces) = Oracles::statements(&sql[range]) else {
-                return Some(range.start());
-            };
-            if !pieces.iter().all(|piece| whole.next() == Some(piece)) {
-                return Some(range.start());
-            }
-        }
-        whole.next().map(|_| TextSize::of(sql))
-    }
-
-    /// The statements of a text that parses, without locations.
-    fn statements(sql: &str) -> Option<Vec<NodeEnum>> {
-        let parsed = pgls_query::parse(sql).ok()?;
-        Some(
-            parsed
-                .protobuf
-                .stmts
-                .into_iter()
-                .filter_map(|raw| raw.stmt?.node)
-                .map(|mut node| {
-                    normalize_ast(&mut node);
-                    node
-                })
-                .collect(),
-        )
-    }
-
-    /// Where the lexer's tokens of a text the scanner accepts first differ from the scanner's, as
-    /// `fuzz/fuzz_targets/lexer_vs_scan.rs` checks. Whitespace and operators aren't compared, and
-    /// named parameters (`:name`, `@name`, `$name`) are compared without their prefix, which the
-    /// scanner reads as a token of its own.
-    fn tokens_differ(sql: &str) -> Option<TextSize> {
-        // The scanner reads a C string, which ends at the first NUL.
-        if sql.contains('\0') {
-            return None;
-        }
-        let scanned = pgls_query::scan(sql).ok()?;
-        let compared = |range: &TextRange| {
-            let text = &sql[*range];
-            !text.trim().is_empty()
-                && text != "$"
-                && !text.chars().all(|c| OPERATOR_CHARS.contains(c))
-        };
-        let scanner = scanned
-            .tokens
-            .iter()
-            .filter_map(|token| {
-                Some(TextRange::new(
-                    TextSize::from(u32::try_from(token.start).ok()?),
-                    TextSize::from(u32::try_from(token.end).ok()?),
-                ))
-            })
-            .filter(compared);
-        let lexed = pgls_lexer::lex(sql);
-        let mut lexer = (0..lexed.len())
-            .map(|index| {
-                let range = lexed.range(index);
-                if lexed.kind(index) == pgls_lexer::SyntaxKind::NAMED_PARAM {
-                    TextRange::new(range.start() + TextSize::of(':'), range.end())
-                } else {
-                    range
-                }
-            })
-            .filter(compared);
-        for scanner in scanner {
-            match lexer.next() {
-                Some(lexer) if lexer == scanner => {}
-                Some(lexer) => return Some(lexer.start().min(scanner.start())),
-                None => return Some(scanner.start()),
-            }
-        }
-        lexer.next().map(|lexer| lexer.start())
     }
 }
