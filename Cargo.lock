@@ -2647,10 +2647,10 @@ dependencies = [
  "pgls_query_ext",
  "pgls_test_utils",
  "pgls_text_size",
- "regex",
  "serde",
  "serde_json",
  "sqlx",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

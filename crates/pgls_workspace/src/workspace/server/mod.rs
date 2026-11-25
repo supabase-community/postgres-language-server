@@ -585,7 +585,7 @@ impl WorkspaceServer {
                                     }
 
                                     if plpgsql_check.enabled {
-                                        let results = pgls_plpgsql_check::check_plpgsql(
+                                        let checked = pgls_plpgsql_check::check(
                                             pgls_plpgsql_check::PlPgSqlCheckParams {
                                                 conn: &pool,
                                                 sql: id.content(),
@@ -608,13 +608,20 @@ impl WorkspaceServer {
                                                 constant_tracing: plpgsql_check.constant_tracing,
                                             },
                                         )
-                                        .await
-                                        .ok()
-                                        .flatten();
+                                        .await;
+                                        let diagnostics = match checked {
+                                            Ok(Some(diagnostics)) => {
+                                                result.plpgsql_checked = true;
+                                                diagnostics
+                                            }
+                                            Ok(None) => Vec::new(),
+                                            Err(err) => {
+                                                debug!("plpgsql_check failed: {err}");
+                                                Vec::new()
+                                            }
+                                        };
 
-                                        result.plpgsql_checked = results.is_some();
-
-                                        for diagnostic in results.unwrap_or_default() {
+                                        for diagnostic in diagnostics {
                                             let span =
                                                 database_span(diagnostic.span, id.content(), range);
                                             result.diagnostics.push(SDiagnostic::new(
