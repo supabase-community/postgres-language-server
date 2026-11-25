@@ -28,3 +28,12 @@ format:
 reformatted files: 1
   db/structure.sql
 crashes: 0
+format round-trip: 30
+  db/structure.sql:46271
+  db/structure.sql:57245
+  db/structure.sql:57247
+  db/structure.sql:57281
+  db/structure.sql:57283
+  and 25 more
+splitter vs parser: 0
+lexer vs scanner: 0
