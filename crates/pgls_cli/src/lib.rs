@@ -47,7 +47,7 @@ pub(crate) fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
 }
 
 use crate::cli_options::ColorsArg;
-pub use crate::commands::{PgLsCommand, pg_ls_command};
+pub use crate::commands::{PgLSCommand, pg_l_s_command};
 pub(crate) use crate::logging::{LoggingLevel, setup_cli_subscriber};
 use crate::reporter::Report;
 pub use diagnostics::CliDiagnostic;
@@ -88,14 +88,14 @@ impl<'app> CliSession<'app> {
     }
 
     /// Main function to run the CLI
-    pub fn run(self, command: PgLsCommand) -> Result<(), CliDiagnostic> {
+    pub fn run(self, command: PgLSCommand) -> Result<(), CliDiagnostic> {
         match command {
-            PgLsCommand::Version(_) => commands::version::version(self),
-            PgLsCommand::Dblint {
+            PgLSCommand::Version(_) => commands::version::version(self),
+            PgLSCommand::Dblint {
                 cli_options,
                 configuration,
             } => commands::dblint::dblint(self, &cli_options, configuration),
-            PgLsCommand::Check {
+            PgLSCommand::Check {
                 cli_options,
                 configuration,
                 paths,
@@ -119,7 +119,7 @@ impl<'app> CliSession<'app> {
                     skip,
                 },
             ),
-            PgLsCommand::Format {
+            PgLSCommand::Format {
                 cli_options,
                 configuration,
                 paths,
@@ -137,7 +137,7 @@ impl<'app> CliSession<'app> {
                     write,
                 },
             ),
-            PgLsCommand::Parse {
+            PgLSCommand::Parse {
                 file,
                 stdin_file_path,
             } => {
@@ -145,19 +145,19 @@ impl<'app> CliSession<'app> {
                 let input = commands::parse::read_input(path.as_deref())?;
                 commands::parse::run_parse(&input, path.as_deref())
             }
-            PgLsCommand::Clean => commands::clean::clean(),
-            PgLsCommand::Start {
+            PgLSCommand::Clean => commands::clean::clean(),
+            PgLSCommand::Start {
                 config_path,
                 log_options,
             } => commands::daemon::start(self, config_path, &log_options),
-            PgLsCommand::Stop => commands::daemon::stop(self),
-            PgLsCommand::Init => commands::init::init(self),
-            PgLsCommand::LspProxy {
+            PgLSCommand::Stop => commands::daemon::stop(self),
+            PgLSCommand::Init => commands::init::init(self),
+            PgLSCommand::LspProxy {
                 config_path,
                 log_options,
                 ..
             } => commands::daemon::lsp_proxy(config_path, &log_options),
-            PgLsCommand::RunServer {
+            PgLSCommand::RunServer {
                 stop_on_disconnect,
                 config_path,
                 log_options,
@@ -170,8 +170,8 @@ impl<'app> CliSession<'app> {
                 log_level,
                 &log_kind,
             ),
-            PgLsCommand::PrintSocket => commands::daemon::print_socket(),
-            PgLsCommand::SchemaExport {
+            PgLSCommand::PrintSocket => commands::daemon::print_socket(),
+            PgLSCommand::SchemaExport {
                 connection_string,
                 output,
             } => {

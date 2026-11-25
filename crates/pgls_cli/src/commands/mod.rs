@@ -28,7 +28,7 @@ pub(crate) mod version;
     reason = "parsed once per run, so boxing the large commands saves nothing"
 )]
 /// Postgres Language Server official CLI. Use it to check the health of your project or run it to check single files.
-pub enum PgLsCommand {
+pub enum PgLSCommand {
     /// Shows the version information and quit.
     #[bpaf(command)]
     Version(#[bpaf(external(cli_options), hide_usage)] CliOptions),
@@ -294,22 +294,22 @@ impl LogOptions {
     }
 }
 
-impl PgLsCommand {
+impl PgLSCommand {
     const fn cli_options(&self) -> Option<&CliOptions> {
         match self {
-            PgLsCommand::Version(cli_options)
-            | PgLsCommand::Check { cli_options, .. }
-            | PgLsCommand::Dblint { cli_options, .. }
-            | PgLsCommand::Format { cli_options, .. } => Some(cli_options),
-            PgLsCommand::LspProxy { .. }
-            | PgLsCommand::Start { .. }
-            | PgLsCommand::Stop
-            | PgLsCommand::Init
-            | PgLsCommand::RunServer { .. }
-            | PgLsCommand::Clean
-            | PgLsCommand::SchemaExport { .. }
-            | PgLsCommand::Parse { .. }
-            | PgLsCommand::PrintSocket => None,
+            PgLSCommand::Version(cli_options)
+            | PgLSCommand::Check { cli_options, .. }
+            | PgLSCommand::Dblint { cli_options, .. }
+            | PgLSCommand::Format { cli_options, .. } => Some(cli_options),
+            PgLSCommand::LspProxy { .. }
+            | PgLSCommand::Start { .. }
+            | PgLSCommand::Stop
+            | PgLSCommand::Init
+            | PgLSCommand::RunServer { .. }
+            | PgLSCommand::Clean
+            | PgLSCommand::SchemaExport { .. }
+            | PgLSCommand::Parse { .. }
+            | PgLSCommand::PrintSocket => None,
         }
     }
 
@@ -626,6 +626,6 @@ mod tests {
     /// Tests that all CLI options adhere to the invariants expected by `bpaf`.
     #[test]
     fn check_options() {
-        pg_ls_command().check_invariants(false);
+        pg_l_s_command().check_invariants(false);
     }
 }
