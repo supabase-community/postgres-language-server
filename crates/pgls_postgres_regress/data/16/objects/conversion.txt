@@ -1,0 +1,10 @@
+function	f	public	test_conv	1
+relation	r	public	big5_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	euc_jis_2004_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	gb18030_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	iso8859_5_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	mic_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	shiftjis2004_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	utf8_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+relation	r	public	utf8_verification_inputs	inbytes	pg_catalog.bytea	description	pg_catalog.text
+schema	public

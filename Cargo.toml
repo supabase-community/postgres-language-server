@@ -41,6 +41,7 @@ ignore              = "0.4.23"
 indexmap            = { version = "2.6.0", features = ["serde"] }
 insta               = "1.31.0"
 json-strip-comments = "3.1.0"
+memchr              = "2.7"
 oxc_resolver        = "1.12.0"
 proc-macro-error3   = { version = "3.1.1", default-features = false }
 proc-macro2         = "1.0.66"
@@ -54,7 +55,6 @@ serde               = { version = "1.0.195", features = ["rc"] }
 serde_json          = "1.0.114"
 similar             = "2.6.0"
 slotmap             = "1.0.7"
-smallvec            = { version = "1.13.2", features = ["union", "const_new", "serde"] }
 strum               = { version = "0.27.1", features = ["derive"] }
 # this will use tokio if available, otherwise async-std
 camino                   = "1.1.9"

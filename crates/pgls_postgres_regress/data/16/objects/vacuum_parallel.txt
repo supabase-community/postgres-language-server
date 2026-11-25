@@ -1,0 +1,2 @@
+relation	r	public	parallel_vacuum_table	a	pg_catalog.int4
+schema	public

@@ -1,0 +1,16 @@
+function	f	public	drop_sql_command	1
+function	f	public	end_command	1
+function	f	public	event_trigger_report_dropped	1
+function	f	public	event_trigger_report_end	1
+function	f	public	start_command	1
+function	f	public	test_event_trigger	1
+function	f	public	test_evtrig_dropped_objects	1
+function	f	public	undroppable	1
+relation	r	public	dropped_objects	object_type	pg_catalog.text	schema_name	pg_catalog.text	object_name	pg_catalog.text	object_identity	pg_catalog.text	address_names	pg_catalog._text	address_args	pg_catalog._text	is_temporary	pg_catalog.bool	original	pg_catalog.bool	normal	pg_catalog.bool
+relation	r	public	event_trigger_test	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rewritemetoo1	a	pg_catalog.text
+relation	r	public	rewritemetoo2	a	pg_catalog.text
+relation	r	public	rewritemetoo3	a	public.rewritetype
+relation	r	public	undroppable_objs	object_type	pg_catalog.text	object_identity	pg_catalog.text
+schema	public
+type	c	public	rewritetype

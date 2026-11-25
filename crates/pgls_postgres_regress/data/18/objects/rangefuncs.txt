@@ -1,0 +1,6 @@
+function	f	public	array_to_set	1
+function	f	public	insert_tt	1
+function	f	public	insert_tt2	1
+function	f	public	noticetrigger	1
+schema	public
+type	c	public	rngfunc_rescan_t

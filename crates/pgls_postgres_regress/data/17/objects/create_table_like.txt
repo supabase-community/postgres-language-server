@@ -1,0 +1,4 @@
+relation	r	public	inhf	xx	pg_catalog.text
+relation	r	public	inhx	xx	pg_catalog.text
+schema	ctl_schema
+schema	public

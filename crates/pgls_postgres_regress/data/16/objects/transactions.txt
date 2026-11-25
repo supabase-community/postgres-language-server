@@ -1,0 +1,7 @@
+function	f	public	max_xacttest	1
+relation	r	public	disappear	a	pg_catalog.int4
+relation	r	public	koju	a	pg_catalog.int4
+relation	r	public	trans_bar	a	pg_catalog.int4
+relation	r	public	writetest	a	pg_catalog.int4
+relation	r	public	xacttest	a	pg_catalog.int2	b	pg_catalog.float4
+schema	public

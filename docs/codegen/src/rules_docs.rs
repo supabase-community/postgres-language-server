@@ -14,6 +14,7 @@ use std::{
     path::Path,
     slice,
     str::{self, FromStr},
+    sync::Arc,
 };
 
 /// Generates the documentation page for each lint rule.
@@ -32,9 +33,18 @@ pub fn generate_rules_docs(docs_dir: &Path) -> anyhow::Result<()> {
 
     let crate::utils::LintRulesVisitor { groups } = visitor;
 
+    // The examples of typecheck rules run against the catalog of a fresh database on the latest
+    // Postgres version with regression fixtures.
+    let version = pgls_postgres_regress::versions()
+        .pop()
+        .context("regression fixtures for at least one version")?;
+    let snapshot: pgls_catalog::Snapshot =
+        serde_json::from_str(&version.catalog_json()).context("parse the built-in catalog")?;
+    let catalog = Arc::new(pgls_catalog::CatalogBase::new(Arc::new(snapshot)));
+
     for (group, rules) in groups {
         for (rule, metadata) in rules {
-            let content = generate_rule_doc(group, rule, metadata)?;
+            let content = generate_rule_doc(group, rule, metadata, &catalog)?;
             let dashed_rule = rule.to_case(Case::Kebab);
             fs::write(rules_dir.join(format!("{dashed_rule}.md")), content)?;
         }
@@ -47,6 +57,7 @@ fn generate_rule_doc(
     group: &'static str,
     rule: &'static str,
     meta: RuleMetadata,
+    catalog: &Arc<pgls_catalog::CatalogBase>,
 ) -> Result<String> {
     let mut content = Vec::new();
 
@@ -116,7 +127,7 @@ fn generate_rule_doc(
         writeln!(content)?;
     }
 
-    write_documentation(group, rule, meta.docs, &mut content)?;
+    write_documentation(group, rule, meta.docs, catalog, &mut content)?;
 
     write_how_to_configure(rule, &mut content)?;
 
@@ -187,6 +198,7 @@ fn write_documentation(
     group: &'static str,
     rule: &'static str,
     docs: &'static str,
+    catalog: &Arc<pgls_catalog::CatalogBase>,
     content: &mut Vec<u8>,
 ) -> Result<()> {
     writeln!(content, "## Description")?;
@@ -226,7 +238,7 @@ fn write_documentation(
                         writeln!(content, "```sh")?;
                     }
 
-                    print_diagnostics(group, rule, &test, &block, content)?;
+                    print_diagnostics(group, rule, &test, &block, catalog, content)?;
 
                     if test.expect_diagnostic {
                         writeln!(content, "```")?;
@@ -456,12 +468,14 @@ impl FromStr for CodeBlockTest {
 /// * `rule`: The rule name.
 /// * `test`: The code block test.
 /// * `code`: The code block content.
+/// * `catalog`: The catalog that the examples of typecheck rules run against.
 /// * `content`: The buffer to write the documentation to.
 fn print_diagnostics(
     group: &'static str,
     rule: &'static str,
     test: &CodeBlockTest,
     code: &str,
+    catalog: &Arc<pgls_catalog::CatalogBase>,
     content: &mut Vec<u8>,
 ) -> Result<()> {
     let file_path = format!("code-block.{}", test.tag);
@@ -514,11 +528,7 @@ fn print_diagnostics(
     let diagnostics = analyser
         .analyse(pgls_analyser::AnalyserParams {
             stmts,
-            catalog_base: if is_typecheck {
-                Some(builtin_catalog()?)
-            } else {
-                None
-            },
+            catalog_base: is_typecheck.then(|| Arc::clone(catalog)),
             search_path: vec!["public".into()],
             typecheck: is_typecheck,
             ..Default::default()
@@ -541,22 +551,4 @@ fn print_diagnostics(
     }
 
     Ok(())
-}
-
-/// The catalog of a fresh database on the latest Postgres version with regression fixtures.
-fn builtin_catalog() -> Result<std::sync::Arc<pgls_catalog::CatalogBase>> {
-    static CATALOG: std::sync::OnceLock<std::sync::Arc<pgls_catalog::CatalogBase>> =
-        std::sync::OnceLock::new();
-    if let Some(catalog) = CATALOG.get() {
-        return Ok(catalog.clone());
-    }
-    let version = pgls_postgres_regress::versions()
-        .pop()
-        .context("regression fixtures for at least one version")?;
-    let snapshot: pgls_catalog::Snapshot =
-        serde_json::from_str(&version.catalog_json()).context("parse the built-in catalog")?;
-    let catalog = std::sync::Arc::new(pgls_catalog::CatalogBase::new(std::sync::Arc::new(
-        snapshot,
-    )));
-    Ok(CATALOG.get_or_init(|| catalog).clone())
 }

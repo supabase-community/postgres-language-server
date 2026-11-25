@@ -1408,16 +1408,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdrhistogram"
-version = "7.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "765c9198f173dd59ce26ff9f95ef0aafd0a0fe01fb9d72841bc5066a4c06511d"
-dependencies = [
- "byteorder",
- "num-traits",
-]
-
-[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2334,7 +2324,6 @@ dependencies = [
  "bpaf",
  "crossbeam",
  "dashmap 5.5.3",
- "hdrhistogram",
  "insta",
  "libc",
  "mimalloc",
@@ -2358,7 +2347,6 @@ dependencies = [
  "prost",
  "quick-junit",
  "rayon",
- "rustc-hash",
  "serde",
  "serde_json",
  "sqlx",
@@ -2382,13 +2370,17 @@ dependencies = [
  "insta",
  "pgls_catalog",
  "pgls_migrations",
+ "pgls_postgres_regress",
+ "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_treesitter",
  "pgls_treesitter_grammar",
+ "pgls_walk",
  "regex",
  "schemars",
  "serde",
+ "serde_json",
  "sqlx",
  "tracing",
  "tree-sitter",
@@ -2486,17 +2478,12 @@ dependencies = [
 [[package]]
 name = "pgls_env"
 version = "0.0.0"
-dependencies = [
- "pgls_console",
-]
 
 [[package]]
 name = "pgls_fs"
 version = "0.0.0"
 dependencies = [
- "crossbeam",
  "directories",
- "enumflags2",
  "ignore",
  "oxc_resolver",
  "parking_lot",
@@ -2505,7 +2492,6 @@ dependencies = [
  "rustc-hash",
  "schemars",
  "serde",
- "smallvec",
  "tempfile",
  "tracing",
 ]
@@ -2546,6 +2532,7 @@ version = "0.0.0"
 dependencies = [
  "pgls_diagnostics",
  "pgls_lexer_codegen",
+ "pgls_query",
  "pgls_text_size",
  "pgls_tokenizer",
 ]
@@ -2558,16 +2545,15 @@ dependencies = [
  "convert_case",
  "proc-macro2",
  "quote",
- "ureq",
 ]
 
 [[package]]
 name = "pgls_line_index"
 version = "0.0.0"
 dependencies = [
+ "memchr",
  "pgls_text_size",
  "proptest",
- "rustc-hash",
 ]
 
 [[package]]
@@ -2581,6 +2567,7 @@ dependencies = [
  "pgls_completions",
  "pgls_configuration",
  "pgls_diagnostics",
+ "pgls_env",
  "pgls_fs",
  "pgls_line_index",
  "pgls_lsp",
@@ -2646,7 +2633,6 @@ dependencies = [
  "rustc-hash",
  "serde",
  "sqlx",
- "ureq",
 ]
 
 [[package]]
@@ -2708,7 +2694,6 @@ dependencies = [
  "prost-reflect",
  "protox",
  "quote",
- "ureq",
 ]
 
 [[package]]
@@ -2744,7 +2729,6 @@ dependencies = [
  "prost-reflect",
  "protox",
  "quote",
- "ureq",
 ]
 
 [[package]]
@@ -2789,7 +2773,6 @@ dependencies = [
  "pgls_test_utils",
  "serde_json",
  "sqlx",
- "ureq",
 ]
 
 [[package]]
@@ -2903,6 +2886,7 @@ dependencies = [
  "pgls_text_size",
  "pgls_treesitter_grammar",
  "sqlx",
+ "tokio",
  "tree-sitter",
 ]
 
@@ -3635,7 +3619,6 @@ version = "0.23.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c665f33d38cea657d9614f766881e4d510e0eda4239891eea56b4cadcf01801b"
 dependencies = [
- "log",
  "once_cell",
  "ring",
  "rustls-pki-types",
@@ -4851,24 +4834,6 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
-
-[[package]]
-name = "ureq"
-version = "2.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02d1a66277ed75f640d608235660df48c8e3c19f3b4edb6a263315626cc3c01d"
-dependencies = [
- "base64",
- "flate2",
- "log",
- "once_cell",
- "rustls",
- "rustls-pki-types",
- "serde",
- "serde_json",
- "url",
- "webpki-roots 0.26.11",
-]
 
 [[package]]
 name = "url"

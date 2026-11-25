@@ -306,6 +306,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
             },
             t => match at_statement_start(t, exclude).filter(|_| {
                 !(insert_query && matches!(t, SyntaxKind::WITH_KW | SyntaxKind::SELECT_KW))
+                    // A keyword before a `.` qualifies a name, e.g. the schema in `alter.c`.
+                    && p.look_ahead(true) != SyntaxKind::DOT
             }) {
                 Some(SyntaxKind::SELECT_KW) => {
                     let prev = p.look_back(true);
@@ -341,6 +343,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
                         && !cte_query
+                        // a column label after a `.`, e.g. `t.select`
+                        && !(prev == Some(SyntaxKind::DOT) && p.hold_back())
                     {
                         break;
                     }
@@ -448,6 +452,8 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     ]
                     .iter()
                     .all(|x| Some(x) != prev.as_ref())
+                        // a column label after a `.`, e.g. `t.create`
+                        && !(prev == Some(SyntaxKind::DOT) && p.hold_back())
                     {
                         break;
                     }

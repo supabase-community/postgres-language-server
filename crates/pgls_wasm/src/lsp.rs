@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use lsp_types::*;
-use pgls_line_index::{LineIndex, WideEncoding, WideLineCol, changed_range};
+use pgls_line_index::{LineIndex, PositionEncoding, WideEncoding, WideLineCol, changed_range};
 use pgls_text_size::TextSize;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -708,14 +708,13 @@ fn fix_all_edit(old: &str, old_index: &LineIndex, new: &str) -> Option<TextEdit>
 
 /// Convert LSP Position (line:character in UTF-16) to byte offset.
 fn position_to_offset(line_index: &LineIndex, pos: Position) -> usize {
-    let line_col = line_index.to_utf8(
-        WideEncoding::Utf16,
-        WideLineCol {
-            line: pos.line,
-            col: pos.character,
-        },
-    );
-    line_index.offset_clamped(line_col).into()
+    let position = WideLineCol {
+        line: pos.line,
+        col: pos.character,
+    };
+    line_index
+        .offset_at(position, PositionEncoding::Wide(WideEncoding::Utf16))
+        .into()
 }
 
 /// Convert byte offset to LSP Position (line:character in UTF-16). An offset past the end of the
@@ -723,9 +722,8 @@ fn position_to_offset(line_index: &LineIndex, pos: Position) -> usize {
 /// position at the start of the document.
 fn offset_to_position(line_index: &LineIndex, offset: usize) -> Option<Position> {
     let offset = TextSize::try_from(offset).ok()?;
-    let line_col = line_index.line_col(offset)?;
-    let wide = line_index.to_wide(WideEncoding::Utf16, line_col)?;
-    Some(Position::new(wide.line, wide.col))
+    let position = line_index.position(offset, PositionEncoding::Wide(WideEncoding::Utf16))?;
+    Some(Position::new(position.line, position.col))
 }
 
 // =============================================================================

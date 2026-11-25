@@ -1,0 +1,2 @@
+relation	r	public	circle_tbl	f1	pg_catalog.circle
+schema	public

@@ -1,0 +1,4 @@
+function	f	public	gstest_data	1
+relation	r	public	bug_16784	i	pg_catalog.int4	j	pg_catalog.int4
+relation	r	public	gs_data_1	g1000	pg_catalog.int4	g100	pg_catalog.int4	g10	pg_catalog.int4	g	pg_catalog.int4
+schema	public

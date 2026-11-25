@@ -97,7 +97,7 @@ type JsonRpcResult = Result<Box<RawValue>, TransportError>;
 /// the request and send it over the write channel. Finally, the task blocks
 /// the current thread until a response is received over the oneshot channel
 /// from the read task, or the request times out
-pub struct SocketTransport {
+pub(crate) struct SocketTransport {
     runtime: Runtime,
     write_send: Sender<(Vec<u8>, bool)>,
     pending_requests: PendingRequests,
@@ -136,7 +136,7 @@ impl Drop for PendingRequests {
 }
 
 impl SocketTransport {
-    pub fn open_with_timeout<R, W>(
+    pub(crate) fn open_with_timeout<R, W>(
         runtime: Runtime,
         socket_read: R,
         socket_write: W,

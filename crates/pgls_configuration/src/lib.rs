@@ -53,7 +53,7 @@ use pglinter::{
     PartialPglinterConfiguration, PglinterConfiguration, partial_pglinter_configuration,
 };
 use pgls_configuration_macros::{Merge, Partial};
-use pgls_env::PGLS_WEBSITE;
+use pgls_env::{PGLS_WEBSITE, VERSION};
 use plpgsql_check::{
     PartialPlPgSqlCheckConfiguration, PlPgSqlCheckConfiguration,
     partial_pl_pg_sql_check_configuration,
@@ -74,8 +74,6 @@ pub use typecheck::{
     PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
 };
 use vcs::VcsClientKind;
-
-pub use pgls_env::VERSION;
 
 /// The configuration that is contained inside the configuration file.
 #[derive(Clone, Debug, Default, Deserialize, Eq, Partial, PartialEq, Serialize)]

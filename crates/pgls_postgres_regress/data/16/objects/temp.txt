@@ -1,0 +1,2 @@
+function	f	public	whoami	1
+schema	public

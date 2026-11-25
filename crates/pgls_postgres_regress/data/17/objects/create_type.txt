@@ -1,0 +1,7 @@
+function	f	public	int42_in	1
+function	f	public	int42_out	1
+function	f	public	text_w_default_in	1
+function	f	public	text_w_default_out	1
+schema	public
+type	b	public	int42
+type	b	public	text_w_default

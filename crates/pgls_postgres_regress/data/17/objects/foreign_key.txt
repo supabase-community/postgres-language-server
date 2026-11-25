@@ -1,0 +1,56 @@
+relation	p	fkpart3	fk	a	pg_catalog.int4
+relation	p	fkpart3	pk	a	pg_catalog.int4
+relation	p	fkpart3	pk5	a	pg_catalog.int4
+relation	p	fkpart4	droppk	a	pg_catalog.int4
+relation	p	fkpart4	droppk2	a	pg_catalog.int4
+relation	p	fkpart5	fk	a	pg_catalog.int4
+relation	p	fkpart5	fk1	a	pg_catalog.int4
+relation	p	fkpart5	pk	a	pg_catalog.int4
+relation	p	fkpart5	pk1	a	pg_catalog.int4
+relation	p	fkpart5	pk3	a	pg_catalog.int4
+relation	p	fkpart6	pk	a	pg_catalog.int4
+relation	p	fkpart6	pk1	a	pg_catalog.int4
+relation	p	public	fk_partitioned_fk_2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	fk_partitioned_fk_4	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	fk_partitioned_fk_5	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	part3_self_fk	id	pg_catalog.int8	id_abc	pg_catalog.int8
+relation	p	public	parted_self_fk	id	pg_catalog.int8	id_abc	pg_catalog.int8
+relation	r	fkpart3	fk1	a	pg_catalog.int4
+relation	r	fkpart3	fk2	a	pg_catalog.int4
+relation	r	fkpart3	fk3	a	pg_catalog.int4
+relation	r	fkpart3	pk1	a	pg_catalog.int4
+relation	r	fkpart3	pk2	a	pg_catalog.int4
+relation	r	fkpart3	pk3	a	pg_catalog.int4
+relation	r	fkpart3	pk4	a	pg_catalog.int4
+relation	r	fkpart3	pk51	a	pg_catalog.int4
+relation	r	fkpart3	pk52	a	pg_catalog.int4
+relation	r	fkpart4	dropfk	a	pg_catalog.int4
+relation	r	fkpart4	droppk1	a	pg_catalog.int4
+relation	r	fkpart4	droppk21	a	pg_catalog.int4
+relation	r	fkpart4	droppk2_d	a	pg_catalog.int4
+relation	r	fkpart4	droppk_d	a	pg_catalog.int4
+relation	r	fkpart5	fk11	a	pg_catalog.int4
+relation	r	fkpart5	fk2	a	pg_catalog.int4
+relation	r	fkpart5	fk3	a	pg_catalog.int4
+relation	r	fkpart5	fk4	a	pg_catalog.int4
+relation	r	fkpart5	pk11	a	pg_catalog.int4
+relation	r	fkpart5	pk2	a	pg_catalog.int4
+relation	r	fkpart5	pk31	a	pg_catalog.int4
+relation	r	fkpart5	pk32	a	pg_catalog.int4
+relation	r	fkpart6	pk11	a	pg_catalog.int4
+relation	r	fkpart6	pk12	a	pg_catalog.int4
+relation	r	public	fk_notpartitioned_pk	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	fk_partitioned_fk_2_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	fk_partitioned_fk_2_2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	fk_partitioned_fk_4_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	fk_partitioned_fk_4_2	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	fk_partitioned_fk_5_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	part1_self_fk	id	pg_catalog.int8	id_abc	pg_catalog.int8
+relation	r	public	part2_self_fk	id	pg_catalog.int8	id_abc	pg_catalog.int8
+relation	r	public	part32_self_fk	id	pg_catalog.int8	id_abc	pg_catalog.int8
+relation	r	public	part33_self_fk	id	pg_catalog.int8	id_abc	pg_catalog.int8
+schema	fkpart3
+schema	fkpart4
+schema	fkpart5
+schema	fkpart6
+schema	public

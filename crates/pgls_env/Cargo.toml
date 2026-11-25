@@ -12,7 +12,6 @@ version              = "0.0.0"
 
 
 [dependencies]
-pgls_console = { workspace = true }
 
 [dev-dependencies]
 

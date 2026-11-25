@@ -4,7 +4,7 @@ mod process_file;
 mod stdin;
 mod walk;
 
-pub use config::{ExecutionConfig, ExecutionMode, VcsTargeting};
+pub(crate) use config::{ExecutionConfig, ExecutionMode};
 
 use crate::reporter::Report;
 use crate::{CliDiagnostic, CliSession};

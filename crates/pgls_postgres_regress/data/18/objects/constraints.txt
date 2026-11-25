@@ -1,0 +1,40 @@
+relation	p	public	notnull_part1_upg	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	notnull_tbl6	a	pg_catalog.int4	b	pg_catalog.int4
+relation	p	public	regress_constr_partitioned	a	pg_catalog.int4
+relation	r	public	check2_tbl	x	pg_catalog.int4	y	pg_catalog.text	z	pg_catalog.int4
+relation	r	public	check_tbl	x	pg_catalog.int4
+relation	r	public	cnn_uq	a	pg_catalog.int4
+relation	r	public	constr_child	a	pg_catalog.int4
+relation	r	public	constr_child2	a	pg_catalog.int4
+relation	r	public	constr_child3	a	pg_catalog.int4
+relation	r	public	constr_parent	a	pg_catalog.int4
+relation	r	public	constr_parent2	a	pg_catalog.int4
+relation	r	public	constr_parent3	a	pg_catalog.int4
+relation	r	public	copy_tbl	x	pg_catalog.int4	y	pg_catalog.text	z	pg_catalog.int4
+relation	r	public	default_tbl	i	pg_catalog.int4	x	pg_catalog.text	f	pg_catalog.float8
+relation	r	public	defaultexpr_tbl	i1	pg_catalog.int4	i2	pg_catalog.int4
+relation	r	public	insert_tbl	x	pg_catalog.int4	y	pg_catalog.text	z	pg_catalog.int4
+relation	r	public	ne_check_tbl	x	pg_catalog.int4
+relation	r	public	notnull_child_upg	a	pg_catalog.int4
+relation	r	public	notnull_parent_upg	a	pg_catalog.int4
+relation	r	public	notnull_part1_1_upg	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_part1_2_upg	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_part1_3_upg	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_tbl1_copy	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_tbl1_upg	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_tbl3	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_tbl4	a	pg_catalog.int4
+relation	r	public	notnull_tbl4_cld	a	pg_catalog.int4
+relation	r	public	notnull_tbl4_cld2	a	pg_catalog.int4
+relation	r	public	notnull_tbl4_cld3	a	pg_catalog.int4
+relation	r	public	notnull_tbl4_lk	a	pg_catalog.int4
+relation	r	public	notnull_tbl4_lk2	a	pg_catalog.int4
+relation	r	public	notnull_tbl4_lk3	a	pg_catalog.int4
+relation	r	public	notnull_tbl5	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_tbl5_child	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	notnull_tbl6_1	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	regress_constr_partition1	a	pg_catalog.int4
+relation	r	public	regress_notnull1	a	pg_catalog.int4
+relation	r	public	regress_notnull2	a	pg_catalog.int4
+schema	public
+type	d	public	constraint_comments_dom

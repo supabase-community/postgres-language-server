@@ -1,0 +1,3 @@
+function	f	public	ks_test_normal_random	1
+function	f	public	ks_test_uniform_random	1
+schema	public

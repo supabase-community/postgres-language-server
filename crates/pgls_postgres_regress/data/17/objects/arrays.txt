@@ -1,0 +1,3 @@
+relation	r	public	array_op_test	seqno	pg_catalog.int4	i	pg_catalog._int4	t	pg_catalog._text
+relation	r	public	arrtest	a	pg_catalog._int2	b	pg_catalog._int4	c	pg_catalog._name	d	pg_catalog._text	e	pg_catalog._float8	f	pg_catalog._bpchar	g	pg_catalog._varchar
+schema	public

@@ -1,0 +1,3 @@
+function	f	public	check_con_function	1
+relation	r	public	check_con_tbl	f1	pg_catalog.int4
+schema	public

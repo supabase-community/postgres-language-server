@@ -1,6 +1,6 @@
 //! The crate contains a set of converters to translate between `lsp-types` and `text_size` (and vice versa) types.
 
-use pgls_line_index::WideEncoding;
+use pgls_line_index::{PositionEncoding, WideEncoding};
 use pgls_text_size::TextSize;
 use tower_lsp_server::ls_types::{ClientCapabilities, Position, PositionEncodingKind, Uri};
 
@@ -41,18 +41,11 @@ pub(crate) fn get_cursor_position(
     Ok(cursor_pos)
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum PositionEncoding {
-    Utf8,
-    Wide(WideEncoding),
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::adapters::PositionEncoding;
     use crate::adapters::from_lsp::{offset, text_range};
     use crate::adapters::to_lsp::position;
-    use pgls_line_index::{LineIndex, WideEncoding};
+    use pgls_line_index::{LineIndex, PositionEncoding, WideEncoding};
     use pgls_text_size::TextSize;
     use tower_lsp_server::ls_types::{Position, Range};
 

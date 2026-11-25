@@ -15,35 +15,31 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
-pub struct ReportConfig {
+pub(crate) struct ReportConfig {
     pub mode: ReportMode,
     pub verbose: bool,
     pub diagnostic_level: Severity,
-    pub error_on_warnings: bool,
-    pub no_errors_on_unmatched: bool,
 }
 
 impl ReportConfig {
-    pub fn from_cli_options(cli_options: &CliOptions) -> Self {
+    pub(crate) fn from_cli_options(cli_options: &CliOptions) -> Self {
         Self {
             mode: cli_options.reporter.clone().into(),
             verbose: cli_options.verbose,
             diagnostic_level: cli_options.diagnostic_level,
-            error_on_warnings: cli_options.error_on_warnings,
-            no_errors_on_unmatched: cli_options.no_errors_on_unmatched,
         }
     }
 
     /// Whether a reporter prints the diagnostic: it must reach `--diagnostic-level`, and
     /// diagnostics tagged as verbose only print with `--verbose`.
-    pub fn should_emit(&self, diagnostic: &Error) -> bool {
+    pub(crate) fn should_emit(&self, diagnostic: &Error) -> bool {
         diagnostic.severity() >= self.diagnostic_level
             && (self.verbose || !diagnostic.tags().is_verbose())
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ReportMode {
+pub(crate) enum ReportMode {
     Terminal,
     GitHub,
     GitLab,
@@ -68,7 +64,7 @@ impl From<CliReporter> for ReportMode {
 }
 
 #[derive(Debug)]
-pub struct TraversalData {
+pub(crate) struct TraversalData {
     pub evaluated_paths: BTreeSet<PgLSPath>,
     pub changed: usize,
     pub unchanged: usize,
@@ -79,14 +75,13 @@ pub struct TraversalData {
     pub fixable_diagnostics: u32,
     /// Whether the command writes files, e.g. with `--fix`.
     pub writes: bool,
-    pub diagnostics_not_printed: u32,
     pub workspace_root: Option<PathBuf>,
     /// Whether the files came from git, with `--staged` or `--changed`.
     pub vcs_targeted: bool,
 }
 
 #[derive(Debug)]
-pub struct Report {
+pub(crate) struct Report {
     pub diagnostics: Vec<Error>,
     pub duration: Duration,
     pub errors: u32,
@@ -96,7 +91,7 @@ pub struct Report {
 }
 
 impl Report {
-    pub fn new(
+    pub(crate) fn new(
         diagnostics: Vec<Error>,
         duration: Duration,
         skipped_diagnostics: u32,
@@ -114,7 +109,7 @@ impl Report {
     }
 
     /// Adds a diagnostic that does not belong to a single file, ahead of the file diagnostics.
-    pub fn prepend_diagnostic(&mut self, diagnostic: Error) {
+    pub(crate) fn prepend_diagnostic(&mut self, diagnostic: Error) {
         let (errors, warnings) = count_levels(std::slice::from_ref(&diagnostic));
         self.errors += errors;
         self.warnings += warnings;
@@ -132,22 +127,18 @@ pub(crate) trait ReportWriter {
     ) -> Result<(), CliDiagnostic>;
 }
 
-pub struct Reporter {
+pub(crate) struct Reporter {
     config: ReportConfig,
 }
 
 impl Reporter {
-    pub fn from_cli_options(cli_options: &CliOptions) -> Self {
+    pub(crate) fn from_cli_options(cli_options: &CliOptions) -> Self {
         Self {
             config: ReportConfig::from_cli_options(cli_options),
         }
     }
 
-    pub fn new(config: ReportConfig) -> Self {
-        Self { config }
-    }
-
-    pub fn report(
+    pub(crate) fn report(
         &mut self,
         console: &mut dyn Console,
         command_name: &str,
@@ -208,13 +199,13 @@ mod tests {
             0,
             None,
         );
-        let mut reporter = Reporter::new(ReportConfig {
-            mode,
-            verbose,
-            diagnostic_level: Severity::Hint,
-            error_on_warnings: false,
-            no_errors_on_unmatched: false,
-        });
+        let mut reporter = Reporter {
+            config: ReportConfig {
+                mode,
+                verbose,
+                diagnostic_level: Severity::Hint,
+            },
+        };
         let mut console = BufferConsole::default();
         reporter.report(&mut console, "check", &report).unwrap();
 

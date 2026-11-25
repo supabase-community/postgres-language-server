@@ -200,8 +200,10 @@ pub trait FileSystem: Send + Sync + RefUnwindSafe {
     fn find_files(&self, root: &Path, search: &FindFiles) -> FoundFiles;
 }
 
-/// Directories that [FileSystem::find_files] never descends into.
-pub const SKIPPED_DIRECTORIES: &[&str] = &["node_modules", "target"];
+/// Directories that [FileSystem::find_files] and the traversal of the CLI never descend into:
+/// version control, dependencies and build output.
+pub const SKIPPED_DIRECTORIES: &[&str] =
+    &[".git", ".svn", ".hg", ".yarn", "node_modules", "target"];
 
 /// Decides whether [FileSystem::find_files] skips a directory, given its path.
 pub type SkipDirectory = Arc<dyn Fn(&Path) -> bool + Send + Sync>;

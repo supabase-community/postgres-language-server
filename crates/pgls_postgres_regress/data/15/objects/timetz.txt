@@ -1,0 +1,3 @@
+relation	r	public	timetz_tbl	f1	pg_catalog.timetz
+relation	v	public	timetz_local_view	dat	pg_catalog.timetz	dat_at_tz	pg_catalog.timetz	dat_at_int	pg_catalog.timetz
+schema	public

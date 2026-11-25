@@ -1,0 +1,2 @@
+relation	r	public	truncate_b	id	pg_catalog.int4
+schema	public

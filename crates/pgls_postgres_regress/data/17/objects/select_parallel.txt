@@ -1,0 +1,7 @@
+function	f	public	make_some_array	1
+function	f	public	my_cmp	1
+function	f	public	sp_parallel_restricted	1
+function	f	public	sp_test_func	1
+relation	r	public	fooarr	f1	pg_catalog.text	f2	pg_catalog._int4	f3	pg_catalog.text
+relation	r	public	parallel_hang	i	pg_catalog.int4
+schema	public

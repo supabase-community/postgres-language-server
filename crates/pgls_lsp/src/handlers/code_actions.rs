@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::{
-    adapters::{PositionEncoding, get_cursor_position, to_lsp},
+    adapters::{get_cursor_position, to_lsp},
     session::{Session, SessionHandle},
 };
 use anyhow::{Result, anyhow};
 use pgls_analyse::Applicability;
-use pgls_line_index::{LineIndex, changed_range};
+use pgls_line_index::{LineIndex, PositionEncoding, changed_range};
 use tower_lsp_server::jsonrpc;
 use tower_lsp_server::ls_types::{
     self, CodeAction, CodeActionDisabled, CodeActionOrCommand, Command, ExecuteCommandParams,
@@ -420,8 +420,8 @@ impl Drop for CancelStatementOnDrop {
 #[cfg(test)]
 mod tests {
     use super::{FIX_ALL_KIND, covers, fix_all_edit, is_requested};
-    use crate::adapters::{PositionEncoding, from_lsp};
-    use pgls_line_index::{LineIndex, WideEncoding};
+    use crate::adapters::from_lsp;
+    use pgls_line_index::{LineIndex, PositionEncoding, WideEncoding};
     use tower_lsp_server::ls_types::CodeActionKind;
 
     #[test]

@@ -4,15 +4,11 @@ use crate::execute::diagnostics::{PanicDiagnostic, SkippedDiagnostic};
 use crate::reporter::{Report, TraversalData};
 use crate::{CliDiagnostic, CliSession};
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use pgls_diagnostics::{
-    DiagnosticExt, DiagnosticTags, Error, Resource, Severity, SharedSourceCode,
-};
+use pgls_diagnostics::{DiagnosticExt, DiagnosticTags, Error, Severity, SharedSourceCode};
 use pgls_fs::{FileSystem, PathInterner, PgLSPath};
 use pgls_fs::{TraversalContext, TraversalScope};
 use pgls_workspace::Workspace;
-use pgls_workspace::dome::Dome;
 use pgls_workspace::workspace::{IsPathIgnoredParams, ProjectKey};
-use rustc_hash::FxHashSet;
 use std::collections::BTreeSet;
 use std::sync::atomic::AtomicU32;
 use std::sync::{PoisonError, RwLock};
@@ -36,14 +32,13 @@ pub(crate) fn traverse(
 ) -> Result<Report, CliDiagnostic> {
     init_thread_pool();
 
-    if inputs.is_empty() && !config.mode.vcs().is_targeted() {
+    if inputs.is_empty() && !config.is_vcs_targeted() {
         match current_dir() {
             Ok(current_dir) => inputs.push(current_dir.into_os_string()),
             Err(err) => return Err(CliDiagnostic::io_error(err)),
         }
     }
 
-    let (interner, recv_files) = PathInterner::new();
     let (sender, receiver) = unbounded();
 
     let changed = AtomicUsize::new(0);
@@ -56,12 +51,12 @@ pub(crate) fn traverse(
 
     let max_diagnostics = config.max_diagnostics();
 
-    let printer = DiagnosticsPrinter::new(config).with_max_diagnostics(max_diagnostics);
+    let printer = DiagnosticsPrinter::new(max_diagnostics);
 
     let (duration, evaluated_paths, diagnostics) = thread::scope(|s| {
         let handler = thread::Builder::new()
             .name(String::from("pgls::console"))
-            .spawn_scoped(s, || printer.run(receiver, recv_files))
+            .spawn_scoped(s, || printer.run(receiver))
             .map_err(CliDiagnostic::io_error)?;
 
         // The traversal context is scoped to ensure all the channels it
@@ -74,7 +69,7 @@ pub(crate) fn traverse(
                 workspace,
                 project_key,
                 config,
-                interner,
+                interner: PathInterner::default(),
                 changed: &changed,
                 unchanged: &unchanged,
                 skipped: &skipped,
@@ -107,9 +102,8 @@ pub(crate) fn traverse(
         suggested_fixes_skipped,
         fixable_diagnostics,
         writes: config.allows_writes(),
-        diagnostics_not_printed,
         workspace_root: session.fs().working_directory(),
-        vcs_targeted: config.mode.vcs().is_targeted(),
+        vcs_targeted: config.is_vcs_targeted(),
     };
 
     let mut report = Report::new(
@@ -157,14 +151,8 @@ fn traverse_inputs(
     }));
 
     let paths = ctx.evaluated_paths();
-    let dome = Dome::new(paths);
-    let mut iter = dome.iter();
     fs.traversal(Box::new(|scope: &dyn TraversalScope| {
-        while let Some(path) = iter.next_config() {
-            scope.handle(ctx, path.to_path_buf());
-        }
-
-        for path in iter {
+        for path in &paths {
             scope.handle(ctx, path.to_path_buf());
         }
     }));
@@ -172,10 +160,7 @@ fn traverse_inputs(
     (start.elapsed(), ctx.evaluated_paths())
 }
 
-// struct DiagnosticsReporter<'ctx> {}
-
-struct DiagnosticsPrinter<'ctx> {
-    _config: &'ctx ExecutionConfig,
+struct DiagnosticsPrinter {
     /// The maximum number of diagnostics the console thread is allowed to print
     max_diagnostics: u32,
     /// Count of diagnostics that exceeded max_diagnostics and weren't printed
@@ -190,11 +175,10 @@ struct DiagnosticsPrinter<'ctx> {
     warnings: AtomicU32,
 }
 
-impl<'ctx> DiagnosticsPrinter<'ctx> {
-    fn new(config: &'ctx ExecutionConfig) -> Self {
+impl DiagnosticsPrinter {
+    fn new(max_diagnostics: u32) -> Self {
         Self {
-            _config: config,
-            max_diagnostics: 20,
+            max_diagnostics,
             not_printed_diagnostics: AtomicU32::new(0),
             printed_diagnostics: AtomicU32::new(0),
             total_skipped_suggested_fixes: AtomicU32::new(0),
@@ -211,11 +195,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
             Severity::Warning => self.warnings.fetch_add(1, Ordering::Relaxed),
             Severity::Hint | Severity::Information => 0,
         };
-    }
-
-    fn with_max_diagnostics(mut self, value: u32) -> Self {
-        self.max_diagnostics = value;
-        self
     }
 
     fn not_printed_diagnostics(&self) -> u32 {
@@ -239,8 +218,7 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
         should_print
     }
 
-    fn run(&self, receiver: Receiver<Message>, interner: Receiver<PathBuf>) -> Vec<Error> {
-        let mut paths: FxHashSet<String> = FxHashSet::default();
+    fn run(&self, receiver: Receiver<Message>) -> Vec<Error> {
         let mut diagnostics = vec![];
 
         while let Ok(msg) = receiver.recv() {
@@ -251,29 +229,8 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                     self.total_skipped_suggested_fixes
                         .fetch_add(skipped_suggested_fixes, Ordering::Relaxed);
                 }
-                Message::Error(mut err) => {
+                Message::Error(err) => {
                     self.count_severity(err.severity());
-                    if let Some(Resource::File(file_path)) = err.location().resource.as_ref() {
-                        let file_name = match paths.get(*file_path) {
-                            Some(path) => Some(path),
-                            None => loop {
-                                match interner.recv() {
-                                    Ok(path) => {
-                                        paths.insert(path.display().to_string());
-                                        if path.display().to_string() == *file_path {
-                                            break paths.get(&path.display().to_string());
-                                        }
-                                    }
-                                    Err(_) => break None,
-                                }
-                            },
-                        };
-
-                        if let Some(path) = file_name {
-                            err = err.with_file_path(path.as_str());
-                        }
-                    }
-
                     if self.should_store() {
                         diagnostics.push(err);
                     }
@@ -338,10 +295,13 @@ pub(crate) struct TraversalOptions<'ctx, 'app> {
 impl TraversalOptions<'_, '_> {
     pub(crate) fn increment_changed(&self, path: &PgLSPath) {
         self.changed.fetch_add(1, Ordering::Relaxed);
-        self.evaluated_paths
+        let mut evaluated_paths = self
+            .evaluated_paths
             .write()
-            .unwrap_or_else(PoisonError::into_inner)
-            .replace(path.to_written());
+            .unwrap_or_else(PoisonError::into_inner);
+        // `was_written` is part of the order, so the written path doesn't replace the stored one.
+        evaluated_paths.remove(&PgLSPath::new(path.as_path()));
+        evaluated_paths.insert(path.to_written());
     }
     pub(crate) fn increment_unchanged(&self) {
         self.unchanged.fetch_add(1, Ordering::Relaxed);

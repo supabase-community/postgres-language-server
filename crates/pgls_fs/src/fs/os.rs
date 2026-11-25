@@ -27,14 +27,18 @@ const MAX_SYMLINK_DEPTH: u8 = 3;
 
 /// Implementation of [FileSystem] that directly calls through to the underlying OS
 pub struct OsFileSystem {
-    pub working_directory: Option<PathBuf>,
-    pub configuration_resolver: AssertUnwindSafe<Resolver>,
+    working_directory: Option<PathBuf>,
+    configuration_resolver: AssertUnwindSafe<Resolver>,
 }
 
 impl OsFileSystem {
     pub fn new(working_directory: PathBuf) -> Self {
+        Self::with_working_directory(Some(working_directory))
+    }
+
+    fn with_working_directory(working_directory: Option<PathBuf>) -> Self {
         Self {
-            working_directory: Some(working_directory),
+            working_directory,
             configuration_resolver: AssertUnwindSafe(Resolver::new(ResolveOptions {
                 condition_names: vec!["node".to_string(), "import".to_string()],
                 extensions: vec![".json".to_string(), ".jsonc".to_string()],
@@ -44,16 +48,10 @@ impl OsFileSystem {
     }
 }
 
+/// The file system of the current directory.
 impl Default for OsFileSystem {
     fn default() -> Self {
-        Self {
-            working_directory: env::current_dir().ok(),
-            configuration_resolver: AssertUnwindSafe(Resolver::new(ResolveOptions {
-                condition_names: vec!["node".to_string(), "import".to_string()],
-                extensions: vec![".json".to_string(), ".jsonc".to_string()],
-                ..ResolveOptions::default()
-            })),
-        }
+        Self::with_working_directory(env::current_dir().ok())
     }
 }
 
@@ -304,11 +302,6 @@ impl<'scope> TraversalScope<'scope> for OsTraversalScope<'scope> {
     }
 }
 
-// TODO: remove in 2.0, and directly use `.gitignore`
-/// Default list of ignored directories, in the future will be supplanted by
-/// detecting and parsing .ignore files
-const DEFAULT_IGNORE: &[&[u8]] = &[b".git", b".svn", b".hg", b".yarn", b"node_modules"];
-
 /// Traverse a single directory
 fn handle_dir<'scope>(
     scope: &Scope<'scope>,
@@ -317,8 +310,10 @@ fn handle_dir<'scope>(
     // The unresolved origin path in case the directory is behind a symbolic link
     origin_path: Option<PathBuf>,
 ) {
-    if let Some(file_name) = path.file_name()
-        && DEFAULT_IGNORE.contains(&file_name.as_encoded_bytes())
+    if path
+        .file_name()
+        .and_then(|file_name| file_name.to_str())
+        .is_some_and(|file_name| SKIPPED_DIRECTORIES.contains(&file_name))
     {
         return;
     }

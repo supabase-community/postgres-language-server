@@ -1,0 +1,22 @@
+function	a	public	balk	1
+function	a	public	my_avg	1
+function	a	public	my_avg_init	1
+function	a	public	my_avg_init2	1
+function	a	public	my_half_sum	1
+function	a	public	my_sum	1
+function	a	public	my_sum_init	1
+function	a	public	rwagg	1
+function	f	public	avg_finalfn	1
+function	f	public	avg_transfn	1
+function	f	public	balkifnull	2
+function	f	public	eatarray	1
+function	f	public	halfsum_finalfn	1
+function	f	public	rwagg_finalfunc	1
+function	f	public	rwagg_sfunc	1
+function	f	public	sum_finalfn	1
+function	f	public	sum_transfn	1
+relation	r	public	agg_data_20k	g	pg_catalog.int4
+relation	r	public	agg_data_2k	g	pg_catalog.int4
+relation	r	public	aggtest	a	pg_catalog.int2	b	pg_catalog.float4
+schema	public
+type	c	public	avg_state

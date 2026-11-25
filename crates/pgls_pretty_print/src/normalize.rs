@@ -85,11 +85,14 @@ fn flatten_bool_expr_args(bool_expr: &mut pgls_query::protobuf::BoolExpr) {
 /// Location fields record the byte offset in the original source,
 /// which will differ between the original and reparsed AST.
 fn clear_location(node: &mut NodeEnum) {
-    let mut join_quals_to_clear = Vec::new();
+    // The walk yields a node before its descendants and keeps pointers to them. Rewrite the nodes
+    // after the walk and descendants first, so that a write through a node to its children, e.g.
+    // in `DefineStmt` or `JoinExpr`, doesn't invalidate a pointer that is still used.
+    let nodes = node.iter_mut().collect::<Vec<_>>();
 
     // SAFETY: The iterator provides mutable access to AST node fields
     unsafe {
-        node.iter_mut().for_each(|n| match n {
+        nodes.into_iter().rev().for_each(|n| match n {
             NodeMut::ColumnRef(n) => {
                 (*n).location = 0;
             }
@@ -122,9 +125,7 @@ fn clear_location(node: &mut NodeEnum) {
                         })
                         .unwrap_or(false);
                     if is_true_qual {
-                        // Defer structural mutations until the iterator has finished. It keeps
-                        // pointers to descendants, which clearing `quals` would invalidate.
-                        join_quals_to_clear.push(n);
+                        (*n).quals = None;
                     }
                 }
             }
@@ -465,10 +466,6 @@ fn clear_location(node: &mut NodeEnum) {
             }
             _ => {}
         });
-
-        for join in join_quals_to_clear {
-            (*join).quals = None;
-        }
     }
 }
 
@@ -537,5 +534,85 @@ mod tests {
         } else {
             panic!("Expected ColumnRef");
         }
+    }
+
+    /// The arms that rewrite a node's children, which the walk also visits. Hand-built, so that
+    /// it runs under Miri, which can't call libpg_query.
+    #[test]
+    fn test_normalize_rewrites_children() {
+        use pgls_query::protobuf::{
+            Boolean, CopyStmt, DefElem, DefineStmt, IndexElem, Integer, JsonFormat,
+            JsonIsPredicate, Node, String, TypeName,
+        };
+
+        let node = |node| Node { node: Some(node) };
+
+        let mut define = NodeEnum::DefineStmt(DefineStmt {
+            args: vec![node(NodeEnum::Integer(Integer { ival: 1 }))],
+            ..Default::default()
+        });
+        normalize_ast(&mut define);
+        let NodeEnum::DefineStmt(define) = define else {
+            panic!("Expected DefineStmt");
+        };
+        assert_eq!(
+            define.args,
+            vec![node(NodeEnum::Integer(Integer { ival: 0 }))]
+        );
+
+        let mut index = NodeEnum::IndexElem(Box::new(IndexElem {
+            opclassopts: vec![node(NodeEnum::DefElem(Box::new(DefElem {
+                arg: Some(Box::new(node(NodeEnum::TypeName(TypeName {
+                    names: vec![node(NodeEnum::String(String { sval: "x".into() }))],
+                    ..Default::default()
+                })))),
+                location: 7,
+                ..Default::default()
+            })))],
+            ..Default::default()
+        }));
+        normalize_ast(&mut index);
+        let NodeEnum::IndexElem(index) = index else {
+            panic!("Expected IndexElem");
+        };
+        let Some(NodeEnum::DefElem(def)) = &index.opclassopts[0].node else {
+            panic!("Expected DefElem");
+        };
+        assert_eq!(def.location, 0);
+        assert_eq!(
+            def.arg.as_deref(),
+            Some(&node(NodeEnum::String(String { sval: "x".into() })))
+        );
+
+        let mut copy = NodeEnum::CopyStmt(Box::new(CopyStmt {
+            options: vec![node(NodeEnum::DefElem(Box::new(DefElem {
+                arg: Some(Box::new(node(NodeEnum::Boolean(Boolean { boolval: true })))),
+                location: 7,
+                ..Default::default()
+            })))],
+            ..Default::default()
+        }));
+        normalize_ast(&mut copy);
+        let NodeEnum::CopyStmt(copy) = copy else {
+            panic!("Expected CopyStmt");
+        };
+        let Some(NodeEnum::DefElem(def)) = &copy.options[0].node else {
+            panic!("Expected DefElem");
+        };
+        assert_eq!((def.location, def.arg.is_none()), (0, true));
+
+        let mut predicate = NodeEnum::JsonIsPredicate(Box::new(JsonIsPredicate {
+            format: Some(JsonFormat {
+                location: 7,
+                ..Default::default()
+            }),
+            location: 7,
+            ..Default::default()
+        }));
+        normalize_ast(&mut predicate);
+        let NodeEnum::JsonIsPredicate(predicate) = predicate else {
+            panic!("Expected JsonIsPredicate");
+        };
+        assert_eq!(predicate.format.map(|format| format.location), Some(0));
     }
 }
