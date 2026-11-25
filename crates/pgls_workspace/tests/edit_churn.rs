@@ -347,10 +347,12 @@ async fn caches_follow_the_document_through_many_edits(test_db: PgPool) {
         mib(after_edits)
     );
 
-    // Every statement of the document, including the function bodies, has a parse result, a
-    // tree, and its references, and nothing else is cached.
+    // Every statement of the document, including the function bodies, has a parse result and
+    // its references, and nothing else is cached. Tree-sitter trees are built for the
+    // statements that need one, like those the database checks check, so there are at most as
+    // many as statements.
     assert_eq!(stats.parse_results, stats.statements, "{stats:?}");
-    assert_eq!(stats.trees, stats.statements, "{stats:?}");
+    assert!(stats.trees <= stats.statements, "{stats:?}");
     assert_eq!(stats.resolved_statements, stats.statements, "{stats:?}");
     assert!(stats.analysis);
     // The document stays within 10% of its length, so the memory doesn't grow with the edits.

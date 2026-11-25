@@ -460,7 +460,8 @@ impl WorkspaceServer {
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
     /// unchanged database objects, and plpgsql_check. With [`DatabaseChecks::Run`] it checks the
-    /// statements and keeps the results of each one in the document, with
+    /// statements, reusing plpgsql_check's diagnostics of the functions it checked with the same
+    /// snapshot and settings, and keeps the results of each one in the document, with
     /// [`DatabaseChecks::Reuse`] it returns what the last run found for the statements that are
     /// unchanged since.
     ///
@@ -501,20 +502,38 @@ impl WorkspaceServer {
         let db_diagnostics = self.connection.with_pools(&settings.db, |pools| {
             let pool = &pools.pool;
             let snapshot = self.snapshot.load(pool)?;
+            // plpgsql_check finds the same for an unchanged function with the same snapshot and
+            // settings, so the last run's diagnostics are reused.
+            let reuse_plpgsql_check = doc
+                .cache()
+                .database_results()
+                .checked_with
+                .as_ref()
+                .is_some_and(|(checked, settings)| {
+                    std::sync::Weak::ptr_eq(checked, &Arc::downgrade(&snapshot))
+                        && *settings == plpgsql_check
+                });
             // Only top-level statements are checked: the static typecheck rules cover the
             // statements of SQL function bodies, whose parameters they resolve.
             let input = doc
                 .statements()
-                .filter(|stmt| !analysis.is_skipped(stmt.range().start()))
+                .filter(|stmt| !stmt.id().is_child() && !analysis.is_skipped(stmt.range().start()))
                 .map(|stmt| {
                     let range = stmt.range();
                     let ast = doc.parse(&stmt).as_ref().as_ref().ok().cloned();
                     let cst = doc.tree(&stmt);
                     let statement = analysis.statement(range).cloned();
-                    (stmt.id().clone(), range, ast, cst, statement)
+                    let reused = reuse_plpgsql_check
+                        .then(|| {
+                            doc.cache()
+                                .database_results()
+                                .plpgsql_check_diagnostics(stmt.id())
+                        })
+                        .flatten();
+                    (stmt.id().clone(), range, ast, cst, statement, reused)
                 })
-                .filter(|(id, ..)| !id.is_child())
                 .collect::<Vec<_>>();
+            let checked_with = (Arc::downgrade(&snapshot), plpgsql_check.clone());
             let pool = pool.clone();
             // The typecheck prepares statements, which the statement pool's connections don't
             // cache, see `TypecheckParams::conn`.
@@ -529,7 +548,7 @@ impl WorkspaceServer {
                             .take_while(move |_| {
                                 std::future::ready(!stopped.load(Ordering::Relaxed))
                             })
-                            .map(|(id, range, ast, cst, statement)| {
+                            .map(|(id, range, ast, cst, statement, reused)| {
                                 let pool = pool.clone();
                                 let statement_pool = statement_pool.clone();
                                 let path = path.clone();
@@ -584,7 +603,10 @@ impl WorkspaceServer {
                                         }
                                     }
 
-                                    if plpgsql_check.enabled {
+                                    if let Some(diagnostics) = reused {
+                                        result.plpgsql_checked = true;
+                                        result.diagnostics.extend(diagnostics);
+                                    } else if plpgsql_check.enabled {
                                         let checked = pgls_plpgsql_check::check(
                                             pgls_plpgsql_check::PlPgSqlCheckParams {
                                                 conn: &pool,
@@ -643,6 +665,7 @@ impl WorkspaceServer {
                     &stop,
                     should_stop,
                 )?
+                .map(|checked| (checked_with, checked))
                 .map_err(WorkspaceError::from)
         });
         if stop.load(Ordering::Relaxed) {
@@ -655,10 +678,11 @@ impl WorkspaceServer {
                     .set_database_results(DatabaseResults::default(), doc.generation());
                 Ok(Some(DatabaseDiagnostics::default()))
             }
-            Some(Ok(checked)) => {
+            Some(Ok((checked_with, checked))) => {
                 // The diagnostics of this pull are the results it keeps, at the statements'
                 // places.
-                let results = DatabaseResults::new(checked);
+                let mut results = DatabaseResults::new(checked);
+                results.checked_with = Some(checked_with);
                 let diagnostics = results.reuse(checked_statements());
                 doc.cache().set_database_results(results, doc.generation());
                 Ok(Some(diagnostics))

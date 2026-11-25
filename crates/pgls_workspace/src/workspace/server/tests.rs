@@ -1425,13 +1425,20 @@ async fn test_database_checks_reuse_the_results_of_unchanged_statements(test_db:
     assert_eq!(found.len(), 1, "{found:?}");
     assert!(found[0].contains("missing_two"), "{found:?}");
 
-    // Without the extension, a run finds nothing, but a pull that reuses the results doesn't
-    // query the database.
+    // Without the extension, a pull that reuses the results doesn't query the database, and
+    // neither does a run while the snapshot says the extension is installed: the function is
+    // unchanged since its last check. Once the snapshot is loaded again, a run finds nothing.
     test_db
         .execute("DROP EXTENSION plpgsql_check;")
         .await
         .expect("Unable to drop plpgsql_check");
     assert_eq!(findings(&content, DatabaseChecks::Reuse), found);
+    assert_eq!(findings(&content, DatabaseChecks::Run), found);
+    workspace
+        .invalidate_schema_cache(crate::workspace::InvalidateSchemaCacheParams {
+            scope: crate::workspace::SchemaCacheScope::All,
+        })
+        .expect("Unable to invalidate the schema cache");
     assert_eq!(
         findings(&content, DatabaseChecks::Run),
         Vec::<String>::new()
