@@ -38,7 +38,7 @@ pub fn generate_pglinter() -> Result<()> {
 
     if !rules_sql_path.exists() {
         anyhow::bail!(
-            "Vendor files not found at crates/pgls_pglinter/vendor/sql/rules.sql. Run 'just vendor-pglinter' to vendor them."
+            "Vendor files not found at crates/pgls_pglinter/vendor/sql/rules.sql. See \"Code Generation\" in AGENTS.md for how to vendor them."
         );
     }
 

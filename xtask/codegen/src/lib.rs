@@ -10,7 +10,6 @@ mod generate_new_analyser_rule;
 mod generate_pglinter;
 mod generate_schema_types;
 mod generate_splinter;
-mod vendor_pglinter;
 
 pub mod glue;
 
@@ -113,7 +112,6 @@ pub use self::generate_new_analyser_rule::generate_new_analyser_rule;
 pub use self::generate_pglinter::generate_pglinter;
 pub use self::generate_schema_types::generate_schema_types;
 pub use self::generate_splinter::generate_splinter;
-pub use self::vendor_pglinter::vendor_pglinter;
 use crate::glue::fs2;
 use bpaf::Bpaf;
 use generate_new_analyser_rule::Category;
@@ -216,11 +214,4 @@ pub enum TaskCommand {
     /// Generate the TypeScript types of the database snapshot
     #[bpaf(command)]
     SchemaTypes,
-    /// Vendor pglinter's `rules.sql` at the commit in `crates/pgls_pglinter/vendor/COMMIT_SHA.txt`
-    #[bpaf(command("vendor-pglinter"))]
-    VendorPglinter {
-        /// Vendor this commit instead, and pin it
-        #[bpaf(long("commit"), argument("SHA"))]
-        commit: Option<String>,
-    },
 }

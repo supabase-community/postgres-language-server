@@ -212,7 +212,7 @@ Many parser structures are generated from PostgreSQL's protobuf definitions usin
 To upgrade libpg_query, check out the new tag in `crates/pgls_query/vendor/libpg_query` and commit the submodule. The generators (`pgls_query_macros`, `pgls_lexer_codegen`, `pgls_pretty_print_codegen`) read `protobuf/pg_query.proto` and `src/postgres/include/parser/kwlist.h` from the submodule, so there is nothing to copy. `crates/pgls_query/src/protobuf.rs` is only regenerated when `protoc` is on the `PATH`, which the Nix shell doesn't provide: `nix build --print-out-paths nixpkgs#protobuf` and prepend its `bin` to `PATH` for one `cargo build -p pgls_query`.
 
 Builds don't download anything. The database lints are vendored at the upstream commit in their `vendor/COMMIT_SHA.txt`:
-- pglinter's `sql/rules.sql` is copied as is into `crates/pgls_pglinter/vendor/`. To move to another commit, run `just vendor-pglinter --commit <sha>`, then `just gen-lint`.
+- pglinter's `sql/rules.sql` is copied as is into `crates/pgls_pglinter/vendor/sql/`. To upgrade, download `https://raw.githubusercontent.com/pmpetit/pglinter/<sha>/sql/rules.sql` into it, write `<sha>` to `COMMIT_SHA.txt`, then run `just gen-lint`.
 - splinter's lints are adapted by hand into `crates/pgls_splinter/vendor/<category>/<name>.sql`: a `-- meta:` header instead of `create view`, `"name!"`-style column aliases for sqlx, no trailing `;`. To upgrade, adapt the changed files of `lints/` the same way, update `COMMIT_SHA.txt`, then run `just gen-lint`.
 
 ### Database Schema
