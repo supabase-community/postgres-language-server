@@ -32,9 +32,12 @@ pub(super) fn emit_alter_extension_contents_stmt(
     emit_keywords(e, object_type_keywords(n.objtype()).unwrap_or("OBJECT"));
     e.space();
 
-    // Object name
+    // Object name: a qualified name (`any_name`) is a list of its parts
     if let Some(ref object) = n.object {
-        emit_node(e, object);
+        match object.node.as_ref() {
+            Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
+            _ => emit_node(e, object),
+        }
     }
 
     e.group_end();

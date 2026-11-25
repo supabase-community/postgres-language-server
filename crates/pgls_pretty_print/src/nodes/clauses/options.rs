@@ -12,6 +12,19 @@ pub(crate) fn emit_with_options(e: &mut EventEmitter, options: &[Node]) {
     emit_parenthesized_list(e, options, emit_node);
 }
 
+/// Emits an option of `VACUUM (...)`, `CLUSTER (...)` or `REINDEX (...)`: `name [value]`.
+pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
+    let Some(NodeEnum::DefElem(def)) = n.node.as_ref() else {
+        emit_node(e, n);
+        return;
+    };
+    emit_keyword(e, &def.defname);
+    if let Some(ref arg) = def.arg {
+        e.space();
+        emit_node(e, arg);
+    }
+}
+
 /// Emits `OPTIONS (option 'value', ...)` of a foreign data wrapper, server, table or user mapping.
 pub(crate) fn emit_options_clause(e: &mut EventEmitter, options: &[Node]) {
     e.token(TokenKind::OPTIONS_KW);
@@ -381,6 +394,19 @@ pub(crate) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
                 e.space();
                 // The arg is a list of identifiers that should be dot-separated (table.column)
                 if let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref() {
+                    emit_dot_separated_list(e, &list.items);
+                } else {
+                    emit_node(e, arg);
+                }
+            }
+        }
+        "sequence_name" => {
+            e.token(TokenKind::SEQUENCE_KW);
+            e.space();
+            e.token(TokenKind::NAME_KW);
+            if let Some(ref arg) = n.arg {
+                e.space();
+                if let Some(NodeEnum::List(list)) = arg.node.as_ref() {
                     emit_dot_separated_list(e, &list.items);
                 } else {
                     emit_node(e, arg);

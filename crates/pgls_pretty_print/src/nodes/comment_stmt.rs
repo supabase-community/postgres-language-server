@@ -25,6 +25,16 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             } else {
                 emit_node(e, object);
             }
+        } else if object_type == ObjectType::ObjectCast {
+            emit_cast_object(e, object);
+        } else if matches!(
+            object_type,
+            ObjectType::ObjectOpclass | ObjectType::ObjectOpfamily
+        ) {
+            match operator_class_parts(object) {
+                Some((method, name)) => emit_operator_class_name(e, method, name),
+                None => emit_node(e, object),
+            }
         } else if object_type == ObjectType::ObjectAggregate {
             // An aggregate needs (*) for any arguments
             if let Some(NodeEnum::ObjectWithArgs(owa)) = object.node.as_ref() {

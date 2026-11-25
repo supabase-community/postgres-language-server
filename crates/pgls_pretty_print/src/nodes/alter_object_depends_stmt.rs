@@ -15,9 +15,23 @@ pub(super) fn emit_alter_object_depends_stmt(e: &mut EventEmitter, n: &AlterObje
     }
     e.space();
 
-    // Object name
-    if let Some(ref object) = n.object {
-        emit_node(e, object);
+    // An index or materialized view is the relation. A trigger is `name ON relation`, with the name
+    // as the only item of the object.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L10019
+    match (&n.object, &n.relation) {
+        (Some(object), Some(relation)) => {
+            match object.node.as_ref() {
+                Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
+                _ => emit_node(e, object),
+            }
+            e.space();
+            e.token(TokenKind::ON_KW);
+            e.space();
+            super::emit_range_var(e, relation);
+        }
+        (Some(object), None) => emit_node(e, object),
+        (None, Some(relation)) => super::emit_range_var(e, relation),
+        (None, None) => {}
     }
 
     e.line(LineType::SoftOrSpace);
