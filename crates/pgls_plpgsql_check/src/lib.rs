@@ -32,32 +32,6 @@ pub struct PlPgSqlCheckParams<'a> {
     pub constant_tracing: bool,
 }
 
-/// What [`check`] did with a statement.
-#[derive(Debug)]
-pub enum Checked {
-    /// plpgsql_check checked the function and found these issues.
-    Issues(Vec<PlPgSqlCheckDiagnostic>),
-    /// The statement wasn't checked.
-    Skipped(SkipReason),
-}
-
-/// Why [`check`] didn't check a statement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SkipReason {
-    /// It doesn't create a PL/pgSQL function.
-    NotPlPgSql,
-    /// The extension isn't installed in the database.
-    ExtensionMissing,
-    /// A trigger function that no trigger of the snapshot uses. plpgsql_check checks a trigger
-    /// function for the table of a trigger.
-    TriggerWithoutTable,
-    /// An argument's type is written as `%TYPE`, which a signature can't name.
-    ArgumentTypeReference,
-    /// The body isn't a string constant found in the statement, like a string with an invalid
-    /// escape, which Postgres rejects anyway.
-    BodyNotFound,
-}
-
 /// Why [`check`] failed.
 #[derive(Debug, thiserror::Error)]
 pub enum CheckError {
@@ -132,31 +106,27 @@ impl<'a> PlPgSqlFunction<'a> {
         ast: &'a pgls_query::NodeEnum,
         sql: &str,
         snapshot: &'a pgls_catalog::Snapshot,
-    ) -> Result<Self, SkipReason> {
+    ) -> Option<Self> {
         let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = ast else {
-            return Err(SkipReason::NotPlPgSql);
+            return None;
         };
         if Language::of(create_fn) != Some(Language::PlPgSql) {
-            return Err(SkipReason::NotPlPgSql);
+            return None;
         }
         // Only an installed extension has `plpgsql_check_function`.
         let extension = snapshot
             .extension("plpgsql_check")
-            .filter(|extension| extension.is_installed())
-            .ok_or(SkipReason::ExtensionMissing)?;
-        let Some(QualifiedName { schema, name, .. }) = qualified_name(&create_fn.funcname) else {
-            return Err(SkipReason::NotPlPgSql);
-        };
+            .filter(|extension| extension.is_installed())?;
+        let QualifiedName { schema, name, .. } = qualified_name(&create_fn.funcname)?;
         // The body's value is the `AS` option; the scanner finds its constant, so that an
         // escaped body or one whose text also occurs earlier in the statement is found.
-        let value = find_option_value(create_fn, "as").ok_or(SkipReason::BodyNotFound)?;
-        let (range, offsets) =
-            function_body_location(create_fn, sql).ok_or(SkipReason::BodyNotFound)?;
+        let value = find_option_value(create_fn, "as")?;
+        let (range, offsets) = function_body_location(create_fn, sql)?;
         debug_assert!(
             usize::from(range.end()) <= sql.len(),
             "the body is in the statement"
         );
-        Ok(Self {
+        Some(Self {
             create_fn,
             schema,
             name,
@@ -312,13 +282,17 @@ impl PlPgSqlCheckParams<'_> {
 
 /// Checks a PL/pgSQL function with plpgsql_check: creates it in a transaction that is rolled
 /// back, and checks it, a trigger function once for the table of each trigger that uses it.
-pub async fn check(params: PlPgSqlCheckParams<'_>) -> Result<Checked, CheckError> {
-    let function = match PlPgSqlFunction::of(params.ast, params.sql, params.snapshot) {
-        Ok(function) => function,
-        Err(reason) => return Ok(Checked::Skipped(reason)),
+/// `None` if the statement isn't checked: it doesn't create a PL/pgSQL function, the extension
+/// isn't installed, an argument's type is a `%TYPE` reference, which a signature can't name, or
+/// no trigger of the snapshot uses the trigger function.
+pub async fn check(
+    params: PlPgSqlCheckParams<'_>,
+) -> Result<Option<Vec<PlPgSqlCheckDiagnostic>>, CheckError> {
+    let Some(function) = PlPgSqlFunction::of(params.ast, params.sql, params.snapshot) else {
+        return Ok(None);
     };
     let Some(signature) = function.signature() else {
-        return Ok(Checked::Skipped(SkipReason::ArgumentTypeReference));
+        return Ok(None);
     };
 
     // The tables of the triggers that use a trigger function, as `regclass` reads them.
@@ -342,7 +316,7 @@ pub async fn check(params: PlPgSqlCheckParams<'_>) -> Result<Checked, CheckError
             })
             .collect();
         if relations.is_empty() {
-            return Ok(Checked::Skipped(SkipReason::TriggerWithoutTable));
+            return Ok(None);
         }
         relations
     } else {
@@ -404,7 +378,7 @@ pub async fn check(params: PlPgSqlCheckParams<'_>) -> Result<Checked, CheckError
         let result: PlPgSqlCheckResult = serde_json::from_str(&result)?;
         diagnostics.extend(result.diagnostics(&function.body, relation));
     }
-    Ok(Checked::Issues(diagnostics))
+    Ok(Some(diagnostics))
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
@@ -443,10 +417,7 @@ mod tests {
             constant_tracing: true,
         })
         .await?;
-        let diagnostics = match checked {
-            super::Checked::Issues(diagnostics) => diagnostics,
-            super::Checked::Skipped(reason) => return Err(format!("skipped: {reason:?}").into()),
-        };
+        let diagnostics = checked.ok_or("skipped")?;
 
         let span_texts = diagnostics
             .iter()
@@ -514,13 +485,7 @@ mod tests {
         .await
         .expect("plpgsql_check must not run");
 
-        assert!(
-            matches!(
-                result,
-                super::Checked::Skipped(super::SkipReason::ExtensionMissing)
-            ),
-            "{result:?}"
-        );
+        assert!(result.is_none(), "{result:?}");
     }
 
     /// The body is found where the statement has it, also when it escapes quotes, and when its

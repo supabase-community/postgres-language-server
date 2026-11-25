@@ -37,8 +37,6 @@ use pgls_catalog::CatalogBase;
 #[cfg(feature = "db")]
 use pgls_lexer::convert_to_positional_params_with_metadata;
 #[cfg(feature = "db")]
-use pgls_plpgsql_check::Checked;
-#[cfg(feature = "db")]
 use runtime::WorkspaceRuntime;
 
 use pgls_catalog::Snapshot;
@@ -607,11 +605,11 @@ impl WorkspaceServer {
                                         )
                                         .await;
                                         let diagnostics = match checked {
-                                            Ok(Checked::Issues(diagnostics)) => {
+                                            Ok(Some(diagnostics)) => {
                                                 result.plpgsql_checked = true;
                                                 diagnostics
                                             }
-                                            Ok(Checked::Skipped(_)) => Vec::new(),
+                                            Ok(None) => Vec::new(),
                                             Err(err) => {
                                                 debug!("plpgsql_check failed: {err}");
                                                 Vec::new()
