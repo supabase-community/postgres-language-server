@@ -1,4 +1,4 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 
 use parking_lot::Mutex;
 use pgls_lexer::convert_to_positional_params;
@@ -6,7 +6,6 @@ use pgls_query_ext::{
     diagnostics::*,
     function_body::{EmbeddedStatement, Language, function_body_location, sql_function_body},
 };
-use regex::Regex;
 use rustc_hash::FxHashMap;
 
 use crate::workspace::StatementId;
@@ -186,18 +185,12 @@ impl PgQueryStore {
         let range = function_body_location(create_fn, statement.content()).map(|(range, _)| range);
 
         let r = pgls_query::parse_plpgsql(statement.content())
-            .or_else(|e| match &e {
-                // ignore `is not a known variable` for composite types because libpg_query reports a false positive.
-                // https://github.com/pganalyze/libpg_query/issues/159
-                pgls_query::Error::Parse(err) if is_composite_type_error(err) => Ok(()),
-                pgls_query::Error::Parse(err)
-                    if NO_CATALOG_ERRORS
-                        .iter()
-                        .any(|message| err.contains(message)) =>
-                {
+            .or_else(|e| {
+                if e.is_false_positive_without_catalog() {
                     Ok(())
+                } else {
+                    Err(e)
                 }
-                _ => Err(e),
             })
             .map_err(|e| SyntaxDiagnostic::new(e.to_string(), range));
 
@@ -209,35 +202,12 @@ impl PgQueryStore {
     }
 }
 
-/// Errors libpg_query reports on valid PL/pgSQL functions because it compiles them without a
-/// catalog: it only knows the types of `pg_catalog`, reads an unknown type in `public` as
-/// `record`, so an array of one as `_record`, finds no element type for a `VARIADIC` array, and
-/// fails with `Not implemented` on anything else, e.g. a type in another schema.
-/// https://github.com/pganalyze/libpg_query/blob/18.1.0/src/postgres/src_backend_utils_cache_syscache.c#L332-L344
-const NO_CATALOG_ERRORS: &[&str] = &[
-    "Not implemented",
-    "cannot accept type _record",
-    "cannot return type _record",
-    "VARIADIC parameter must be an array",
-];
-
-#[expect(
-    clippy::unwrap_used,
-    reason = "the pattern is a constant, which `recognises_composite_type_errors` compiles"
-)]
-static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
-
 /// Shrinks `map` if it is less than a quarter full, so that a document that got much shorter
 /// doesn't keep the memory of the statements it had.
 pub(super) fn shrink<V>(map: &mut FxHashMap<StatementId, V>) {
     if map.capacity() > 4 * map.len().max(16) {
         map.shrink_to_fit();
     }
-}
-
-fn is_composite_type_error(err: &str) -> bool {
-    COMPOSITE_TYPE_ERROR_RE.is_match(err)
 }
 
 #[cfg(test)]
@@ -502,27 +472,11 @@ $$;
     }
 
     #[test]
-    fn plpgsql_valid_without_a_catalog() {
-        for input in [
-            "create function f(x my_enum[]) returns void language plpgsql as $$ begin end $$",
-            "create function f() returns my_enum[] language plpgsql as $$ begin return null; end $$",
-            "create function f() returns void language plpgsql as $$ declare u auth.users; begin end $$",
-            "create function f(variadic b int[]) returns void language plpgsql as $$ begin end $$",
-        ] {
-            let store = PgQueryStore::new();
-            let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
-            assert!(matches!(res, Some(Ok(()))), "{input}: {res:?}");
-        }
-    }
-
-    #[test]
-    fn recognises_composite_type_errors() {
-        assert!(is_composite_type_error(
-            r#""v_row.id" is not a known variable"#
-        ));
-        assert!(!is_composite_type_error(
-            r#""v_id" is not a known variable"#
-        ));
+    fn ignores_plpgsql_errors_libpg_query_makes_up_without_a_catalog() {
+        let input = "create function f() returns void language plpgsql as $$ declare u auth.users; begin end $$";
+        let store = PgQueryStore::new();
+        let res = store.get_or_cache_plpgsql_parse(&StatementId::new(input), || true);
+        assert!(matches!(res, Some(Ok(()))), "{res:?}");
     }
 
     #[test]
