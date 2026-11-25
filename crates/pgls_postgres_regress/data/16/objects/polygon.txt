@@ -1,0 +1,3 @@
+relation	r	public	polygon_tbl	f1	pg_catalog.polygon
+relation	r	public	quad_poly_tbl	id	pg_catalog.int4	p	pg_catalog.polygon
+schema	public

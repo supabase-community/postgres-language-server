@@ -19,10 +19,10 @@ use pgls_analyser::LinterRules;
 use pgls_configuration::Merge;
 use pgls_configuration::{
     ConfigurationDiagnostic, ConfigurationPathHint, ConfigurationPayload, PartialConfiguration,
-    VERSION, database::PartialDatabaseConfiguration, diagnostics::CantLoadExtendFile,
+    database::PartialDatabaseConfiguration, diagnostics::CantLoadExtendFile,
 };
 use pgls_console::markup;
-use pgls_env::PGLS_WEBSITE;
+use pgls_env::{PGLS_WEBSITE, VERSION};
 use pgls_fs::{
     AutoSearchResult, ConfigName, FileSystem, FindFiles, OpenOptions, SKIPPED_DIRECTORIES,
     SkipDirectory, normalize_path,
@@ -563,7 +563,7 @@ fn load_user_config(
 /// - the configuration file already exists
 /// - the program doesn't have the write rights
 pub fn create_config(
-    fs: &mut DynRef<dyn FileSystem>,
+    fs: &dyn FileSystem,
     directory: &Path,
     configuration: &mut PartialConfiguration,
 ) -> Result<(), WorkspaceError> {

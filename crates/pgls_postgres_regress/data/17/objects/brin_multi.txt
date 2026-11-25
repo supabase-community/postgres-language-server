@@ -1,0 +1,5 @@
+relation	r	public	brin_summarize_multi	value	pg_catalog.int4
+relation	r	public	brin_test_multi	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	brinopers_multi	colname	pg_catalog.name	typ	pg_catalog.text	op	pg_catalog._text	value	pg_catalog._text	matches	pg_catalog._int4
+relation	r	public	brintest_multi	int8col	pg_catalog.int8	int2col	pg_catalog.int2	int4col	pg_catalog.int4	oidcol	pg_catalog.oid	tidcol	pg_catalog.tid	float4col	pg_catalog.float4	float8col	pg_catalog.float8	macaddrcol	pg_catalog.macaddr	macaddr8col	pg_catalog.macaddr8	inetcol	pg_catalog.inet	cidrcol	pg_catalog.cidr	datecol	pg_catalog.date	timecol	pg_catalog.time	timestampcol	pg_catalog.timestamp	timestamptzcol	pg_catalog.timestamptz	intervalcol	pg_catalog.interval	timetzcol	pg_catalog.timetz	numericcol	pg_catalog.numeric	uuidcol	pg_catalog.uuid	lsncol	pg_catalog.pg_lsn
+schema	public

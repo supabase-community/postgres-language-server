@@ -1,0 +1,14 @@
+function	a	public	logging_agg_nonstrict	1
+function	a	public	logging_agg_nonstrict_initcond	1
+function	a	public	logging_agg_strict	1
+function	a	public	logging_agg_strict_initcond	1
+function	a	public	sum_int_randomrestart	1
+function	f	public	logging_minvfunc_nonstrict	1
+function	f	public	logging_minvfunc_strict	1
+function	f	public	logging_msfunc_nonstrict	1
+function	f	public	logging_msfunc_strict	1
+function	f	public	logging_sfunc_nonstrict	1
+function	f	public	logging_sfunc_strict	1
+function	f	public	sum_int_randrestart_minvfunc	1
+function	w	public	nth_value_def	1
+schema	public

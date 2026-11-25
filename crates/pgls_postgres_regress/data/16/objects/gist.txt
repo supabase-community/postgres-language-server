@@ -1,0 +1,2 @@
+relation	r	public	gist_point_tbl	id	pg_catalog.int4	p	pg_catalog.point
+schema	public

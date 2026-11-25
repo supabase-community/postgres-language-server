@@ -1,0 +1,22 @@
+relation	r	public	identity_dump_logged	a	pg_catalog.int4
+relation	r	public	identity_dump_unlogged	a	pg_catalog.int4
+relation	r	public	itest1	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest10	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest11	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest13	a	pg_catalog.int4	b	pg_catalog.int4	c	pg_catalog.int4
+relation	r	public	itest14	id	pg_catalog.int4
+relation	r	public	itest17	a	pg_catalog.int4	b	pg_catalog.text	c	pg_catalog.int4
+relation	r	public	itest18	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest2	a	pg_catalog.int8	b	pg_catalog.text
+relation	r	public	itest3	a	pg_catalog.int4	b	pg_catalog.text	c	pg_catalog.int4
+relation	r	public	itest4	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest5	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest6	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest7	a	pg_catalog.int4
+relation	r	public	itest7a	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	itest7b	a	pg_catalog.int4
+relation	r	public	itest7c	a	pg_catalog.int4
+relation	r	public	itest7d	a	pg_catalog.int4
+relation	r	public	itest7e	a	pg_catalog.int4
+relation	r	public	itest9	a	pg_catalog.int4	b	pg_catalog.text	c	pg_catalog.int8
+schema	public

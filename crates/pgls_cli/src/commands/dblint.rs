@@ -47,7 +47,7 @@ pub(crate) fn dblint(
         None,
     );
 
-    let exit_result = enforce_exit_codes(cli_options, &report, category!("check"));
+    let exit_result = enforce_exit_codes(cli_options, &report, category!("dblint"));
     session.report("dblint", cli_options, &report)?;
     exit_result
 }

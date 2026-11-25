@@ -1,0 +1,4 @@
+relation	r	public	fkest	x	pg_catalog.int4	x10	pg_catalog.int4	x10b	pg_catalog.int4	x100	pg_catalog.int4
+relation	r	public	fkest1	a	pg_catalog.int4	b	pg_catalog.int4
+schema	public
+type	c	public	mycomptype

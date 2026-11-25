@@ -872,8 +872,9 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
     Ok(())
 }
 
-/// The checks against the database run when a document is opened or saved. A change reuses what
-/// they found for the statements it didn't touch, without querying the database.
+/// The checks against the database run when a document is opened or saved, on the statements
+/// whose result can have changed since. A change reuses what they found for the statements it
+/// didn't touch, without querying the database.
 #[cfg(not(target_os = "windows"))]
 #[pgls_test_utils::db_test]
 async fn database_checks_run_on_open_and_save(test_db: PgPool) -> Result<()> {
@@ -941,12 +942,6 @@ $$;
         "opening the document checks it against the database"
     );
 
-    // From now on, checking against the database finds nothing.
-    test_db
-        .execute("drop extension plpgsql_check;")
-        .await
-        .expect("Failed to drop plpgsql_check");
-
     drain_notifications(&mut receiver);
     server
         .replace_document(1, format!("select 1;\n{FUNCTION}"))
@@ -961,15 +956,33 @@ $$;
     // The statement moved down by a line.
     assert_eq!(reused[0].range.start.line, 3, "{reused:?}");
 
+    // The edited function has no result until the document is saved.
+    drain_notifications(&mut receiver);
+    server
+        .replace_document(
+            2,
+            format!(
+                "select 1;\n{}",
+                FUNCTION.replace("missing_var", "other_var")
+            ),
+        )
+        .await?;
+    let edited = wait_for_diagnostics(&mut receiver, 2).await?;
+    assert!(
+        !edited.diagnostics.iter().any(is_plpgsql_check),
+        "an edited function has no result until the next check: {edited:?}"
+    );
+
     drain_notifications(&mut receiver);
     server.save_document().await?;
+    let saved = wait_for_diagnostics(&mut receiver, 2).await?;
     assert!(
-        !wait_for_diagnostics(&mut receiver, 1)
-            .await?
+        saved
             .diagnostics
             .iter()
-            .any(is_plpgsql_check),
-        "saving the document checks it against the database again"
+            .any(|diagnostic| is_plpgsql_check(diagnostic)
+                && diagnostic.message.contains("other_var")),
+        "saving the document checks the edited function against the database: {saved:?}"
     );
 
     server.shutdown().await?;

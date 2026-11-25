@@ -6,6 +6,7 @@ use pgls_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticTags, Location, LogCategory, MessageAndDescription,
     Visit,
 };
+use pgls_text_edit::RangeEdit;
 use pgls_text_size::{TextRange, TextSize};
 use std::fmt::Debug;
 use std::ops::Range;
@@ -50,7 +51,9 @@ pub struct LinterDiagnostic {
 /// A change to the source that fixes the issue reported by a diagnostic.
 ///
 /// The ranges of the edits are relative to the statement while the rule runs, and relative to
-/// the file in the diagnostics returned by the analyser. The analyser doesn't check that the fix
+/// the file in the diagnostics returned by the analyser. A rule adds them in order with
+/// [`Self::insert`], [`Self::replace`] and [`Self::delete`], and [`Self::apply`] checks that they
+/// fit the text, in release builds too. The analyser doesn't check that the fix
 /// keeps the SQL valid, which costs a parse; check it with [`Self::keeps_sql_valid`] before the
 /// fix is offered or applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,17 +64,10 @@ pub struct RuleFix {
     /// unsafe.
     pub applicability: Applicability,
     /// Non-overlapping edits, ordered by their position.
-    pub edits: Vec<FixEdit>,
+    edits: Vec<RangeEdit>,
     /// The range of the statement in the file that the fix was computed on, set when the
     /// analyser moves the fix into the file.
     statement: TextRange,
-}
-
-/// Replaces the text in `range` with `replacement`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FixEdit {
-    pub range: TextRange,
-    pub replacement: String,
 }
 
 impl RuleFix {
@@ -97,10 +93,7 @@ impl RuleFix {
 
     /// Replaces the text in `range` with `text`.
     pub fn replace(mut self, range: TextRange, text: impl Into<String>) -> Self {
-        self.edits.push(FixEdit {
-            range,
-            replacement: text.into(),
-        });
+        self.edits.push(RangeEdit::new(range, text));
         self
     }
 
@@ -109,30 +102,28 @@ impl RuleFix {
         self.replace(range, "")
     }
 
-    /// Applies the fix to `text`. The edits must be relative to `text`.
-    pub fn apply(&self, text: &str) -> String {
+    /// The edits of the fix, ordered by their position.
+    pub fn edits(&self) -> &[RangeEdit] {
+        &self.edits
+    }
+
+    /// Applies the fix to `text`. The edits must be relative to `text`. `None` if they are not
+    /// sorted, overlap, or are not on char boundaries of `text`.
+    pub fn apply(&self, text: &str) -> Option<String> {
         self.apply_at(text, TextSize::from(0))
     }
 
     /// Applies the fix to `text`, which starts at `start` in the text the edits are relative to.
-    fn apply_at(&self, text: &str, start: TextSize) -> String {
+    fn apply_at(&self, text: &str, start: TextSize) -> Option<String> {
+        let applied = RangeEdit::apply_all(text, start, &self.edits);
         debug_assert!(
-            self.edits_fit(text, start),
+            applied.is_some(),
             "the edits of fix {:?} are not sorted, overlap, or are not on char boundaries of a text of length {} at {start:?}: {:?}",
             self.message,
             text.len(),
             self.edits
         );
-        let mut result = String::with_capacity(text.len());
-        let mut last = 0;
-        for edit in &self.edits {
-            let range = edit.range - start;
-            result.push_str(&text[last..usize::from(range.start())]);
-            result.push_str(&edit.replacement);
-            last = usize::from(range.end());
-        }
-        result.push_str(&text[last..]);
-        result
+        applied
     }
 
     /// Whether the SQL still parses with the fix applied. `text` is the text of the file that
@@ -155,7 +146,8 @@ impl RuleFix {
         if edits_end <= self.statement.end() {
             return text
                 .get(Range::<usize>::from(self.statement))
-                .is_some_and(|sql| Self::parses(&self.apply_at(sql, start)));
+                .and_then(|sql| self.apply_at(sql, start))
+                .is_some_and(|sql| Self::parses(&sql));
         }
         let first = statements.partition_point(|statement| statement.start() < start);
         let end = statements
@@ -171,7 +163,8 @@ impl RuleFix {
         if !Self::parses(text) {
             return true;
         }
-        Self::parses(&self.apply_at(text, start))
+        self.apply_at(text, start)
+            .is_some_and(|sql| Self::parses(&sql))
     }
 
     /// Whether the SQL parses with its placeholders converted to parameters. The conversion
@@ -185,18 +178,6 @@ impl RuleFix {
         let first = self.edits.first()?;
         let last = self.edits.last()?;
         Some(first.range.cover(last.range))
-    }
-
-    /// Whether the edits are sorted, don't overlap, and lie on char boundaries of `text`, which
-    /// starts at `start`.
-    fn edits_fit(&self, text: &str, start: TextSize) -> bool {
-        let mut previous_end = start;
-        self.edits.iter().all(|edit| {
-            let fits = edit.range.start() >= previous_end
-                && text.get(Range::<usize>::from(edit.range - start)).is_some();
-            previous_end = edit.range.end();
-            fits
-        })
     }
 
     /// Moves the edits of a fix computed on the statement at `statement` into the file.

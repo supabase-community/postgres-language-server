@@ -221,11 +221,15 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
         .take_while(|(a, b)| a == b)
         .count()
         * COMPARE_BLOCK_BYTES;
+    // Compare the rest on the bytes before the equal blocks: `skip(equal)` on the reversed,
+    // zipped bytes would step through every byte of the blocks.
+    let (Some(a), Some(b)) = (a.get(..a.len() - equal), b.get(..b.len() - equal)) else {
+        return equal;
+    };
     equal
         + a.iter()
             .rev()
             .zip(b.iter().rev())
-            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
@@ -1602,6 +1606,41 @@ VALUES
                 .expect_statements(vec![sql])
                 .assert_no_errors();
         }
+    }
+
+    /// `*` at the end of an operator like `~*` needs an operand too. A `*` on its own can end a
+    /// statement.
+    #[test]
+    fn statement_keywords_after_an_operator_ending_in_star() {
+        for sql in ["select~*alter from t;", "select 'a' !~* update from t;"] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from("select t.*\nalter table t add c int;")
+            .expect_statements(vec!["select t.*", "alter table t add c int;"])
+            .assert_no_errors();
+    }
+
+    /// Next to a `.` a keyword is a name, even a reserved one: a column label after it, a
+    /// qualifier before it.
+    #[test]
+    fn statement_keywords_next_to_a_dot() {
+        for sql in [
+            "select testschema.select from t;",
+            "select c2[2].select from t;",
+            "select t.create from t;",
+            "create operator class alter.c for type int4 using btree as operator 1 <;",
+            "create view update.v as select 1;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        // After an unfinished statement, as for the keywords after other operators.
+        Tester::from("select t.\nselect 1;")
+            .expect_statements(vec!["select t.", "select 1;"])
+            .assert_no_errors();
     }
 
     /// If the statement doesn't parse with the keyword, but a statement starting at the keyword

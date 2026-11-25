@@ -8,9 +8,9 @@ use pgls_workspace::configuration::create_config;
 use std::path::Path;
 
 pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
-    let fs = &mut session.app.fs;
+    let fs = &**session.fs();
     let config = &mut PartialConfiguration::init();
-    let mut projects = find_projects(&**fs);
+    let mut projects = find_projects(fs);
     // Inside the folder of a tool, like `supabase`, the configuration goes into the project.
     let project_directory = projects
         .first()
@@ -28,7 +28,7 @@ pub(crate) fn init(mut session: CliSession) -> Result<(), CliDiagnostic> {
         .join(ConfigName::pgls_jsonc())
         .display()
         .to_string();
-    session.app.console.log(markup! {
+    session.console().log(markup! {
 "
 Welcome to the Postgres Language Server! Let's get you started...
 
@@ -40,14 +40,14 @@ Welcome to the Postgres Language Server! Let's get you started...
     });
     if let Some(project) = project {
         if let Some(warning) = &project.warning {
-            session.app.console.log(markup! {
+            session.console().log(markup! {
                 <Warn>{warning}</Warn>
             });
         }
         let tool = project.tool.name();
         let directory = &project.directory;
         let settings = configured_settings(&project);
-        session.app.console.log(markup! {
+        session.console().log(markup! {
             <Info><Emphasis>{tool}" project detected"</Emphasis></Info>" in "{directory}": "{settings}".
 "
         });
@@ -67,7 +67,7 @@ Welcome to the Postgres Language Server! Let's get you started...
                 .collect();
             format!("several migration projects ({})", directories.join(", "))
         };
-        session.app.console.log(markup! {
+        session.console().log(markup! {
             <Warn>"Found "{projects}", so the database connection is not set. Run "<Emphasis>"init"</Emphasis>" in the folder of one of them, or set "<Emphasis>"db"</Emphasis>" and "<Emphasis>"migrations.migrationsDir"</Emphasis>" yourself."</Warn>
         });
     }

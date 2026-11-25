@@ -1,0 +1,3 @@
+schema	public
+type	c	public	jpop
+type	c	public	jpop2

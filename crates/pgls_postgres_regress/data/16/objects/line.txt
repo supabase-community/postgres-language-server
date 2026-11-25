@@ -1,0 +1,2 @@
+relation	r	public	line_tbl	s	pg_catalog.line
+schema	public

@@ -1,0 +1,6 @@
+relation	r	pubme	t0	c	pg_catalog.int4	d	pg_catalog.int4
+relation	r	pubme	t1	c	pg_catalog.int4
+relation	r	pubme2	t0	c	pg_catalog.int4	d	pg_catalog.int4
+schema	public
+schema	pubme
+schema	pubme2

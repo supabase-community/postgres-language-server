@@ -740,7 +740,7 @@ select cast('2020-10-05' as timestamptz) > cast('2202020-10-05' as date) as f;
 
 select cast(cast('4714-11-24 BC' as date) as timestamptz);
 
-set time zone 'UTC-2';
+set timezone = 'UTC-2';
 
 select cast(cast('4714-11-24 BC' as date) as timestamptz);
 

@@ -1,0 +1,14 @@
+function	f	public	int4_d_multirange	3
+function	f	public	int4_d_range	2
+relation	r	public	temporal_fk2_mltrng2mltrng	id	pg_catalog.int4range	valid_at	pg_catalog.datemultirange	parent_id1	pg_catalog.int4range	parent_id2	pg_catalog.int4range
+relation	r	public	temporal_fk2_rng2rng	id	pg_catalog.int4range	valid_at	pg_catalog.daterange	parent_id1	pg_catalog.int4range	parent_id2	pg_catalog.int4range
+relation	r	public	temporal_fk_mltrng2mltrng	id	pg_catalog.int4range	valid_at	pg_catalog.datemultirange	parent_id	pg_catalog.int4range
+relation	r	public	temporal_fk_rng2rng	id	pg_catalog.int4range	valid_at	pg_catalog.daterange	parent_id	pg_catalog.int4range
+relation	r	public	temporal_mltrng	id	pg_catalog.int4range	valid_at	pg_catalog.datemultirange
+relation	r	public	temporal_mltrng2	id1	pg_catalog.int4range	id2	pg_catalog.int4range	valid_at	pg_catalog.datemultirange
+relation	r	public	temporal_rng	id	pg_catalog.int4range	valid_at	pg_catalog.daterange
+relation	r	public	temporal_rng2	id1	pg_catalog.int4range	id2	pg_catalog.int4range	valid_at	pg_catalog.daterange
+schema	public
+type	d	public	int4_d
+type	d	public	int4range_d
+type	r	public	int4_d_range

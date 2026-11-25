@@ -1,5 +1,5 @@
 use pgls_console::markup;
-use pgls_diagnostics::adapters::{BpafError, IoError, SerdeJsonError};
+use pgls_diagnostics::adapters::IoError;
 use pgls_diagnostics::{
     Advices, Category, Diagnostic, Error, LogCategory, MessageAndDescription, Severity, Visit,
     category,
@@ -23,30 +23,16 @@ fn command_name() -> String {
 /// When displaying the diagnostic,
 #[derive(Debug, Diagnostic)]
 pub enum CliDiagnostic {
-    /// Returned when it is called with a subcommand it doesn't know
-    UnknownCommand(UnknownCommand),
-    /// Return by the help command when it is called with a subcommand it doesn't know
-    UnknownCommandHelp(UnknownCommandHelp),
     /// Returned when the value of a command line argument could not be parsed
     ParseError(ParseDiagnostic),
-    /// Returned when the CLI  doesn't recognize a command line argument
-    UnexpectedArgument(UnexpectedArgument),
     /// Returned when a required argument is not present in the command line
     MissingArgument(MissingArgument),
-    /// Returned when a subcommand is called without any arguments
-    EmptyArguments(EmptyArguments),
     /// Returned when a subcommand is called with an unsupported combination of arguments
     IncompatibleArguments(IncompatibleArguments),
     /// Returned when `--staged` or `--changed` is used outside a git repository
     GitRepositoryRequired(GitRepositoryRequired),
     /// Returned by a traversal command when error diagnostics were emitted
     CheckError(CheckError),
-    /// Emitted when a file is fixed, but it still contains diagnostics.
-    ///
-    /// This happens when these diagnostics come from rules that don't have a code action.
-    FileCheck(FileCheck),
-    /// When an argument is higher than the expected maximum
-    OverflowNumberArgument(OverflowNumberArgument),
     /// Wrapper for an underlying pglt-service error
     WorkspaceError(WorkspaceError),
     /// Wrapper for an underlying `std::io` error
@@ -57,36 +43,8 @@ pub enum CliDiagnostic {
     IncompatibleEndConfiguration(IncompatibleEndConfiguration),
     /// No files processed during the file system traversal
     NoFilesWereProcessed(NoFilesWereProcessed),
-    /// Emitted during the reporting phase
-    Report(ReportDiagnostic),
     /// Emitted when there's an error emitted when using stdin mode
     Stdin(StdinDiagnostic),
-}
-
-#[derive(Debug, Diagnostic)]
-#[diagnostic(
-    category = "flags/invalid",
-    severity = Error,
-    message(
-        description = "Unknown command {command_name}",
-        message("Unknown command "<Emphasis>{self.command_name}</Emphasis>)
-    ),
-)]
-pub struct UnknownCommand {
-    command_name: String,
-}
-
-#[derive(Debug, Diagnostic)]
-#[diagnostic(
-category = "flags/invalid",
-    severity = Error,
-    message(
-        description = "Cannot print help for unknown command {command_name}",
-        message("Cannot print help for unknown command "<Emphasis>{self.command_name}</Emphasis>)
-    ),
-)]
-pub struct UnknownCommandHelp {
-    command_name: String,
 }
 
 #[derive(Debug, Diagnostic)]
@@ -108,21 +66,6 @@ pub struct ParseDiagnostic {
     severity = Error,
     message(
         description = "Unrecognized option {argument}",
-        message("Unrecognized option "<Emphasis>{self.argument}</Emphasis>".")
-    ),
-)]
-pub struct UnexpectedArgument {
-    argument: String,
-    #[advice]
-    help: CliAdvice,
-}
-
-#[derive(Debug, Diagnostic)]
-#[diagnostic(
-    category = "flags/invalid",
-    severity = Error,
-    message(
-        description = "Unrecognized option {argument}",
         message("Missing argument "<Emphasis>{self.argument}</Emphasis>)
     ),
 )]
@@ -131,14 +74,6 @@ pub struct MissingArgument {
     #[advice]
     advice: CliAdvice,
 }
-
-#[derive(Debug, Diagnostic)]
-#[diagnostic(
-    category = "flags/invalid",
-    severity = Error,
-    message = "Empty arguments"
-)]
-pub struct EmptyArguments;
 
 #[derive(Debug, Diagnostic)]
 #[diagnostic(
@@ -217,36 +152,6 @@ impl Advices for DatabaseUnavailableAdvice {
 
 #[derive(Debug, Diagnostic)]
 #[diagnostic(
-    severity = Error,
-)]
-pub struct FileCheck {
-    #[message]
-    #[description]
-    pub message: MessageAndDescription,
-
-    #[location(resource)]
-    pub file_path: String,
-
-    #[category]
-    pub category: &'static Category,
-}
-
-#[derive(Debug, Diagnostic)]
-#[diagnostic(
-    category = "flags/invalid",
-    severity = Error,
-    message(
-        description = "The value of the argument {argument} is too high, maximum accepted {maximum}",
-        message("The value of the argument "<Emphasis>{self.argument}</Emphasis>" is too high, maximum accepted "{{self.maximum}})
-    )
-)]
-pub struct OverflowNumberArgument {
-    argument: String,
-    maximum: u16,
-}
-
-#[derive(Debug, Diagnostic)]
-#[diagnostic(
     category = "internalError/io",
     severity = Error,
     message = "Errors occurred while executing I/O operations."
@@ -284,12 +189,6 @@ pub struct IncompatibleEndConfiguration {
     message = "No files were processed in the specified paths."
 )]
 pub struct NoFilesWereProcessed;
-
-#[derive(Debug, Diagnostic)]
-pub enum ReportDiagnostic {
-    /// Emitted when trying to serialise the report
-    Serialization(SerdeJsonError),
-}
 
 /// Advices for the [CliDiagnostic]
 #[derive(Debug, Default)]
@@ -348,25 +247,6 @@ impl CliDiagnostic {
         })
     }
 
-    pub fn parse_error_bpaf(source: bpaf::ParseFailure) -> Self {
-        Self::ParseError(ParseDiagnostic {
-            source: Some(Error::from(BpafError::from(source))),
-            message: MessageAndDescription::from("Failed to parse CLI arguments.".to_string()),
-        })
-    }
-
-    /// Returned when it is called with a subcommand it doesn't know
-    pub fn unknown_command(command: impl Into<String>) -> Self {
-        Self::UnknownCommand(UnknownCommand {
-            command_name: command.into(),
-        })
-    }
-
-    /// Returned when a subcommand is called without any arguments
-    pub fn empty_arguments() -> Self {
-        Self::EmptyArguments(EmptyArguments)
-    }
-
     /// Returned when a required argument is not present in the command line
     pub fn missing_argument(argument: impl Into<String>, subcommand: impl Into<String>) -> Self {
         Self::MissingArgument(MissingArgument {
@@ -378,14 +258,6 @@ impl CliDiagnostic {
     /// When no files were processed while traversing the file system
     pub fn no_files_processed() -> Self {
         Self::NoFilesWereProcessed(NoFilesWereProcessed)
-    }
-
-    /// Returned when the CLI  doesn't recognize a command line argument
-    pub fn unexpected_argument(argument: impl Into<String>, subcommand: impl Into<String>) -> Self {
-        Self::UnexpectedArgument(UnexpectedArgument {
-            argument: argument.into(),
-            help: CliAdvice::new_with_help(subcommand),
-        })
     }
 
     /// When there's been error inside the workspace
@@ -426,31 +298,6 @@ impl CliDiagnostic {
         })
     }
 
-    /// Emitted when errors were emitted while apply code fixes
-    pub fn apply_error(category: &'static Category) -> Self {
-        Self::CheckError(CheckError {
-            category,
-            message: MessageAndDescription::from(
-                markup! {
-                    "Some "<Emphasis>"errors"</Emphasis>" were emitted while "<Emphasis>"applying fixes"</Emphasis>"."
-                }
-                .to_owned(),
-            ),
-        })
-    }
-    /// Emitted when warnings were emitted while apply code fixes
-    pub fn apply_warnings(category: &'static Category) -> Self {
-        Self::CheckError(CheckError {
-            category,
-            message: MessageAndDescription::from(
-                markup! {
-                    "Some "<Emphasis>"warnings"</Emphasis>" were emitted while "<Emphasis>"running checks"</Emphasis>"."
-                }
-                .to_owned(),
-            ),
-        })
-    }
-
     pub fn stdin() -> Self {
         Self::Stdin(StdinDiagnostic::default())
     }
@@ -467,21 +314,6 @@ impl CliDiagnostic {
     pub fn incompatible_end_configuration(reason: impl Into<String>) -> Self {
         Self::IncompatibleEndConfiguration(IncompatibleEndConfiguration {
             reason: reason.into(),
-        })
-    }
-
-    /// Emitted when an argument value is greater than the allowed value
-    pub fn overflown_argument(argument: impl Into<String>, maximum: u16) -> Self {
-        Self::OverflowNumberArgument(OverflowNumberArgument {
-            argument: argument.into(),
-            maximum,
-        })
-    }
-
-    /// Return by the help command when it is called with a subcommand it doesn't know
-    pub fn new_unknown_help(command: impl Into<String>) -> Self {
-        Self::UnknownCommandHelp(UnknownCommandHelp {
-            command_name: command.into(),
         })
     }
 }

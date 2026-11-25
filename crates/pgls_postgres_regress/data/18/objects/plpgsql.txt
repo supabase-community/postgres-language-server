@@ -1,0 +1,100 @@
+function	f	public	alter_table_under_transition_tables_upd_func	1
+function	f	public	constant_refcursor	1
+function	f	public	consumes_rw_array	1
+function	f	public	execute_into_test	1
+function	f	public	get_from_partitioned_table	1
+function	f	public	list_partitioned_table	1
+function	f	public	multi_datum_use	1
+function	f	public	namedparmcursor_test1	1
+function	f	public	namedparmcursor_test2	1
+function	f	public	namedparmcursor_test7	1
+function	f	public	namedparmcursor_test8	1
+function	f	public	namedparmcursor_test9	1
+function	f	public	perform_simple_func	1
+function	f	public	perform_test_func	1
+function	f	public	plpgsql_arr_domain_check	1
+function	f	public	plpgsql_domain_check	1
+function	f	public	pslot_backlink_view	1
+function	f	public	pslot_slotlink_view	1
+function	f	public	raise_test3	1
+function	f	public	recurse	1
+function	f	public	recursion_test	1
+function	f	public	refcursor_test1	1
+function	f	public	refcursor_test2	1
+function	f	public	reraise_test	1
+function	f	public	ret_query1	1
+function	f	public	ret_query2	1
+function	f	public	return_refcursor	1
+function	f	public	return_unnamed_refcursor	1
+function	f	public	returns_rw_array	1
+function	f	public	shadowtest	1
+function	f	public	sql_recurse	1
+function	f	public	stricttest	1
+function	f	public	test_found	1
+function	f	public	test_ret_rec_dyn	1
+function	f	public	test_ret_set_rec_dyn	1
+function	f	public	test_ret_set_scalar	1
+function	f	public	test_table_func_rec	1
+function	f	public	test_table_func_row	1
+function	f	public	tg_backlink_a	1
+function	f	public	tg_backlink_set	1
+function	f	public	tg_backlink_unset	1
+function	f	public	tg_chkbacklink	1
+function	f	public	tg_chkslotlink	1
+function	f	public	tg_chkslotname	1
+function	f	public	tg_hslot_bd	1
+function	f	public	tg_hslot_biu	1
+function	f	public	tg_hslot_bu	1
+function	f	public	tg_hub_a	1
+function	f	public	tg_hub_adjustslots	1
+function	f	public	tg_iface_biu	1
+function	f	public	tg_iface_bu	1
+function	f	public	tg_pfield_ad	1
+function	f	public	tg_pfield_au	1
+function	f	public	tg_phone_bu	1
+function	f	public	tg_pline_bu	1
+function	f	public	tg_pslot_biu	1
+function	f	public	tg_pslot_bu	1
+function	f	public	tg_room_ad	1
+function	f	public	tg_room_au	1
+function	f	public	tg_slotlink_a	1
+function	f	public	tg_slotlink_set	1
+function	f	public	tg_slotlink_unset	1
+function	f	public	tg_system_au	1
+function	f	public	tg_wslot_biu	1
+function	f	public	tg_wslot_bu	1
+function	f	public	transition_table_base_ins_func	1
+function	f	public	transition_table_base_upd_func	1
+function	f	public	transition_table_level1_ri_parent_del_func	1
+function	f	public	transition_table_level1_ri_parent_upd_func	1
+function	f	public	transition_table_level2_bad_usage_func	1
+function	f	public	transition_table_level2_ri_child_insupd_func	1
+function	f	public	use_refcursor	1
+function	f	public	wslot_slotlink_view	1
+relation	p	public	partitioned_table	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	alter_table_under_transition_tables	id	pg_catalog.int4
+relation	r	public	found_test_tbl	a	pg_catalog.int4
+relation	r	public	hslot	slotname	pg_catalog.bpchar	hubname	pg_catalog.bpchar	slotno	pg_catalog.int4	slotlink	pg_catalog.bpchar
+relation	r	public	hub	name	pg_catalog.bpchar	comment	pg_catalog.text	nslots	pg_catalog.int4
+relation	r	public	iface	slotname	pg_catalog.bpchar	sysname	pg_catalog.text	ifname	pg_catalog.text	slotlink	pg_catalog.bpchar
+relation	r	public	pfield	name	pg_catalog.text	comment	pg_catalog.text
+relation	r	public	phone	slotname	pg_catalog.bpchar	comment	pg_catalog.text	slotlink	pg_catalog.bpchar
+relation	r	public	pline	slotname	pg_catalog.bpchar	phonenumber	pg_catalog.bpchar	comment	pg_catalog.text	backlink	pg_catalog.bpchar
+relation	r	public	pslot	slotname	pg_catalog.bpchar	pfname	pg_catalog.text	slotlink	pg_catalog.bpchar	backlink	pg_catalog.bpchar
+relation	r	public	pt_part1	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	pt_part2	a	pg_catalog.int4	b	pg_catalog.text
+relation	r	public	rc_test	a	pg_catalog.int4	b	pg_catalog.int4
+relation	r	public	room	roomno	pg_catalog.bpchar	comment	pg_catalog.text
+relation	r	public	stuffs	stuff	pg_catalog.text
+relation	r	public	system	name	pg_catalog.text	comment	pg_catalog.text
+relation	r	public	transition_table_base	id	pg_catalog.int4	val	pg_catalog.text
+relation	r	public	transition_table_level1	level1_no	pg_catalog.int4	level1_node_name	pg_catalog.varchar
+relation	r	public	transition_table_level2	level2_no	pg_catalog.int4	parent_no	pg_catalog.int4	level1_node_name	pg_catalog.varchar
+relation	r	public	transition_table_status	level	pg_catalog.int4	node_no	pg_catalog.int4	status	pg_catalog.int4
+relation	r	public	wslot	slotname	pg_catalog.bpchar	roomno	pg_catalog.bpchar	slotlink	pg_catalog.bpchar	backlink	pg_catalog.bpchar
+relation	v	public	pfield_v1	pfname	pg_catalog.text	slotname	pg_catalog.bpchar	backside	pg_catalog.text	patch	pg_catalog.text
+schema	public
+type	c	public	record_type
+type	d	public	orderedarray
+type	d	public	plpgsql_arr_domain
+type	d	public	plpgsql_domain

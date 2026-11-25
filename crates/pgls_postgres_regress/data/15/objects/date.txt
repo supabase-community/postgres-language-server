@@ -1,0 +1,2 @@
+relation	r	public	date_tbl	f1	pg_catalog.date
+schema	public

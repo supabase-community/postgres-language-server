@@ -1,0 +1,13 @@
+function	f	public	equipment	1
+function	f	public	equipment_named	1
+function	f	public	equipment_named_ambiguous_1a	1
+function	f	public	equipment_named_ambiguous_1b	1
+function	f	public	equipment_named_ambiguous_1c	1
+function	f	public	equipment_named_ambiguous_2a	1
+function	f	public	equipment_named_ambiguous_2b	1
+function	f	public	hobbies_by_name	1
+function	f	public	hobby_construct	1
+function	f	public	hobby_construct_named	1
+relation	r	public	equipment_r	name	pg_catalog.text	hobby	pg_catalog.text
+relation	r	public	hobbies_r	name	pg_catalog.text	person	pg_catalog.text
+schema	public

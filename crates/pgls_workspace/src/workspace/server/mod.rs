@@ -460,7 +460,8 @@ impl WorkspaceServer {
 
     /// Diagnostics from the database: EXPLAIN for top-level statements whose references are all
     /// unchanged database objects, and plpgsql_check. With [`DatabaseChecks::Run`] it checks the
-    /// statements and keeps the results of each one in the document, with
+    /// statements, reusing plpgsql_check's diagnostics of the functions it checked with the same
+    /// snapshot and settings, and keeps the results of each one in the document, with
     /// [`DatabaseChecks::Reuse`] it returns what the last run found for the statements that are
     /// unchanged since.
     ///
@@ -498,23 +499,45 @@ impl WorkspaceServer {
         }
 
         let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let db_diagnostics = self.connection.with_pool(&settings.db, |pool| {
+        let db_diagnostics = self.connection.with_pools(&settings.db, |pools| {
+            let pool = &pools.pool;
             let snapshot = self.snapshot.load(pool)?;
+            // plpgsql_check finds the same for an unchanged function with the same snapshot and
+            // settings, so the last run's diagnostics are reused.
+            let reuse_plpgsql_check = doc
+                .cache()
+                .database_results()
+                .checked_with
+                .as_ref()
+                .is_some_and(|(checked, settings)| {
+                    std::sync::Weak::ptr_eq(checked, &Arc::downgrade(&snapshot))
+                        && *settings == plpgsql_check
+                });
             // Only top-level statements are checked: the static typecheck rules cover the
             // statements of SQL function bodies, whose parameters they resolve.
             let input = doc
                 .statements()
-                .filter(|stmt| !analysis.is_skipped(stmt.range().start()))
+                .filter(|stmt| !stmt.id().is_child() && !analysis.is_skipped(stmt.range().start()))
                 .map(|stmt| {
                     let range = stmt.range();
                     let ast = doc.parse(&stmt).as_ref().as_ref().ok().cloned();
                     let cst = doc.tree(&stmt);
                     let statement = analysis.statement(range).cloned();
-                    (stmt.id().clone(), range, ast, cst, statement)
+                    let reused = reuse_plpgsql_check
+                        .then(|| {
+                            doc.cache()
+                                .database_results()
+                                .plpgsql_check_diagnostics(stmt.id())
+                        })
+                        .flatten();
+                    (stmt.id().clone(), range, ast, cst, statement, reused)
                 })
-                .filter(|(id, ..)| !id.is_child())
                 .collect::<Vec<_>>();
+            let checked_with = (Arc::downgrade(&snapshot), plpgsql_check.clone());
             let pool = pool.clone();
+            // The typecheck prepares statements, which the statement pool's connections don't
+            // cache, see `TypecheckParams::conn`.
+            let statement_pool = pools.statement_pool.clone();
             let path = path.clone();
             let stopped = Arc::clone(&stop);
 
@@ -525,8 +548,9 @@ impl WorkspaceServer {
                             .take_while(move |_| {
                                 std::future::ready(!stopped.load(Ordering::Relaxed))
                             })
-                            .map(|(id, range, ast, cst, statement)| {
+                            .map(|(id, range, ast, cst, statement, reused)| {
                                 let pool = pool.clone();
+                                let statement_pool = statement_pool.clone();
                                 let path = path.clone();
                                 let snapshot = Arc::clone(&snapshot);
                                 let plpgsql_check = plpgsql_check.clone();
@@ -554,7 +578,7 @@ impl WorkspaceServer {
                                         if !conversion.has_identifier_parameters {
                                             let typecheck =
                                                 pgls_typecheck::check_sql(TypecheckParams {
-                                                    conn: &pool,
+                                                    conn: &statement_pool,
                                                     sql: conversion.sql.as_str(),
                                                     ast: &ast,
                                                     tree: &cst,
@@ -579,8 +603,11 @@ impl WorkspaceServer {
                                         }
                                     }
 
-                                    if plpgsql_check.enabled {
-                                        let results = pgls_plpgsql_check::check_plpgsql(
+                                    if let Some(diagnostics) = reused {
+                                        result.plpgsql_checked = true;
+                                        result.diagnostics.extend(diagnostics);
+                                    } else if plpgsql_check.enabled {
+                                        let checked = pgls_plpgsql_check::check(
                                             pgls_plpgsql_check::PlPgSqlCheckParams {
                                                 conn: &pool,
                                                 sql: id.content(),
@@ -603,13 +630,20 @@ impl WorkspaceServer {
                                                 constant_tracing: plpgsql_check.constant_tracing,
                                             },
                                         )
-                                        .await
-                                        .ok()
-                                        .flatten();
+                                        .await;
+                                        let diagnostics = match checked {
+                                            Ok(Some(diagnostics)) => {
+                                                result.plpgsql_checked = true;
+                                                diagnostics
+                                            }
+                                            Ok(None) => Vec::new(),
+                                            Err(err) => {
+                                                debug!("plpgsql_check failed: {err}");
+                                                Vec::new()
+                                            }
+                                        };
 
-                                        result.plpgsql_checked = results.is_some();
-
-                                        for diagnostic in results.unwrap_or_default() {
+                                        for diagnostic in diagnostics {
                                             let span =
                                                 database_span(diagnostic.span, id.content(), range);
                                             result.diagnostics.push(SDiagnostic::new(
@@ -631,6 +665,7 @@ impl WorkspaceServer {
                     &stop,
                     should_stop,
                 )?
+                .map(|checked| (checked_with, checked))
                 .map_err(WorkspaceError::from)
         });
         if stop.load(Ordering::Relaxed) {
@@ -643,10 +678,11 @@ impl WorkspaceServer {
                     .set_database_results(DatabaseResults::default(), doc.generation());
                 Ok(Some(DatabaseDiagnostics::default()))
             }
-            Some(Ok(checked)) => {
+            Some(Ok((checked_with, checked))) => {
                 // The diagnostics of this pull are the results it keeps, at the statements'
                 // places.
-                let results = DatabaseResults::new(checked);
+                let mut results = DatabaseResults::new(checked);
+                results.checked_with = Some(checked_with);
                 let diagnostics = results.reuse(checked_statements());
                 doc.cache().set_database_results(results, doc.generation());
                 Ok(Some(diagnostics))
@@ -860,7 +896,10 @@ impl Workspace for WorkspaceServer {
         let (settings_version, migration_tool, max_size) =
             self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
-        documents.entry(params.path.clone()).or_insert_with(|| {
+        // A client that opens the file again without closing it sends its current text, which
+        // replaces the document and its caches like a close and an open.
+        documents.insert(
+            params.path.clone(),
             Arc::new(Document::open(
                 params.project_key,
                 settings_version,
@@ -868,8 +907,9 @@ impl Workspace for WorkspaceServer {
                 max_size,
                 params.content,
                 params.version,
-            ))
-        });
+            )),
+        );
+        self.document_caches.remove(&params.path);
 
         Ok(())
     }
@@ -1501,10 +1541,10 @@ impl Workspace for WorkspaceServer {
                             conn: &pool,
                             snapshot,
                         };
-                        // Without a cache, each run reads the rules and the messages of the
-                        // extension again, so that changes to them show on the next run.
+                        // Each run reads the rules and the messages of the extension again, so
+                        // that changes to them show on the next run.
                         pglinter_diagnostics =
-                            pgls_pglinter::run_pglinter(pglinter_params, &filter, None).await?;
+                            pgls_pglinter::run_pglinter(pglinter_params, &filter).await?;
                     }
                     None if pglinter_enabled => {
                         debug!("pglinter needs the database snapshot. Skipping pglinter checks.");

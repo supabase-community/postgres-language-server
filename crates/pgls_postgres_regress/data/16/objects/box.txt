@@ -1,0 +1,5 @@
+relation	r	public	box_tbl	f1	pg_catalog.box
+relation	r	public	quad_box_tbl	id	pg_catalog.int4	b	pg_catalog.box
+relation	r	public	quad_box_tbl_ord_seq1	n	pg_catalog.int8	dist	pg_catalog.float8	id	pg_catalog.int4
+relation	r	public	quad_box_tbl_ord_seq2	n	pg_catalog.int8	dist	pg_catalog.float8	id	pg_catalog.int4
+schema	public

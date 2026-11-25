@@ -1,0 +1,6 @@
+function	f	mvtest_mvschema	mvtest_drop_the_index	1
+function	f	public	mvtest_func	1
+relation	m	public	mvtest1	x	pg_catalog.int4
+relation	m	public	mvtest2	x	pg_catalog.int4
+schema	mvtest_mvschema
+schema	public

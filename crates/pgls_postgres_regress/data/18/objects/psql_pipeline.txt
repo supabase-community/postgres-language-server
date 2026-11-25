@@ -1,0 +1,2 @@
+relation	r	public	psql_pipeline	a	pg_catalog.int4	s	pg_catalog.text
+schema	public

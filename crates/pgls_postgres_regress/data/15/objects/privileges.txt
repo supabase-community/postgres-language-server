@@ -1,0 +1,4 @@
+function	f	public	leak	1
+function	f	public	terminate_nothrow	1
+relation	r	public	datdba_only
+schema	public

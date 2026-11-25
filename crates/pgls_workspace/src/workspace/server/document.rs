@@ -818,7 +818,7 @@ fn split_diagnostics(split: &SplitResult) -> Vec<SDiagnostic> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pgls_line_index::{LineIndex, WideEncoding, WideLineCol};
+    use pgls_line_index::{LineIndex, PositionEncoding, WideEncoding, WideLineCol};
     use proptest::prelude::*;
 
     impl Document {
@@ -980,7 +980,7 @@ mod tests {
         fn apply(&self, content: &mut String) {
             let index = LineIndex::new(content);
             let offset = |position| {
-                usize::from(index.offset_clamped(index.to_utf8(WideEncoding::Utf16, position)))
+                usize::from(index.offset_at(position, PositionEncoding::Wide(WideEncoding::Utf16)))
             };
             let (start, end) = (offset(self.start), offset(self.end));
             content.replace_range(start.min(end)..start.max(end), &self.text);

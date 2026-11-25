@@ -1,0 +1,4 @@
+relation	r	fast_default	t	a	pg_catalog.int4
+relation	r	public	has_fast_default	f1	pg_catalog.int4	f2	pg_catalog.int4
+schema	fast_default
+schema	public

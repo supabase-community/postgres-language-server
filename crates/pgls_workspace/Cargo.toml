@@ -25,7 +25,7 @@ pgls_configuration                = { workspace = true }
 pgls_console                      = { workspace = true }
 pgls_diagnostics                  = { workspace = true }
 pgls_env                          = { workspace = true }
-pgls_fs                           = { workspace = true, features = ["serde"] }
+pgls_fs                           = { workspace = true }
 pgls_hover                        = { workspace = true }
 pgls_inlay_hints                  = { workspace = true }
 pgls_lexer                        = { workspace = true }
@@ -38,6 +38,7 @@ pgls_query_ext                    = { workspace = true }
 pgls_semantic_tokens              = { workspace = true }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
+pgls_text_edit                    = { workspace = true, features = ["serde"] }
 pgls_text_size.workspace          = true
 pgls_treesitter_grammar.workspace = true
 pgls_walk                         = { workspace = true }
@@ -83,6 +84,7 @@ schema = [
   "pgls_fs/schema",
   "pgls_analyse/schema",
   "pgls_completions/schema",
+  "pgls_text_edit/schema",
 ]
 
 [dev-dependencies]

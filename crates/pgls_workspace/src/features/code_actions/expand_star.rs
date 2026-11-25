@@ -8,7 +8,7 @@ use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
 
 use crate::features::code_actions::{
-    ActionCategory, CodeAction, CodeActionKind, EditAction, RefactorKind, TextEdit,
+    ActionCategory, CodeAction, CodeActionKind, EditAction, RangeEdit, RefactorKind,
 };
 
 /// The action that replaces the `*` or `t.*` of `reference` with its columns. `content` is the
@@ -39,7 +39,7 @@ pub(crate) fn expand_star_action(
             rule: None,
             category: ActionCategory::Refactor(RefactorKind::Rewrite),
             applicability: Applicability::Always,
-            edits: vec![TextEdit { range, new_text }],
+            edits: vec![RangeEdit { range, new_text }],
         }),
         disabled_reason: None,
     })

@@ -58,14 +58,14 @@ impl ScopeTracker {
 
 #[derive(Clone, Debug)]
 struct AncestorNode {
-    kind: String,
-    field: Option<String>,
+    kind: &'static str,
+    field: Option<&'static str>,
 }
 
 #[derive(Debug)]
 pub(crate) struct AncestorTracker {
     ancestors: Vec<AncestorNode>,
-    next_field: Option<String>,
+    next_field: Option<&'static str>,
 }
 
 impl AncestorTracker {
@@ -78,7 +78,7 @@ impl AncestorTracker {
 
     pub(super) fn register<'a>(&mut self, node: tree_sitter::Node<'a>, position: usize) {
         let ancestor_node = AncestorNode {
-            kind: node.kind().into(),
+            kind: node.kind(),
             field: self.next_field.take(),
         };
 
@@ -88,7 +88,6 @@ impl AncestorTracker {
                 .zip(node.children(&mut node.walk()))
                 .find(|(_, n)| n == &child_on_cursor)
                 .and_then(|(idx, _)| node.field_name_for_child(idx))
-                .map(|f| f.to_string())
         }
 
         self.ancestors.push(ancestor_node);
@@ -97,7 +96,7 @@ impl AncestorTracker {
     pub(super) fn is_within_one_of_fields(&self, field_names: &[&'static str]) -> bool {
         self.ancestors
             .iter()
-            .any(|n| n.field.as_deref().is_some_and(|f| field_names.contains(&f)))
+            .any(|n| n.field.is_some_and(|f| field_names.contains(&f)))
     }
 
     pub(super) fn history_ends_with(&self, matchers: &[&'static str]) -> bool {

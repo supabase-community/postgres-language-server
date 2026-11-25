@@ -1,0 +1,5 @@
+function	f	public	do_analyze	1
+function	f	public	wrap_do_analyze	1
+relation	p	public	past_parted	i	pg_catalog.int4
+relation	r	public	past_inh_parent
+schema	public

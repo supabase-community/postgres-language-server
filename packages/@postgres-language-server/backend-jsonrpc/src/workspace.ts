@@ -21,11 +21,10 @@ export type RuleCategories = RuleCategory[];
  */
 export type DatabaseChecks = "run" | "reuse";
 export type RuleCode = string;
+/**
+ * A path of a file of the workspace.
+ */
 export interface PgLSPath {
-  /**
-   * Determines the kind of the file inside Postgres Language Server. Some files are considered as configuration files, others as manifest files, and others as files to handle
-   */
-  kind: FileKind;
   path: string;
   /**
    * Whether this path (usually a file) was fixed as a result of a format/lint/check command with the `--write` filag.
@@ -40,11 +39,6 @@ export interface ProjectKey {
   version: number;
 }
 export type RuleCategory = "Lint";
-export type FileKind = FileKind2[];
-/**
- * The priority of the file
- */
-export type FileKind2 = "Config" | "Ignore" | "Inspectable" | "Handleable";
 export interface PullDiagnosticsResult {
   diagnostics: Diagnostic[];
   /**
@@ -214,6 +208,7 @@ export type Category =
   | "splinter/security/unsupportedRegTypes"
   | "stdin"
   | "check"
+  | "dblint"
   | "format"
   | "configuration"
   | "database/connection"
@@ -392,7 +387,7 @@ export interface EditAction {
   /**
    * Non-overlapping edits of the file, ordered by their position.
    */
-  edits: TextEdit[];
+  edits: RangeEdit[];
   /**
    * The category of the diagnostic the action fixes or suppresses, e.g. `lint/banDropTable`. `None` for refactors.
    */
@@ -415,6 +410,15 @@ export type ActionCategory =
   | { Refactor: RefactorKind }
   | { Source: SourceActionKind }
   | { Other: string };
+/**
+ * Replaces the text in `range` with `new_text`, e.g. an edit of a fix or a code action. Unlike `TextEdit`, which is a diff of a whole text, it only knows the range it replaces.
+
+The ranges come from rules and frontends, so every application checks them, in release builds too: an edit out of order, or one that doesn't lie on char boundaries, is rejected instead of panicking or changing the wrong text.
+ */
+export interface RangeEdit {
+  new_text: string;
+  range: TextRange;
+}
 export type CommandActionCategory = "InvalidateSchemaCache" | { ExecuteStatement: StatementId };
 /**
  * The sub-category of a refactor code action.

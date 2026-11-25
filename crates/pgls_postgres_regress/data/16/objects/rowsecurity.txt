@@ -1,0 +1,4 @@
+relation	r	regress_rls_schema	rls_tbl	c1	pg_catalog.int4
+relation	r	regress_rls_schema	rls_tbl_force	c1	pg_catalog.int4
+schema	public
+schema	regress_rls_schema
