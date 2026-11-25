@@ -221,11 +221,15 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
         .take_while(|(a, b)| a == b)
         .count()
         * COMPARE_BLOCK_BYTES;
+    // Compare the rest on the bytes before the equal blocks: `skip(equal)` on the reversed,
+    // zipped bytes would step through every byte of the blocks.
+    let (Some(a), Some(b)) = (a.get(..a.len() - equal), b.get(..b.len() - equal)) else {
+        return equal;
+    };
     equal
         + a.iter()
             .rev()
             .zip(b.iter().rev())
-            .skip(equal)
             .take_while(|(a, b)| a == b)
             .count()
 }
