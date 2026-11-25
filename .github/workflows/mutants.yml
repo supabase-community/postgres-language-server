@@ -54,7 +54,7 @@ jobs:
         run: |
           # A mutant that loops while it allocates would take the runner's memory before its
           # timeout; with a limit, it aborts and counts as caught.
-          ulimit -v 8388608
+          ulimit -v 2097152
           # 2 and 3 mean missed mutants and timeouts, which the summary reports.
           code=0
           cargo mutants -p ${{ matrix.package }} || code=$?
