@@ -17,7 +17,7 @@ use pgls_analyse::AnalysisFilter;
 use pgls_catalog::Snapshot;
 use pgls_console::fmt::{Formatter, HTML};
 use pgls_diagnostics::{Diagnostic, LogCategory, Visit};
-use pgls_pglinter::{PglinterCache, PglinterParams, run_pglinter};
+use pgls_pglinter::{PglinterParams, run_pglinter};
 use sqlx::PgPool;
 use std::fmt::Write;
 use std::io;
@@ -119,10 +119,6 @@ impl TestSetup<'_> {
             .await
             .expect("Failed to load snapshot");
 
-        let cache = PglinterCache::load(self.test_db, &snapshot)
-            .await
-            .expect("Failed to load pglinter cache");
-
         let filter = AnalysisFilter::default();
         let diagnostics = run_pglinter(
             PglinterParams {
@@ -130,7 +126,6 @@ impl TestSetup<'_> {
                 snapshot: &snapshot,
             },
             &filter,
-            Some(&cache),
         )
         .await
         .expect("Failed to run pglinter checks");

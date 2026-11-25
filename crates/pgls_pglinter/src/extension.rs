@@ -1,6 +1,5 @@
-//! Pglinter extension cache for avoiding repeated database queries
+//! What the pglinter extension's tables say: the rules it disables and its rule messages.
 
-use pgls_catalog::{Extension, Snapshot};
 use rustc_hash::{FxHashMap, FxHashSet};
 use sqlx::PgPool;
 
@@ -24,61 +23,6 @@ struct RuleMessageJson {
     message: Option<String>,
     advices: Option<String>,
     infos: Option<Vec<String>>,
-}
-
-/// Cached pglinter extension state (loaded once, reused)
-#[derive(Debug, Clone, Default)]
-pub struct PglinterCache {
-    /// Whether the pglinter extension is installed
-    pub extension_installed: bool,
-    /// Rule codes that are disabled in the pglinter extension
-    pub disabled_rules: FxHashSet<String>,
-    /// Rule messages from pglinter.rule_messages table (pglinter v1.1.0+)
-    pub rule_messages: FxHashMap<String, RuleMessage>,
-}
-
-impl PglinterCache {
-    /// Load pglinter extension state from database using official API
-    pub async fn load(conn: &PgPool, snapshot: &Snapshot) -> Result<Self, sqlx::Error> {
-        let extension_installed = snapshot
-            .extension("pglinter")
-            .is_some_and(Extension::is_installed);
-
-        if !extension_installed {
-            return Ok(Self {
-                extension_installed: false,
-                disabled_rules: FxHashSet::default(),
-                rule_messages: FxHashMap::default(),
-            });
-        }
-
-        // Get disabled rules using pglinter.rules table
-        let disabled_rules = get_disabled_rules(conn).await?;
-
-        // Get rule messages if pglinter v1.1.0+ (rule_messages table exists)
-        let rule_messages = if check_rule_messages_table_exists(conn).await? {
-            fetch_rule_messages(conn).await?
-        } else {
-            FxHashMap::default()
-        };
-
-        Ok(Self {
-            extension_installed,
-            disabled_rules,
-            rule_messages,
-        })
-    }
-
-    /// Create initial cache from the database snapshot only (disabled rules will need API call later)
-    pub fn from_snapshot(snapshot: &Snapshot) -> Self {
-        Self {
-            extension_installed: snapshot
-                .extension("pglinter")
-                .is_some_and(Extension::is_installed),
-            disabled_rules: FxHashSet::default(),
-            rule_messages: FxHashMap::default(),
-        }
-    }
 }
 
 /// Get disabled rules by querying the pglinter.rules table
