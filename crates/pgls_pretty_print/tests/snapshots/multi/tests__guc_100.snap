@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/guc.sql
-snapshot_kind: text
 ---
 show datestyle;
 
@@ -255,27 +254,27 @@ set vacuum_cost_delay = '10s';
 
 set no_such_variable = 42;
 
-show "custom.my_guc";
+show custom.my_guc;
 
 set custom.my_guc = 42;
 
-show "custom.my_guc";
+show custom.my_guc;
 
 reset custom.my_guc;
 
-show "custom.my_guc";
+show custom.my_guc;
 
 set custom.my.qualified.guc = foo;
 
-show "custom.my.qualified.guc";
+show custom.my.qualified.guc;
 
 set custom."bad-guc" = 42;
 
-show "custom.bad-guc";
+show custom."bad-guc";
 
 set special."weird name" = foo;
 
-show "special.weird name";
+show special."weird name";
 
 set plpgsql.extra_foo_warnings = 'true';
 
@@ -283,7 +282,7 @@ load 'plpgsql';
 
 set plpgsql.extra_foo_warnings = 'true';
 
-show "plpgsql.extra_foo_warnings";
+show plpgsql.extra_foo_warnings;
 
 select relname from pg_class where relname = 'reset_test';
 
