@@ -1,5 +1,5 @@
 use pgls_query::NodeEnum;
-use pgls_query_ext::utils::{QualifiedName, qualified_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use super::infer_expr;
 use crate::{resolver::Resolver, utils::named};
@@ -16,7 +16,7 @@ pub(super) fn infer_func_call(
     n: &pgls_query::protobuf::FuncCall,
 ) -> Option<Type> {
     {
-        let QualifiedName { schema, name, .. } = qualified_name(&n.funcname)?;
+        let QualifiedName { schema, name, .. } = QualifiedName::of(&n.funcname)?;
         if n.agg_star {
             return named(r, "int8");
         }
@@ -83,7 +83,7 @@ pub(super) fn infer_func_call(
 pub(crate) fn resolve_procedure_call(r: &mut Resolver<'_>, n: &pgls_query::protobuf::FuncCall) {
     r.depends_on_file();
     let args = r.without_findings(|r| call_args(r, n));
-    let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.funcname) else {
+    let Some(QualifiedName { schema, name, .. }) = QualifiedName::of(&n.funcname) else {
         return;
     };
     let selection = select_function(

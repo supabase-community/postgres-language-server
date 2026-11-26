@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use pgls_query::protobuf::RangeVar;
-use pgls_query_ext::utils::range_var_name;
+use pgls_query_ext::utils::QualifiedName;
 
 use super::{Resolver, alias::apply_alias};
 use crate::{
@@ -97,7 +97,7 @@ pub(super) struct ResolvedRelation {
 /// [`RangeVarGetRelidExtended`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L441
 pub(super) fn lookup_relation(r: &mut Resolver, n: &RangeVar) -> ResolvedRelation {
     let unknown = ResolvedRelation::default();
-    let name = range_var_name(n);
+    let name = QualifiedName::of_range_var(n);
     // Postgres only accepts the current database, which we don't know.
     if name.catalog.is_some() {
         r.depends_on_file();
