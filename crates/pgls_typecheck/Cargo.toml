@@ -19,6 +19,7 @@ pgls_diagnostics.workspace        = true
 pgls_line_index.workspace         = true
 pgls_query.workspace              = true
 pgls_text_size.workspace          = true
+pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
 sqlx.workspace                    = true
 tree-sitter.workspace             = true

@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/func_call_operator_name.sql
+---
+select "operator"(1), s.operator(1);

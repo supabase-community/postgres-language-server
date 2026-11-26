@@ -3,13 +3,13 @@ mod diagnostics;
 use std::borrow::Cow;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
-use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameterMode, Token, TypeName};
 use pgls_query_ext::{
     function_body::{Language, OffsetMap, function_body_location},
     utils::{QualifiedName, find_option_value, qualified_name},
 };
 use pgls_text_size::TextRange;
+use pgls_tokenizer::NamePosition;
 use serde::Deserialize;
 use sqlx::{Acquire, PgPool, Postgres, Transaction};
 
@@ -145,7 +145,7 @@ impl<'a> PlPgSqlFunction<'a> {
         match self.extension_schema {
             Some(schema) => format!(
                 "{}.plpgsql_check_function",
-                quote_identifier(schema, NamePosition::ColId)
+                NamePosition::ColId.quote(schema)
             ),
             None => "plpgsql_check_function".to_string(),
         }
@@ -174,10 +174,10 @@ impl<'a> PlPgSqlFunction<'a> {
         let mut signature = match self.schema {
             Some(schema) => format!(
                 "{}.{}",
-                quote_identifier(schema, NamePosition::ColId),
-                quote_identifier(self.name, NamePosition::ColLabel)
+                NamePosition::ColId.quote(schema),
+                NamePosition::ColLabel.quote(self.name)
             ),
-            None => quote_identifier(self.name, NamePosition::TypeFunctionName).into_owned(),
+            None => NamePosition::TypeFunctionName.quote(self.name).into_owned(),
         };
         signature.push('(');
         let mut first = true;
@@ -219,7 +219,7 @@ impl<'a> PlPgSqlFunction<'a> {
                 name.push('.');
                 NamePosition::ColLabel
             };
-            name.push_str(&quote_identifier(&part.sval, position));
+            name.push_str(&position.quote(&part.sval));
         }
         if !type_name.array_bounds.is_empty() {
             name.push_str("[]");
@@ -311,8 +311,8 @@ pub async fn check(
             .map(|trigger| {
                 format!(
                     "{}.{}",
-                    quote_identifier(&trigger.table_schema, NamePosition::ColId),
-                    quote_identifier(&trigger.table_name, NamePosition::ColLabel)
+                    NamePosition::ColId.quote(&trigger.table_schema),
+                    NamePosition::ColLabel.quote(&trigger.table_name)
                 )
             })
             .collect();

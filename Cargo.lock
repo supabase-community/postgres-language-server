@@ -2303,7 +2303,6 @@ dependencies = [
  "futures-util",
  "globset",
  "insta",
- "pgls_lexer",
  "pgls_query",
  "pgls_query_ext",
  "pgls_test_utils",
@@ -2377,6 +2376,7 @@ dependencies = [
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
+ "pgls_tokenizer",
  "pgls_treesitter",
  "pgls_treesitter_grammar",
  "pgls_walk",
@@ -2651,6 +2651,7 @@ dependencies = [
  "pgls_query_ext",
  "pgls_test_utils",
  "pgls_text_size",
+ "pgls_tokenizer",
  "serde",
  "serde_json",
  "sqlx",
@@ -2853,6 +2854,7 @@ name = "pgls_tokenizer"
 version = "0.0.0"
 dependencies = [
  "insta",
+ "pgls_query",
 ]
 
 [[package]]
@@ -2892,6 +2894,7 @@ dependencies = [
  "pgls_query",
  "pgls_test_utils",
  "pgls_text_size",
+ "pgls_tokenizer",
  "pgls_treesitter_grammar",
  "sqlx",
  "tokio",
@@ -2969,6 +2972,7 @@ dependencies = [
  "pgls_test_utils",
  "pgls_text_edit",
  "pgls_text_size",
+ "pgls_tokenizer",
  "pgls_treesitter_grammar",
  "pgls_typecheck",
  "pgls_walk",
