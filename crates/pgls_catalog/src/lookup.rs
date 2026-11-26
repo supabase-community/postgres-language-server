@@ -139,7 +139,10 @@ impl RelationInfo {
     /// [`MergeAttributesIntoExisting`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17542
     pub(crate) fn rejects_parent(&self, parent: &RelationInfo) -> bool {
         if self.kind == RelationKind::PartitionedTable
-            || !matches!(parent.kind, RelationKind::Table | RelationKind::ForeignTable)
+            || !matches!(
+                parent.kind,
+                RelationKind::Table | RelationKind::ForeignTable
+            )
         {
             return true;
         }
@@ -147,7 +150,10 @@ impl RelationInfo {
             return false;
         };
         parent_columns.iter().any(|parent_column| {
-            match columns.iter().find(|column| column.name == parent_column.name) {
+            match columns
+                .iter()
+                .find(|column| column.name == parent_column.name)
+            {
                 Some(column) => matches!(
                     (&column.ty, &parent_column.ty),
                     (Some(ty), Some(parent_ty)) if ty != parent_ty
