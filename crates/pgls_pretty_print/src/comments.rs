@@ -268,7 +268,7 @@ fn keywords_after_comments(
         let kind = Token::try_from(token.token).ok();
         let case_location = match kind {
             Some(Token::SqlComment | Token::CComment) => {
-                pending_comments.push(token.start as usize);
+                pending_comments.extend(token.range().map(|range| usize::from(range.start())));
                 continue;
             }
             Some(Token::Ascii40) => {
@@ -298,7 +298,7 @@ fn keywords_after_comments(
         if !pending_comments.is_empty()
             && (token.keyword_kind != KeywordKind::NoKeyword as i32 || is_comma)
             && locations.binary_search(&token.start).is_err()
-            && let Some(keyword) = source.sql.get(token.start as usize..token.end as usize)
+            && let Some(keyword) = token.text(source.sql)
         {
             // A comma anchors only the comment right before it, in a group of its own: the
             // comments before it may belong to different items, and placing them together moves
@@ -341,9 +341,9 @@ fn collect_comments(source: &Source<'_>) -> Vec<SourceComment> {
                 _ => return None,
             };
 
-            let start = usize::try_from(token.start).ok()?;
-            let end = usize::try_from(token.end).ok()?;
-            let text = source.sql.get(start..end)?.trim_end().to_string();
+            let range = token.range()?;
+            let (start, end) = (usize::from(range.start()), usize::from(range.end()));
+            let text = token.text(source.sql)?.trim_end().to_string();
 
             Some(SourceComment {
                 start,
