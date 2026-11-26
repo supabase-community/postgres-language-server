@@ -588,16 +588,18 @@ impl Document {
 
         StatementWalkInput {
             analysable: ast_option.map(|root| {
+                let conversion =
+                    pgls_lexer::convert_to_positional_params_with_metadata(id.content());
                 AnalysableStatement {
                     offsets,
                     ..AnalysableStatement::new(root, range).with_sql(id.content())
                 }
                 .with_function(function)
-                .with_identifier_parameters(
-                    pgls_lexer::convert_to_positional_params_with_metadata(id.content())
-                        .has_identifier_parameters,
+                .with_identifier_parameters(conversion.has_identifier_parameters)
+                // psql fills in the string of a `:'name'` when it runs the statement.
+                .with_unknown_values(
+                    self.touches_unknown_value(range) || !conversion.string_replacements.is_empty(),
                 )
-                .with_unknown_values(self.touches_unknown_value(range))
             }),
             syntax_error,
             unparsable,

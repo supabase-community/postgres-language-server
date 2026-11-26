@@ -31,10 +31,9 @@ check:
   lint/requireTableSchema: 30
   lint/requireTypeSchema: 167
   lint/transactionNesting: 34
-  syntax: 14
+  syntax: 9
 format:
-  format: 491
-  syntax: 5
+  format: 496
 reformatted files: 60
   test/sql/deparse-depesz/12-explains.d/01-base.sql
   test/sql/deparse-depesz/12-explains.d/02-analyze.sql

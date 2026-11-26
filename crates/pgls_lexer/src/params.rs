@@ -42,8 +42,11 @@ pub struct NamedParameterConversion {
     /// Placeholder identifier to the source text it replaced, for instance
     /// `raw_data` to `:raw_data`.
     pub identifier_replacements: HashMap<String, String>,
-    /// Positional index to the source text it replaced, for instance `1` to `:'agen_code'`.
+    /// Positional index to the source text it replaced, for instance `1` to `:id`.
     pub value_replacements: HashMap<usize, String>,
+    /// Placeholder string constant to the source text it replaced, for instance `':fname'` to
+    /// `:'fname'`. Its value is only known when psql runs the statement.
+    pub string_replacements: HashMap<String, String>,
     /// False when a placeholder collides with a real identifier of the same statement, in which
     /// case the substitution cannot be undone and the caller must not rewrite the statement.
     pub restorable: bool,
@@ -72,8 +75,17 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
         .map(|(idx, _)| lexed.text(idx))
         .collect();
 
+    // String constants written as such in the source, see `plain_identifiers`.
+    let plain_strings: HashSet<&str> = lexed
+        .tokens()
+        .enumerate()
+        .filter(|(_, kind)| *kind == SyntaxKind::STRING)
+        .map(|(idx, _)| lexed.text(idx))
+        .collect();
+
     let mut identifier_replacements: HashMap<String, String> = HashMap::new();
     let mut value_replacements: HashMap<usize, String> = HashMap::new();
+    let mut string_replacements: HashMap<String, String> = HashMap::new();
     let mut restorable = true;
 
     for (token_idx, kind) in lexed.tokens().enumerate() {
@@ -92,7 +104,18 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
                     result.push_str(token_text);
                     continue;
                 }
+                // psql replaces `:'name'` with a string constant, which also goes where `$n`
+                // doesn't parse, like `COPY t FROM :'file'`. Swapping the colon and the quote
+                // makes one of the same length.
+                Some(NamedParamFlavor::ColonString) => {
+                    let placeholder = token_text.replacen(":'", "':", 1);
+                    restorable &= !plain_strings.contains(placeholder.as_str());
+                    result.push_str(&placeholder);
+                    string_replacements.insert(placeholder, token_text.to_string());
+                    continue;
+                }
                 Some(NamedParamFlavor::ColonIdentifier) => true,
+                Some(NamedParamFlavor::ColonDefined) => false,
                 _ if next == Some(SyntaxKind::DOT) => true,
                 _ if previous == Some(SyntaxKind::ON_KW) => {
                     !on_introduces_condition(&lexed, token_idx)
@@ -153,6 +176,7 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
         has_identifier_parameters,
         identifier_replacements,
         value_replacements,
+        string_replacements,
         restorable,
     }
 }
@@ -168,6 +192,7 @@ enum NamedParamFlavor {
     ColonRaw,
     ColonString,
     ColonIdentifier,
+    ColonDefined,
 }
 
 impl NamedParamFlavor {
@@ -177,6 +202,7 @@ impl NamedParamFlavor {
             b'$' => Some(Self::DollarRaw),
             b':' if text.starts_with(":'") => Some(Self::ColonString),
             b':' if text.starts_with(":\"") => Some(Self::ColonIdentifier),
+            b':' if text.starts_with(":{") => Some(Self::ColonDefined),
             b':' => Some(Self::ColonRaw),
             _ => None,
         }
@@ -270,7 +296,7 @@ mod tests {
         let result = convert_to_positional_params(input);
         assert_eq!(
             result,
-            "select * from users where id = $1   and name = $2   and email = $3      ;"
+            "select * from users where id = $1   and name = $2   and email = ':three';"
         );
     }
 
@@ -390,7 +416,7 @@ mod tests {
         let input = "select arr[:'value'], arr[@value], arr[$value]";
         let normalized = convert_to_positional_params(input);
 
-        assert_eq!(normalized, "select arr[$1      ], arr[$2    ], arr[$3    ]");
+        assert_eq!(normalized, "select arr[':value'], arr[$1    ], arr[$2    ]");
         assert_eq!(normalized.len(), input.len());
     }
 
@@ -440,13 +466,72 @@ mod tests {
     #[test]
     fn value_placeholders_are_mapped_back_to_their_source_text() {
         let conversion =
-            convert_to_positional_params_with_metadata("SELECT 1 WHERE a = :'agen_code'");
+            convert_to_positional_params_with_metadata("SELECT 1 WHERE a = :agen_code");
 
         assert_eq!(
             conversion.value_replacements.get(&1),
-            Some(&":'agen_code'".to_string())
+            Some(&":agen_code".to_string())
         );
         assert!(conversion.restorable);
+    }
+
+    #[test]
+    fn string_variables_are_string_constants() {
+        // psql replaces `:'name'` with a string constant, so it parses where only one does.
+        for (input, expected) in [
+            ("COPY t FROM :'fname'", "COPY t FROM ':fname'"),
+            ("LOAD :'lib'", "LOAD ':lib'"),
+            (
+                "CREATE FUNCTION f() RETURNS int AS :'regresslib', 'f' LANGUAGE C",
+                "CREATE FUNCTION f() RETURNS int AS ':regresslib', 'f' LANGUAGE C",
+            ),
+            ("SET x.y = :'v'", "SET x.y = ':v'"),
+            (
+                "SELECT * FROM t WHERE a = :'a'",
+                "SELECT * FROM t WHERE a = ':a'",
+            ),
+        ] {
+            let conversion = convert_to_positional_params_with_metadata(input);
+            assert_eq!(conversion.sql, expected);
+            assert!(pgls_query::parse(&conversion.sql).is_ok(), "{input}");
+            assert!(!conversion.has_identifier_parameters, "{input}");
+            assert!(conversion.restorable, "{input}");
+        }
+
+        let conversion = convert_to_positional_params_with_metadata("LOAD :'lib'");
+        assert_eq!(
+            conversion.string_replacements.get("':lib'"),
+            Some(&":'lib'".to_string())
+        );
+    }
+
+    #[test]
+    fn a_string_placeholder_colliding_with_a_real_string_is_not_restorable() {
+        let conversion = convert_to_positional_params_with_metadata("SELECT ':a', :'a'");
+
+        assert!(!conversion.restorable);
+    }
+
+    #[test]
+    fn identifier_variables_stay_identifiers() {
+        let conversion = convert_to_positional_params_with_metadata("COPY :\"t\" FROM :'fname'");
+
+        assert_eq!(conversion.sql, "COPY t    FROM ':fname'");
+        assert!(conversion.has_identifier_parameters);
+    }
+
+    #[test]
+    fn defined_tests_are_values() {
+        // psql replaces `:{?name}` with `TRUE` or `FALSE`.
+        let input = "SELECT * FROM t WHERE :{?flag} AND a = :a";
+        let conversion = convert_to_positional_params_with_metadata(input);
+
+        assert_eq!(conversion.sql, "SELECT * FROM t WHERE $1       AND a = $2");
+        assert!(pgls_query::parse(&conversion.sql).is_ok());
+        assert_eq!(
+            conversion.value_replacements.get(&1),
+            Some(&":{?flag}".to_string())
+        );
     }
 
     #[test]

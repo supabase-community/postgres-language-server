@@ -281,11 +281,11 @@ fn collapse_blank_lines(text: &str) -> String {
 
 /// Put psql named parameters back where the formatter printed their placeholders.
 ///
-/// The parser only ever sees placeholders, so the printed statement carries `$1` or a bare
-/// identifier instead of `:'agen_code'` or `:raw_data`. Substitution happens on the token stream
-/// so that a `$1` inside a string literal is left alone, and the result is proven by converting it
-/// back and comparing the normalized ASTs: a statement that does not survive that round trip is
-/// reported as unrestorable and kept as it was written.
+/// The parser only ever sees placeholders, so the printed statement carries `$1`, `':fname'` or a
+/// bare identifier instead of `:id`, `:'fname'` or `:raw_data`. Substitution happens on the token
+/// stream so that a `$1` inside a string literal is left alone, and the result is proven by
+/// converting it back and comparing the normalized ASTs and the string placeholders: a statement
+/// that does not survive that round trip is reported as unrestorable and kept as it was written.
 fn restore_named_parameters(
     original: &str,
     formatted: &str,
@@ -295,7 +295,10 @@ fn restore_named_parameters(
 
     let conversion = pgls_lexer::convert_to_positional_params_with_metadata(original);
 
-    if conversion.identifier_replacements.is_empty() && conversion.value_replacements.is_empty() {
+    if conversion.identifier_replacements.is_empty()
+        && conversion.value_replacements.is_empty()
+        && conversion.string_replacements.is_empty()
+    {
         return Some(formatted.to_string());
     }
 
@@ -315,6 +318,7 @@ fn restore_named_parameters(
 
         let replacement = match kind {
             SyntaxKind::IDENT => conversion.identifier_replacements.get(text),
+            SyntaxKind::STRING => conversion.string_replacements.get(text),
             SyntaxKind::POSITIONAL_PARAM => text
                 .trim_start_matches('$')
                 .parse::<usize>()
@@ -329,7 +333,13 @@ fn restore_named_parameters(
         }
     }
 
-    let reparsed = pgls_query::parse(&pgls_lexer::convert_to_positional_params(&restored)).ok()?;
+    // A string placeholder that the printer joined with the strings that continue it isn't
+    // restored, but parses the same, so the placeholders are compared as well.
+    let reconverted = pgls_lexer::convert_to_positional_params_with_metadata(&restored);
+    if reconverted.string_replacements != conversion.string_replacements {
+        return None;
+    }
+    let reparsed = pgls_query::parse(&reconverted.sql).ok()?;
     let mut restored_ast = reparsed.into_root()?;
     let mut expected_ast = original_ast.clone();
     pgls_pretty_print::normalize_ast(&mut restored_ast);

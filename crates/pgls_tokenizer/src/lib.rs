@@ -17,6 +17,12 @@ const fn is_ident_cont(c: char) -> bool {
     matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9' | '$') || !c.is_ascii()
 }
 
+// via: https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L372
+// variable_char	[A-Za-z\200-\377_0-9]
+const fn is_variable_char(c: char) -> bool {
+    matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9') || !c.is_ascii()
+}
+
 // whitespace
 // - https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scansup.c#L107-L128
 // - https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L204-L229
@@ -158,35 +164,10 @@ impl Cursor<'_> {
                 if self.first() == ':' {
                     self.bump();
                     TokenKind::DoubleColon
+                } else if let Some(kind) = self.psql_variable() {
+                    TokenKind::NamedParam { kind }
                 } else {
-                    // Named parameters in psql with different substitution styles.
-                    //
-                    // https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
-                    match self.first() {
-                        '\'' => {
-                            // Named parameter with colon prefix and single quotes. psql replaces
-                            // it with a string constant, which strings on the next lines continue.
-                            self.bump();
-                            let terminated = self.string_constant(true, false);
-                            let kind = NamedParamKind::ColonString { terminated };
-                            TokenKind::NamedParam { kind }
-                        }
-                        '"' => {
-                            // Named parameter with colon prefix and double quotes.
-                            self.bump();
-                            let terminated = self.double_quoted_string();
-                            let kind = NamedParamKind::ColonIdentifier { terminated };
-                            TokenKind::NamedParam { kind }
-                        }
-                        c if is_ident_start(c) && !self.at_prefixed_string() => {
-                            // Named parameter with colon prefix.
-                            self.eat_while(is_ident_cont);
-                            TokenKind::NamedParam {
-                                kind: NamedParamKind::ColonRaw,
-                            }
-                        }
-                        _ => TokenKind::Colon,
-                    }
+                    TokenKind::Colon
                 }
             }
             // One-symbol tokens.
@@ -573,6 +554,42 @@ impl Cursor<'_> {
     /// Postgres takes the longest match, so `:e'a'`, `@b'1'` and `$U&'a'` are an operator or
     /// `$` and a string, not a named parameter:
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L250-L304
+    /// Eats a psql variable after its `:`, if one follows. psql reads `:name`, `:'name'`,
+    /// `:"name"` and `:{?name}` only when the name is variable characters; otherwise it sends the
+    /// `:` as is:
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L717-L775
+    ///
+    /// https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
+    fn psql_variable(&mut self) -> Option<NamedParamKind> {
+        let rest = self.as_str();
+        let (kind, name, close) = if let Some(name) = rest.strip_prefix('\'') {
+            (NamedParamKind::ColonString, name, "'")
+        } else if let Some(name) = rest.strip_prefix('"') {
+            (NamedParamKind::ColonIdentifier, name, "\"")
+        } else if let Some(name) = rest.strip_prefix("{?") {
+            (NamedParamKind::ColonDefined, name, "}")
+        } else if self.at_prefixed_string() {
+            return None;
+        } else {
+            (NamedParamKind::ColonRaw, rest, "")
+        };
+        let name_len = name.find(|c| !is_variable_char(c)).unwrap_or(name.len());
+        let after = name.get(name_len..)?;
+        if name_len == 0 || !after.starts_with(close) {
+            return None;
+        }
+        let remaining = after.len() - close.len();
+        while self.as_str().len() > remaining {
+            self.bump();
+        }
+        // psql replaces `:'name'` with a string constant, which strings on the next lines continue:
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L224-L230
+        if matches!(kind, NamedParamKind::ColonString) {
+            while self.eat_quote_continuation() && self.single_quoted_string(true, false) {}
+        }
+        Some(kind)
+    }
+
     fn at_prefixed_string(&self) -> bool {
         let mut chars = self.as_str().chars();
         matches!(
@@ -869,6 +886,49 @@ mod tests {
     fn named_param_colon_identifier() {
         let result = lex("select 1 from c where id = :\"id\";");
         assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn named_param_colon_defined() {
+        let result = lex("select :{?flag}");
+        assert_debug_snapshot!(result, @r#"
+        [
+            "select" @ Ident,
+            " " @ Space,
+            ":{?flag}" @ NamedParam { kind: ColonDefined },
+        ]
+        "#);
+    }
+
+    #[test]
+    fn psql_variable_names_are_variable_characters() {
+        // psql reads a variable only when its name is variable characters, so the `:` of the
+        // others is a colon, and `$` ends the name.
+        let result = lex(":'a b' :\"\" :{?} :{x} :a$b :1");
+        assert_debug_snapshot!(result, @r#"
+        [
+            ":" @ Colon,
+            "'a b'" @ Literal { kind: Str { terminated: true } },
+            " " @ Space,
+            ":" @ Colon,
+            "\"\"" @ QuotedIdent { terminated: true },
+            " " @ Space,
+            ":" @ Colon,
+            "{" @ Unknown,
+            "?" @ Question,
+            "}" @ Unknown,
+            " " @ Space,
+            ":" @ Colon,
+            "{" @ Unknown,
+            "x" @ Ident,
+            "}" @ Unknown,
+            " " @ Space,
+            ":a" @ NamedParam { kind: ColonRaw },
+            "$b" @ NamedParam { kind: DollarRaw },
+            " " @ Space,
+            ":1" @ NamedParam { kind: ColonRaw },
+        ]
+        "#);
     }
 
     #[test]
@@ -1217,7 +1277,7 @@ e'\uAAAA \UFFFFFFFF'
     fn colon_string_continues_on_the_next_line() {
         assert_debug_snapshot!(lex(":'line'\n' - next'\n\t' - third' 'x'"), @r#"
         [
-            ":'line'\n' - next'\n\t' - third'" @ NamedParam { kind: ColonString { terminated: true } },
+            ":'line'\n' - next'\n\t' - third'" @ NamedParam { kind: ColonString },
             " " @ Space,
             "'x'" @ Literal { kind: Str { terminated: true } },
         ]

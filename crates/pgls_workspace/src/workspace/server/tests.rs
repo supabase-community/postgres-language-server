@@ -918,6 +918,69 @@ async fn format_preserves_named_parameters() {
 }
 
 #[tokio::test]
+async fn format_restores_psql_string_variables_and_defined_tests() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("psql-variables.sql");
+    // The last statement joins the placeholder with the string on the next line, so it can't be
+    // restored and is kept as written.
+    let content = "copy t from :'fname';\nload :'lib';\ncreate function f() returns int as :'regresslib', 'f' language c;\nset x.y = :'v';\nselect * from :\"s\".t where :{?flag};\nselect :'a'\n' - next';\n";
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+            database_checks: DatabaseChecks::Run,
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+    let syntax_errors = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .count();
+    assert_eq!(syntax_errors, 0, "{diagnostics:?}");
+
+    let result = workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path,
+            range: None,
+        })
+        .expect("Unable to format file");
+
+    assert_eq!(
+        result.formatted,
+        "copy t from :'fname';\nload :'lib';\ncreate function f()\nreturns int\nlanguage c\nas :'regresslib', 'f';\nset x.y = :'v';\nselect * from :\"s\".t where :{?flag};\nselect :'a'\n' - next';\n"
+    );
+}
+
+#[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -1272,7 +1335,10 @@ async fn test_positional_params(test_db: PgPool) {
     ";
     test_db.execute(setup_sql).await.expect("setup sql failed");
 
-    let content = r#"select * from users where id = @one and name = :two and email = :'three';"#;
+    // psql fills in the string of `:'four'`, so the statement isn't typechecked with its
+    // placeholder, which isn't an integer.
+    let content = r#"select * from users where id = @one and name = :two and email = :three;
+select * from users where id = :'four';"#;
 
     workspace
         .open_file(OpenFileParams {

@@ -62,17 +62,17 @@ check:
   lint/requireFunctionSchema: 157
   lint/requireIdleInTransactionTimeout: 232
   lint/requireOperatorSchema: 465
-  lint/requireRelationSchema: 613
+  lint/requireRelationSchema: 615
   lint/requireSeparateConstraintValidation: 1
   lint/requireStatementTimeout: 232
   lint/requireTableSchema: 299
   lint/requireTypeSchema: 463
   lint/runningStatementWhileHoldingAccessExclusive: 187
   lint/transactionNesting: 24
-  syntax: 32
+  syntax: 30
 format:
-  format: 2310
-  syntax: 31
+  format: 2312
+  syntax: 29
 reformatted files: 226
   test/fixtures/dialects/postgres/alter_aggregate.sql
   test/fixtures/dialects/postgres/alter_collation.sql

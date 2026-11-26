@@ -132,12 +132,17 @@ pub enum NamedParamKind {
     /// e.g. `:'name'` (quoted string substitution)
     ///
     /// Used in: psql
-    ColonString { terminated: bool },
+    ColonString,
 
     /// e.g. `:"name"` (quoted identifier substitution)
     ///
     /// Used in: psql
-    ColonIdentifier { terminated: bool },
+    ColonIdentifier,
+
+    /// e.g. `:{?name}` (`TRUE` if the variable is set, `FALSE` if not)
+    ///
+    /// Used in: psql
+    ColonDefined,
 
     /// e.g. `$name`
     DollarRaw,
