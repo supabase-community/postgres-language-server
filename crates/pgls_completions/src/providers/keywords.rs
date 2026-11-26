@@ -1314,6 +1314,24 @@ mod tests {
     }
 
     #[pgls_test_utils::db_test]
+    async fn completes_merge_when_clause(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let merge = "merge into t using s on t.a = s.a";
+
+        let cases: &[(&str, &[&str])] = &[
+            ("when matched {}", &["and", "then"]),
+            ("when not matched {}", &["and", "by", "then"]),
+            ("when not matched by source {}", &["and", "then"]),
+            ("when not matched by target {}", &["and", "then"]),
+        ];
+
+        for (clause, expected) in cases {
+            let query = format!("{merge} {}", clause.replace("{}", &cursor.to_string()));
+            assert_eq!(keywords_at(&query, &pool).await, *expected, "{clause}");
+        }
+    }
+
+    #[pgls_test_utils::db_test]
     async fn completes_overlaps(pool: PgPool) {
         let cursor = QueryWithCursorPosition::cursor_marker();
 
