@@ -237,7 +237,8 @@ impl<'a> PlPgSqlFunction<'a> {
             scan.tokens
                 .iter()
                 .find(|token| matches!(token.token(), Token::Function | Token::Procedure))
-                .and_then(|token| usize::try_from(token.start).ok())
+                .and_then(|token| token.range())
+                .map(|range| usize::from(range.start()))
         });
         match keyword.and_then(|start| Some((sql.get(..start)?, sql.get(start..)?))) {
             Some((before, after)) => Cow::Owned(format!("{before}OR REPLACE {after}")),

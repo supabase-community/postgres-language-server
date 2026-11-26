@@ -68,6 +68,20 @@ impl<'a> Cursor<'a> {
         Some(c)
     }
 
+    /// Moves past the next `len` bytes, which end at a character boundary.
+    pub(crate) fn bump_bytes(&mut self, len: usize) {
+        let rest = self.chars.as_str();
+        debug_assert!(rest.is_char_boundary(len), "{len} in {rest:?}");
+        self.chars = rest.get(len..).unwrap_or_default().chars();
+    }
+
+    /// Returns the text eaten since `start`, an earlier [`Cursor::as_str`].
+    pub(crate) fn eaten_since(&self, start: &'a str) -> &'a str {
+        start
+            .get(..start.len() - self.as_str().len())
+            .unwrap_or_default()
+    }
+
     /// Eats symbols while predicate returns true or until the end of file is reached.
     pub(crate) fn eat_while(&mut self, mut predicate: impl FnMut(char) -> bool) {
         // It was tried making optimized version of this for eg. line comments, but

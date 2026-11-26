@@ -1,66 +1,20 @@
+mod class;
 mod cursor;
+mod number;
+mod psql;
+mod quoted;
 mod token;
-use cursor::{Cursor, EOF_CHAR};
+mod trivia;
+
+pub use class::CharClass;
+use cursor::Cursor;
+use quoted::Quote;
 pub use token::{Base, LiteralKind, NamedParamKind, Token, TokenKind};
-
-// via: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L332-L333
-// ident_start		[A-Za-z\200-\377_]
-// ident_cont		[A-Za-z\200-\377_0-9\$]
-//
-// `\200-\377` are bytes, so every non-ASCII character is part of an identifier: all bytes of
-// its UTF-8 encoding are in that range.
-const fn is_ident_start(c: char) -> bool {
-    matches!(c, 'a'..='z' | 'A'..='Z' | '_') || !c.is_ascii()
-}
-
-const fn is_ident_cont(c: char) -> bool {
-    matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9' | '$') || !c.is_ascii()
-}
-
-// via: https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L372
-// variable_char	[A-Za-z\200-\377_0-9]
-const fn is_variable_char(c: char) -> bool {
-    matches!(c, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9') || !c.is_ascii()
-}
-
-// whitespace
-// - https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scansup.c#L107-L128
-// - https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L204-L229
-
-const fn is_space(c: char) -> bool {
-    matches!(
-        c, ' ' // space
-    )
-}
-
-const fn is_tab(c: char) -> bool {
-    matches!(
-        c, '\t' // tab
-    )
-}
-
-const fn is_line_ending(c: char) -> bool {
-    matches!(
-        c,
-        '\n' | '\r' // newline or carriage return
-    )
-}
-
-const fn is_vertical_tab(c: char) -> bool {
-    matches!(
-        c, '\u{000B}' // vertical tab
-    )
-}
-
-const fn is_form_feed(c: char) -> bool {
-    matches!(
-        c, '\u{000C}' // form feed
-    )
-}
 
 impl Cursor<'_> {
     // see: https://github.com/rust-lang/rust/blob/ba1d7f4a083e6402679105115ded645512a7aea8/compiler/rustc_lexer/src/lib.rs#L339
     pub(crate) fn advance_token(&mut self) -> Token {
+        let rest = self.as_str();
         let Some(first_char) = self.bump() else {
             return Token::new(TokenKind::Eof, 0);
         };
@@ -75,68 +29,36 @@ impl Cursor<'_> {
                 _ => TokenKind::Minus,
             },
 
-            c if is_space(c) => {
-                self.eat_while(is_space);
+            // Whitespace, a token per kind of character:
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L208-L210
+            ' ' => {
+                self.eat_while(|c| c == ' ');
                 TokenKind::Space
             }
-
-            c if is_tab(c) => {
-                self.eat_while(is_tab);
+            '\t' => {
+                self.eat_while(|c| c == '\t');
                 TokenKind::Tab
             }
-
-            c if is_line_ending(c) => self.line_ending_sequence(c),
-
-            c if is_vertical_tab(c) => {
-                self.eat_while(is_vertical_tab);
+            '\u{000B}' => {
+                self.eat_while(|c| c == '\u{000B}');
                 TokenKind::VerticalTab
             }
-
-            c if is_form_feed(c) => {
-                self.eat_while(is_form_feed);
+            '\u{000C}' => {
+                self.eat_while(|c| c == '\u{000C}');
                 TokenKind::FormFeed
             }
+            c if CharClass::Newline.contains(c) => self.line_ending_sequence(c),
 
-            // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-UESCAPE
-            //
-            // Only `U&'` and `U&"` start one, so `U&x` is `U`, `&` and `x`:
-            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L301-L304
-            'u' | 'U' => match (self.first(), self.second()) {
-                ('&', '\'' | '"') => {
-                    self.bump();
-                    self.prefixed_string(
-                        |terminated| LiteralKind::UnicodeEscStr { terminated },
-                        true,
-                    )
-                }
-                _ => self.ident_or_unknown_prefix(),
+            '\'' => self.quoted(Quote::Xq),
+            '"' => self.quoted(Quote::Xd),
+            c if CharClass::IdentStart.contains(c) => match Quote::prefixed(rest) {
+                Some(quote) => self.quoted(quote),
+                None => self.ident(c),
             },
 
-            // escaped strings
-            'e' | 'E' => {
-                self.prefixed_string(|terminated| LiteralKind::EscStr { terminated }, false)
-            }
-
-            // bit string
-            'b' | 'B' => {
-                self.prefixed_string(|terminated| LiteralKind::BitStr { terminated }, false)
-            }
-
-            // hexadecimal byte string
-            'x' | 'X' => {
-                self.prefixed_string(|terminated| LiteralKind::ByteStr { terminated }, false)
-            }
-
-            // Identifier (this should be checked after other variant that can
-            // start as identifier).
-            c if is_ident_start(c) => self.ident(),
-
-            // Numeric literal.
-            // see: https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS-NUMERIC
-            c @ '0'..='9' => {
-                let literal_kind = self.number(c);
-                TokenKind::Literal { kind: literal_kind }
-            }
+            c @ '0'..='9' => TokenKind::Literal {
+                kind: self.number(c),
+            },
             '.' => match self.first() {
                 '0'..='9' => TokenKind::Literal {
                     kind: self.fraction(),
@@ -149,35 +71,19 @@ impl Cursor<'_> {
                 }
                 _ => TokenKind::Dot,
             },
-            '@' => {
-                if is_ident_start(self.first()) && !self.at_prefixed_string() {
-                    // Named parameter with @ prefix.
-                    self.eat_while(is_ident_cont);
-                    TokenKind::NamedParam {
-                        kind: NamedParamKind::AtPrefix,
-                    }
-                } else {
-                    TokenKind::At
-                }
-            }
-            ':' => {
-                if self.first() == ':' {
+            ':' => match self.first() {
+                ':' => {
                     self.bump();
                     TokenKind::DoubleColon
-                } else if let Some(kind) = self.psql_variable() {
-                    TokenKind::NamedParam { kind }
-                } else {
-                    TokenKind::Colon
                 }
-            }
+                _ => self.psql_variable(),
+            },
+            '@' => self.at_param(),
+            '$' => self.dollar(),
+            '\\' => self.backslash(),
+
             // One-symbol tokens.
             ';' => TokenKind::Semi,
-            // `\;` and `\:` put a `;` or `:` into the query, any other `\` starts a meta-command:
-            // https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L695-L715
-            '\\' => match self.first() {
-                ';' | ':' => TokenKind::Backslash,
-                _ => self.meta_command(),
-            },
             ',' => TokenKind::Comma,
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
@@ -186,40 +92,6 @@ impl Cursor<'_> {
             '#' => TokenKind::Pound,
             '~' => TokenKind::Tilde,
             '?' => TokenKind::Question,
-            '$' => {
-                // Dollar quoted strings
-                if (is_ident_start(self.first()) && !self.at_prefixed_string())
-                    || self.first() == '$'
-                {
-                    // Get the start sequence of the dollar quote, i.e., 'foo' in $foo$hello$foo$
-                    // if ident does not continue and there is no terminating dollar
-                    // sign, we have a positional param `$name`
-                    let mut start = vec![];
-                    loop {
-                        match self.first() {
-                            '$' => {
-                                self.bump();
-                                break self.dollar_quoted_string(start);
-                            }
-                            c if is_ident_cont(c) => {
-                                self.bump();
-                                start.push(c);
-                            }
-                            _ => {
-                                break TokenKind::NamedParam {
-                                    kind: NamedParamKind::DollarRaw,
-                                };
-                            }
-                        }
-                    }
-                } else {
-                    // positional parameter, e.g. `$1`
-                    while self.first().is_ascii_digit() {
-                        self.bump();
-                    }
-                    TokenKind::PositionalParam
-                }
-            }
             '`' => TokenKind::Backtick,
             '=' => TokenKind::Eq,
             '!' => TokenKind::Bang,
@@ -231,555 +103,11 @@ impl Cursor<'_> {
             '*' => TokenKind::Star,
             '^' => TokenKind::Caret,
             '%' => TokenKind::Percent,
-
-            // String literal
-            '\'' => TokenKind::Literal {
-                kind: LiteralKind::Str {
-                    terminated: self.string_constant(true, false),
-                },
-            },
-
-            // Quoted indentifiers
-            '"' => {
-                let terminated = self.double_quoted_string();
-                TokenKind::QuotedIdent { terminated }
-            }
             _ => TokenKind::Unknown,
         };
         let res = Token::new(token_kind, self.pos_within_token());
         self.reset_pos_within_token();
         res
-    }
-    pub(crate) fn ident(&mut self) -> TokenKind {
-        self.eat_while(is_ident_cont);
-        TokenKind::Ident
-    }
-
-    fn ident_or_unknown_prefix(&mut self) -> TokenKind {
-        // Start is already eaten, eat the rest of identifier.
-        self.eat_while(is_ident_cont);
-        // Known prefixes must have been handled earlier. So if
-        // we see a prefix here, it is definitely an unknown prefix.
-        match self.first() {
-            '#' | '"' | '\'' => TokenKind::UnknownPrefix,
-            _ => TokenKind::Ident,
-        }
-    }
-
-    // see: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L211-L213
-    // non_newline		[^\n\r]
-    // comment			("--"{non_newline}*)
-    pub(crate) fn line_comment(&mut self) -> TokenKind {
-        self.bump();
-
-        self.eat_while(|c| !is_line_ending(c));
-        TokenKind::LineComment
-    }
-
-    // see: https://github.com/postgres/postgres/blob/db0c96cc18aec417101e37e59fcc53d4bf647915/src/backend/parser/scan.l#L324-L344
-    pub(crate) fn block_comment(&mut self) -> TokenKind {
-        self.bump();
-
-        let mut depth = 1usize;
-        while let Some(c) = self.bump() {
-            match c {
-                '/' if self.first() == '*' => {
-                    self.bump();
-                    depth += 1;
-                }
-                '*' if self.first() == '/' => {
-                    self.bump();
-                    depth -= 1;
-                    if depth == 0 {
-                        // This block comment is closed, so for a construction like "/* */ */"
-                        // there will be a successfully parsed block comment "/* */"
-                        // and " */" will be processed separately.
-                        break;
-                    }
-                }
-                _ => (),
-            }
-        }
-
-        TokenKind::BlockComment {
-            terminated: depth == 0,
-        }
-    }
-
-    /// Eats a psql meta-command after its `\`: the command name, and its arguments up to the end
-    /// of the line or to an unquoted `\`. A `\\` there ends the command and is eaten with it, so
-    /// the text after it is SQL again; any other `\` starts the next meta-command.
-    ///
-    /// psql scans a meta-command one line at a time, so nothing in it spans lines. The name runs
-    /// to whitespace or a `\` (`xslashcmd`). `'…'` (with `''` and backslash escapes), `` `…` ``
-    /// and `"…"` quote a `\` in the arguments (`xslasharg`, `xslashquote`, ...). Variables like
-    /// `:'x'` don't change where the arguments end, so they aren't told apart. A few commands
-    /// take the rest of the line as their argument (`OT_WHOLE_LINE`), and `\g`, `\o` and `\w`
-    /// do when it starts with `|` (`OT_FILEPIPE`).
-    ///
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/psqlscanslash.l#L142-L447
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/bin/psql/command.c#L355-L477
-    fn meta_command(&mut self) -> TokenKind {
-        let space = |c| is_space(c) || is_tab(c) || is_vertical_tab(c) || is_form_feed(c);
-        let rest = self.as_str();
-        self.eat_while(|c| !space(c) && !is_line_ending(c) && c != '\\');
-        let name = &rest[..rest.len() - self.as_str().len()];
-        self.eat_while(space);
-
-        let whole_line = matches!(
-            name,
-            "copy" | "ef" | "ev" | "h" | "help" | "sf" | "sf+" | "sv" | "sv+" | "unrestrict" | "!"
-        ) || (matches!(name, "g" | "gx" | "o" | "out" | "w" | "write")
-            && self.first() == '|');
-        if whole_line {
-            self.eat_while(|c| !is_line_ending(c));
-            return TokenKind::MetaCommand;
-        }
-
-        loop {
-            match self.first() {
-                '\\' => {
-                    if self.second() == '\\' {
-                        self.bump();
-                        self.bump();
-                    }
-                    break;
-                }
-                '\'' => {
-                    self.bump();
-                    loop {
-                        match self.first() {
-                            '\'' => {
-                                self.bump();
-                                if self.first() != '\'' {
-                                    break;
-                                }
-                                self.bump();
-                            }
-                            '\\' => {
-                                self.bump();
-                                if !is_line_ending(self.first()) {
-                                    self.bump();
-                                }
-                            }
-                            c if is_line_ending(c) => break,
-                            EOF_CHAR if self.is_eof() => break,
-                            _ => {
-                                self.bump();
-                            }
-                        }
-                    }
-                }
-                quote @ ('`' | '"') => {
-                    self.bump();
-                    self.eat_while(|c| c != quote && !is_line_ending(c));
-                    if self.first() == quote {
-                        self.bump();
-                    }
-                }
-                c if is_line_ending(c) => break,
-                EOF_CHAR if self.is_eof() => break,
-                _ => {
-                    self.bump();
-                }
-            }
-        }
-        TokenKind::MetaCommand
-    }
-
-    // invariant: we care about the number of consecutive newlines so we count them.
-    //
-    // Postgres considers a DOS-style \r\n sequence as two successive newlines, but we care about
-    // logical line breaks and consider \r\n as one logical line break
-    fn line_ending_sequence(&mut self, prev: char) -> TokenKind {
-        // already consumed first line ending character (\n or \r)
-        let mut line_breaks = 1;
-
-        // started with \r, check if it's part of \r\n
-        if prev == '\r' && self.first() == '\n' {
-            // consume the \n - \r\n still counts as 1 logical line break
-            self.bump();
-        }
-
-        // continue checking for more line endings
-        loop {
-            match self.first() {
-                '\r' if self.second() == '\n' => {
-                    self.bump(); // consume \r
-                    self.bump(); // consume \n
-                    line_breaks += 1;
-                }
-                '\n' => {
-                    self.bump();
-                    line_breaks += 1;
-                }
-                '\r' => {
-                    self.bump();
-                    line_breaks += 1;
-                }
-                _ => break,
-            }
-        }
-
-        TokenKind::LineEnding { count: line_breaks }
-    }
-
-    fn prefixed_string(
-        &mut self,
-        mk_kind: fn(bool) -> LiteralKind,
-        allows_double: bool,
-    ) -> TokenKind {
-        match self.first() {
-            '\'' => {
-                self.bump();
-                // `''` is a quote in it, except in a bit or hex string, where it ends the string
-                // and starts an empty one (`xqdouble` only applies in `<xq,xe,xus>`):
-                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L633
-                let doubled_quote = !matches!(
-                    mk_kind(true),
-                    LiteralKind::BitStr { .. } | LiteralKind::ByteStr { .. }
-                );
-                // In an escape string, a backslash escapes the next character, so `E'\''` is one
-                // quote (`xeescape` only applies in `<xe>`):
-                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L706
-                let backslash_escape = matches!(mk_kind(true), LiteralKind::EscStr { .. });
-                TokenKind::Literal {
-                    kind: mk_kind(self.string_constant(doubled_quote, backslash_escape)),
-                }
-            }
-            '"' if allows_double => {
-                self.bump();
-                let terminated = self.double_quoted_string();
-                TokenKind::QuotedIdent { terminated }
-            }
-            _ => self.ident_or_unknown_prefix(),
-        }
-    }
-
-    fn number(&mut self, first_digit: char) -> LiteralKind {
-        let base = Base::Decimal;
-        if first_digit == '0' {
-            // Attempt to parse encoding base. A binary, octal or hexadecimal integer has no
-            // fraction or exponent, so `0b1.a` is `0b1`, `.` and `a`:
-            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L387-L389
-            match self.first() {
-                'b' | 'B' => {
-                    self.bump();
-                    let empty_int = !self.eat_decimal_digits();
-                    return LiteralKind::Int {
-                        base: Base::Binary,
-                        empty_int,
-                    };
-                }
-                'o' | 'O' => {
-                    self.bump();
-                    let empty_int = !self.eat_decimal_digits();
-                    return LiteralKind::Int {
-                        base: Base::Octal,
-                        empty_int,
-                    };
-                }
-                'x' | 'X' => {
-                    self.bump();
-                    let empty_int = !self.eat_hexadecimal_digits();
-                    return LiteralKind::Int {
-                        base: Base::Hexadecimal,
-                        empty_int,
-                    };
-                }
-                // Not a base prefix; consume additional digits.
-                '0'..='9' | '_' => {
-                    self.eat_decimal_digits();
-                }
-
-                // Also not a base prefix; nothing more to do here.
-                '.' | 'e' | 'E' => {}
-
-                // Just a 0.
-                _ => {
-                    return LiteralKind::Int {
-                        base,
-                        empty_int: false,
-                    };
-                }
-            }
-        } else {
-            // No base prefix, parse number in the usual way.
-            self.eat_decimal_digits();
-        };
-
-        match self.first() {
-            // `1..10` is `1`, `..` and `10`:
-            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L396
-            // numericfail		{decinteger}\.\.
-            '.' if self.second() != '.' => {
-                self.bump();
-                self.fraction()
-            }
-            'e' | 'E' => {
-                self.bump();
-                let empty_exponent = !self.eat_float_exponent();
-                LiteralKind::Float {
-                    base,
-                    empty_exponent,
-                }
-            }
-            _ => LiteralKind::Int {
-                base,
-                empty_int: false,
-            },
-        }
-    }
-
-    /// Eats the rest of a number after its `.`: the digits of the fraction, if any, and the
-    /// exponent. A number has one fraction, so `.1.2` is `.1` and `.2`:
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L395
-    /// numeric (({decinteger}\.{decinteger}?)|(\.{decinteger}))
-    fn fraction(&mut self) -> LiteralKind {
-        if self.first().is_ascii_digit() {
-            self.eat_decimal_digits();
-        }
-        let mut empty_exponent = false;
-        if matches!(self.first(), 'e' | 'E') {
-            self.bump();
-            empty_exponent = !self.eat_float_exponent();
-        }
-        LiteralKind::Float {
-            base: Base::Decimal,
-            empty_exponent,
-        }
-    }
-
-    /// Whether a prefixed string or identifier starts here: `E'`, `B'`, `X'`, `U&'` or `U&"`.
-    /// Postgres takes the longest match, so `:e'a'`, `@b'1'` and `$U&'a'` are an operator or
-    /// `$` and a string, not a named parameter:
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L250-L304
-    /// Eats a psql variable after its `:`, if one follows. psql reads `:name`, `:'name'`,
-    /// `:"name"` and `:{?name}` only when the name is variable characters; otherwise it sends the
-    /// `:` as is:
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L717-L775
-    ///
-    /// https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
-    fn psql_variable(&mut self) -> Option<NamedParamKind> {
-        let rest = self.as_str();
-        let (kind, name, close) = if let Some(name) = rest.strip_prefix('\'') {
-            (NamedParamKind::ColonString, name, "'")
-        } else if let Some(name) = rest.strip_prefix('"') {
-            (NamedParamKind::ColonIdentifier, name, "\"")
-        } else if let Some(name) = rest.strip_prefix("{?") {
-            (NamedParamKind::ColonDefined, name, "}")
-        } else if self.at_prefixed_string() {
-            return None;
-        } else {
-            (NamedParamKind::ColonRaw, rest, "")
-        };
-        let name_len = name.find(|c| !is_variable_char(c)).unwrap_or(name.len());
-        let after = name.get(name_len..)?;
-        if name_len == 0 || !after.starts_with(close) {
-            return None;
-        }
-        let remaining = after.len() - close.len();
-        while self.as_str().len() > remaining {
-            self.bump();
-        }
-        // psql replaces `:'name'` with a string constant, which strings on the next lines continue:
-        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L224-L230
-        if matches!(kind, NamedParamKind::ColonString) {
-            while self.eat_quote_continuation() && self.single_quoted_string(true, false) {}
-        }
-        Some(kind)
-    }
-
-    fn at_prefixed_string(&self) -> bool {
-        let mut chars = self.as_str().chars();
-        matches!(
-            (chars.next(), chars.next(), chars.next()),
-            (Some('e' | 'E' | 'b' | 'B' | 'x' | 'X'), Some('\''), _)
-                | (Some('u' | 'U'), Some('&'), Some('\'' | '"'))
-        )
-    }
-
-    /// Eats a string constant after its opening quote, with the strings that continue it, and
-    /// returns true if it's terminated. With `doubled_quote`, `''` is a quote in it; with
-    /// `backslash_escape`, a backslash escapes the next character.
-    fn string_constant(&mut self, doubled_quote: bool, backslash_escape: bool) -> bool {
-        loop {
-            if !self.single_quoted_string(doubled_quote, backslash_escape) {
-                return false;
-            }
-            if !self.eat_quote_continuation() {
-                return true;
-            }
-        }
-    }
-
-    /// Eats what continues a string constant after its closing quote, up to and including the
-    /// next string's opening quote: whitespace with at least one line break, and comments. Eats
-    /// nothing and returns false if no string continues it.
-    ///
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L224-L230
-    /// special_whitespace ({space}+|{comment}{newline})
-    /// non_newline_whitespace ({non_newline_space}|{comment})
-    /// whitespace_with_newline ({non_newline_whitespace}*{newline}{special_whitespace}*)
-    /// quotecontinue {whitespace_with_newline}{quote}
-    ///
-    /// A comment runs to a line break or the end of the input, so it's always followed by a
-    /// line break where a quote can follow at all.
-    fn eat_quote_continuation(&mut self) -> bool {
-        let mut ahead = self.clone();
-        let mut line_break = false;
-        loop {
-            match ahead.first() {
-                c if is_line_ending(c) => {
-                    ahead.bump();
-                    line_break = true;
-                }
-                c if is_space(c) || is_tab(c) || is_vertical_tab(c) || is_form_feed(c) => {
-                    ahead.bump();
-                }
-                '-' if ahead.second() == '-' => {
-                    ahead.bump();
-                    ahead.line_comment();
-                }
-                '\'' if line_break => {
-                    ahead.bump();
-                    *self = ahead;
-                    return true;
-                }
-                _ => return false,
-            }
-        }
-    }
-
-    /// Eats a quoted text after its opening quote and returns true if it's terminated. With
-    /// `doubled_quote`, `''` is a quote in it; with `backslash_escape`, a backslash escapes the
-    /// next character.
-    fn single_quoted_string(&mut self, doubled_quote: bool, backslash_escape: bool) -> bool {
-        // Parse until either quotes are terminated or error is detected.
-        loop {
-            match self.first() {
-                // Quotes might be terminated.
-                '\'' => {
-                    self.bump();
-
-                    match self.first() {
-                        // encountered an escaped quote ''
-                        '\'' if doubled_quote => {
-                            self.bump();
-                        }
-                        // encountered terminating quote
-                        _ => return true,
-                    }
-                }
-                '\\' if backslash_escape => {
-                    self.bump();
-                    self.bump();
-                }
-                // End of file, stop parsing.
-                EOF_CHAR if self.is_eof() => break,
-                // Skip the character.
-                _ => {
-                    self.bump();
-                }
-            }
-        }
-        // String was not terminated.
-        false
-    }
-
-    /// Eats double-quoted string and returns true
-    /// if string is terminated.
-    fn double_quoted_string(&mut self) -> bool {
-        while let Some(c) = self.bump() {
-            match c {
-                '"' if self.first() == '"' => {
-                    // Bump again to skip escaped character.
-                    self.bump();
-                }
-                '"' => {
-                    return true;
-                }
-                _ => (),
-            }
-        }
-        // End of file reached.
-        false
-    }
-
-    // https://www.postgresql.org/docs/16/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
-    //
-    // The string ends only at the full `$tag$` of its start, as in Postgres'
-    // `<xdolq>{dolqdelim}` rule:
-    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L757
-    // A `$` that doesn't start it is part of the string, so `myfn$` or `$other$`
-    // inside `$fn$ … $fn$` doesn't end it. Tags can't contain `$`, so checking
-    // each `$` is the same as Postgres' longest match.
-    fn dollar_quoted_string(&mut self, start: Vec<char>) -> TokenKind {
-        loop {
-            self.eat_while(|c| c != '$');
-            if self.is_eof() {
-                return TokenKind::Literal {
-                    kind: LiteralKind::DollarQuotedString { terminated: false },
-                };
-            }
-            // eat $
-            self.bump();
-
-            let mut rest = self.as_str().chars();
-            let closes = start.iter().all(|c| rest.next() == Some(*c)) && rest.next() == Some('$');
-            if closes {
-                // the tag and the closing $
-                for _ in 0..=start.len() {
-                    self.bump();
-                }
-                return TokenKind::Literal {
-                    kind: LiteralKind::DollarQuotedString { terminated: true },
-                };
-            }
-        }
-    }
-
-    fn eat_decimal_digits(&mut self) -> bool {
-        let mut has_digits = false;
-        loop {
-            match self.first() {
-                '_' => {
-                    self.bump();
-                }
-                '0'..='9' => {
-                    has_digits = true;
-                    self.bump();
-                }
-                _ => break,
-            }
-        }
-        has_digits
-    }
-
-    fn eat_hexadecimal_digits(&mut self) -> bool {
-        let mut has_digits = false;
-        loop {
-            match self.first() {
-                '_' => {
-                    self.bump();
-                }
-                '0'..='9' | 'a'..='f' | 'A'..='F' => {
-                    has_digits = true;
-                    self.bump();
-                }
-                _ => break,
-            }
-        }
-        has_digits
-    }
-
-    /// Eats the float exponent. Returns true if at least one digit was met,
-    /// and returns false otherwise.
-    fn eat_float_exponent(&mut self) -> bool {
-        if self.first() == '-' || self.first() == '+' {
-            self.bump();
-        }
-        self.eat_decimal_digits()
     }
 }
 
