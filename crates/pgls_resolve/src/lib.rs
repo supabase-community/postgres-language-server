@@ -152,6 +152,8 @@ pub enum FindingKind {
     },
     /// A MERGE, or `merge_action()`, that Postgres rejects while parsing it.
     InvalidMerge(MergeError),
+    /// An `INTO` on a select of a set operation other than the left-most one.
+    IntoNotOnFirstSelect,
     /// The final statement of a SQL function doesn't return what the function is declared to
     /// return.
     FunctionReturnMismatch {

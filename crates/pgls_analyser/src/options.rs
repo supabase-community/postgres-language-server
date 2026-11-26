@@ -85,6 +85,8 @@ pub type InvalidCast = <lint::typecheck::invalid_cast::InvalidCast as crate::Lin
 pub type InvalidDropTypeSignature = < lint :: correctness :: invalid_drop_type_signature :: InvalidDropTypeSignature as crate :: LinterRule > :: Options ;
 pub type InvalidMerge =
     <lint::typecheck::invalid_merge::InvalidMerge as crate::LinterRule>::Options;
+pub type InvalidSelectInto =
+    <lint::typecheck::invalid_select_into::InvalidSelectInto as crate::LinterRule>::Options;
 pub type LockTimeoutWarning =
     <lint::safety::lock_timeout_warning::LockTimeoutWarning as crate::LinterRule>::Options;
 pub type MissingFromClauseEntry = < lint :: typecheck :: missing_from_clause_entry :: MissingFromClauseEntry as crate :: LinterRule > :: Options ;
