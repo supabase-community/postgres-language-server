@@ -185,7 +185,6 @@ module.exports = grammar({
     keyword_generated: (_) => make_keyword("generated"),
     keyword_always: (_) => make_keyword("always"),
     keyword_collate: (_) => make_keyword("collate"),
-    keyword_character: (_) => make_keyword("character"),
     keyword_default: (_) => make_keyword("default"),
     keyword_cascade: (_) => make_keyword("cascade"),
     keyword_restrict: (_) => make_keyword("restrict"),
@@ -1022,7 +1021,6 @@ module.exports = grammar({
         $.table_partition,
         seq($.keyword_without, $.keyword_oids),
         $.storage_parameters,
-        $.table_option,
       ),
 
     storage_parameters: ($) =>
@@ -1034,10 +1032,6 @@ module.exports = grammar({
         ),
       ),
 
-    // left precedence because 'quoted' table options otherwise conflict with
-    // `create function` string bodies; if you remove this precedence you will
-    // have to also disable the `_literal_string` choice for the `name` field
-    // in =-assigned `table_option`s
     create_table: ($) =>
       prec.left(
         partialSeq(
@@ -2667,12 +2661,6 @@ module.exports = grammar({
     table_columns: ($) =>
       wrapped_in_parenthesis(comma_list($.column_identifier, true)),
 
-    // TODO: this does not account for partitions specs like
-    // (partcol1='2022-01-01', hr=11)
-    // the second argument is not a $.table_option
-    _partition_spec: ($) =>
-      seq($.keyword_partition, paren_list($.table_option, true)),
-
     update: ($) =>
       partialSeq(
         $.keyword_update,
@@ -2796,23 +2784,6 @@ module.exports = grammar({
           ),
         ),
         $.subquery,
-      ),
-
-    table_option: ($) =>
-      choice(
-        seq(
-          $.keyword_default,
-          $.keyword_character,
-          $.keyword_set,
-          $.any_identifier,
-        ),
-        seq($.keyword_collate, $.any_identifier),
-        field("name", $.keyword_default),
-        seq(
-          field("name", choice($.any_identifier, $._literal_string)),
-          "=",
-          field("value", choice($.any_identifier, $._literal_string)),
-        ),
       ),
 
     column_definitions: ($) =>
