@@ -19,18 +19,7 @@ pub(super) fn emit_def_elem(e: &mut EventEmitter, n: &DefElem) {
         e.space();
         e.token(TokenKind::IDENT("=".to_string()));
         e.space();
-
-        // String values in DefElem should be quoted as string literals
-        if let Some(node_enum) = &arg.node {
-            match node_enum {
-                NodeEnum::String(s) => {
-                    emit_string_literal(e, s);
-                }
-                _ => {
-                    emit_node(e, arg);
-                }
-            }
-        }
+        emit_def_arg(e, arg);
     }
 
     e.group_end();

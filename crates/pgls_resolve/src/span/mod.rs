@@ -37,9 +37,10 @@ impl<'a> Tokens<'a> {
             .iter()
             .filter(|token| !matches!(token.token(), Kind::SqlComment | Kind::CComment))
             .filter_map(|token| {
+                let range = token.range()?;
                 Some(Token {
-                    start: usize::try_from(token.start).ok()?,
-                    end: usize::try_from(token.end).ok()?,
+                    start: range.start().into(),
+                    end: range.end().into(),
                     kind: token.token(),
                     keyword: token.keyword_kind() != KeywordKind::NoKeyword,
                 })
