@@ -19,21 +19,24 @@ impl Cursor<'_> {
     /// operator is the kind of its character, a longer one is [`TokenKind::Operator`].
     pub(crate) fn operator(&mut self, first: char) -> TokenKind {
         let rest = self.as_str();
-        let mut end = self.clone();
-        loop {
-            let mut next = end.clone();
-            let c = next.first();
-            if !CharClass::OpChar.contains(c) || matches!((c, next.second()), ('/', '*') | ('-', '-'))
+        // The operator characters are ASCII.
+        let bytes = rest.as_bytes();
+        let mut len = 0;
+        while let Some(&b) = bytes.get(len) {
+            let comment = matches!(
+                (b, bytes.get(len + 1)),
+                (b'/', Some(b'*')) | (b'-', Some(b'-'))
+            );
+            if !CharClass::OpChar.contains(char::from(b))
+                || comment
+                || (b == b'@'
+                    && Cursor::new(rest.get(len + 1..).unwrap_or_default()).at_identifier())
             {
                 break;
             }
-            next.bump();
-            if c == '@' && next.at_identifier() {
-                break;
-            }
-            end = next;
+            len += 1;
         }
-        let mut run = end.eaten_since(rest);
+        let mut run = rest.get(..len).unwrap_or_default();
         if run.ends_with(['+', '-'])
             && !NOT_IN_SQL_OPERATORS.contains(first)
             && !run.contains(|c| NOT_IN_SQL_OPERATORS.contains(c))

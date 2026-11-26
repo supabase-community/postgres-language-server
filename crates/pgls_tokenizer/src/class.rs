@@ -41,8 +41,44 @@ impl CharClass {
             }
             CharClass::NonNewlineSpace => matches!(c, ' ' | '\t' | '\u{000C}' | '\u{000B}'),
             CharClass::Newline => matches!(c, '\n' | '\r'),
-            CharClass::OpChar => "~!@#^&|`?+-*/%<>=".contains(c),
-            CharClass::SelfChar => ",()[].;:+-*/%^<>=".contains(c),
+            CharClass::OpChar => matches!(
+                c,
+                '~' | '!'
+                    | '@'
+                    | '#'
+                    | '^'
+                    | '&'
+                    | '|'
+                    | '`'
+                    | '?'
+                    | '+'
+                    | '-'
+                    | '*'
+                    | '/'
+                    | '%'
+                    | '<'
+                    | '>'
+                    | '='
+            ),
+            CharClass::SelfChar => matches!(
+                c,
+                ',' | '('
+                    | ')'
+                    | '['
+                    | ']'
+                    | '.'
+                    | ';'
+                    | ':'
+                    | '+'
+                    | '-'
+                    | '*'
+                    | '/'
+                    | '%'
+                    | '^'
+                    | '<'
+                    | '>'
+                    | '='
+            ),
             CharClass::VariableChar => CharClass::IdentStart.contains(c) || c.is_ascii_digit(),
         }
     }
