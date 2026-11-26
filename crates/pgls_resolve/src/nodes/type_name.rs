@@ -1,5 +1,5 @@
 use pgls_query::{NodeEnum, NodeRef, protobuf::TypeName};
-use pgls_query_ext::utils::{QualifiedName, qualified_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use super::Resolver;
 use crate::{FindingKind, Reference, lookups::record_type};
@@ -29,7 +29,7 @@ pub(super) fn resolve_type_name(r: &mut Resolver, n: &TypeName) {
     if n.names.is_empty() {
         return;
     }
-    let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.names) else {
+    let Some(QualifiedName { schema, name, .. }) = QualifiedName::of(&n.names) else {
         r.depends_on_file();
         return;
     };
@@ -79,7 +79,7 @@ pub(super) fn record_type_names(r: &mut Resolver, node: &NodeEnum) {
         if n.pct_type {
             continue;
         }
-        let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.names) else {
+        let Some(QualifiedName { schema, name, .. }) = QualifiedName::of(&n.names) else {
             continue;
         };
         if let Lookup::Found(type_info) = r.catalog.type_(schema, name, r.search_path) {

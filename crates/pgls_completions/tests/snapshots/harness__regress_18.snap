@@ -3,20 +3,10 @@ source: crates/pgls_completions/tests/harness.rs
 expression: harness.summary.report()
 ---
 requests: 3167
-items: 15115
-failures: 290
+items: 14424
+failures: 6
 
-not a viable prefix: Function: 156
-  incremental_sort.sql:184:1 `delete from t` + `explain_analyze_inc_sort_nodes(${1:query})`
-  identity.sql:373:1 `SELECT tableoid::r` + `pg_catalog."RI_FKey_cascade_del"()`
-  alter_table.sql:2436:1 `CREATE TABLE fail_part (LIKE list_` + `pg_catalog.pg_mcv_list_in(${1:})`
-
-not a viable prefix: Keyword: 21
-  alter_table.sql:1458:1 `create t` + `external`
-  generated_virtual.sql:320:1 `CREATE T` + `EXTERNAL`
-  inherit.sql:897:1 `create t` + `external`
-
-not a viable prefix: Table: 113
-  rangefuncs.sql:249:1 `SELECT * FROM (VALUES (1),(2),(3)) v(r` + `information_schema.referential_constraints`
-  rangefuncs.sql:36:1 `nnest(array[10,20],array['foo','bar'],array[1.0]) as z(a,b,c` + `information_schema.character_sets`
-  window.sql:2030:1 `) FROM (VALUES(1,1::numeric),(2,2),(3,'NaN'),(4,3),(5,4)) t(` + `pg_temp.datetimes`
+not a viable prefix: Keyword: 6
+  matview.sql:296:1 `CREATE MATERIALIZED VIEW matview_ine_tab AS S` + `TABLES`
+  create_view.sql:805:1 `v as with cte as materialized (select pg_get_keywords() k) s` + `tables`
+  foreign_key.sql:1838:1 `ble fk_part_1_1 (a int, constraint my_fkey foreign key (a) r` + `deferrable`

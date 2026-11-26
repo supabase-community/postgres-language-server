@@ -42,7 +42,7 @@ check:
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
 format:
-  format: 1454
+  format: 1451
 reformatted files: 213
   migrations/db/init-scripts/00000000000000-initial-schema.sql
   migrations/db/init-scripts/00000000000001-auth-schema.sql

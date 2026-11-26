@@ -75,7 +75,6 @@ pub(crate) static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("case"),
     SqlKeyword::new("cast").require_prefix(),
     SqlKeyword::new("char"),
-    SqlKeyword::new("character"),
     SqlKeyword::new("characteristics"),
     SqlKeyword::new("check"),
     SqlKeyword::new("collate"),
@@ -1297,7 +1296,7 @@ mod tests {
             ),
             (
                 "create table t (id int) {}",
-                &["default", "inherits", "partition", "with"],
+                &["inherits", "partition", "with"],
             ),
             ("alter table t alter column a {}", &["drop", "set", "type"]),
             (
@@ -1310,6 +1309,24 @@ mod tests {
         for (sql, expected) in cases {
             let query = sql.replace("{}", &cursor.to_string());
             assert_eq!(keywords_at(&query, &pool).await, expected, "{sql}");
+        }
+    }
+
+    #[pgls_test_utils::db_test]
+    async fn completes_merge_when_clause(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let merge = "merge into t using s on t.a = s.a";
+
+        let cases: &[(&str, &[&str])] = &[
+            ("when matched {}", &["and", "then"]),
+            ("when not matched {}", &["and", "by", "then"]),
+            ("when not matched by source {}", &["and", "then"]),
+            ("when not matched by target {}", &["and", "then"]),
+        ];
+
+        for (clause, expected) in cases {
+            let query = format!("{merge} {}", clause.replace("{}", &cursor.to_string()));
+            assert_eq!(keywords_at(&query, &pool).await, *expected, "{clause}");
         }
     }
 

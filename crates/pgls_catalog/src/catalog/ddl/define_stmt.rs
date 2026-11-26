@@ -1,5 +1,5 @@
 use pgls_query::protobuf::{DefineStmt, ObjectType};
-use pgls_query_ext::utils::qualified_name;
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, overlay::function_info};
 use crate::lookup::FunctionKind;
@@ -8,7 +8,7 @@ use crate::lookup::FunctionKind;
 ///
 /// [`DefineType`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/typecmds.c#L153
 pub(super) fn apply_define_stmt(c: &mut Catalog, n: &DefineStmt, search_path: &[String]) {
-    let Some(name) = qualified_name(&n.defnames) else {
+    let Some(name) = QualifiedName::of(&n.defnames) else {
         return;
     };
     match n.kind() {

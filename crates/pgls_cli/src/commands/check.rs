@@ -58,12 +58,15 @@ pub(crate) fn check(
     let database_errors = check_database_connection(&session)?;
     if let Some(stdin_path) = args.targets.stdin_file_path() {
         // Stdout gets the checked code, so the diagnostics go to stderr. The errors of nested
-        // configuration files are only printed, the database errors also fail the command.
+        // configuration files and of the database also fail the command.
         print_diagnostics(session.console(), &configuration_errors);
         print_diagnostics(session.console(), &database_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "check")?;
         let mut report = run_stdin(&mut session, &execution, payload)?;
         for error in database_errors.into_iter().rev() {
+            report.prepend_diagnostic(error);
+        }
+        for error in configuration_errors.into_iter().rev() {
             report.prepend_diagnostic(error);
         }
         enforce_exit_codes(cli_options, &report, category!("check"))

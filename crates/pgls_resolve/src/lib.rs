@@ -104,6 +104,15 @@ pub enum FindingKind {
         name: String,
         args: Vec<pgls_catalog::typing::Type>,
         failure: MatchFailure,
+        /// Whether `CALL` calls it, which only calls procedures.
+        procedure: bool,
+    },
+    /// `CALL` of a function, aggregate or window function: the arguments select one that isn't
+    /// a procedure.
+    NotAProcedure {
+        schema: Option<String>,
+        name: String,
+        args: Vec<pgls_catalog::typing::Type>,
     },
     InvalidCast {
         from: pgls_catalog::typing::Type,
@@ -143,6 +152,8 @@ pub enum FindingKind {
     },
     /// A MERGE, or `merge_action()`, that Postgres rejects while parsing it.
     InvalidMerge(MergeError),
+    /// An `INTO` on a select of a set operation other than the left-most one.
+    IntoNotOnFirstSelect,
     /// The final statement of a SQL function doesn't return what the function is declared to
     /// return.
     FunctionReturnMismatch {

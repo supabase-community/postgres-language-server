@@ -17,6 +17,7 @@ thiserror = { workspace = true }
 tracing   = { workspace = true }
 
 pgls_query_macros = { workspace = true }
+pgls_text_size    = { workspace = true }
 
 
 [features]

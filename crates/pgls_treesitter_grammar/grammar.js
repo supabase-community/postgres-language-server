@@ -185,7 +185,6 @@ module.exports = grammar({
     keyword_generated: (_) => make_keyword("generated"),
     keyword_always: (_) => make_keyword("always"),
     keyword_collate: (_) => make_keyword("collate"),
-    keyword_character: (_) => make_keyword("character"),
     keyword_default: (_) => make_keyword("default"),
     keyword_cascade: (_) => make_keyword("cascade"),
     keyword_restrict: (_) => make_keyword("restrict"),
@@ -802,12 +801,14 @@ module.exports = grammar({
         ),
       ),
 
-    table_statement: ($) =>
-      partialSeq(
-        $.keyword_table,
-        optional($.keyword_only),
-        field("end", $.table_reference),
-        optional("*"),
+    table_statement: ($) => partialSeq($.keyword_table, $._relation_expr),
+
+    // A table with or without its descendants: `ONLY t`, or `t` and `t *`, not both
+    // (`relation_expr` in Postgres).
+    _relation_expr: ($) =>
+      choice(
+        partialSeq($.keyword_only, field("end", $.table_reference)),
+        seq(field("end", $.table_reference), optional("*")),
       ),
 
     _show_statement: ($) =>
@@ -962,15 +963,10 @@ module.exports = grammar({
     _delete_from: ($) =>
       partialSeq(
         $.keyword_from,
-        optional($.keyword_only),
-        field("end", $.table_reference),
-        optional("*"),
+        $._relation_expr,
         optional($.alias),
         optional($.delete_using),
         optional(choice($.where, $.where_current_of)),
-        optional($.order_by),
-        optional($.limit),
-        optional($.offset),
       ),
 
     delete_using: ($) =>
@@ -1022,7 +1018,6 @@ module.exports = grammar({
         $.table_partition,
         seq($.keyword_without, $.keyword_oids),
         $.storage_parameters,
-        $.table_option,
       ),
 
     storage_parameters: ($) =>
@@ -1034,17 +1029,11 @@ module.exports = grammar({
         ),
       ),
 
-    // left precedence because 'quoted' table options otherwise conflict with
-    // `create function` string bodies; if you remove this precedence you will
-    // have to also disable the `_literal_string` choice for the `name` field
-    // in =-assigned `table_option`s
     create_table: ($) =>
       prec.left(
         partialSeq(
           $.keyword_create,
-          optional(
-            choice($._temporary, $.keyword_unlogged, $.keyword_external),
-          ),
+          optional(choice($._temporary, $.keyword_unlogged)),
           $.keyword_table,
           optional($._if_not_exists),
           $.object_reference,
@@ -1788,23 +1777,13 @@ module.exports = grammar({
         $.change_ownership,
       ),
 
-    // TODO: optional `keyword_add` is necessary to allow for chained alter statements in t-sql
-    // maybe needs refactoring
     add_column: ($) =>
-      choice(
-        partialSeq(
-          $.keyword_add,
-          optional($.keyword_column),
-          optional($._if_not_exists),
-          field("end", $.column_definition),
-          optional($.column_position),
-        ),
-        seq(
-          optional($.keyword_column),
-          optional($._if_not_exists),
-          field("end", $.column_definition),
-          optional($.column_position),
-        ),
+      partialSeq(
+        $.keyword_add,
+        optional($.keyword_column),
+        optional($._if_not_exists),
+        field("end", $.column_definition),
+        optional($.column_position),
       ),
 
     add_constraint: ($) => partialSeq($.keyword_add, field("end", $.constraint)),
@@ -2512,10 +2491,19 @@ module.exports = grammar({
     when_clause: ($) =>
       partialSeq(
         $.keyword_when,
-        optional($.keyword_not),
-        $.keyword_matched,
-        optional(
-          partialSeq($.keyword_by, choice($.keyword_source, $.keyword_target)),
+        choice(
+          $.keyword_matched,
+          // Only `NOT MATCHED` names the side: `BY SOURCE` or `BY TARGET`.
+          partialSeq(
+            $.keyword_not,
+            $.keyword_matched,
+            optional(
+              partialSeq(
+                $.keyword_by,
+                choice($.keyword_source, $.keyword_target),
+              ),
+            ),
+          ),
         ),
         optional(
           partialSeq($.keyword_and, optional_parenthesis($._expression)),
@@ -2655,26 +2643,10 @@ module.exports = grammar({
 
     // A table and its columns in VACUUM and ANALYZE (`vacuum_relation` in Postgres).
     table_and_columns: ($) =>
-      choice(
-        partialSeq($.keyword_only, $._table_and_columns),
-        $._table_and_columns,
-      ),
-
-    _table_and_columns: ($) =>
-      seq(
-        field("end", $.table_reference),
-        optional("*"),
-        optional($.table_columns),
-      ),
+      seq($._relation_expr, optional($.table_columns)),
 
     table_columns: ($) =>
       wrapped_in_parenthesis(comma_list($.column_identifier, true)),
-
-    // TODO: this does not account for partitions specs like
-    // (partcol1='2022-01-01', hr=11)
-    // the second argument is not a $.table_option
-    _partition_spec: ($) =>
-      seq($.keyword_partition, paren_list($.table_option, true)),
 
     update: ($) =>
       partialSeq(
@@ -2685,16 +2657,7 @@ module.exports = grammar({
         optional(choice($.where, $.where_current_of)),
       ),
 
-    update_target: ($) =>
-      choice(
-        partialSeq(
-          $.keyword_only,
-          field("end", $.table_reference),
-          optional("*"),
-          optional($.alias),
-        ),
-        seq(field("end", $.table_reference), optional("*"), optional($.alias)),
-      ),
+    update_target: ($) => seq($._relation_expr, optional($.alias)),
 
     update_set_values: ($) =>
       partialSeq($.keyword_set, field("end", comma_list($.assignment, true))),
@@ -2799,23 +2762,6 @@ module.exports = grammar({
           ),
         ),
         $.subquery,
-      ),
-
-    table_option: ($) =>
-      choice(
-        seq(
-          $.keyword_default,
-          $.keyword_character,
-          $.keyword_set,
-          $.any_identifier,
-        ),
-        seq($.keyword_collate, $.any_identifier),
-        field("name", $.keyword_default),
-        seq(
-          field("name", choice($.any_identifier, $._literal_string)),
-          "=",
-          field("value", choice($.any_identifier, $._literal_string)),
-        ),
       ),
 
     column_definitions: ($) =>
