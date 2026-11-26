@@ -1425,7 +1425,7 @@ VALUES
 
     /// Regression: a backslash command without a trailing newline (so that the
     /// command runs all the way to EOF) used to cause an out-of-bounds panic in
-    /// the splitter. See `plpgsql_command` in `splitter/common.rs`.
+    /// the splitter.
     #[test]
     #[timeout(1000)]
     fn does_not_panic_on_backslash_dot_at_eof() {
@@ -1480,8 +1480,6 @@ VALUES
     #[test]
     #[timeout(1000)]
     fn does_not_panic_on_backslash_only_followed_by_newline() {
-        // Trailing newline goes through the LINE_ENDING branch of
-        // `plpgsql_command`, exercising a different exit path.
         let _ = split("\\\n");
     }
 
@@ -1529,6 +1527,42 @@ VALUES
     fn backslash_commands_surrounding_statements() {
         Tester::from("\\dt\nselect 1;\n\\du\nselect 2;\n\\dn")
             .expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
+    fn meta_command_after_a_query_ends_it() {
+        Tester::from("select 1 as x \\gset\nselect :x;")
+            .expect_statements(vec!["select 1 as x", "select :x;"])
+            .assert_no_errors();
+        Tester::from("select 1\n  from t \\g out.txt\nselect 2;")
+            .expect_statements(vec!["select 1\n  from t", "select 2;"]);
+        Tester::from("select (1 \\gset\nselect 2;")
+            .expect_statements(vec!["select (1", "select 2;"]);
+    }
+
+    #[test]
+    fn meta_commands_between_statements() {
+        Tester::from("\\set x 1\n\\if :x\nselect 1;\n\\else\n  select 2;\n\\endif\nselect 3;")
+            .expect_statements(vec!["select 1;", "select 2;", "select 3;"])
+            .assert_no_errors();
+        Tester::from("\\copy t from stdin with csv\nselect 1;")
+            .expect_statements(vec!["select 1;"]);
+    }
+
+    /// The arguments of a meta-command aren't SQL, so a quote in them opens no string.
+    #[test]
+    fn meta_command_arguments_are_not_sql() {
+        Tester::from("\\echo don't\nselect 1;\n\\echo it's\nselect 2;")
+            .expect_statements(vec!["select 1;", "select 2;"])
+            .assert_no_errors();
+    }
+
+    /// `\\` ends a meta-command, and the SQL after it on the same line starts a statement.
+    #[test]
+    fn double_backslash_separates_meta_command_and_sql() {
+        Tester::from("\\set x 1 \\\\ select :x;\nselect 2;")
+            .expect_statements(vec!["select :x;", "select 2;"]);
+        Tester::from("\\echo 'a \\\\ b' select 1;\nselect 2;").expect_statements(vec!["select 2;"]);
     }
 
     // --- Blank lines inside a statement (issue #784) --------------------------
@@ -1905,6 +1939,9 @@ VALUES
         "select 1\n\nfrom t;",
         "selec 1;",
         "grant select on t to public;",
+        "select 1 as x \\gset\n",
+        "\\set x 1 \\\\ select :x;",
+        "\\if :x\n",
     ];
 
     /// Text inserted by the edits: whole statements, and fragments that can merge, cut or quote
@@ -1932,6 +1969,10 @@ VALUES
         "delete",
         "create table q (a int);",
         "\\d t\n",
+        "\\gset",
+        "\\\\",
+        "`",
+        "\\echo don't\n",
         "é",
         "insert into",
         "case when true then 1 end",
@@ -1967,6 +2008,22 @@ VALUES
             at
         };
         format!("{}{inserted}{}", &sql[..at], &sql[end..])
+    }
+
+    /// A line break added to or removed from a meta-command moves text between it and the SQL
+    /// around it without touching a `\`; the region around the change covers it.
+    #[test]
+    fn split_edited_around_meta_commands() {
+        let old = "select 1;\nselect 2;\nselect 3;\n\\echo a b\nselect 4;\nselect 5;\nselect 6;\n";
+        let previous = split(old);
+        for new in [
+            old.replace("a b", "a\nb"),
+            old.replace("a b\n", "a b"),
+            old.replace("\n\\echo", "\\echo"),
+            old.replace("select 2;", "select 2 \\gset"),
+        ] {
+            assert_eq!(split_edited(old, &previous, &new), split(&new), "{new}");
+        }
     }
 
     #[test]

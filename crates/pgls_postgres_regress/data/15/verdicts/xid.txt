@@ -49,15 +49,17 @@
 3453..3498 rejected 22P02
 3539..3545 skipped
 3546..3594 accepted
-3595..3628 rejected 42601
+3595..3622 accepted
 3629..3717 rejected 42601
 3718..3725 skipped
 3756..3762 skipped
-3763..3817 rejected 42601
+3763..3803 accepted
+3810..3817 skipped
 3819..3825 skipped
-3826..3883 rejected 42601
+3826..3867 accepted
+3874..3883 skipped
 3885..3891 skipped
-3892..3939 rejected 42601
+3892..3933 accepted
 3941..4000 rejected 42601
 4001..4062 rejected 42601
 4063..4124 rejected 42601

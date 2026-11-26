@@ -1,5 +1,31 @@
+249..274	pg_catalog.int4	pg_catalog.int4
+279..307	pg_catalog.int4	pg_catalog.int4
+359..384	pg_catalog.int4	pg_catalog.int4
+389..417	pg_catalog.int4	pg_catalog.int4
+455..480	pg_catalog.int4	pg_catalog.int4
+516..541	pg_catalog.int4	pg_catalog.int4
+602..610	pg_catalog.int4
+752..760	pg_catalog.int4
+824..876	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
 928..951	pg_catalog.int4
+954..986	pg_catalog.int4	pg_catalog.text
+1045..1066	pg_catalog.int4	pg_catalog.int4
+1100..1121	pg_catalog.int4	pg_catalog.int4
+1168..1189	pg_catalog.int4	pg_catalog.int4
+1236..1257	pg_catalog.int4	pg_catalog.int4
+1337..1378	pg_catalog.int4	pg_catalog.text	pg_catalog.int4
+1420..1479	pg_catalog.int4	pg_catalog.int4
+1486..1545	pg_catalog.int4	pg_catalog.int4
+1580..1634	pg_catalog.int4
+1690..1711	pg_catalog.int4	pg_catalog.int4
+1745..1766	pg_catalog.int4	pg_catalog.int4
+1813..1872	pg_catalog.int4	pg_catalog.int4
+1879..1938	pg_catalog.int4	pg_catalog.int4
+2240..2252	pg_catalog.int4	pg_catalog.int4
+2260..2280	pg_catalog.text
+2476..2489	pg_catalog.int4
 2540..2592	pg_catalog.int4	pg_catalog.text	pg_catalog.int4	pg_catalog.bool
+2615..2667	pg_catalog.int4	pg_catalog.text	pg_catalog.int4	pg_catalog.bool
 2886..3031	pg_catalog.text
 3161..3384	pg_catalog.text	pg_catalog.text
 3861..3871	pg_catalog.text	pg_catalog.text
@@ -131,3 +157,22 @@
 8603..8613	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
 8817..8831	pg_catalog.text
 8834..8854	pg_catalog.text
+9866..9887	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+9915..9930	pg_catalog.int4
+10673..10682	pg_catalog.int4
+10684..10692	pg_catalog.int4
+10697..10705	pg_catalog.int4
+10830..10863	pg_catalog.int4
+11165..11193	pg_catalog.int4	pg_catalog.int4
+14399..14421	pg_catalog.int4
+14473..14495	pg_catalog.int4
+14552..14574	pg_catalog.int4
+14633..14655	pg_catalog.int4
+14906..14929	pg_catalog.int4
+14981..15004	pg_catalog.int4
+15105..15128	pg_catalog.int4
+15406..15423	pg_catalog.int4
+15503..15519	pg_catalog.int4
+15612..15622	pg_catalog.int4
+16402..16415	pg_catalog.int4
+16767..16781	pg_catalog.int4

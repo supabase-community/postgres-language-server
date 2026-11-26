@@ -30,8 +30,9 @@
 3119..3189 rejected 42704
 3190..3199 skipped
 3243..3360 accepted
-3522..3627 rejected 42601
-3628..3941 rejected 42601
+3522..3621 accepted
+3628..3864 accepted
+3871..3941 rejected 42704
 3942..4080 accepted
 4081..4151 rejected 42704
 4152..4216 accepted
