@@ -1696,6 +1696,7 @@ VALUES
             "create type alter as (a int);",
             "select * from t update where true;",
             "select * from t alter join u on true;",
+            "select * from t join u insert on true;",
             "delete from t delete where true;",
             "MERGE INTO t USING s insert ON t.a = s.a\n\nWHEN NOT MATCHED THEN INSERT VALUES (s.a);",
         ] {
