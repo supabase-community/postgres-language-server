@@ -627,9 +627,9 @@ drop table collate_dep_test1, collate_dep_test4t;
 
 drop type collate_dep_test2;
 
-create type textrange_c as range (subtype = text, "collation" = "C");
+create type textrange_c as range (subtype = text, collation = "C");
 
-create type textrange_en_us as range (subtype = text, "collation" = "en_US");
+create type textrange_en_us as range (subtype = text, collation = "en_US");
 
 select textrange_c('A', 'Z') @> cast('b' as text);
 

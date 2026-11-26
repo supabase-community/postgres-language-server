@@ -14,7 +14,7 @@ version              = "0.0.0"
 doctest = false
 
 [dependencies]
-pgls_catalog                      = { workspace = true }
+pgls_query                        = { workspace = true }
 pgls_text_size.workspace          = true
 pgls_treesitter_grammar.workspace = true
 tree-sitter.workspace             = true

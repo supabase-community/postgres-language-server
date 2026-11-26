@@ -20,17 +20,15 @@ pub(super) fn emit_create_enum_stmt(e: &mut EventEmitter, n: &CreateEnumStmt) {
     e.space();
     e.token(TokenKind::ENUM_KW);
 
-    // Emit the enum values list (as string literals with quotes)
-    if !n.vals.is_empty() {
-        e.space();
-        emit_parenthesized_list(e, &n.vals, |e, n| {
-            let Some(NodeEnum::String(s)) = n.node.as_ref() else {
-                emit_node(e, n);
-                return;
-            };
-            emit_string_literal(e, s);
-        });
-    }
+    // The values as string literals, `()` when there are none
+    e.space();
+    emit_parenthesized_list(e, &n.vals, |e, n| {
+        let Some(NodeEnum::String(s)) = n.node.as_ref() else {
+            emit_node(e, n);
+            return;
+        };
+        emit_string_literal(e, s);
+    });
 
     e.group_end();
 }

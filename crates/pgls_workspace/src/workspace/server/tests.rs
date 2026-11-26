@@ -75,7 +75,8 @@ fn get_test_workspace(
 }
 
 /// The diagnostics say which version of the document they are for, so that the language server
-/// doesn't convert them with the line index of another one.
+/// doesn't convert them with the line index of another one. A second open without a close
+/// replaces the document, so the diagnostics are for the new text.
 #[test]
 fn pulled_diagnostics_are_for_the_version_of_the_document() {
     let mut conf = PartialConfiguration::init();
@@ -101,7 +102,6 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
                 database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
-            .version
     };
 
     workspace
@@ -112,7 +112,7 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
             version: 3,
         })
         .expect("Unable to open test file");
-    assert_eq!(pull(), Some(3));
+    assert_eq!(pull().version, Some(3));
 
     workspace
         .change_file(crate::workspace::ChangeFileParams {
@@ -122,50 +122,18 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
             version: 4,
         })
         .expect("Unable to change test file");
-    assert_eq!(pull(), Some(4));
-}
+    assert_eq!(pull().version, Some(4));
 
-/// A second open without a close replaces the document, so the diagnostics are for the new text.
-#[test]
-fn opening_an_open_file_again_replaces_it() {
-    let mut conf = PartialConfiguration::init();
-    conf.merge_with(PartialConfiguration {
-        db: Some(PartialDatabaseConfiguration {
-            disable_connection: Some(true),
-            ..Default::default()
-        }),
-        ..Default::default()
-    });
-    let (workspace, project_key) =
-        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
-    let path = PgLSPath::new("test.sql");
-    let open = |content: &str, version| {
-        workspace
-            .open_file(OpenFileParams {
-                project_key,
-                path: path.clone(),
-                content: content.into(),
-                version,
-            })
-            .expect("Unable to open test file");
-        workspace
-            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
-                project_key,
-                path: path.clone(),
-                categories: RuleCategories::all(),
-                max_diagnostics: 100,
-                only: vec![],
-                skip: vec![],
-                database_checks: DatabaseChecks::Run,
-            })
-            .expect("Unable to pull diagnostics")
-    };
-
-    let first = open("select 1;", 1);
-    assert!(first.diagnostics.is_empty());
-
-    let second = open("select 1;\nseect 2;", 2);
-    assert_eq!(second.version, Some(2));
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select 1;\nseect 2;".into(),
+            version: 5,
+        })
+        .expect("Unable to open test file again");
+    let reopened = pull();
+    assert_eq!(reopened.version, Some(5));
     assert_eq!(
         workspace
             .get_file_content(crate::workspace::GetFileContentParams {
@@ -175,7 +143,7 @@ fn opening_an_open_file_again_replaces_it() {
             .expect("Unable to get the file content"),
         "select 1;\nseect 2;"
     );
-    let spans: Vec<_> = second
+    let spans: Vec<_> = reopened
         .diagnostics
         .iter()
         .map(|diagnostic| diagnostic.location().span)

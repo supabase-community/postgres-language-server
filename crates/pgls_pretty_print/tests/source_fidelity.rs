@@ -356,92 +356,209 @@ fn identifiers_longer_than_postgres_keeps_are_written_in_full() {
     );
 }
 
-/// Found by the `formatter_roundtrip` fuzz target. A reserved keyword as an operator's argument is
-/// a string, the same as a string constant; quoted as an identifier, it would be a type name.
+// Found by the format round-trip oracle of the corpus check (`pgls_cli/tests/corpus.rs`): the
+// output didn't parse, or parsed to a different statement.
+
 #[test]
-fn a_keyword_in_an_operator_definition_stays_a_string() {
+fn a_unique_index_includes_before_nulls_not_distinct() {
     assert_eq!(
-        format("CREATE OPERATOR @+@ ( leftarg =union, rightarg = int4, procedure = int4pl );"),
-        "create operator @+@ (leftarg = 'union', rightarg = int4, procedure = int4pl);"
+        format("CREATE UNIQUE INDEX i ON ONLY t USING btree (a) INCLUDE (b) NULLS NOT DISTINCT"),
+        "create unique index i on only t using btree (a) include (b) nulls not distinct;"
     );
 }
 
-/// Found by the `formatter_roundtrip` fuzz target. A language written as a string constant is
-/// kept whole; written as an identifier, the parser would cut it down to 63 bytes.
 #[test]
-fn a_language_longer_than_an_identifier_stays_a_string() {
-    let language = format!("sql{}", "Q".repeat(70));
-    assert_eq!(
-        format(&format!(
-            "CREATE FUNCTION f(int) RETURNS bool LANGUAGE '{language}' AS 'SELECT $1 < 0';"
-        )),
-        format!(
-            "create function f(int)\nreturns bool\nlanguage '{language}'\nas $$SELECT $1 < 0$$;"
-        )
-    );
-    assert_eq!(
-        format(&format!("DO LANGUAGE '{language}' 'select 1'")),
-        format!("do\nlanguage '{language}'\n$$select 1$$;")
-    );
-}
-
-/// Found by the `formatter_roundtrip` fuzz target. A string constant longer than an identifier
-/// stays a string: written as a word, the parser would cut it down to 63 bytes.
-#[test]
-fn a_string_longer_than_an_identifier_stays_a_string() {
-    let value = format!("n{}", "n".repeat(70));
-    assert_eq!(
-        format(&format!("SET my.option TO '{value}'")),
-        format!("set my.option = '{value}';")
-    );
-    assert_eq!(
-        format(&format!(
-            "CREATE TRIGGER t BEFORE UPDATE ON t FOR EACH ROW EXECUTE PROCEDURE f('{value}')"
-        )),
-        format!(
-            "create trigger t\nbefore update\non t\nfor each row\nexecute function f('{value}');"
-        )
-    );
-    // A trigger argument that a word cannot spell is a string, not a quoted identifier, which
-    // the parser would cut down to 63 bytes as well.
+fn an_identity_keeps_its_sequence_name() {
     assert_eq!(
         format(
-            "CREATE TRIGGER t BEFORE UPDATE ON t FOR EACH ROW EXECUTE PROCEDURE f('a, b.*', x, 1)"
+            "ALTER TABLE t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (SEQUENCE NAME public.t_id_seq START WITH 1)"
         ),
-        "create trigger t before update on t for each row execute function f('a, b.*', x, '1');"
+        "alter table t
+  alter column id
+  add generated always as identity (sequence name public.t_id_seq start with 1);"
     );
 }
 
-/// Found by the `formatter_roundtrip` fuzz target. A foreign-data wrapper's handler or validator
-/// is a qualified function name.
 #[test]
-fn a_foreign_data_wrapper_function_is_a_qualified_name() {
+fn qualified_object_names_are_dotted() {
     assert_eq!(
-        format("ALTER FOREIGN DATA WRAPPER f HANDLER te.t_fdw_handler VALIDATOR s.v"),
-        "alter foreign data wrapper f handler te.t_fdw_handler validator s.v;"
+        format("ALTER EXTENSION hstore DROP TABLE public.ref_table"),
+        "alter extension hstore drop table public.ref_table;"
     );
-    assert!(
-        format("CREATE FOREIGN DATA WRAPPER f HANDLER te.t_fdw_handler VALIDATOR s.v")
-            .starts_with("create foreign data wrapper f handler te.t_fdw_handler validator s.v")
+    assert_eq!(
+        format("SECURITY LABEL FOR anon ON COLUMN t.c IS 'l'"),
+        "security label for anon on column t.c is 'l';"
     );
 }
 
-/// Found by the `formatter_roundtrip` fuzz target. A storage parameter name that needs quotes
-/// keeps them.
 #[test]
-fn a_storage_parameter_name_keeps_its_quotes() {
+fn depends_on_extension_names_its_object() {
+    assert_eq!(
+        format("ALTER INDEX i NO DEPENDS ON EXTENSION e"),
+        "alter index i no depends on extension e;"
+    );
+    assert_eq!(
+        format("ALTER MATERIALIZED VIEW v DEPENDS ON EXTENSION e"),
+        "alter materialized view v depends on extension e;"
+    );
+    assert_eq!(
+        format("ALTER TRIGGER tg ON t DEPENDS ON EXTENSION e"),
+        "alter trigger tg on t depends on extension e;"
+    );
+}
+
+#[test]
+fn a_qualified_operator_is_wrapped_in_operator() {
+    assert_eq!(
+        format("ALTER OPERATOR === (box, box) SET (NEGATOR = OPERATOR(s.!==))"),
+        "alter operator === (box, box) set (negator = operator(s.!==));"
+    );
     assert_eq!(
         format(
-            r#"CREATE TABLE t WITH ("Fill*factor" = 10, toast.autovacuum_enabled = false) AS SELECT 1 a"#
+            "CREATE OPERATOR s.=== (FUNCTION = s.f, LEFTARG = int, COMMUTATOR = OPERATOR(s.===))"
         ),
-        r#"create table t with ("Fill*factor" = 10, toast.autovacuum_enabled = 'false') as select 1 as a;"#
+        "create operator s.=== (function = s.f, leftarg = int, commutator = operator(s.===));"
     );
     assert_eq!(
-        format(r#"CREATE INDEX ON t USING gist (a gist_ops ("Sig len" = 8))"#),
-        r#"create index on t using gist (a gist_ops("Sig len" = 8));"#
+        format(r#"SELECT a OPERATOR("My Schema".===) b"#),
+        r#"select a operator("My Schema".===) b;"#
+    );
+}
+
+#[test]
+fn a_publication_of_the_current_schema() {
+    assert_eq!(
+        format("ALTER PUBLICATION p SET TABLES IN SCHEMA CURRENT_SCHEMA"),
+        "alter publication p set tables in schema current_schema;"
+    );
+}
+
+#[test]
+fn alter_role_all_keeps_all() {
+    assert_eq!(
+        format("ALTER ROLE ALL RESET ALL"),
+        "alter role all reset all;"
     );
     assert_eq!(
-        format(r#"ALTER TYPE t SET ("Rec eive" = r)"#),
-        r#"alter type t set ("Rec eive" = r);"#
+        format("ALTER USER ALL IN DATABASE d RESET x"),
+        "alter role all in database d reset x;"
+    );
+}
+
+#[test]
+fn a_server_version_can_be_null() {
+    assert_eq!(
+        format("ALTER SERVER s VERSION NULL"),
+        "alter server s version null;"
+    );
+}
+
+#[test]
+fn a_constraint_keeps_its_index_parameters() {
+    assert_eq!(
+        format(
+            "CREATE TABLE t (a int UNIQUE WITH (fillfactor = 70), b int PRIMARY KEY WITH (fillfactor = 70) USING INDEX TABLESPACE s)"
+        ),
+        "create table t (
+  a int unique with (fillfactor = 70),
+  b int primary key with (fillfactor = 70) using index tablespace s
+);"
+    );
+    assert_eq!(
+        format(
+            "CREATE TABLE t (r tsrange, EXCLUDE USING gist (r WITH &&) WITH (fillfactor = 70) USING INDEX TABLESPACE s WHERE (r IS NOT NULL))"
+        ),
+        "create table t (
+  r tsrange,
+  exclude using gist (r with &&)
+    with (fillfactor = 70)
+    using index tablespace s where (r is not null)
+);"
+    );
+}
+
+#[test]
+fn cluster_keeps_its_options() {
+    assert_eq!(
+        format("CLUSTER (VERBOSE OFF) t USING i"),
+        "cluster (verbose off) t using i;"
+    );
+}
+
+#[test]
+fn comment_on_a_cast_or_operator_class() {
+    assert_eq!(
+        format("COMMENT ON CAST (text AS int4) IS 'c'"),
+        "comment on cast (text as int4) is 'c';"
+    );
+    assert_eq!(
+        format("COMMENT ON OPERATOR CLASS s.c USING btree IS 'c'"),
+        "comment on operator class s.c using btree is 'c';"
+    );
+    assert_eq!(
+        format("COMMENT ON OPERATOR FAMILY f USING btree IS 'f'"),
+        "comment on operator family f using btree is 'f';"
+    );
+}
+
+#[test]
+fn create_database_in_the_default_tablespace() {
+    assert_eq!(
+        format("CREATE DATABASE db TABLESPACE DEFAULT"),
+        "create database db with tablespace = default;"
+    );
+}
+
+#[test]
+fn a_foreign_table_keeps_if_not_exists_inherits_and_column_options() {
+    assert_eq!(
+        format("CREATE FOREIGN TABLE IF NOT EXISTS t (a int) INHERITS (p) SERVER s"),
+        "create foreign table if not exists t (a int) inherits (p) server s;"
+    );
+    assert_eq!(
+        format(r#"CREATE FOREIGN TABLE t (a char(5) OPTIONS (a 'foo') COLLATE "C") SERVER s"#),
+        r#"create foreign table t (a char(5) options (a 'foo') collate "C") server s;"#
+    );
+}
+
+#[test]
+fn column_storage_comes_before_compression() {
+    assert_eq!(
+        format("CREATE TABLE t (a text STORAGE MAIN COMPRESSION lz4)"),
+        "create table t (a text storage main compression lz4);"
+    );
+}
+
+#[test]
+fn trigger_update_columns_follow_update() {
+    assert_eq!(
+        format(
+            "CREATE TRIGGER tg BEFORE UPDATE OF a, b OR TRUNCATE ON t FOR EACH STATEMENT EXECUTE FUNCTION f()"
+        ),
+        "create trigger tg before update of a, b or truncate on t for each statement execute function f();"
+    );
+}
+
+#[test]
+fn an_enum_without_values() {
+    assert_eq!(
+        format("CREATE TYPE e AS ENUM ()"),
+        "create type e as enum ();"
+    );
+}
+
+#[test]
+fn drop_transform() {
+    assert_eq!(
+        format("DROP TRANSFORM IF EXISTS FOR s.hstore LANGUAGE plpython3u CASCADE"),
+        "drop transform if exists for s.hstore language plpython3u cascade;"
+    );
+}
+
+#[test]
+fn grant_on_a_parameter() {
+    assert_eq!(
+        format("GRANT SET, ALTER SYSTEM ON PARAMETER work_mem, plpgsql.extra_warnings TO u"),
+        r#"grant set, alter system on parameter work_mem, "plpgsql.extra_warnings" to u;"#
     );
 }

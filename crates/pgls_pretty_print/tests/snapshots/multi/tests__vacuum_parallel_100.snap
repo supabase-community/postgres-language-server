@@ -38,7 +38,7 @@ where
 
 delete from parallel_vacuum_table;
 
-vacuum (parallel 4, index_cleanup "on") parallel_vacuum_table;
+vacuum (parallel 4, index_cleanup 'on') parallel_vacuum_table;
 
 insert into parallel_vacuum_table select i from generate_series(1, 10000) as i;
 

@@ -42,7 +42,8 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
                 emit_node(e, object);
             }
         } else {
-            emit_node(e, object);
+            // A qualified name, such as the `table.column` of a column
+            emit_any_name(e, object);
         }
     }
 

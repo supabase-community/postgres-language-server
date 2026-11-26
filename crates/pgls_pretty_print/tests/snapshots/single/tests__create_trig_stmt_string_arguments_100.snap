@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_trig_stmt_string_arguments.sql
+---
+create trigger t before update on t for each row execute function f('a, b.*', x, '1');

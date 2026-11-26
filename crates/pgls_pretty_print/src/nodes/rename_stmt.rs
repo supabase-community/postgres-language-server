@@ -120,15 +120,7 @@ fn emit_relation_head(e: &mut EventEmitter, n: &RenameStmt) {
 fn emit_object_head(e: &mut EventEmitter, n: &RenameStmt) {
     if let Some(ref object) = n.object {
         e.space();
-        emit_object_name(e, object);
-    }
-}
-
-fn emit_object_name(e: &mut EventEmitter, object: &pgls_query::Node) {
-    match &object.node {
-        // Qualified names (`any_name`) arrive as a list of strings
-        Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-        _ => emit_node(e, object),
+        emit_any_name(e, object);
     }
 }
 
@@ -138,7 +130,7 @@ fn emit_default_head(e: &mut EventEmitter, n: &RenameStmt) {
         emit_range_var(e, relation);
     } else if let Some(ref object) = n.object {
         e.space();
-        emit_object_name(e, object);
+        emit_any_name(e, object);
     } else if !n.subname.is_empty() {
         e.space();
         emit_identifier_maybe_quoted(e, &n.subname);

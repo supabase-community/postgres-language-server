@@ -18,56 +18,7 @@ pub(super) fn emit_alter_fdw_stmt(e: &mut EventEmitter, n: &AlterFdwStmt) {
         emit_identifier_maybe_quoted(e, &n.fdwname);
     }
 
-    // Handler/validator functions in func_options - space-separated, not comma-separated
-    if !n.func_options.is_empty() {
-        e.indent_start();
-        for opt in n.func_options.iter() {
-            e.line(LineType::SoftOrSpace);
-            let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
-                emit_node(e, opt);
-                continue;
-            };
-
-            match def_elem.defname.as_str() {
-                "handler" => {
-                    if let Some(ref arg) = def_elem.arg {
-                        e.token(TokenKind::HANDLER_KW);
-                        e.space();
-                        // `handler_name` in gram.y: a qualified function name, not a list.
-                        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L5141
-                        match arg.node.as_ref() {
-                            Some(NodeEnum::List(name)) => emit_dot_separated_list(e, &name.items),
-                            _ => emit_node(e, arg),
-                        }
-                    } else {
-                        e.token(TokenKind::NO_KW);
-                        e.space();
-                        e.token(TokenKind::HANDLER_KW);
-                    }
-                }
-                "validator" => {
-                    if let Some(ref arg) = def_elem.arg {
-                        e.token(TokenKind::VALIDATOR_KW);
-                        e.space();
-                        // `handler_name` in gram.y, as for HANDLER.
-                        match arg.node.as_ref() {
-                            Some(NodeEnum::List(name)) => emit_dot_separated_list(e, &name.items),
-                            _ => emit_node(e, arg),
-                        }
-                    } else {
-                        e.token(TokenKind::NO_KW);
-                        e.space();
-                        e.token(TokenKind::VALIDATOR_KW);
-                    }
-                }
-                _ => {
-                    // Fallback for unknown options
-                    emit_node(e, opt);
-                }
-            }
-        }
-        e.indent_end();
-    }
+    emit_fdw_functions(e, &n.func_options);
 
     // OPTIONS clause
     if !n.options.is_empty() {

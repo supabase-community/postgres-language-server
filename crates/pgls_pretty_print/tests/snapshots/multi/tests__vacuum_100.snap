@@ -216,9 +216,9 @@ vacuum (parallel 0) pvactst;
 
 vacuum (parallel -1) pvactst;
 
-vacuum (parallel 2, index_cleanup "false") pvactst;
+vacuum (parallel 2, index_cleanup 'false') pvactst;
 
-vacuum (parallel 2, full "true") pvactst;
+vacuum (parallel 2, full 'true') pvactst;
 
 vacuum (parallel) pvactst;
 
@@ -236,9 +236,9 @@ create temporary table tmp (a int primary key);
 
 create index tmp_idx1 on tmp using btree (a);
 
-vacuum (parallel 1, full "false") tmp;
+vacuum (parallel 1, full 'false') tmp;
 
-vacuum (parallel 0, full "true") tmp;
+vacuum (parallel 0, full 'true') tmp;
 
 reset min_parallel_index_scan_size;
 
@@ -258,9 +258,9 @@ alter table no_index_cleanup
 
 insert into no_index_cleanup (i, t) values (generate_series(1, 30), repeat('1234567890', 269));
 
-vacuum (index_cleanup "true", full "true") no_index_cleanup;
+vacuum (index_cleanup 'true', full 'true') no_index_cleanup;
 
-vacuum (full "true") no_index_cleanup;
+vacuum (full 'true') no_index_cleanup;
 
 alter table no_index_cleanup
   set (vacuum_index_cleanup = 'false');
@@ -293,11 +293,11 @@ alter table no_index_cleanup
 
 vacuum no_index_cleanup;
 
-vacuum (index_cleanup "false") vaccluster;
+vacuum (index_cleanup 'false') vaccluster;
 
 vacuum (index_cleanup auto) vactst;
 
-vacuum (index_cleanup "false", freeze "true") vaccluster;
+vacuum (index_cleanup 'false', freeze 'true') vaccluster;
 
 create temporary table vac_truncate_test (
   i int not null,
@@ -307,7 +307,7 @@ with (vacuum_truncate = 'true', autovacuum_enabled = 'false');
 
 insert into vac_truncate_test values (1, null), (null, null);
 
-vacuum (truncate "false", disable_page_skipping) vac_truncate_test;
+vacuum (truncate 'false', disable_page_skipping) vac_truncate_test;
 
 select pg_relation_size('vac_truncate_test') > 0;
 
@@ -317,7 +317,7 @@ vacuum (disable_page_skipping) vac_truncate_test;
 
 select pg_relation_size('vac_truncate_test') = 0;
 
-vacuum (truncate "false", full "true") vac_truncate_test;
+vacuum (truncate 'false', full 'true') vac_truncate_test;
 
 alter table vac_truncate_test
   reset (vacuum_truncate);
@@ -330,7 +330,7 @@ select pg_relation_size('vac_truncate_test') > 0;
 
 reset vacuum_truncate;
 
-vacuum (truncate "false", disable_page_skipping) vac_truncate_test;
+vacuum (truncate 'false', disable_page_skipping) vac_truncate_test;
 
 select pg_relation_size('vac_truncate_test') > 0;
 
@@ -565,21 +565,21 @@ where
   c.relname = 'vac_option_tab' or s.relname = 'vac_option_tab'
 order by rel;
 
-vacuum (process_toast "true") vac_option_tab;
+vacuum (process_toast 'true') vac_option_tab;
 
 select * from vac_option_tab_counts;
 
-vacuum (process_toast "false") vac_option_tab;
+vacuum (process_toast 'false') vac_option_tab;
 
 select * from vac_option_tab_counts;
 
-vacuum (process_toast "false", full) vac_option_tab;
+vacuum (process_toast 'false', full) vac_option_tab;
 
-vacuum (process_main "false") vac_option_tab;
+vacuum (process_main 'false') vac_option_tab;
 
 select * from vac_option_tab_counts;
 
-vacuum (process_main "false", process_toast "false") vac_option_tab;
+vacuum (process_main 'false', process_toast 'false') vac_option_tab;
 
 select * from vac_option_tab_counts;
 
@@ -593,7 +593,7 @@ from
 where
   c.reltoastrelid = t.oid and c.relname = 'vac_option_tab';
 
-vacuum (process_main "false", full) vac_option_tab;
+vacuum (process_main 'false', full) vac_option_tab;
 
 select
   relfilenode = 'main_filenode' as is_same_main_filenode
@@ -610,9 +610,9 @@ from
 where
   c.reltoastrelid = t.oid and c.relname = 'vac_option_tab';
 
-vacuum (buffer_usage_limit "512 kB") vac_option_tab;
+vacuum (buffer_usage_limit '512 kB') vac_option_tab;
 
-analyze (buffer_usage_limit "512 kB") vac_option_tab;
+analyze (buffer_usage_limit '512 kB') vac_option_tab;
 
 vacuum (buffer_usage_limit 0) vac_option_tab;
 
@@ -624,7 +624,7 @@ vacuum (buffer_usage_limit 120) vac_option_tab;
 
 vacuum (buffer_usage_limit 10000000000) vac_option_tab;
 
-vacuum (buffer_usage_limit "512 kB", full) vac_option_tab;
+vacuum (buffer_usage_limit '512 kB', full) vac_option_tab;
 
 vacuum (skip_database_stats) vactst;
 

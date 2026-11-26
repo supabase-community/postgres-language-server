@@ -457,6 +457,6 @@ create collation coll_dup_chk (lc_collate = "POSIX", locale = '');
 
 create collation coll_dup_chk (lc_ctype = "POSIX", locale = '');
 
-create collation coll_dup_chk ("from" = "C", version = "1");
+create collation coll_dup_chk (from = "C", version = "1");
 
 drop schema collate_tests cascade;
