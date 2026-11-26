@@ -83,6 +83,10 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Right);
             }
         }
+        // A comment on its own line before the operand keeps its line. Behind the operator, it
+        // would trail the expression on the next pass, and swallow a `-`: `---` lexes as one
+        // comment, scan.l's longest match:
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L213
         (None, Some(rexpr)) => {
             if let Some(op) = extract_simple_operator(&n.name) {
                 if op.eq_ignore_ascii_case("not") {
@@ -92,7 +96,9 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                     } else {
                         e.space();
                     }
-                    emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary);
+                    e.with_leading_comment_line_break(|e| {
+                        emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary)
+                    });
                 } else {
                     emit_simple_operator(e, op);
                     if operator_needs_space(op) {
@@ -113,7 +119,9 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                         // start of a comment when both are minus signs.
                         e.space();
                     }
-                    emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary);
+                    e.with_leading_comment_line_break(|e| {
+                        emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary)
+                    });
                 }
             } else {
                 emit_operator(e, &n.name);
@@ -122,7 +130,9 @@ fn emit_aexpr_op(e: &mut EventEmitter, n: &AExpr) {
                 } else {
                     e.space();
                 }
-                emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary);
+                e.with_leading_comment_line_break(|e| {
+                    emit_operand_with_parens(e, rexpr, parent_info, OperandSide::Unary)
+                });
             }
         }
         (Some(lexpr), None) => {
@@ -619,20 +629,5 @@ fn operator_prefers_line_break(name: &[Node]) -> bool {
         // For any other operator, still allow line breaks - they're likely user-defined
         // and we want consistent formatting behavior
         _ => true,
-    }
-}
-
-fn emit_operand_with_parens(
-    e: &mut EventEmitter,
-    node: &Node,
-    parent: Option<OperatorInfo>,
-    side: OperandSide,
-) {
-    if needs_parentheses(node, Position::Operand { parent, side }) {
-        e.token(TokenKind::L_PAREN);
-        emit_node(e, node);
-        e.token(TokenKind::R_PAREN);
-    } else {
-        emit_node(e, node);
     }
 }

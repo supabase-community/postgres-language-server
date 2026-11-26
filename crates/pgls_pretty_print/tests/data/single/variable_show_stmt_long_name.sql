@@ -1,0 +1,1 @@
+SHOW an_extension_with_a_name_longer_than_the_63_bytes_postgres_keeps.my_setting;
