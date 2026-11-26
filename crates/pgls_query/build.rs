@@ -107,6 +107,7 @@ fn run_bindgen(
         .allowlist_function("pg_query_split_with_parser")
         .allowlist_function("pg_query_split_with_scanner")
         .allowlist_function("pg_query_parse_plpgsql")
+        .allowlist_function("pg_query_parse_plpgsql_protobuf")
         .allowlist_function("pg_query_free_protobuf_parse_result")
         .allowlist_function("pg_query_free_scan_result")
         .allowlist_function("pg_query_free_deparse_result")
@@ -114,6 +115,7 @@ fn run_bindgen(
         .allowlist_function("pg_query_free_fingerprint_result")
         .allowlist_function("pg_query_free_split_result")
         .allowlist_function("pg_query_free_plpgsql_parse_result")
+        .allowlist_function("pg_query_free_plpgsql_protobuf_parse_result")
         // Allowlist the types used by these functions
         .allowlist_type("PgQueryProtobufParseResult")
         .allowlist_type("PgQueryScanResult")
@@ -125,6 +127,7 @@ fn run_bindgen(
         .allowlist_type("PgQuerySplitResult")
         .allowlist_type("PgQuerySplitStmt")
         .allowlist_type("PgQueryPlpgsqlParseResult")
+        .allowlist_type("PgQueryPlpgsqlProtobufParseResult")
         // Also generate bindings for size_t since it's used in PgQueryProtobuf
         .allowlist_type("size_t")
         .allowlist_var("PG_VERSION_NUM");
@@ -313,6 +316,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bindings_content.push_str("    pub fn pg_query_scan(input: *const ::std::os::raw::c_char) -> PgQueryScanResult;\n");
             bindings_content.push_str("    pub fn pg_query_parse_protobuf(input: *const ::std::os::raw::c_char) -> PgQueryProtobufParseResult;\n");
             bindings_content.push_str("    pub fn pg_query_parse_plpgsql(input: *const ::std::os::raw::c_char) -> PgQueryPlpgsqlParseResult;\n");
+            bindings_content.push_str("    pub fn pg_query_parse_plpgsql_protobuf(input: *const ::std::os::raw::c_char) -> PgQueryPlpgsqlProtobufParseResult;\n");
             bindings_content.push_str("    pub fn pg_query_deparse_protobuf(protobuf: PgQueryProtobuf) -> PgQueryDeparseResult;\n");
             bindings_content.push_str("    pub fn pg_query_normalize(input: *const ::std::os::raw::c_char) -> PgQueryNormalizeResult;\n");
             bindings_content.push_str("    pub fn pg_query_fingerprint(input: *const ::std::os::raw::c_char) -> PgQueryFingerprintResult;\n");
@@ -322,6 +326,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .push_str("    pub fn pg_query_free_scan_result(result: PgQueryScanResult);\n");
             bindings_content.push_str("    pub fn pg_query_free_protobuf_parse_result(result: PgQueryProtobufParseResult);\n");
             bindings_content.push_str("    pub fn pg_query_free_plpgsql_parse_result(result: PgQueryPlpgsqlParseResult);\n");
+            bindings_content.push_str("    pub fn pg_query_free_plpgsql_protobuf_parse_result(result: PgQueryPlpgsqlProtobufParseResult);\n");
             bindings_content.push_str(
                 "    pub fn pg_query_free_deparse_result(result: PgQueryDeparseResult);\n",
             );

@@ -185,6 +185,7 @@ impl PgQueryStore {
         let range = function_body_location(create_fn, statement.content()).map(|(range, _)| range);
 
         let r = pgls_query::parse_plpgsql(statement.content())
+            .map(|_| ())
             .or_else(|e| {
                 if e.is_false_positive_without_catalog() {
                     Ok(())

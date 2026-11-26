@@ -470,7 +470,7 @@ pub mod node {
         #[prost(message, tag = "218")]
         RuleStmt(::prost::alloc::boxed::Box<super::RuleStmt>),
         #[prost(message, tag = "219")]
-        NotifyStmt(super::NotifyStmt),
+        NotifyStmt(::prost::alloc::boxed::Box<super::NotifyStmt>),
         #[prost(message, tag = "220")]
         ListenStmt(super::ListenStmt),
         #[prost(message, tag = "221")]
@@ -3694,6 +3694,8 @@ pub struct CreateStatsStmt {
     pub transformed: bool,
     #[prost(bool, tag = "7")]
     pub if_not_exists: bool,
+    #[prost(uint32, tag = "8")]
+    pub owner: u32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsElem {
@@ -3875,6 +3877,8 @@ pub struct NotifyStmt {
     pub payload: ::prost::alloc::string::String,
     #[prost(int32, tag = "3")]
     pub payload_location: i32,
+    #[prost(message, optional, boxed, tag = "4")]
+    pub payload_param: ::core::option::Option<::prost::alloc::boxed::Box<Node>>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListenStmt {
@@ -4269,6 +4273,700 @@ pub struct DropSubscriptionStmt {
     pub missing_ok: bool,
     #[prost(enumeration = "DropBehavior", tag = "3")]
     pub behavior: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlParseResult {
+    #[prost(int32, tag = "1")]
+    pub version: i32,
+    #[prost(message, repeated, tag = "2")]
+    pub functions: ::prost::alloc::vec::Vec<PLpgSqlFunction>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlFunction {
+    #[prost(string, tag = "1")]
+    pub fn_signature: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "2")]
+    pub fn_oid: u32,
+    #[prost(enumeration = "PLpgSqlTrigtype", tag = "3")]
+    pub fn_is_trigger: i32,
+    #[prost(uint32, tag = "4")]
+    pub fn_input_collation: u32,
+    #[prost(uint32, tag = "5")]
+    pub fn_rettype: u32,
+    #[prost(int32, tag = "6")]
+    pub fn_rettyplen: i32,
+    #[prost(bool, tag = "7")]
+    pub fn_retistuple: bool,
+    #[prost(bool, tag = "8")]
+    pub fn_retisdomain: bool,
+    #[prost(bool, tag = "9")]
+    pub fn_retset: bool,
+    #[prost(bool, tag = "10")]
+    pub fn_readonly: bool,
+    #[prost(string, tag = "11")]
+    pub fn_prokind: ::prost::alloc::string::String,
+    #[prost(int32, repeated, tag = "12")]
+    pub fn_argvarnos: ::prost::alloc::vec::Vec<i32>,
+    #[prost(int32, tag = "13")]
+    pub out_param_varno: i32,
+    #[prost(int32, tag = "14")]
+    pub found_varno: i32,
+    #[prost(int32, tag = "15")]
+    pub new_varno: i32,
+    #[prost(int32, tag = "16")]
+    pub old_varno: i32,
+    #[prost(enumeration = "PLpgSqlResolveOption", tag = "17")]
+    pub resolve_option: i32,
+    #[prost(bool, tag = "18")]
+    pub print_strict_params: bool,
+    #[prost(int32, tag = "19")]
+    pub extra_warnings: i32,
+    #[prost(int32, tag = "20")]
+    pub extra_errors: i32,
+    #[prost(message, repeated, tag = "21")]
+    pub datums: ::prost::alloc::vec::Vec<PLpgSqlDatum>,
+    #[prost(message, optional, tag = "22")]
+    pub action: ::core::option::Option<PLpgSqlStmtBlock>,
+    #[prost(uint32, tag = "23")]
+    pub nstatements: u32,
+    #[prost(bool, tag = "24")]
+    pub requires_procedure_resowner: bool,
+    #[prost(bool, tag = "25")]
+    pub has_exception_block: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlDatum {
+    #[prost(oneof = "p_lpg_sql_datum::Node", tags = "1, 2, 3, 4")]
+    pub node: ::core::option::Option<p_lpg_sql_datum::Node>,
+}
+/// Nested message and enum types in `PLpgSQL_datum`.
+pub mod p_lpg_sql_datum {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Node {
+        #[prost(message, tag = "1")]
+        Var(super::PLpgSqlVar),
+        #[prost(message, tag = "2")]
+        Row(super::PLpgSqlRow),
+        #[prost(message, tag = "3")]
+        Rec(super::PLpgSqlRec),
+        #[prost(message, tag = "4")]
+        Recfield(super::PLpgSqlRecfield),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtBlock {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "4")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+    #[prost(int32, repeated, tag = "5")]
+    pub initvarnos: ::prost::alloc::vec::Vec<i32>,
+    #[prost(message, optional, tag = "6")]
+    pub exceptions: ::core::option::Option<PLpgSqlExceptionBlock>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlVar {
+    #[prost(int32, tag = "1")]
+    pub dno: i32,
+    #[prost(string, tag = "2")]
+    pub refname: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub lineno: i32,
+    #[prost(bool, tag = "4")]
+    pub isconst: bool,
+    #[prost(bool, tag = "5")]
+    pub notnull: bool,
+    #[prost(message, optional, tag = "6")]
+    pub default_val: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "7")]
+    pub datatype: ::core::option::Option<PLpgSqlType>,
+    #[prost(message, optional, tag = "8")]
+    pub cursor_explicit_expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(int32, tag = "9")]
+    pub cursor_explicit_argrow: i32,
+    #[prost(int32, tag = "10")]
+    pub cursor_options: i32,
+    #[prost(enumeration = "PLpgSqlPromiseType", tag = "11")]
+    pub promise: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlRow {
+    #[prost(int32, tag = "1")]
+    pub dno: i32,
+    #[prost(string, tag = "2")]
+    pub refname: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub lineno: i32,
+    #[prost(bool, tag = "4")]
+    pub isconst: bool,
+    #[prost(bool, tag = "5")]
+    pub notnull: bool,
+    #[prost(message, optional, tag = "6")]
+    pub default_val: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "7")]
+    pub fields: ::prost::alloc::vec::Vec<PLpgSqlRowField>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlRec {
+    #[prost(int32, tag = "1")]
+    pub dno: i32,
+    #[prost(string, tag = "2")]
+    pub refname: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub lineno: i32,
+    #[prost(bool, tag = "4")]
+    pub isconst: bool,
+    #[prost(bool, tag = "5")]
+    pub notnull: bool,
+    #[prost(message, optional, tag = "6")]
+    pub default_val: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "7")]
+    pub datatype: ::core::option::Option<PLpgSqlType>,
+    #[prost(uint32, tag = "8")]
+    pub rectypeid: u32,
+    #[prost(int32, tag = "9")]
+    pub firstfield: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlRecfield {
+    #[prost(int32, tag = "1")]
+    pub dno: i32,
+    #[prost(string, tag = "2")]
+    pub fieldname: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub recparentno: i32,
+    #[prost(int32, tag = "4")]
+    pub nextfield: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmt {
+    #[prost(
+        oneof = "p_lpg_sql_stmt::Node",
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27"
+    )]
+    pub node: ::core::option::Option<p_lpg_sql_stmt::Node>,
+}
+/// Nested message and enum types in `PLpgSQL_stmt`.
+pub mod p_lpg_sql_stmt {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Node {
+        #[prost(message, tag = "1")]
+        StmtBlock(super::PLpgSqlStmtBlock),
+        #[prost(message, tag = "2")]
+        StmtAssign(super::PLpgSqlStmtAssign),
+        #[prost(message, tag = "3")]
+        StmtIf(super::PLpgSqlStmtIf),
+        #[prost(message, tag = "4")]
+        StmtCase(super::PLpgSqlStmtCase),
+        #[prost(message, tag = "5")]
+        StmtLoop(super::PLpgSqlStmtLoop),
+        #[prost(message, tag = "6")]
+        StmtWhile(super::PLpgSqlStmtWhile),
+        #[prost(message, tag = "7")]
+        StmtFori(super::PLpgSqlStmtFori),
+        #[prost(message, tag = "8")]
+        StmtFors(super::PLpgSqlStmtFors),
+        #[prost(message, tag = "9")]
+        StmtForc(super::PLpgSqlStmtForc),
+        #[prost(message, tag = "10")]
+        StmtForeachA(super::PLpgSqlStmtForeachA),
+        #[prost(message, tag = "11")]
+        StmtExit(super::PLpgSqlStmtExit),
+        #[prost(message, tag = "12")]
+        StmtReturn(super::PLpgSqlStmtReturn),
+        #[prost(message, tag = "13")]
+        StmtReturnNext(super::PLpgSqlStmtReturnNext),
+        #[prost(message, tag = "14")]
+        StmtReturnQuery(super::PLpgSqlStmtReturnQuery),
+        #[prost(message, tag = "15")]
+        StmtRaise(super::PLpgSqlStmtRaise),
+        #[prost(message, tag = "16")]
+        StmtAssert(super::PLpgSqlStmtAssert),
+        #[prost(message, tag = "17")]
+        StmtExecsql(super::PLpgSqlStmtExecsql),
+        #[prost(message, tag = "18")]
+        StmtDynexecute(super::PLpgSqlStmtDynexecute),
+        #[prost(message, tag = "19")]
+        StmtDynfors(super::PLpgSqlStmtDynfors),
+        #[prost(message, tag = "20")]
+        StmtGetdiag(super::PLpgSqlStmtGetdiag),
+        #[prost(message, tag = "21")]
+        StmtOpen(super::PLpgSqlStmtOpen),
+        #[prost(message, tag = "22")]
+        StmtFetch(super::PLpgSqlStmtFetch),
+        #[prost(message, tag = "23")]
+        StmtClose(super::PLpgSqlStmtClose),
+        #[prost(message, tag = "24")]
+        StmtPerform(super::PLpgSqlStmtPerform),
+        #[prost(message, tag = "25")]
+        StmtCall(super::PLpgSqlStmtCall),
+        #[prost(message, tag = "26")]
+        StmtCommit(super::PLpgSqlStmtCommit),
+        #[prost(message, tag = "27")]
+        StmtRollback(super::PLpgSqlStmtRollback),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlExceptionBlock {
+    #[prost(int32, tag = "1")]
+    pub sqlstate_varno: i32,
+    #[prost(int32, tag = "2")]
+    pub sqlerrm_varno: i32,
+    #[prost(message, repeated, tag = "3")]
+    pub exc_list: ::prost::alloc::vec::Vec<PLpgSqlException>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlExpr {
+    #[prost(string, tag = "1")]
+    pub query: ::prost::alloc::string::String,
+    #[prost(int32, tag = "2")]
+    pub parse_mode: i32,
+    #[prost(int32, tag = "3")]
+    pub target_param: i32,
+    #[prost(bool, tag = "4")]
+    pub target_is_local: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlType {
+    #[prost(string, tag = "1")]
+    pub typname: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "2")]
+    pub typoid: u32,
+    #[prost(enumeration = "PLpgSqlTypeType", tag = "3")]
+    pub ttype: i32,
+    #[prost(int32, tag = "4")]
+    pub typlen: i32,
+    #[prost(string, tag = "5")]
+    pub typtype: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "6")]
+    pub collation: u32,
+    #[prost(bool, tag = "7")]
+    pub typisarray: bool,
+    #[prost(int32, tag = "8")]
+    pub atttypmod: i32,
+    #[prost(message, optional, tag = "9")]
+    pub origtypname: ::core::option::Option<TypeName>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtAssign {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(int32, tag = "3")]
+    pub varno: i32,
+    #[prost(message, optional, tag = "4")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtIf {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub cond: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "4")]
+    pub then_body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+    #[prost(message, repeated, tag = "5")]
+    pub elsif_list: ::prost::alloc::vec::Vec<PLpgSqlIfElsif>,
+    #[prost(message, repeated, tag = "6")]
+    pub else_body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtCase {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub t_expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(int32, tag = "4")]
+    pub t_varno: i32,
+    #[prost(message, repeated, tag = "5")]
+    pub case_when_list: ::prost::alloc::vec::Vec<PLpgSqlCaseWhen>,
+    #[prost(bool, tag = "6")]
+    pub have_else: bool,
+    #[prost(message, repeated, tag = "7")]
+    pub else_stmts: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtLoop {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "4")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtWhile {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "4")]
+    pub cond: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "5")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtFori {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(int32, tag = "4")]
+    pub var_dno: i32,
+    #[prost(message, optional, tag = "5")]
+    pub lower: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "6")]
+    pub upper: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "7")]
+    pub step: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(int32, tag = "8")]
+    pub reverse: i32,
+    #[prost(message, repeated, tag = "9")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtFors {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(int32, tag = "4")]
+    pub var_dno: i32,
+    #[prost(message, repeated, tag = "5")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+    #[prost(message, optional, tag = "6")]
+    pub query: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtForc {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(int32, tag = "4")]
+    pub var_dno: i32,
+    #[prost(message, repeated, tag = "5")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+    #[prost(int32, tag = "6")]
+    pub curvar: i32,
+    #[prost(message, optional, tag = "7")]
+    pub argquery: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtForeachA {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(int32, tag = "4")]
+    pub varno: i32,
+    #[prost(int32, tag = "5")]
+    pub slice: i32,
+    #[prost(message, optional, tag = "6")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "7")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtExit {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(bool, tag = "3")]
+    pub is_exit: bool,
+    #[prost(string, tag = "4")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "5")]
+    pub cond: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtReturn {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(int32, tag = "4")]
+    pub retvarno: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtReturnNext {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(int32, tag = "4")]
+    pub retvarno: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtReturnQuery {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub query: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "4")]
+    pub dynquery: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "5")]
+    pub params: ::prost::alloc::vec::Vec<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtRaise {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(int32, tag = "3")]
+    pub elog_level: i32,
+    #[prost(string, tag = "4")]
+    pub condname: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
+    pub message: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "6")]
+    pub params: ::prost::alloc::vec::Vec<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "7")]
+    pub options: ::prost::alloc::vec::Vec<PLpgSqlRaiseOption>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtAssert {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub cond: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "4")]
+    pub message: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtExecsql {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub sqlstmt: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(bool, tag = "4")]
+    pub into: bool,
+    #[prost(bool, tag = "5")]
+    pub strict: bool,
+    #[prost(int32, tag = "6")]
+    pub target_dno: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtDynexecute {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub query: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(bool, tag = "4")]
+    pub into: bool,
+    #[prost(bool, tag = "5")]
+    pub strict: bool,
+    #[prost(int32, tag = "6")]
+    pub target_dno: i32,
+    #[prost(message, repeated, tag = "7")]
+    pub params: ::prost::alloc::vec::Vec<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtDynfors {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(string, tag = "3")]
+    pub label: ::prost::alloc::string::String,
+    #[prost(int32, tag = "4")]
+    pub var_dno: i32,
+    #[prost(message, repeated, tag = "5")]
+    pub body: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+    #[prost(message, optional, tag = "6")]
+    pub query: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "7")]
+    pub params: ::prost::alloc::vec::Vec<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtGetdiag {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(bool, tag = "3")]
+    pub is_stacked: bool,
+    #[prost(message, repeated, tag = "4")]
+    pub diag_items: ::prost::alloc::vec::Vec<PLpgSqlDiagItem>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtOpen {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(int32, tag = "3")]
+    pub curvar: i32,
+    #[prost(int32, tag = "4")]
+    pub cursor_options: i32,
+    #[prost(message, optional, tag = "5")]
+    pub argquery: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "6")]
+    pub query: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, optional, tag = "7")]
+    pub dynquery: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "8")]
+    pub params: ::prost::alloc::vec::Vec<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtFetch {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(int32, tag = "3")]
+    pub target_dno: i32,
+    #[prost(int32, tag = "4")]
+    pub curvar: i32,
+    #[prost(enumeration = "FetchDirection", tag = "5")]
+    pub direction: i32,
+    #[prost(int64, tag = "6")]
+    pub how_many: i64,
+    #[prost(message, optional, tag = "7")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(bool, tag = "8")]
+    pub is_move: bool,
+    #[prost(bool, tag = "9")]
+    pub returns_multiple_rows: bool,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtClose {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(int32, tag = "3")]
+    pub curvar: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtPerform {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtCall {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(message, optional, tag = "3")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(bool, tag = "4")]
+    pub is_call: bool,
+    #[prost(int32, tag = "5")]
+    pub target_dno: i32,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtCommit {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(bool, tag = "3")]
+    pub chain: bool,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PLpgSqlStmtRollback {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(uint32, tag = "2")]
+    pub stmtid: u32,
+    #[prost(bool, tag = "3")]
+    pub chain: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlException {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(message, repeated, tag = "2")]
+    pub conditions: ::prost::alloc::vec::Vec<PLpgSqlCondition>,
+    #[prost(message, repeated, tag = "3")]
+    pub action: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlIfElsif {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(message, optional, tag = "2")]
+    pub cond: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "3")]
+    pub stmts: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlCaseWhen {
+    #[prost(int32, tag = "1")]
+    pub lineno: i32,
+    #[prost(message, optional, tag = "2")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+    #[prost(message, repeated, tag = "3")]
+    pub stmts: ::prost::alloc::vec::Vec<PLpgSqlStmt>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlRaiseOption {
+    #[prost(enumeration = "PLpgSqlRaiseOptionType", tag = "1")]
+    pub opt_type: i32,
+    #[prost(message, optional, tag = "2")]
+    pub expr: ::core::option::Option<PLpgSqlExpr>,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PLpgSqlDiagItem {
+    #[prost(enumeration = "PLpgSqlGetdiagKind", tag = "1")]
+    pub kind: i32,
+    #[prost(int32, tag = "2")]
+    pub target: i32,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlCondition {
+    #[prost(int32, tag = "1")]
+    pub sqlerrstate: i32,
+    #[prost(string, tag = "2")]
+    pub condname: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PLpgSqlRowField {
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(int32, tag = "2")]
+    pub varno: i32,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct ScanToken {
@@ -7423,6 +8121,281 @@ impl CompareType {
             "COMPARE_NE" => Some(Self::CompareNe),
             "COMPARE_OVERLAP" => Some(Self::CompareOverlap),
             "COMPARE_CONTAINED_BY" => Some(Self::CompareContainedBy),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PLpgSqlPromiseType {
+    PlpgsqlPromiseTypeUndefined = 0,
+    PlpgsqlPromiseNone = 1,
+    PlpgsqlPromiseTgName = 2,
+    PlpgsqlPromiseTgWhen = 3,
+    PlpgsqlPromiseTgLevel = 4,
+    PlpgsqlPromiseTgOp = 5,
+    PlpgsqlPromiseTgRelid = 6,
+    PlpgsqlPromiseTgTableName = 7,
+    PlpgsqlPromiseTgTableSchema = 8,
+    PlpgsqlPromiseTgNargs = 9,
+    PlpgsqlPromiseTgArgv = 10,
+    PlpgsqlPromiseTgEvent = 11,
+    PlpgsqlPromiseTgTag = 12,
+}
+impl PLpgSqlPromiseType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::PlpgsqlPromiseTypeUndefined => "PLPGSQL_PROMISE_TYPE_UNDEFINED",
+            Self::PlpgsqlPromiseNone => "PLPGSQL_PROMISE_NONE",
+            Self::PlpgsqlPromiseTgName => "PLPGSQL_PROMISE_TG_NAME",
+            Self::PlpgsqlPromiseTgWhen => "PLPGSQL_PROMISE_TG_WHEN",
+            Self::PlpgsqlPromiseTgLevel => "PLPGSQL_PROMISE_TG_LEVEL",
+            Self::PlpgsqlPromiseTgOp => "PLPGSQL_PROMISE_TG_OP",
+            Self::PlpgsqlPromiseTgRelid => "PLPGSQL_PROMISE_TG_RELID",
+            Self::PlpgsqlPromiseTgTableName => "PLPGSQL_PROMISE_TG_TABLE_NAME",
+            Self::PlpgsqlPromiseTgTableSchema => "PLPGSQL_PROMISE_TG_TABLE_SCHEMA",
+            Self::PlpgsqlPromiseTgNargs => "PLPGSQL_PROMISE_TG_NARGS",
+            Self::PlpgsqlPromiseTgArgv => "PLPGSQL_PROMISE_TG_ARGV",
+            Self::PlpgsqlPromiseTgEvent => "PLPGSQL_PROMISE_TG_EVENT",
+            Self::PlpgsqlPromiseTgTag => "PLPGSQL_PROMISE_TG_TAG",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PLPGSQL_PROMISE_TYPE_UNDEFINED" => Some(Self::PlpgsqlPromiseTypeUndefined),
+            "PLPGSQL_PROMISE_NONE" => Some(Self::PlpgsqlPromiseNone),
+            "PLPGSQL_PROMISE_TG_NAME" => Some(Self::PlpgsqlPromiseTgName),
+            "PLPGSQL_PROMISE_TG_WHEN" => Some(Self::PlpgsqlPromiseTgWhen),
+            "PLPGSQL_PROMISE_TG_LEVEL" => Some(Self::PlpgsqlPromiseTgLevel),
+            "PLPGSQL_PROMISE_TG_OP" => Some(Self::PlpgsqlPromiseTgOp),
+            "PLPGSQL_PROMISE_TG_RELID" => Some(Self::PlpgsqlPromiseTgRelid),
+            "PLPGSQL_PROMISE_TG_TABLE_NAME" => Some(Self::PlpgsqlPromiseTgTableName),
+            "PLPGSQL_PROMISE_TG_TABLE_SCHEMA" => Some(Self::PlpgsqlPromiseTgTableSchema),
+            "PLPGSQL_PROMISE_TG_NARGS" => Some(Self::PlpgsqlPromiseTgNargs),
+            "PLPGSQL_PROMISE_TG_ARGV" => Some(Self::PlpgsqlPromiseTgArgv),
+            "PLPGSQL_PROMISE_TG_EVENT" => Some(Self::PlpgsqlPromiseTgEvent),
+            "PLPGSQL_PROMISE_TG_TAG" => Some(Self::PlpgsqlPromiseTgTag),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PLpgSqlTypeType {
+    PlpgsqlTypeTypeUndefined = 0,
+    PlpgsqlTtypeScalar = 1,
+    PlpgsqlTtypeRec = 2,
+    PlpgsqlTtypePseudo = 3,
+}
+impl PLpgSqlTypeType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::PlpgsqlTypeTypeUndefined => "PLPGSQL_TYPE_TYPE_UNDEFINED",
+            Self::PlpgsqlTtypeScalar => "PLPGSQL_TTYPE_SCALAR",
+            Self::PlpgsqlTtypeRec => "PLPGSQL_TTYPE_REC",
+            Self::PlpgsqlTtypePseudo => "PLPGSQL_TTYPE_PSEUDO",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PLPGSQL_TYPE_TYPE_UNDEFINED" => Some(Self::PlpgsqlTypeTypeUndefined),
+            "PLPGSQL_TTYPE_SCALAR" => Some(Self::PlpgsqlTtypeScalar),
+            "PLPGSQL_TTYPE_REC" => Some(Self::PlpgsqlTtypeRec),
+            "PLPGSQL_TTYPE_PSEUDO" => Some(Self::PlpgsqlTtypePseudo),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PLpgSqlGetdiagKind {
+    PlpgsqlGetdiagKindUndefined = 0,
+    PlpgsqlGetdiagRowCount = 1,
+    PlpgsqlGetdiagRoutineOid = 2,
+    PlpgsqlGetdiagContext = 3,
+    PlpgsqlGetdiagErrorContext = 4,
+    PlpgsqlGetdiagErrorDetail = 5,
+    PlpgsqlGetdiagErrorHint = 6,
+    PlpgsqlGetdiagReturnedSqlstate = 7,
+    PlpgsqlGetdiagColumnName = 8,
+    PlpgsqlGetdiagConstraintName = 9,
+    PlpgsqlGetdiagDatatypeName = 10,
+    PlpgsqlGetdiagMessageText = 11,
+    PlpgsqlGetdiagTableName = 12,
+    PlpgsqlGetdiagSchemaName = 13,
+}
+impl PLpgSqlGetdiagKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::PlpgsqlGetdiagKindUndefined => "PLPGSQL_GETDIAG_KIND_UNDEFINED",
+            Self::PlpgsqlGetdiagRowCount => "PLPGSQL_GETDIAG_ROW_COUNT",
+            Self::PlpgsqlGetdiagRoutineOid => "PLPGSQL_GETDIAG_ROUTINE_OID",
+            Self::PlpgsqlGetdiagContext => "PLPGSQL_GETDIAG_CONTEXT",
+            Self::PlpgsqlGetdiagErrorContext => "PLPGSQL_GETDIAG_ERROR_CONTEXT",
+            Self::PlpgsqlGetdiagErrorDetail => "PLPGSQL_GETDIAG_ERROR_DETAIL",
+            Self::PlpgsqlGetdiagErrorHint => "PLPGSQL_GETDIAG_ERROR_HINT",
+            Self::PlpgsqlGetdiagReturnedSqlstate => "PLPGSQL_GETDIAG_RETURNED_SQLSTATE",
+            Self::PlpgsqlGetdiagColumnName => "PLPGSQL_GETDIAG_COLUMN_NAME",
+            Self::PlpgsqlGetdiagConstraintName => "PLPGSQL_GETDIAG_CONSTRAINT_NAME",
+            Self::PlpgsqlGetdiagDatatypeName => "PLPGSQL_GETDIAG_DATATYPE_NAME",
+            Self::PlpgsqlGetdiagMessageText => "PLPGSQL_GETDIAG_MESSAGE_TEXT",
+            Self::PlpgsqlGetdiagTableName => "PLPGSQL_GETDIAG_TABLE_NAME",
+            Self::PlpgsqlGetdiagSchemaName => "PLPGSQL_GETDIAG_SCHEMA_NAME",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PLPGSQL_GETDIAG_KIND_UNDEFINED" => Some(Self::PlpgsqlGetdiagKindUndefined),
+            "PLPGSQL_GETDIAG_ROW_COUNT" => Some(Self::PlpgsqlGetdiagRowCount),
+            "PLPGSQL_GETDIAG_ROUTINE_OID" => Some(Self::PlpgsqlGetdiagRoutineOid),
+            "PLPGSQL_GETDIAG_CONTEXT" => Some(Self::PlpgsqlGetdiagContext),
+            "PLPGSQL_GETDIAG_ERROR_CONTEXT" => Some(Self::PlpgsqlGetdiagErrorContext),
+            "PLPGSQL_GETDIAG_ERROR_DETAIL" => Some(Self::PlpgsqlGetdiagErrorDetail),
+            "PLPGSQL_GETDIAG_ERROR_HINT" => Some(Self::PlpgsqlGetdiagErrorHint),
+            "PLPGSQL_GETDIAG_RETURNED_SQLSTATE" => {
+                Some(Self::PlpgsqlGetdiagReturnedSqlstate)
+            }
+            "PLPGSQL_GETDIAG_COLUMN_NAME" => Some(Self::PlpgsqlGetdiagColumnName),
+            "PLPGSQL_GETDIAG_CONSTRAINT_NAME" => Some(Self::PlpgsqlGetdiagConstraintName),
+            "PLPGSQL_GETDIAG_DATATYPE_NAME" => Some(Self::PlpgsqlGetdiagDatatypeName),
+            "PLPGSQL_GETDIAG_MESSAGE_TEXT" => Some(Self::PlpgsqlGetdiagMessageText),
+            "PLPGSQL_GETDIAG_TABLE_NAME" => Some(Self::PlpgsqlGetdiagTableName),
+            "PLPGSQL_GETDIAG_SCHEMA_NAME" => Some(Self::PlpgsqlGetdiagSchemaName),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PLpgSqlRaiseOptionType {
+    PlpgsqlRaiseOptionTypeUndefined = 0,
+    PlpgsqlRaiseoptionErrcode = 1,
+    PlpgsqlRaiseoptionMessage = 2,
+    PlpgsqlRaiseoptionDetail = 3,
+    PlpgsqlRaiseoptionHint = 4,
+    PlpgsqlRaiseoptionColumn = 5,
+    PlpgsqlRaiseoptionConstraint = 6,
+    PlpgsqlRaiseoptionDatatype = 7,
+    PlpgsqlRaiseoptionTable = 8,
+    PlpgsqlRaiseoptionSchema = 9,
+}
+impl PLpgSqlRaiseOptionType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::PlpgsqlRaiseOptionTypeUndefined => {
+                "PLPGSQL_RAISE_OPTION_TYPE_UNDEFINED"
+            }
+            Self::PlpgsqlRaiseoptionErrcode => "PLPGSQL_RAISEOPTION_ERRCODE",
+            Self::PlpgsqlRaiseoptionMessage => "PLPGSQL_RAISEOPTION_MESSAGE",
+            Self::PlpgsqlRaiseoptionDetail => "PLPGSQL_RAISEOPTION_DETAIL",
+            Self::PlpgsqlRaiseoptionHint => "PLPGSQL_RAISEOPTION_HINT",
+            Self::PlpgsqlRaiseoptionColumn => "PLPGSQL_RAISEOPTION_COLUMN",
+            Self::PlpgsqlRaiseoptionConstraint => "PLPGSQL_RAISEOPTION_CONSTRAINT",
+            Self::PlpgsqlRaiseoptionDatatype => "PLPGSQL_RAISEOPTION_DATATYPE",
+            Self::PlpgsqlRaiseoptionTable => "PLPGSQL_RAISEOPTION_TABLE",
+            Self::PlpgsqlRaiseoptionSchema => "PLPGSQL_RAISEOPTION_SCHEMA",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PLPGSQL_RAISE_OPTION_TYPE_UNDEFINED" => {
+                Some(Self::PlpgsqlRaiseOptionTypeUndefined)
+            }
+            "PLPGSQL_RAISEOPTION_ERRCODE" => Some(Self::PlpgsqlRaiseoptionErrcode),
+            "PLPGSQL_RAISEOPTION_MESSAGE" => Some(Self::PlpgsqlRaiseoptionMessage),
+            "PLPGSQL_RAISEOPTION_DETAIL" => Some(Self::PlpgsqlRaiseoptionDetail),
+            "PLPGSQL_RAISEOPTION_HINT" => Some(Self::PlpgsqlRaiseoptionHint),
+            "PLPGSQL_RAISEOPTION_COLUMN" => Some(Self::PlpgsqlRaiseoptionColumn),
+            "PLPGSQL_RAISEOPTION_CONSTRAINT" => Some(Self::PlpgsqlRaiseoptionConstraint),
+            "PLPGSQL_RAISEOPTION_DATATYPE" => Some(Self::PlpgsqlRaiseoptionDatatype),
+            "PLPGSQL_RAISEOPTION_TABLE" => Some(Self::PlpgsqlRaiseoptionTable),
+            "PLPGSQL_RAISEOPTION_SCHEMA" => Some(Self::PlpgsqlRaiseoptionSchema),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PLpgSqlResolveOption {
+    PlpgsqlResolveOptionUndefined = 0,
+    PlpgsqlResolveError = 1,
+    PlpgsqlResolveVariable = 2,
+    PlpgsqlResolveColumn = 3,
+}
+impl PLpgSqlResolveOption {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::PlpgsqlResolveOptionUndefined => "PLPGSQL_RESOLVE_OPTION_UNDEFINED",
+            Self::PlpgsqlResolveError => "PLPGSQL_RESOLVE_ERROR",
+            Self::PlpgsqlResolveVariable => "PLPGSQL_RESOLVE_VARIABLE",
+            Self::PlpgsqlResolveColumn => "PLPGSQL_RESOLVE_COLUMN",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PLPGSQL_RESOLVE_OPTION_UNDEFINED" => {
+                Some(Self::PlpgsqlResolveOptionUndefined)
+            }
+            "PLPGSQL_RESOLVE_ERROR" => Some(Self::PlpgsqlResolveError),
+            "PLPGSQL_RESOLVE_VARIABLE" => Some(Self::PlpgsqlResolveVariable),
+            "PLPGSQL_RESOLVE_COLUMN" => Some(Self::PlpgsqlResolveColumn),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum PLpgSqlTrigtype {
+    PlpgsqlTrigtypeUndefined = 0,
+    PlpgsqlDmlTrigger = 1,
+    PlpgsqlEventTrigger = 2,
+    PlpgsqlNotTrigger = 3,
+}
+impl PLpgSqlTrigtype {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::PlpgsqlTrigtypeUndefined => "PLPGSQL_TRIGTYPE_UNDEFINED",
+            Self::PlpgsqlDmlTrigger => "PLPGSQL_DML_TRIGGER",
+            Self::PlpgsqlEventTrigger => "PLPGSQL_EVENT_TRIGGER",
+            Self::PlpgsqlNotTrigger => "PLPGSQL_NOT_TRIGGER",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PLPGSQL_TRIGTYPE_UNDEFINED" => Some(Self::PlpgsqlTrigtypeUndefined),
+            "PLPGSQL_DML_TRIGGER" => Some(Self::PlpgsqlDmlTrigger),
+            "PLPGSQL_EVENT_TRIGGER" => Some(Self::PlpgsqlEventTrigger),
+            "PLPGSQL_NOT_TRIGGER" => Some(Self::PlpgsqlNotTrigger),
             _ => None,
         }
     }
