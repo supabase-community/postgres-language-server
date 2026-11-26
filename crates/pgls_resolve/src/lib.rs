@@ -104,6 +104,15 @@ pub enum FindingKind {
         name: String,
         args: Vec<pgls_catalog::typing::Type>,
         failure: MatchFailure,
+        /// Whether `CALL` calls it, which only calls procedures.
+        procedure: bool,
+    },
+    /// `CALL` of a function, aggregate or window function: the arguments select one that isn't
+    /// a procedure.
+    NotAProcedure {
+        schema: Option<String>,
+        name: String,
+        args: Vec<pgls_catalog::typing::Type>,
     },
     InvalidCast {
         from: pgls_catalog::typing::Type,

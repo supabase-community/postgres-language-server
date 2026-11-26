@@ -75,6 +75,25 @@ fn standalone_comment_stays_before_a_parenthesized_operand() {
 }
 
 #[test]
+fn a_comment_before_the_operand_of_a_prefix_operator_keeps_its_line() {
+    // Behind `-`, `--` would lex as one comment; behind `**`, the comments would move after `t`.
+    for (sql, expected) in [
+        ("SELECT-\n--\n_", "select\n  -\n  --\n  _;"),
+        (
+            "SELECT **\n-- a\n-- b\nt",
+            "select\n  **\n  -- a\n  -- b\n  t;",
+        ),
+        ("SELECT 1 - -\n-- a\nt", "select\n  1 -\n  -\n  -- a\n  t;"),
+    ] {
+        assert_eq!(
+            format_idempotently(sql, &FormatConfig::default()),
+            expected,
+            "{sql}"
+        );
+    }
+}
+
+#[test]
 fn comment_after_the_conjunction_stays_after_the_conjunction() {
     let output = format_idempotently(
         "SELECT * FROM t WHERE a = 1 AND -- second condition\nb = 2;",

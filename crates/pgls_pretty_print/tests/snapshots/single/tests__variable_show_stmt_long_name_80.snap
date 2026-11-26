@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/variable_show_stmt_long_name.sql
+---
+show an_extension_with_a_name_longer_than_the_63_bytes_postgres_keep.my_setting;
