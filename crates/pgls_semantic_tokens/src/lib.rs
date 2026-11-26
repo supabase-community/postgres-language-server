@@ -144,10 +144,10 @@ pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec
                     .get(next..)
                     .unwrap_or_default()
                     .iter()
-                    .take_while(|token| token_range(token).is_some_and(|range| range.end() <= end))
+                    .take_while(|token| token.range().is_some_and(|range| range.end() <= end))
                 {
                     if token.keyword_kind() != KeywordKind::NoKeyword {
-                        push(token_range(token).as_ref(), SemanticTokenKind::Type, schema);
+                        push(token.range().as_ref(), SemanticTokenKind::Type, schema);
                     }
                 }
             }
@@ -266,7 +266,7 @@ fn scan(sql: &str) -> Option<Vec<ScanToken>> {
 fn name_parts(tokens: &[ScanToken], location: i32) -> Option<(Vec<TextRange>, usize)> {
     let mut index = tokens.partition_point(|token| token.start < location);
     let first = tokens.get(index).filter(|token| token.start == location)?;
-    let mut parts = vec![token_range(first)?];
+    let mut parts = vec![first.range()?];
     index += 1;
     // `$1` is never qualified.
     if first.token() == Token::Param {
@@ -279,7 +279,7 @@ fn name_parts(tokens: &[ScanToken], location: i32) -> Option<(Vec<TextRange>, us
         && dot.token() == Token::Ascii46
         && is_name(name)
     {
-        parts.push(token_range(name)?);
+        parts.push(name.range()?);
         index += 2;
     }
     Some((parts, index))
@@ -289,13 +289,6 @@ fn name_parts(tokens: &[ScanToken], location: i32) -> Option<(Vec<TextRange>, us
 fn is_name(token: &ScanToken) -> bool {
     matches!(token.token(), Token::Ident | Token::Uident)
         || token.keyword_kind() != KeywordKind::NoKeyword
-}
-
-fn token_range(token: &ScanToken) -> Option<TextRange> {
-    Some(TextRange::new(
-        TextSize::try_from(usize::try_from(token.start).ok()?).ok()?,
-        TextSize::try_from(usize::try_from(token.end).ok()?).ok()?,
-    ))
 }
 
 #[cfg(test)]

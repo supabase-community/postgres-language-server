@@ -85,10 +85,6 @@ pub(crate) enum CompletionAssertion {
     )]
     LabelAndDesc(String, String),
     LabelNotExists(String),
-    #[allow(
-        dead_code,
-        reason = "an assertion of the test API that no test uses yet"
-    )]
     KindNotExists(CompletionItemKind),
     CompletionTextAndRange(String, TextRange),
 }
