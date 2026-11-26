@@ -1243,18 +1243,18 @@ create type intr as range (subtype = int);
 
 drop type intr_multirange;
 
-create type textrange1 as range (subtype = text, multirange_type_name = int, "collation" = "C");
+create type textrange1 as range (subtype = text, multirange_type_name = int, collation = "C");
 
 create type textrange1 as range (
   subtype = text,
   multirange_type_name = multirange_of_text,
-  "collation" = "C"
+  collation = "C"
 );
 
 create type textrange2 as range (
   subtype = text,
   multirange_type_name = _textrange1,
-  "collation" = "C"
+  collation = "C"
 );
 
 select multirange_of_text(textrange2('a', 'Z'));
@@ -1272,7 +1272,7 @@ drop type textrange2;
 create type textrange1 as range (
   subtype = text,
   multirange_type_name = multitextrange1,
-  "collation" = "C"
+  collation = "C"
 );
 
 create role regress_multirange_owner;

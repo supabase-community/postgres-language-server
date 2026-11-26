@@ -1748,6 +1748,24 @@ VALUES
             .assert_no_errors();
     }
 
+    /// A `*` after an operand multiplies, so it needs an operand. Found by the
+    /// `splitter_vs_parser` fuzz target.
+    #[test]
+    fn statement_keywords_after_a_multiplication() {
+        for sql in [
+            "INSERT INTO tbl SELECT x, 2*INSERT INTx, NO",
+            "select x * update from t;",
+            "select (1) *\nalter, $1 * delete from t;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from("select *\nalter table t add c int;")
+            .expect_statements(vec!["select *", "alter table t add c int;"])
+            .assert_no_errors();
+    }
+
     /// Next to a `.` a keyword is a name, even a reserved one: a column label after it, a
     /// qualifier before it.
     #[test]

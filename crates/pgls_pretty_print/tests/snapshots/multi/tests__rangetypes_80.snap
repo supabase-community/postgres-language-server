@@ -869,9 +869,9 @@ select cast('[4,50)' as restrictedrange) @> 7;
 
 drop domain restrictedrange;
 
-create type textrange1 as range (subtype = text, "collation" = "C");
+create type textrange1 as range (subtype = text, collation = "C");
 
-create type textrange2 as range (subtype = text, "collation" = "C");
+create type textrange2 as range (subtype = text, collation = "C");
 
 select textrange1('a', 'Z') @> cast('b' as text);
 

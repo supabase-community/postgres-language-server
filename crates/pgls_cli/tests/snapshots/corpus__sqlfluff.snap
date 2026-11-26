@@ -69,10 +69,10 @@ check:
   lint/requireTypeSchema: 463
   lint/runningStatementWhileHoldingAccessExclusive: 187
   lint/transactionNesting: 24
-  syntax: 32
+  syntax: 36
 format:
-  format: 2316
-  syntax: 31
+  format: 2310
+  syntax: 35
 reformatted files: 226
   test/fixtures/dialects/postgres/alter_aggregate.sql
   test/fixtures/dialects/postgres/alter_collation.sql
@@ -96,12 +96,7 @@ reformatted files: 226
   test/fixtures/dialects/postgres/alter_publication.sql
   and 206 more
 crashes: 0
-format round-trip: 57
-  test/fixtures/dialects/postgres/alter_extension.sql:3
+format round-trip: 1
   test/fixtures/dialects/postgres/alter_extension.sql:5
-  test/fixtures/dialects/postgres/alter_index.sql:11
-  test/fixtures/dialects/postgres/alter_materialized_view.sql:36
-  test/fixtures/dialects/postgres/alter_materialized_view.sql:37
-  and 52 more
 splitter vs parser: 0
 lexer vs scanner: 0

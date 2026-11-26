@@ -193,20 +193,45 @@ impl<'a> Splitter<'a> {
         else {
             return false;
         };
-        if !NEEDS_OPERAND.contains(&self.lexed.kind(prev)) && !self.ends_operator(prev) {
+        if !NEEDS_OPERAND.contains(&self.lexed.kind(prev)) && !self.star_needs_operand(prev) {
             return false;
         }
         self.operand_keywords.push(self.current_pos);
         self.hold_back_statement_starts
     }
 
-    /// Whether the `*` at `idx` ends an operator of several characters, e.g. `~*`, which needs
-    /// an operand. A `*` on its own can end a statement, e.g. `select t.*`. Postgres reads a run
-    /// of operator characters as one operator:
+    /// Whether the `*` at `idx` needs an operand: it ends an operator of several characters, e.g.
+    /// `~*`, or it multiplies, e.g. `2*`. A `*` on its own can end a statement, e.g. `select *`
+    /// or `select t.*`. Postgres reads a run of operator characters as one operator:
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367-L368
-    fn ends_operator(&self, idx: usize) -> bool {
-        self.lexed.kind(idx) == SyntaxKind::STAR
-            && idx.checked_sub(1).is_some_and(|before| {
+    /// and a `*` after an operand is `a_expr '*' a_expr`:
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L14988
+    fn star_needs_operand(&self, idx: usize) -> bool {
+        if self.lexed.kind(idx) != SyntaxKind::STAR {
+            return false;
+        }
+        let multiplies = (0..idx)
+            .rev()
+            .find(|&before| !self.is_trivia(before))
+            .is_some_and(|before| {
+                matches!(
+                    self.lexed.kind(before),
+                    SyntaxKind::INT_NUMBER
+                        | SyntaxKind::FLOAT_NUMBER
+                        | SyntaxKind::IDENT
+                        | SyntaxKind::STRING
+                        | SyntaxKind::ESC_STRING
+                        | SyntaxKind::BIT_STRING
+                        | SyntaxKind::BYTE_STRING
+                        | SyntaxKind::DOLLAR_QUOTED_STRING
+                        | SyntaxKind::POSITIONAL_PARAM
+                        | SyntaxKind::NAMED_PARAM
+                        | SyntaxKind::R_PAREN
+                        | SyntaxKind::R_BRACK
+                )
+            });
+        multiplies
+            || idx.checked_sub(1).is_some_and(|before| {
                 matches!(
                     self.lexed.kind(before),
                     SyntaxKind::TILDE

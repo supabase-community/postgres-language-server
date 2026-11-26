@@ -238,17 +238,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 emit_identifier_maybe_quoted(e, &n.indexname);
             }
 
-            // USING INDEX TABLESPACE for PRIMARY KEY
-            if !n.indexspace.is_empty() {
-                continue_line(e, &mut continued);
-                e.token(TokenKind::USING_KW);
-                e.space();
-                e.token(TokenKind::INDEX_KW);
-                e.space();
-                e.token(TokenKind::TABLESPACE_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.indexspace);
-            }
+            emit_index_parameters(e, n, &mut continued);
 
             emit_deferrable(e, n, &mut continued);
         }
@@ -303,17 +293,7 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 emit_identifier_maybe_quoted(e, &n.indexname);
             }
 
-            // USING INDEX TABLESPACE for UNIQUE
-            if !n.indexspace.is_empty() {
-                continue_line(e, &mut continued);
-                e.token(TokenKind::USING_KW);
-                e.space();
-                e.token(TokenKind::INDEX_KW);
-                e.space();
-                e.token(TokenKind::TABLESPACE_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.indexspace);
-            }
+            emit_index_parameters(e, n, &mut continued);
 
             emit_deferrable(e, n, &mut continued);
         }
@@ -353,6 +333,8 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                     }
                 });
             }
+
+            emit_index_parameters(e, n, &mut continued);
 
             if let Some(ref where_clause) = n.where_clause {
                 e.space();
@@ -532,6 +514,27 @@ fn continue_line(e: &mut EventEmitter, continued: &mut bool) {
         *continued = true;
     }
     e.line(LineType::SoftOrSpace);
+}
+
+/// `WITH (...)` and `USING INDEX TABLESPACE` of the index behind a primary key, unique or exclusion
+/// constraint (`opt_definition OptConsTableSpace`,
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L4230).
+fn emit_index_parameters(e: &mut EventEmitter, n: &Constraint, continued: &mut bool) {
+    if !n.options.is_empty() {
+        continue_line(e, continued);
+        emit_with_options(e, &n.options);
+    }
+
+    if !n.indexspace.is_empty() {
+        continue_line(e, continued);
+        e.token(TokenKind::USING_KW);
+        e.space();
+        e.token(TokenKind::INDEX_KW);
+        e.space();
+        e.token(TokenKind::TABLESPACE_KW);
+        e.space();
+        emit_identifier_maybe_quoted(e, &n.indexspace);
+    }
 }
 
 /// `INITIALLY DEFERRED` implies `DEFERRABLE` in the AST, so emitting both round-trips either spelling.

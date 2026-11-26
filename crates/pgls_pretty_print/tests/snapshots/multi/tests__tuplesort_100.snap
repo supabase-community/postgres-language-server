@@ -327,7 +327,7 @@ begin;
 
 set local enable_indexscan = 'false';
 
-explain (costs 'off')
+explain (costs off)
 declare c scroll
 cursor
 for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;
@@ -372,7 +372,7 @@ set local enable_indexscan = 'false';
 
 set local work_mem = '100kB';
 
-explain (costs 'off')
+explain (costs off)
 declare c scroll
 cursor
 for select noabort_decreasing from abbrev_abort_uuids order by noabort_decreasing;
