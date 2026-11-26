@@ -498,7 +498,7 @@ fn assert_comment_tokens(sql: &str, expected: &[&str]) {
         let tokens: Vec<_> = scan
             .tokens
             .iter()
-            .map(|token| output[token.start as usize..token.end as usize].trim_end())
+            .map(|token| token.text(&output).unwrap().trim_end())
             .collect();
         assert!(
             tokens

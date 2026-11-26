@@ -2709,6 +2709,7 @@ dependencies = [
  "easy-parallel",
  "glob",
  "pgls_query_macros",
+ "pgls_text_size",
  "prost",
  "prost-build",
  "regex",

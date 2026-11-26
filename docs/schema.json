@@ -1426,7 +1426,7 @@
           ]
         },
         "functionArgumentMismatch": {
-          "description": "A function name and argument count exist, but its argument types do not select exactly one overload.",
+          "description": "A function name and argument count exist, but its argument types do not select exactly one overload, or CALL selects a function that isn't a procedure.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
