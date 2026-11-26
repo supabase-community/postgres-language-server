@@ -3,8 +3,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableCmd, AlterTableType};
-use pgls_query_ext::options::find_def_elem;
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, DefElem};
 
 /// `ATTRIBUTE_IDENTITY_ALWAYS`, how Postgres encodes `GENERATED ALWAYS`.
 const IDENTITY_ALWAYS: u8 = b'a';
@@ -90,7 +89,7 @@ fn breaking_change(cmd: &AlterTableCmd) -> Option<(&str, &'static str)> {
             let pgls_query::NodeEnum::List(options) = cmd.definition()? else {
                 return None;
             };
-            let generated = find_def_elem(&options.items, "generated")?;
+            let generated = DefElem::find(&options.items, "generated")?;
             matches!(
                 generated.arg.as_ref().and_then(|arg| arg.node.as_ref()),
                 Some(pgls_query::NodeEnum::Integer(value))
