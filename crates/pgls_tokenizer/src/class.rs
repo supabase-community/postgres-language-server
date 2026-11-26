@@ -18,6 +18,12 @@ pub enum CharClass {
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367
     /// `` op_chars [\~\!\@\#\^\&\|\`\?\+\-\*\/\%\<\>\=] ``
     OpChar,
+    /// The characters that Postgres returns as tokens of their own when they're one operator
+    /// character, or not an operator character at all.
+    ///
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L366
+    /// `self [,()\[\].;\:\+\-\*\/\%\^\<\>\=]`
+    SelfChar,
     /// The characters of a psql variable's name.
     ///
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L372
@@ -37,6 +43,7 @@ impl CharClass {
             CharClass::NonNewlineSpace => matches!(c, ' ' | '\t' | '\u{000C}' | '\u{000B}'),
             CharClass::Newline => matches!(c, '\n' | '\r'),
             CharClass::OpChar => "~!@#^&|`?+-*/%<>=".contains(c),
+            CharClass::SelfChar => ",()[].;:+-*/%^<>=".contains(c),
             CharClass::VariableChar => CharClass::IdentStart.contains(c) || c.is_ascii_digit(),
         }
     }
