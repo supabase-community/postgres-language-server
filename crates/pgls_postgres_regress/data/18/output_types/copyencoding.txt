@@ -1,0 +1,1 @@
+94..152	pg_catalog.bool

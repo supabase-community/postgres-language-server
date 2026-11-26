@@ -157,14 +157,10 @@
 19546..19639 accepted
 19640..19719 accepted
 19742..20227 accepted
-20228..20229 accepted
 20258..20479 accepted
-20480..20481 accepted
 20482..20539 accepted
 20562..20855 accepted
-20856..20857 accepted
 20886..21039 accepted
-21040..21041 accepted
 21043..21062 accepted
 21138..21251 accepted
 21252..21306 accepted

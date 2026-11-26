@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: total.report(&version)
 ---
-REL_18_6: 1479 objects of the databases after the files, 1369 as in the catalog, 83 the catalog can't tell about. 764 mismatches
+REL_18_6: 1483 objects of the databases after the files, 1369 as in the catalog, 87 the catalog can't tell about. 764 mismatches
 
 aggregates.sql: relation public.minmaxtest1 isn't in the database
 aggregates.sql: relation public.minmaxtest2 isn't in the database
