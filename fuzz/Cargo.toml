@@ -15,7 +15,7 @@ futures                 = "0.3.31"
 libfuzzer-sys           = "0.4"
 pgls_configuration      = { path = "../crates/pgls_configuration" }
 pgls_fs                 = { path = "../crates/pgls_fs" }
-pgls_lexer              = { path = "../crates/pgls_lexer" }
+pgls_lexer              = { path = "../crates/pgls_lexer", features = ["testing"] }
 pgls_lsp                = { path = "../crates/pgls_lsp", features = ["testing"] }
 pgls_pretty_print       = { path = "../crates/pgls_pretty_print", features = ["testing"] }
 pgls_query              = { path = "../crates/pgls_query" }
