@@ -8,7 +8,9 @@ use crate::nodes::{emit_node, emit_node_enum};
 use crate::{ClauseBodyStyle, Layout, TokenKind};
 
 use super::comments::emit_node_with;
-use super::predicates::{Position, breaks_only_inside_a_subquery, needs_parentheses};
+use super::predicates::{
+    OperandSide, OperatorInfo, Position, breaks_only_inside_a_subquery, needs_parentheses,
+};
 
 /// Opens the argument list of a call whose arguments the emitter writes itself: `(`, and when the
 /// call doesn't fit, a break and one more level of indent.
@@ -62,6 +64,23 @@ pub(crate) fn emit_condition_on_keyword_line(e: &mut EventEmitter, condition: &N
 /// Emits an expression where the grammar takes a `b_expr`, in parentheses unless it is one.
 pub(crate) fn emit_b_expr(e: &mut EventEmitter, node: &Node) {
     if needs_parentheses(node, Position::BExpr) {
+        e.token(TokenKind::L_PAREN);
+        emit_node(e, node);
+        e.token(TokenKind::R_PAREN);
+    } else {
+        emit_node(e, node);
+    }
+}
+
+/// Emits an operand of an operator, `parent`, in parentheses where it would otherwise bind
+/// differently.
+pub(crate) fn emit_operand_with_parens(
+    e: &mut EventEmitter,
+    node: &Node,
+    parent: Option<OperatorInfo>,
+    side: OperandSide,
+) {
+    if needs_parentheses(node, Position::Operand { parent, side }) {
         e.token(TokenKind::L_PAREN);
         emit_node(e, node);
         e.token(TokenKind::R_PAREN);

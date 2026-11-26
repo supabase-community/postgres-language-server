@@ -5,6 +5,7 @@ use std::sync::{
 };
 
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
+use pgls_lexer::SyntaxKind;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_statement_splitter::{SplitResult, TextChange};
 use pgls_suppressions::Suppressions;
@@ -423,16 +424,30 @@ impl Document {
 
     /// Whether a psql meta-command such as `\gexec` or `\gset` ends the statement in `range`
     /// instead of a `;`. psql sends the query buffer at a `;` and again at a `\g` command, so a
-    /// `;` added before one runs the statement twice. A `\` outside of quotes starts a
-    /// meta-command, unless `;` or `:` follows it, see
-    /// <https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L696-L715>.
+    /// `;` added before one runs the statement twice.
+    ///
+    /// Cost: lexes the text between the statement and the next one.
     pub(crate) fn ends_at_meta_command(&self, range: TextRange) -> bool {
         let content = self.content.as_str();
-        !content[range].trim_end().ends_with(';')
-            && content[usize::from(range.end())..]
-                .trim_start()
-                .strip_prefix('\\')
-                .is_some_and(|command| !command.starts_with([';', ':']))
+        if content[range].trim_end().ends_with(';') {
+            return false;
+        }
+        let next = self
+            .split
+            .ranges
+            .partition_point(|other| other.start() < range.end());
+        let gap_end = self
+            .split
+            .ranges
+            .get(next)
+            .map_or(content.len(), |other| usize::from(other.start()));
+        let Some(gap) = content.get(usize::from(range.end())..gap_end) else {
+            return false;
+        };
+        pgls_lexer::lex(gap)
+            .tokens()
+            .find(|kind| !kind.is_trivia())
+            .is_some_and(|kind| kind == SyntaxKind::META_COMMAND)
     }
 
     /// Whether `range` overlaps a value that the migration tool replaces, but that the text
