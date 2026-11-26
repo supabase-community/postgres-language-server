@@ -153,6 +153,22 @@ fn can_dollar_quote(value: &str, tag: &str) -> bool {
     format!("{value}{tag}").find(tag) == Some(value.len())
 }
 
+/// Emits the name of a setting (`var_name`), which the parser joins from its parts with `.`, quoting
+/// the parts that need it. One quoted name would be cut to 63 bytes as a whole.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1807
+pub(crate) fn emit_variable_name(e: &mut EventEmitter, name: &str) {
+    for (index, part) in name.split('.').enumerate() {
+        if index > 0 {
+            e.token(TokenKind::DOT);
+        }
+        if needs_quoting(part) {
+            emit_identifier(e, part);
+        } else {
+            e.token(TokenKind::IDENT(part.to_string()));
+        }
+    }
+}
+
 pub(crate) fn needs_quoting(value: &str) -> bool {
     if value.is_empty() {
         return true;
