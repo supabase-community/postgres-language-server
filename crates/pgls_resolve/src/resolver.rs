@@ -538,7 +538,7 @@ impl<'a> Resolver<'a> {
     pub(crate) fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
         let sql = self.sql?;
         let (start, end) = self.tokens()?.alias_span(usize::try_from(location).ok()?)?;
-        if pgls_catalog::identifier_name(sql.get(start..end)?) != alias {
+        if pgls_query::Identifier::new(sql.get(start..end)?).name() != alias {
             return None;
         }
         Some((

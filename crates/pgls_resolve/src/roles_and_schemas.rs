@@ -102,7 +102,7 @@ fn record_schema_names(r: &mut Resolver, stmt: &NodeEnum) {
         }
         // A comma-separated list of names.
         while let Some(token) = tokens.get(j) {
-            let name = pgls_catalog::identifier_name(scanned.text(token));
+            let name = pgls_query::Identifier::new(scanned.text(token)).name();
             if !names.contains(&name) {
                 break;
             }
