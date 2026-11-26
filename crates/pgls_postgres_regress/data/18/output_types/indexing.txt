@@ -55,3 +55,4 @@
 47262..47562	pg_catalog.regclass	pg_catalog.bool	pg_catalog.bool	pg_catalog.regclass	pg_catalog.regclass
 47724..48024	pg_catalog.regclass	pg_catalog.bool	pg_catalog.bool	pg_catalog.regclass	pg_catalog.regclass
 48239..48539	pg_catalog.regclass	pg_catalog.bool	pg_catalog.bool	pg_catalog.regclass	pg_catalog.regclass
+48817..48871	pg_catalog._int4

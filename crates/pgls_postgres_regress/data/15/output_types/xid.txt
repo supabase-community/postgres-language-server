@@ -29,6 +29,10 @@
 3261..3382	pg_catalog.bool
 3407..3452	pg_catalog.pg_snapshot
 3546..3594	pg_catalog.bool
+3595..3622	pg_catalog.xid8
+3763..3803	pg_catalog.xid8
+3826..3867	pg_catalog.xid8
+3892..3933	pg_catalog.xid8
 4125..4158	pg_catalog.text
 4205..4238	pg_catalog.text
 4282..4315	pg_catalog.text

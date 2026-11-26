@@ -294,6 +294,7 @@
 28793..28820	pg_catalog.text
 28821..28854	pg_catalog.text
 28856..28959	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+29185..29288	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
 29545..29573	pg_catalog.text
 29575..29602	pg_catalog.text
 29603..29624	pg_catalog.text

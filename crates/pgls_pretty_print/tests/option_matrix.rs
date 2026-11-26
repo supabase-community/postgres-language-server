@@ -31,8 +31,8 @@ use std::{
 
 use pgls_postgres_regress::Verdict;
 use pgls_pretty_print::{
-    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, FormatError, IndentStyle, KeywordCase,
-    Layout, LogicalOperatorPlacement, format_statement,
+    CastStyle, ClauseBodyStyle, CommaStyle, FormatConfig, FormatError, FormatStatementParams,
+    IndentStyle, KeywordCase, Layout, LogicalOperatorPlacement, format_statement,
 };
 use rayon::prelude::*;
 
@@ -166,7 +166,9 @@ fn format(sql: &str, config: &FormatConfig) -> Result<Option<String>, String> {
     else {
         return Ok(None);
     };
-    match catch_unwind(AssertUnwindSafe(|| format_statement(&ast, sql, config))) {
+    match catch_unwind(AssertUnwindSafe(|| {
+        format_statement(FormatStatementParams::new(&ast, sql, config))
+    })) {
         Ok(Ok(result)) => Ok(Some(result.formatted)),
         // A comment that can't be placed leaves the statement as written, by design.
         Ok(Err(FormatError::UnplaceableComment { .. })) => Ok(None),

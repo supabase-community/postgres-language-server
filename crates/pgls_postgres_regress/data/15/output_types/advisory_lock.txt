@@ -1,3 +1,4 @@
+25..97	pg_catalog.oid
 113..245	pg_catalog.void	pg_catalog.void	pg_catalog.void	pg_catalog.void
 465..497	pg_catalog.void
 610..730	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool

@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use pgls_analyser::STOP_CHECK_INTERVAL;
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
-use pgls_pretty_print::FormatConfig;
+use pgls_pretty_print::{FormatConfig, FormatStatementParams, Terminator};
 use pgls_text_size::TextRange;
 
 use super::{StatementId, document::Document, sql_function};
@@ -98,7 +98,9 @@ pub(super) fn format_document(
             };
 
             let text = doc.sql(stmt);
-            let Ok(result) = pgls_pretty_print::format_statement(ast, text, &config) else {
+            let Ok(result) =
+                pgls_pretty_print::format_statement(FormatStatementParams::new(ast, text, &config))
+            else {
                 continue;
             };
 
@@ -167,7 +169,16 @@ pub(super) fn format_document(
                     );
                 }
 
-                match pgls_pretty_print::format_statement(&ast, text, &config) {
+                // A meta-command like `\gexec` ends the statement in place of the `;`.
+                let terminator = if doc.ends_at_meta_command(stmt_range) {
+                    Terminator::Omitted
+                } else {
+                    Terminator::Semicolon
+                };
+                match pgls_pretty_print::format_statement(FormatStatementParams {
+                    terminator,
+                    ..FormatStatementParams::new(&ast, text, &config)
+                }) {
                     Ok(result) => match restore_named_parameters(text, &result.formatted, &ast) {
                         Some(formatted) => {
                             if text != formatted {

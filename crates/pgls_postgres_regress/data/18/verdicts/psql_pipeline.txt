@@ -1,28 +1,149 @@
 38..96 accepted
-115..151 rejected 42601
+115..124 rejected 42P02
 154..168 accepted
-192..228 rejected 42601
-229..276 rejected 42601
-277..324 rejected 42601
+192..201 rejected 42P02
+229..242 rejected 42P02
+277..290 rejected 42P02
 325..339 accepted
 340..362 accepted
 426..435 accepted
 436..445 accepted
 446..456 accepted
-477..513 rejected 42601
-515..562 rejected 42601
-563..610 rejected 42601
+477..486 rejected 42P02
+515..528 rejected 42P02
+563..576 rejected 42P02
 612..626 accepted
 627..649 accepted
-679..715 rejected 42601
-718..765 rejected 42601
-767..814 rejected 42601
+679..688 rejected 42P02
+718..731 rejected 42P02
+767..780 rejected 42P02
 818..832 accepted
 835..849 accepted
 851..865 accepted
-952..971 rejected 42601
+952..961 rejected 42P02
 972..981 accepted
-1063..1082 rejected 42601
+1063..1072 rejected 42P02
 1083..1092 accepted
-1168..1204 rejected 42601
-1283..9650 rejected 42601
+1168..1177 rejected 42P02
+1283..1320 rejected 42P02
+1343..1348 skipped
+1369..1406 rejected 42P02
+1429..1437 skipped
+1495..1500 skipped
+1521..1558 rejected 42P02
+1581..1589 skipped
+1610..1615 skipped
+1636..1673 rejected 42P02
+1696..1702 skipped
+1756..1765 rejected 42P02
+1776..1789 rejected 42P02
+1800..1809 rejected 42P02
+1896..1905 rejected 42P02
+1928..1937 rejected 42P02
+2028..2037 rejected 42P02
+2060..2069 rejected 42P02
+2165..2174 rejected 42P02
+2266..2275 rejected 42P02
+2299..2308 rejected 42P02
+2398..2407 rejected 42P02
+2431..2440 rejected 42P02
+2544..2553 rejected 42P02
+2578..2587 rejected 42P02
+2672..2681 rejected 42P02
+2704..2713 rejected 42P02
+2736..2745 rejected 42P02
+2774..2783 rejected 42P02
+2877..2886 rejected 42P02
+2960..2969 rejected 42P02
+2992..3001 rejected 42P02
+3024..3033 rejected 42P02
+3222..3231 rejected 42P02
+3253..3262 rejected 42P02
+3405..3411 accepted
+3439..3448 rejected 42P02
+3563..3573 rejected 42P02
+3574..3583 accepted
+3674..3679 skipped
+3700..3737 rejected 42P02
+3760..3768 skipped
+3790..3799 skipped
+3842..3848 accepted
+3994..4003 rejected 42P02
+4019..4028 rejected 42P02
+4126..4149 rejected 42P02
+4160..4183 rejected 42P02
+4270..4279 rejected 42P02
+4291..4300 rejected 42P02
+4346..4355 rejected 42P02
+4368..4377 rejected 42P02
+4425..4434 rejected 42P02
+4556..4565 rejected 42P02
+4588..4597 rejected 42P02
+4609..4618 rejected 42P02
+4688..4697 rejected 42P02
+4796..4804 accepted
+4881..4948 accepted
+4972..5006 accepted
+5115..5124 rejected 42P02
+5145..5154 rejected 42P02
+5177..5186 rejected 42P02
+5224..5233 rejected 42P02
+5256..5265 rejected 42P02
+5315..5324 rejected 42P02
+5347..5356 rejected 42P02
+5445..5454 rejected 42P02
+5475..5484 rejected 42P02
+5507..5516 rejected 42P02
+5587..5596 rejected 42P02
+5619..5628 rejected 42P02
+5812..5821 accepted
+5871..5879 accepted
+6272..6304 accepted
+6325..6347 accepted
+6369..6391 accepted
+6412..6444 accepted
+6465..6487 accepted
+6581..6590 rejected 42P02
+6613..6653 accepted
+6674..6683 rejected 42P02
+6781..6821 accepted
+6842..6851 rejected 42P02
+6927..6938 skipped
+6959..6968 rejected 42P02
+6991..7014 skipped
+7035..7044 rejected 42P02
+7169..7187 rejected 25P01
+7208..7217 rejected 42P02
+7348..7357 rejected 42P02
+7380..7398 rejected 25P01
+7419..7428 rejected 42P02
+7506..7526 accepted
+7608..7616 accepted
+7637..7657 accepted
+7720..7728 accepted
+7750..7770 accepted
+7856..7943 accepted
+7945..8006 rejected 42P02
+8096..8145 rejected 42P02
+8169..8178 rejected 42P02
+8289..8338 rejected 42P02
+8361..8410 rejected 42P02
+8434..8443 rejected 42P02
+8480..8489 rejected 42P02
+8527..8576 rejected 42P02
+8599..8648 rejected 42P02
+8673..8682 rejected 42P02
+8719..8728 rejected 42P02
+8764..8813 rejected 42P02
+8836..8885 rejected 42P02
+8908..8917 rejected 42P02
+8953..8962 rejected 42P02
+8998..9007 rejected 42P02
+9118..9167 rejected 42P02
+9191..9200 rejected 42P02
+9221..9230 rejected 42P02
+9321..9370 rejected 42P02
+9462..9511 rejected 42P02
+9534..9543 rejected 42P02
+9580..9611 accepted
+9625..9650 accepted

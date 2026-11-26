@@ -421,6 +421,20 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
     }
 
+    /// Whether a psql meta-command such as `\gexec` or `\gset` ends the statement in `range`
+    /// instead of a `;`. psql sends the query buffer at a `;` and again at a `\g` command, so a
+    /// `;` added before one runs the statement twice. A `\` outside of quotes starts a
+    /// meta-command, unless `;` or `:` follows it, see
+    /// <https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L696-L715>.
+    pub(crate) fn ends_at_meta_command(&self, range: TextRange) -> bool {
+        let content = self.content.as_str();
+        !content[range].trim_end().ends_with(';')
+            && content[usize::from(range.end())..]
+                .trim_start()
+                .strip_prefix('\\')
+                .is_some_and(|command| !command.starts_with([';', ':']))
+    }
+
     /// Whether `range` overlaps a value that the migration tool replaces, but that the text
     /// holds as written, like a goose `ENVSUB` expansion in a string literal.
     fn touches_unknown_value(&self, range: TextRange) -> bool {

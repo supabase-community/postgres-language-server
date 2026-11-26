@@ -36,6 +36,10 @@
 3875..3996	pg_catalog.bool
 4021..4066	pg_catalog.pg_snapshot
 4160..4208	pg_catalog.bool
+4209..4236	pg_catalog.xid8
+4377..4417	pg_catalog.xid8
+4440..4481	pg_catalog.xid8
+4506..4547	pg_catalog.xid8
 4739..4772	pg_catalog.text
 4819..4852	pg_catalog.text
 4896..4929	pg_catalog.text

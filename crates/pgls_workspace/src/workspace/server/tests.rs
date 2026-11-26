@@ -2451,6 +2451,29 @@ async fn test_format_statement_that_the_splitter_cuts_as_one() {
     assert_eq!(parsed_statements(&formatted), parsed_statements(content));
 }
 
+/// A statement that a psql meta-command like `\gexec` ends gets no `;`: psql would run it at the
+/// `;` and again at the command.
+#[tokio::test]
+async fn test_format_adds_no_semicolon_before_a_meta_command() {
+    for (content, expected) in [
+        (
+            "SELECT format('create index on t(%I)', attname)\nFROM pg_attribute\n\\gexec\n",
+            "select format('create index on t(%I)', attname) from pg_attribute\n\\gexec\n",
+        ),
+        (
+            "SELECT   1 AS a\n\n\\g out.txt\nSELECT   2;\n",
+            "select 1 as a\n\n\\g out.txt\nselect 2;\n",
+        ),
+        (
+            "SELECT 'hello' AS var1 \\gset\nSELECT   :'var1';\n",
+            "select 'hello' as var1 \\gset\nselect :'var1';\n",
+        ),
+        ("SELECT   1;\n\\gexec\n", "select 1;\n\\gexec\n"),
+    ] {
+        assert_eq!(format_content(content), expected, "{content}");
+    }
+}
+
 /// The `END` of a `CASE` in a `BEGIN ATOMIC` body was taken as the end of the body, and the real
 /// `END` was formatted as `COMMIT`, see #1142.
 #[tokio::test]

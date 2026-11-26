@@ -30,8 +30,10 @@ pub enum TokenKind {
     Eof,
     /// `/`
     Slash,
-    /// `\`
+    /// `\` of `\;` or `\:`, which psql puts into the query as `;` or `:`
     Backslash,
+    /// A psql meta-command with its arguments, e.g. `\set x 1` or `\gset`
+    MetaCommand,
     /// `-- foo`
     LineComment,
     /// ```
