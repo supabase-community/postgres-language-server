@@ -5,9 +5,8 @@ use super::prelude::*;
 pub(super) fn emit_null_test(e: &mut EventEmitter, n: &NullTest) {
     e.group_start();
 
-    // Emit the expression being tested
     if let Some(ref arg) = n.arg {
-        emit_node(e, arg);
+        emit_operand_with_parens(e, arg, Some(OperatorInfo::IS), OperandSide::Left);
     }
 
     e.space();

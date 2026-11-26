@@ -23,22 +23,6 @@ fn emit_set_arg(e: &mut EventEmitter, node: &Node) {
     super::emit_constant(e, node);
 }
 
-/// Emit a dot-separated variable name, quoting parts that need it
-fn emit_variable_name(e: &mut EventEmitter, name: &str) {
-    let parts: Vec<&str> = name.split('.').collect();
-    for (i, part) in parts.iter().enumerate() {
-        if i > 0 {
-            e.token(TokenKind::DOT);
-        }
-        if !needs_quoting(part) {
-            e.token(TokenKind::IDENT(part.to_string()));
-        } else {
-            // Quote the identifier
-            e.token(TokenKind::IDENT(format!("\"{part}\"")));
-        }
-    }
-}
-
 pub(super) fn emit_variable_set_stmt(e: &mut EventEmitter, n: &VariableSetStmt) {
     e.group_start();
     emit_variable_set_stmt_inner(e, n);

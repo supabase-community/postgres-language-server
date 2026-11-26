@@ -16,7 +16,7 @@ pub(crate) fn truncated_identifiers(source: &Source<'_>) -> HashMap<String, Stri
         if Token::try_from(token.token) != Ok(Token::Ident) {
             continue;
         }
-        let Some(text) = source.sql.get(token.start as usize..token.end as usize) else {
+        let Some(text) = token.text(source.sql) else {
             continue;
         };
         let name = Identifier::new(text).untruncated_name();

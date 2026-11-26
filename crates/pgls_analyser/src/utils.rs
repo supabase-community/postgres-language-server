@@ -4,7 +4,7 @@ use pgls_query::NodeEnum;
 use pgls_query::protobuf::{
     AlterDomainStmt, AlterTableCmd, AlterTableType, ColumnDef, Constraint, Node, RangeVar, TypeName,
 };
-use pgls_query_ext::utils::{QualifiedName, string_value};
+use pgls_query_ext::utils::QualifiedName;
 pub(crate) use pgls_query_ext::utils::{cmd_def, detaches_concurrently};
 
 /// The subcommands of an `ALTER TABLE` statement. Other statements have none.
@@ -144,30 +144,13 @@ impl AlterDomainKind {
     }
 }
 
-/// A list of name nodes as written in a diagnostic, e.g. `myschema.mood`.
-pub(crate) fn dotted_name(names: &[Node]) -> String {
-    names
-        .iter()
-        .filter_map(string_value)
-        .collect::<Vec<_>>()
-        .join(".")
-}
-
-/// A name with its schema, if it has one, e.g. `myschema.mood`.
-pub(crate) fn qualified_name(schema: Option<&str>, name: &str) -> String {
-    match schema {
-        Some(schema) => format!("{schema}.{name}"),
-        None => name.to_owned(),
-    }
-}
-
 /// The name of a built-in type, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`, but
 /// not for `myschema.varchar`. Unqualified names are built-in types if they exist, since
 /// `pg_catalog` comes first on the search path. Postgres only accepts the current database as
 /// the catalog of a three-part name like `mydb.pg_catalog.varchar`, and then ignores it, so we
 /// ignore it too.
 pub(crate) fn builtin_type_name(type_name: &TypeName) -> Option<&str> {
-    match pgls_query_ext::utils::qualified_name(&type_name.names)? {
+    match QualifiedName::of(&type_name.names)? {
         QualifiedName {
             schema: None | Some("pg_catalog"),
             name,

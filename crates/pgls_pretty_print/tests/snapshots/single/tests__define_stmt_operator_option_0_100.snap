@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/define_stmt_operator_option_0.sql
+---
+create aggregate my_min (sfunc = int4smaller, stype = int4, sortop = <);
