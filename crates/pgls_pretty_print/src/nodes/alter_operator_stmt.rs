@@ -42,7 +42,7 @@ fn emit_operator_option(e: &mut EventEmitter, def: &DefElem) {
                 e.space();
                 e.token(TokenKind::IDENT("=".to_string()));
                 e.space();
-                emit_operator_option_arg(e, arg);
+                emit_def_arg(e, arg);
             }
         }
         "restrict" | "join" => {
@@ -50,7 +50,7 @@ fn emit_operator_option(e: &mut EventEmitter, def: &DefElem) {
             e.token(TokenKind::IDENT("=".to_string()));
             e.space();
             if let Some(ref arg) = def.arg {
-                emit_operator_option_arg(e, arg);
+                emit_def_arg(e, arg);
             } else {
                 e.token(TokenKind::NONE_KW);
             }
@@ -60,23 +60,8 @@ fn emit_operator_option(e: &mut EventEmitter, def: &DefElem) {
                 e.space();
                 e.token(TokenKind::IDENT("=".to_string()));
                 e.space();
-                emit_operator_option_arg(e, arg);
+                emit_def_arg(e, arg);
             }
         }
-    }
-}
-
-fn emit_operator_option_arg(e: &mut EventEmitter, arg: &pgls_query::protobuf::Node) {
-    match arg.node.as_ref() {
-        Some(NodeEnum::Boolean(b)) => {
-            e.token(TokenKind::IDENT(if b.boolval {
-                "TRUE".to_string()
-            } else {
-                "FALSE".to_string()
-            }));
-        }
-        Some(NodeEnum::List(list)) => emit_operator(e, &list.items),
-        Some(NodeEnum::String(s)) => emit_string_literal(e, s),
-        _ => emit_node(e, arg),
     }
 }

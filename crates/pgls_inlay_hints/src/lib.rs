@@ -141,11 +141,11 @@ pub fn inlay_hints_of_references(
             {
                 continue;
             }
-            let Some(Ok(offset)) = tokens.first().map(|token| u32::try_from(token.start)) else {
+            let Some(range) = tokens.first().and_then(|token| token.range()) else {
                 continue;
             };
             hints.push(InlayHint {
-                offset: TextSize::new(offset),
+                offset: range.start(),
                 label: format!("{name}:"),
                 kind: InlayHintKind::Parameter,
             });
@@ -225,11 +225,7 @@ fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
         [first, rest @ ..] if first.token() == Token::Variadic => rest,
         _ => tokens,
     };
-    let text = |token: &ScanToken| {
-        let start = usize::try_from(token.start).ok()?;
-        let end = usize::try_from(token.end).ok()?;
-        sql.get(start..end)
-    };
+    let text = |token: &ScanToken| token.text(sql);
     let well_formed = tokens.len() % 2 == 1
         && tokens.iter().enumerate().all(|(i, token)| {
             let is_dot = token.token() == Token::Ascii46;

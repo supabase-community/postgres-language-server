@@ -9,7 +9,7 @@ pub(super) fn emit_variable_show_stmt(e: &mut EventEmitter, n: &VariableShowStmt
 
     if !n.name.is_empty() {
         e.space();
-        emit_identifier_maybe_quoted(e, &n.name);
+        emit_variable_name(e, &n.name);
     }
 
     e.group_end();

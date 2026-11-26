@@ -1042,9 +1042,7 @@ module.exports = grammar({
       prec.left(
         partialSeq(
           $.keyword_create,
-          optional(
-            choice($._temporary, $.keyword_unlogged, $.keyword_external),
-          ),
+          optional(choice($._temporary, $.keyword_unlogged)),
           $.keyword_table,
           optional($._if_not_exists),
           $.object_reference,
@@ -1788,23 +1786,13 @@ module.exports = grammar({
         $.change_ownership,
       ),
 
-    // TODO: optional `keyword_add` is necessary to allow for chained alter statements in t-sql
-    // maybe needs refactoring
     add_column: ($) =>
-      choice(
-        partialSeq(
-          $.keyword_add,
-          optional($.keyword_column),
-          optional($._if_not_exists),
-          field("end", $.column_definition),
-          optional($.column_position),
-        ),
-        seq(
-          optional($.keyword_column),
-          optional($._if_not_exists),
-          field("end", $.column_definition),
-          optional($.column_position),
-        ),
+      partialSeq(
+        $.keyword_add,
+        optional($.keyword_column),
+        optional($._if_not_exists),
+        field("end", $.column_definition),
+        optional($.column_position),
       ),
 
     add_constraint: ($) => partialSeq($.keyword_add, field("end", $.constraint)),
