@@ -1240,12 +1240,13 @@
 
 <h1 id="functionargumentmismatch">functionArgumentMismatch<a class="headerlink" href="#functionargumentmismatch" title="Permanent link">&para;</a></h1>
 <p><strong>Group</strong> <a href="../../rules/#typecheck"><code>typecheck</code></a> · <strong>Recommended</strong> · <strong>Needs a database connection</strong> · <strong>Since</strong> <code>0.27.0</code><br />
-<strong>Diagnostic</strong> <code>lint/functionArgumentMismatch</code> · <strong>Postgres error</strong> <code>42883</code>, <code>42725</code></p>
+<strong>Diagnostic</strong> <code>lint/functionArgumentMismatch</code> · <strong>Postgres error</strong> <code>42883</code>, <code>42725</code>, <code>42809</code></p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>A function name and argument count exist, but its argument types do not select exactly
-one overload.</p>
-<p>Postgres raises <code>42883 undefined_function</code> when no function matches, and
-<code>42725 ambiguous_function</code> when the call is ambiguous.</p>
+one overload, or <code>CALL</code> selects a function that isn't a procedure.</p>
+<p>Postgres raises <code>42883 undefined_function</code> when no function matches,
+<code>42725 ambiguous_function</code> when the call is ambiguous, and <code>42809 wrong_object_type</code> when
+<code>CALL</code> selects a function.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="invalid">Invalid<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">create</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">example_fn</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="nb">integer</span><span class="p">)</span><span class="w"> </span><span class="k">returns</span><span class="w"> </span><span class="nb">integer</span><span class="w"> </span><span class="k">language</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="s1">'select value'</span><span class="p">;</span>
