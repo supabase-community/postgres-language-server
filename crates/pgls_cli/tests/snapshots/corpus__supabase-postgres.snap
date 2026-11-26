@@ -41,7 +41,6 @@ check:
   lint/requireTypeSchema: 727
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
-  syntax: 1
 format:
   format: 1455
 reformatted files: 213
