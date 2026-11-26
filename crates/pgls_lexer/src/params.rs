@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use pgls_text_size::TextRange;
+
 use crate::{SyntaxKind, lex};
 
 // Keywords that, when preceding a named parameter, indicate that the parameter should be treated
@@ -47,6 +49,9 @@ pub struct NamedParameterConversion {
     /// Placeholder string constant to the source text it replaced, for instance `':fname'` to
     /// `:'fname'`. Its value is only known when psql runs the statement.
     pub string_replacements: HashMap<String, String>,
+    /// Where the psql variables are, like `:name` or `:'name'`, in text order. Without psql,
+    /// Postgres receives them as written.
+    pub psql_variables: Vec<TextRange>,
     /// False when a placeholder collides with a real identifier of the same statement, in which
     /// case the substitution cannot be undone and the caller must not rewrite the statement.
     pub restorable: bool,
@@ -86,6 +91,7 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
     let mut identifier_replacements: HashMap<String, String> = HashMap::new();
     let mut value_replacements: HashMap<usize, String> = HashMap::new();
     let mut string_replacements: HashMap<String, String> = HashMap::new();
+    let mut psql_variables = Vec::new();
     let mut restorable = true;
 
     for (token_idx, kind) in lexed.tokens().enumerate() {
@@ -97,13 +103,16 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
 
         if matches!(kind, SyntaxKind::NAMED_PARAM) {
             let flavor = NamedParamFlavor::from_text(token_text);
+            if flavor == Some(NamedParamFlavor::ColonRaw) && bracket_depth > 0 {
+                result.push_str(token_text);
+                continue;
+            }
+            if flavor.is_some_and(NamedParamFlavor::is_psql) {
+                psql_variables.push(lexed.range(token_idx));
+            }
             let previous = previous_non_trivia_kind(&lexed, token_idx);
             let next = next_non_trivia_kind(&lexed, token_idx);
             let is_identifier = match flavor {
-                Some(NamedParamFlavor::ColonRaw) if bracket_depth > 0 => {
-                    result.push_str(token_text);
-                    continue;
-                }
                 // psql replaces `:'name'` with a string constant, which also goes where `$n`
                 // doesn't parse, like `COPY t FROM :'file'`. Swapping the colon and the quote
                 // makes one of the same length.
@@ -177,6 +186,7 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
         identifier_replacements,
         value_replacements,
         string_replacements,
+        psql_variables,
         restorable,
     }
 }
@@ -196,6 +206,14 @@ enum NamedParamFlavor {
 }
 
 impl NamedParamFlavor {
+    /// Whether psql replaces the parameter, unlike `@name` or `$name`.
+    fn is_psql(self) -> bool {
+        matches!(
+            self,
+            Self::ColonRaw | Self::ColonString | Self::ColonIdentifier | Self::ColonDefined
+        )
+    }
+
     fn from_text(text: &str) -> Option<Self> {
         match text.as_bytes().first()? {
             b'@' => Some(Self::AtPrefix),
@@ -518,6 +536,19 @@ mod tests {
 
         assert_eq!(conversion.sql, "COPY t    FROM ':fname'");
         assert!(conversion.has_identifier_parameters);
+    }
+
+    #[test]
+    fn finds_the_psql_variables() {
+        let input = "select arr[1:n], :a, :'b', @c, $d from :\"e\" where :{?f}";
+        let conversion = convert_to_positional_params_with_metadata(input);
+
+        let variables: Vec<&str> = conversion
+            .psql_variables
+            .iter()
+            .map(|range| &input[*range])
+            .collect();
+        assert_eq!(variables, [":a", ":'b'", ":\"e\"", ":{?f}"]);
     }
 
     #[test]

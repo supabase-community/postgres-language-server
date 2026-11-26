@@ -5411,6 +5411,23 @@ impl TestProject {
 
     /// The severities of the `banDropColumn` diagnostics of a file with the given content.
     fn severities_of(&self, path: impl AsRef<Path>, content: &str) -> Vec<Severity> {
+        self.diagnostics_of(path, content)
+            .iter()
+            .filter(|diagnostic| {
+                diagnostic
+                    .category()
+                    .is_some_and(|category| category.name() == "lint/banDropColumn")
+            })
+            .map(|diagnostic| diagnostic.severity())
+            .collect()
+    }
+
+    /// The diagnostics of a file with the given content.
+    fn diagnostics_of(
+        &self,
+        path: impl AsRef<Path>,
+        content: &str,
+    ) -> Vec<pgls_diagnostics::serde::Diagnostic> {
         let path = PgLSPath::new(path.as_ref());
         self.workspace
             .open_file(OpenFileParams {
@@ -5433,14 +5450,6 @@ impl TestProject {
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
-            .iter()
-            .filter(|diagnostic| {
-                diagnostic
-                    .category()
-                    .is_some_and(|category| category.name() == "lint/banDropColumn")
-            })
-            .map(|diagnostic| diagnostic.severity())
-            .collect()
     }
 
     fn is_ignored(&self, path: impl AsRef<Path>) -> bool {
@@ -6115,6 +6124,41 @@ ALTER TABLE users DROP COLUMN email;
     assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
+}
+
+/// The migrations of a tool that runs them without psql report psql syntax. Other files, like
+/// Supabase's tests, which run with psql, don't.
+#[test]
+fn migrations_run_without_psql_report_psql_syntax() {
+    const CONTENT: &str = "-- migrate:up\n-- +goose Up\n\\set a 1\nselect :'a';\n";
+    for tool in ["supabase", "dbmate", "goose", "none"] {
+        let mut fs = MemoryFileSystem::default();
+        fs.insert(
+            Path::new("/repo").join(ConfigName::pgls_jsonc()),
+            format!(r#"{{ "migrations": {{ "migrationsDir": "migrations", "tool": "{tool}" }} }}"#),
+        );
+        let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+        let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+        let psql = |path: &str| {
+            project
+                .diagnostics_of(path, CONTENT)
+                .iter()
+                .filter(|diagnostic| {
+                    diagnostic
+                        .category()
+                        .is_some_and(|category| category.name() == "migrations/psqlSyntax")
+                })
+                .count()
+        };
+
+        let expected = if tool == "none" { 0 } else { 2 };
+        assert_eq!(
+            psql("/repo/migrations/20250301120000_init.sql"),
+            expected,
+            "{tool}"
+        );
+        assert_eq!(psql("/repo/tests/init.sql"), 0, "{tool}");
+    }
 }
 
 /// `after` is a number or a string, read like the versions of the migration files: the number
