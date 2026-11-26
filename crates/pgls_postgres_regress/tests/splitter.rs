@@ -277,8 +277,8 @@ fn statement_end(
     let mut ends = tokens
         .iter()
         .filter(|token| token.token == Token::Ascii59 as i32)
-        .filter_map(|token| u32::try_from(token.end).ok())
-        .map(|end| window.start() + TextSize::from(end))
+        .filter_map(|token| token.range())
+        .map(|range| window.start() + range.end())
         .filter(|&end| end > tried)
         .collect::<Vec<_>>();
     if ends.len() > TRIED_SEMICOLONS_MAX {
