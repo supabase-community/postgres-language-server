@@ -55,6 +55,48 @@ const DML_EVENT: &[SyntaxKind] = &[
     SyntaxKind::SHARE_KW,
 ];
 
+/// The objects of `ALTER`, e.g. `ALTER TABLE`, `ALTER PROCEDURAL LANGUAGE` or `ALTER LARGE OBJECT`.
+///
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L9386
+const ALTER_OBJECTS: &[SyntaxKind] = &[
+    SyntaxKind::AGGREGATE_KW,
+    SyntaxKind::COLLATION_KW,
+    SyntaxKind::CONVERSION_KW,
+    SyntaxKind::DATABASE_KW,
+    SyntaxKind::DEFAULT_KW,
+    SyntaxKind::DOMAIN_KW,
+    SyntaxKind::EVENT_KW,
+    SyntaxKind::EXTENSION_KW,
+    SyntaxKind::FOREIGN_KW,
+    SyntaxKind::FUNCTION_KW,
+    SyntaxKind::GROUP_KW,
+    SyntaxKind::INDEX_KW,
+    SyntaxKind::LANGUAGE_KW,
+    SyntaxKind::LARGE_KW,
+    SyntaxKind::MATERIALIZED_KW,
+    SyntaxKind::OPERATOR_KW,
+    SyntaxKind::POLICY_KW,
+    SyntaxKind::PROCEDURAL_KW,
+    SyntaxKind::PROCEDURE_KW,
+    SyntaxKind::PUBLICATION_KW,
+    SyntaxKind::ROLE_KW,
+    SyntaxKind::ROUTINE_KW,
+    SyntaxKind::RULE_KW,
+    SyntaxKind::SCHEMA_KW,
+    SyntaxKind::SEQUENCE_KW,
+    SyntaxKind::SERVER_KW,
+    SyntaxKind::STATISTICS_KW,
+    SyntaxKind::SUBSCRIPTION_KW,
+    SyntaxKind::SYSTEM_KW,
+    SyntaxKind::TABLE_KW,
+    SyntaxKind::TABLESPACE_KW,
+    SyntaxKind::TEXT_KW,
+    SyntaxKind::TRIGGER_KW,
+    SyntaxKind::TYPE_KW,
+    SyntaxKind::USER_KW,
+    SyntaxKind::VIEW_KW,
+];
+
 static STATEMENT_STARTS: &[StatementStart] = &[
     StatementStart {
         kind: SyntaxKind::WITH_KW,
@@ -150,11 +192,18 @@ impl Splitter<'_> {
             || match (kind, self.look_ahead()) {
                 // A keyword before a `.` qualifies a name, e.g. the schema in `alter.c`.
                 (_, SyntaxKind::DOT) => true,
-                // DELETE is also an unreserved keyword used by hstore's delete() function, and
-                // in `ON COMMIT DELETE ROWS`. A DELETE statement must be followed by FROM, so
-                // neither `delete(` nor `DELETE ROWS` can start one.
-                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L4674
-                (SyntaxKind::DELETE_KW, SyntaxKind::L_PAREN | SyntaxKind::ROWS_KW) => true,
+                // The unreserved statement keywords are names too, e.g. the type in `CREATE TYPE
+                // insert AS ...`, a table alias, hstore's delete() function, or in `ON COMMIT
+                // DELETE ROWS`. They start a statement only before the token that has to follow
+                // them there: `INSERT INTO`, `DELETE FROM`, `UPDATE [ONLY] name` and `ALTER
+                // <object>`.
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12239
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12427
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12497
+                (SyntaxKind::INSERT_KW, next) => next != SyntaxKind::INTO_KW,
+                (SyntaxKind::DELETE_KW, next) => next != SyntaxKind::FROM_KW,
+                (SyntaxKind::UPDATE_KW, next) => next != SyntaxKind::ONLY_KW && !is_col_id(next),
+                (SyntaxKind::ALTER_KW, next) => !ALTER_OBJECTS.contains(&next),
                 // Part of a clause, e.g. `WITH ORDINALITY`, `WITH CHECK` or `WITH TIME ZONE`.
                 (SyntaxKind::WITH_KW, _) => !self.at_cte(),
                 _ => false,

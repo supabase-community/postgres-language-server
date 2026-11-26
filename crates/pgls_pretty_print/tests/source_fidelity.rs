@@ -358,6 +358,17 @@ fn identifiers_longer_than_postgres_keeps_are_written_in_full() {
         format(&format!("CREATE TABLE {table} (id int)")),
         format!("create table {table} (id int);")
     );
+
+    // Found by the `formatter_roundtrip` fuzz target: the schema of a function was cut down.
+    let schema = "a_schema_name_that_is_definitely_way_too_long_for_anything_postgres";
+    assert_eq!(
+        format(&format!("SELECT {schema}.f()")),
+        format!("select {schema}.f();")
+    );
+    assert_eq!(
+        format(&format!("SELECT {table}()")),
+        format!("select {table}();")
+    );
 }
 
 // Found by the format round-trip oracle of the corpus check (`pgls_cli/tests/corpus.rs`): the

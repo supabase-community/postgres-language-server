@@ -2,7 +2,7 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{FuncCall, RangeFunction},
 };
-use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name, string_value};
+use pgls_query_ext::utils::{NameParts, QualifiedName, string_value};
 
 use super::{
     Resolver, alias::apply_alias, func_call::resolve_func_call, record_unresolved_node,
@@ -212,7 +212,7 @@ fn unnest_entry(call: &FuncCall, arg: &Node) -> Node {
 
 /// The output columns of a function call in FROM, if all its overloads agree on them.
 fn return_columns(r: &Resolver, call: &FuncCall) -> Option<Vec<String>> {
-    let QualifiedName { schema, name, .. } = qualified_name(&call.funcname)?;
+    let QualifiedName { schema, name, .. } = QualifiedName::of(&call.funcname)?;
     let Lookup::Found(overloads) = r.catalog.functions(schema, name, r.search_path) else {
         return None;
     };
@@ -237,7 +237,7 @@ fn typed_return_columns(r: &mut Resolver, n: &RangeFunction) -> Option<Vec<Typed
             Some(NodeEnum::List(list)) if !list.items.is_empty() => Some(&list.items),
             _ => None,
         });
-        let QualifiedName { schema, name, .. } = qualified_name(&call.funcname)?;
+        let QualifiedName { schema, name, .. } = QualifiedName::of(&call.funcname)?;
         if call.agg_within_group {
             return None;
         }

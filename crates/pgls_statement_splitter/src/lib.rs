@@ -1734,6 +1734,43 @@ VALUES
         }
     }
 
+    /// An unreserved statement keyword is a name unless the token after it is the one its
+    /// statement needs, e.g. `INSERT INTO`. Found by the `splitter_vs_parser` fuzz target.
+    #[test]
+    fn statement_keywords_as_names() {
+        for sql in [
+            "create type insert",
+            "create type insert as (a int);",
+            "create type update as enum ('a');",
+            "create domain insert as int;",
+            "create sequence insert;",
+            "create index insert on t (a);",
+            "create function f() returns insert language sql as 'select 1';",
+            "comment on type insert is 'x';",
+            "truncate insert;",
+            "create type alter as (a int);",
+            "select * from t update where true;",
+            "select * from t alter join u on true;",
+            "select * from t join u insert on true;",
+            "delete from t delete where true;",
+            "MERGE INTO t USING s insert ON t.a = s.a\n\nWHEN NOT MATCHED THEN INSERT VALUES (s.a);",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from(
+            "select * from t\nupdate only t set a = 1;\nselect * from t\nalter type x rename to y;",
+        )
+        .expect_statements(vec![
+            "select * from t",
+            "update only t set a = 1;",
+            "select * from t",
+            "alter type x rename to y;",
+        ])
+        .assert_no_errors();
+    }
+
     /// `*` at the end of an operator like `~*` needs an operand too. A `*` on its own can end a
     /// statement.
     #[test]
