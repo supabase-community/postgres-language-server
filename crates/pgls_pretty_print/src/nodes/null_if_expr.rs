@@ -11,7 +11,7 @@ pub(super) fn emit_null_if_expr(e: &mut EventEmitter, n: &NullIfExpr) {
     e.token(TokenKind::L_PAREN);
     if let [first, second, ..] = n.args.as_slice() {
         emit_node(e, first);
-        e.token(TokenKind::COMMA);
+        emit_argument_comma(e, Some(second));
         e.space();
         emit_node(e, second);
     } else {

@@ -307,12 +307,19 @@ pub fn walk_statements(
             if runs && placeholders {
                 file_context.taint_catalog();
             }
+            // Before `next`, which drops the resolution of the statement.
+            if stmt.function.is_some() {
+                catalog_functions.record_body_statement(stmt, &file_context);
+            }
             file_context.next(runs, !placeholders);
 
-            match &stmt.function {
-                Some(function) => catalog_functions.record_body_statement(function, &stmt.root),
-                None if catalog_functions.called_by(&stmt.root) => file_context.taint_catalog(),
-                None => catalog_functions.record_function(stmt),
+            if stmt.function.is_none() {
+                catalog_functions.end_body();
+                if catalog_functions.called_by(&stmt.root) {
+                    file_context.taint_catalog();
+                } else {
+                    catalog_functions.record_function(stmt);
+                }
             }
         }
 
@@ -364,7 +371,8 @@ fn skip_unparsable<'a>(
 /// follow what a call to one of them does, so a statement that calls one taints it, like `CALL`
 /// does.
 ///
-/// - SQL functions may if a statement of their body may, see [`Self::record_body_statement`].
+/// - SQL functions may if a statement of their body may, unless Postgres rejects their body, see
+///   [`Self::record_body_statement`].
 /// - PL/pgSQL functions may if their body has a statement that may, or dynamic SQL, see
 ///   [`crate::plpgsql::may_change_catalog`].
 /// - Functions in other languages, like PL/Python or C, always may, except `internal` ones: they
@@ -376,23 +384,85 @@ fn skip_unparsable<'a>(
 ///
 /// Cost: one pass over the nodes of each statement that runs, once the file created such a
 /// function, and of each statement of a function body. A PL/pgSQL body is parsed once, when the
-/// statement that creates the function runs.
+/// statement that creates the function runs. The statements of a SQL body from the first one
+/// that may change the catalog on are resolved, which lint does anyway.
 #[derive(Clone, Default)]
-struct CatalogFunctions(Arc<HashSet<String>>);
+struct CatalogFunctions {
+    names: Arc<HashSet<String>>,
+    /// The SQL function whose body statements the walk is visiting, recorded by
+    /// [`Self::end_body`] at the next statement that runs.
+    body: Option<FunctionBody>,
+}
+
+/// The statements so far of the body of a SQL function.
+#[derive(Clone)]
+struct FunctionBody {
+    name: String,
+    /// Whether a statement may change the catalog, or calls a function that may.
+    changes_catalog: bool,
+    /// Whether Postgres rejects a statement, so that it doesn't create the function. Only the
+    /// statements from the first one that may change the catalog on are looked at.
+    rejected: bool,
+}
+
+impl FunctionBody {
+    /// Whether Postgres certainly rejects `stmt`, a statement of a SQL function body, when it
+    /// creates the function: it validates the body while `check_function_bodies` is on
+    /// ([`fmgr_sql_validator`]), and the statement has findings, under the conditions in which
+    /// the analyser reports them. Computes the resolution of the statement, which lint shares.
+    ///
+    /// [`fmgr_sql_validator`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/pg_proc.c#L890
+    fn rejects(stmt: &AnalysableStatement, file_context: &AnalysedFileContext) -> bool {
+        file_context.session().check_function_bodies()
+            && file_context.catalog().has_base()
+            && !file_context.catalog().is_tainted()
+            && !stmt.has_identifier_parameters
+            && !stmt.has_unknown_values
+            && !file_context.resolution(stmt).findings.is_empty()
+    }
+}
 
 impl CatalogFunctions {
-    /// Records `stmt`, a statement of the body of `function`. A body statement that may change
-    /// the catalog, or that calls a function that may, makes `function` one that may.
+    /// Records `stmt`, a statement of a SQL function body, the current statement of
+    /// `file_context`. A body statement that may change the catalog, or that calls a function
+    /// that may, makes the function one that may, unless Postgres rejects its body.
     fn record_body_statement(
         &mut self,
-        function: &pgls_resolve::FunctionContext,
-        stmt: &pgls_query::NodeEnum,
+        stmt: &AnalysableStatement,
+        file_context: &AnalysedFileContext,
     ) {
-        if self.0.contains(&function.function_name) {
+        let Some(function) = &stmt.function else {
+            return;
+        };
+        let name = &function.function_name;
+        if self.names.contains(name) {
             return;
         }
-        if !is_plain_query(stmt) || self.called_by(stmt) {
-            Arc::make_mut(&mut self.0).insert(function.function_name.clone());
+        if self.body.as_ref().is_none_or(|body| &body.name != name) {
+            self.end_body();
+            self.body = Some(FunctionBody {
+                name: name.clone(),
+                changes_catalog: false,
+                rejected: false,
+            });
+        }
+        let changes_catalog = !is_plain_query(&stmt.root) || self.called_by(&stmt.root);
+        let Some(body) = self.body.as_mut() else {
+            return;
+        };
+        body.changes_catalog |= changes_catalog;
+        if body.changes_catalog && !body.rejected {
+            body.rejected = FunctionBody::rejects(stmt, file_context);
+        }
+    }
+
+    /// Records the function whose body statements came last, if it may change the catalog.
+    fn end_body(&mut self) {
+        if let Some(body) = self.body.take()
+            && body.changes_catalog
+            && !body.rejected
+        {
+            Arc::make_mut(&mut self.names).insert(body.name);
         }
     }
 
@@ -413,7 +483,7 @@ impl CatalogFunctions {
         };
         if create_fn.is_procedure
             || matches!(language, Language::Sql | Language::Internal)
-            || self.0.contains(name)
+            || self.names.contains(name)
         {
             return;
         }
@@ -422,12 +492,12 @@ impl CatalogFunctions {
                 crate::plpgsql::may_change_catalog(
                     sql,
                     |stmt| self.called_by(stmt),
-                    |name| self.0.contains(name),
-                    !self.0.is_empty(),
+                    |name| self.names.contains(name),
+                    !self.names.is_empty(),
                 )
             });
         if may_change_catalog {
-            Arc::make_mut(&mut self.0).insert(name.to_owned());
+            Arc::make_mut(&mut self.names).insert(name.to_owned());
         }
     }
 
@@ -435,7 +505,7 @@ impl CatalogFunctions {
     /// functions its `BEGIN ATOMIC` body calls.
     fn called_by(&self, stmt: &pgls_query::NodeEnum) -> bool {
         use pgls_query::{NodeEnum, NodeRef};
-        if self.0.is_empty() || matches!(stmt, NodeEnum::CreateFunctionStmt(_)) {
+        if self.names.is_empty() || matches!(stmt, NodeEnum::CreateFunctionStmt(_)) {
             return false;
         }
         stmt.iter().any(|node| {
@@ -445,7 +515,7 @@ impl CatalogFunctions {
             call.funcname
                 .last()
                 .and_then(pgls_query_ext::utils::string_value)
-                .is_some_and(|name| self.0.contains(name))
+                .is_some_and(|name| self.names.contains(name))
         })
     }
 }

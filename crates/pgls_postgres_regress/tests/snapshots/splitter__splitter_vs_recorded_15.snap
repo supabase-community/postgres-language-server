@@ -2,4 +2,9 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report
 ---
-REL_15_19: 42185 recorded statements, 0 differences
+REL_15_19: 42185 recorded statements, 1 differences
+
+rules.sql:185:1:
+  recorded 185:1-185:16 ** Remember the
+  recorded 185:17-187:54 delete rule on rtest_v1: It says ** DO INSTEAD DELETE FROM rtest_t1 WHERE a = ol…
+  splitter 185:1-187:54 ** Remember the delete rule on rtest_v1: It says ** DO INSTEAD DELETE FROM rtest…

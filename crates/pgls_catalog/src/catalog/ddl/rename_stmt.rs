@@ -2,7 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{ObjectType, RangeVar, RenameStmt},
 };
-use pgls_query_ext::utils::{qualified_name, range_var_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::Catalog;
 use crate::lookup::ColumnInfo;
@@ -56,14 +56,18 @@ pub(super) fn apply_rename_stmt(c: &mut Catalog, n: &RenameStmt, search_path: &[
         }
         ObjectType::ObjectAttribute => {
             if let Some(range_var) = &n.relation {
-                c.change_type(range_var_name(range_var), search_path, |_, type_info| {
-                    rename_in(&mut type_info.attributes, &n.subname, &n.newname);
-                });
+                c.change_type(
+                    QualifiedName::of_range_var(range_var),
+                    search_path,
+                    |_, type_info| {
+                        rename_in(&mut type_info.attributes, &n.subname, &n.newname);
+                    },
+                );
             }
         }
         ObjectType::ObjectType | ObjectType::ObjectDomain => {
             if let Some(NodeEnum::List(list)) = object
-                && let Some(name) = qualified_name(&list.items)
+                && let Some(name) = QualifiedName::of(&list.items)
             {
                 c.move_type(name, None, Some(&n.newname), search_path);
             }

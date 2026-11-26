@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/revoke_non_ascii_privilege.sql
+---
+revoke select, deleteѺ, straße on table t from u;

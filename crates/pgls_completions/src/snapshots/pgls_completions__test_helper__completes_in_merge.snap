@@ -210,7 +210,8 @@ matched - matched (Keyword)
 merge into users u using posts p on p.post_id = u.id when matched |
 
 Results:
-by - by (Keyword)
+and - and (Keyword)
+then - then (Keyword)
 
 --------------
 
@@ -426,7 +427,9 @@ matched - matched (Keyword)
 merge into users u using posts p on p.post_id = u.id when matched and p.title <> u.name then update set name = p.title when not matched |
 
 Results:
+and - and (Keyword)
 by - by (Keyword)
+then - then (Keyword)
 
 --------------
 

@@ -1,8 +1,9 @@
-use crate::utils::{column_defs, dotted_name};
+use crate::utils::column_defs;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Prefer using IDENTITY columns over serial columns.
@@ -77,7 +78,9 @@ fn check_column_def(
     if pgls_catalog::serial_type(type_name).is_none() {
         return;
     }
-    let name = dotted_name(&type_name.names);
+    let name = QualifiedName::of_type_name(type_name)
+        .map(|name| name.to_string())
+        .unwrap_or_default();
 
     diagnostics.push(
         LinterDiagnostic::new(

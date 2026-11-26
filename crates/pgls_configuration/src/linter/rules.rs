@@ -349,6 +349,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Error,
     },
     LinterRuleMetadata {
+        group: "typecheck",
+        name: "invalidSelectInto",
+        recommended: true,
+        severity: Severity::Error,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "lockTimeoutWarning",
         recommended: true,
@@ -743,7 +749,7 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
-    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload."]
+    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload, or CALL selects a function that isn't a procedure."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_argument_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionArgumentMismatch>>,
@@ -772,6 +778,9 @@ pub struct Rules {
     #[doc = "A MERGE, or merge_action(), that Postgres rejects."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invalid_merge: Option<RuleConfiguration<pgls_analyser::options::InvalidMerge>>,
+    #[doc = "A SELECT ... INTO that Postgres rejects."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invalid_select_into: Option<RuleConfiguration<pgls_analyser::options::InvalidSelectInto>>,
     #[doc = "Taking a dangerous lock without setting a lock timeout can cause indefinite blocking."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_timeout_warning: Option<RuleConfiguration<pgls_analyser::options::LockTimeoutWarning>>,
@@ -1076,6 +1085,10 @@ impl Rules {
                 .as_ref()
                 .map(RuleConfiguration::level),
             "invalidMerge" => self.invalid_merge.as_ref().map(RuleConfiguration::level),
+            "invalidSelectInto" => self
+                .invalid_select_into
+                .as_ref()
+                .map(RuleConfiguration::level),
             "lockTimeoutWarning" => self
                 .lock_timeout_warning
                 .as_ref()
@@ -1407,6 +1420,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "invalidMerge" => self
                 .invalid_merge
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "invalidSelectInto" => self
+                .invalid_select_into
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "lockTimeoutWarning" => self

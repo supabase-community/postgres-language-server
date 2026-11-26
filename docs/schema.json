@@ -1426,7 +1426,7 @@
           ]
         },
         "functionArgumentMismatch": {
-          "description": "A function name and argument count exist, but its argument types do not select exactly one overload.",
+          "description": "A function name and argument count exist, but its argument types do not select exactly one overload, or CALL selects a function that isn't a procedure.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1504,6 +1504,17 @@
         },
         "invalidMerge": {
           "description": "A MERGE, or merge_action(), that Postgres rejects.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invalidSelectInto": {
+          "description": "A SELECT ... INTO that Postgres rejects.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
