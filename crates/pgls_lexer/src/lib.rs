@@ -237,11 +237,13 @@ mod tests {
         }
     }
 
-    /// The scanner reads meta-commands and COPY data as SQL, so a text with them isn't compared.
+    /// The scanner reads meta-commands, psql variables and COPY data as SQL, so a text with them
+    /// isn't compared.
     #[test]
     fn psql_input_is_not_compared_with_the_scanner() {
         for sql in [
             "select 1 \\gset\n\\echo 'a'",
+            "select :a$b, :1.5, :'v'\n'w'",
             "copy t from stdin;\n1\t'a\n\\.\n",
         ] {
             assert_eq!(lex(sql).scanner_difference(), None, "{sql:?}");
