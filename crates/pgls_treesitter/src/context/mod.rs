@@ -8,7 +8,7 @@ use crate::{
     helper, parts_of_reference_query,
     queries::{self, QueryResult, TreeSitterQueriesExecutor},
 };
-use pgls_catalog::identifier_name;
+use pgls_query::Identifier;
 use pgls_text_size::TextSize;
 use tree_sitter::Language;
 
@@ -52,7 +52,7 @@ pub enum WrappingClause<'a> {
     CheckOrUsingClause,
 }
 
-/// A column of the statement. Both are names, see [`identifier_name`].
+/// A column of the statement. Both are names, see [`Identifier::name`].
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub struct MentionedColumn {
     pub column: String,
@@ -83,7 +83,7 @@ struct ReturningRowAlias {
     explicit: bool,
 }
 
-/// The name of a table, see [`identifier_name`].
+/// The name of a table, see [`Identifier::name`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct RelationName {
     schema: Option<String>,
@@ -250,8 +250,11 @@ impl<'a> TreesitterContext<'a> {
         for relation_match in executor.get_iter(stmt_range) {
             match relation_match {
                 QueryResult::Relation(r) => {
-                    let schema_name = r.get_schema(sql).as_deref().map(identifier_name);
-                    let table_name = identifier_name(&r.get_table(sql));
+                    let schema_name = r
+                        .get_schema(sql)
+                        .as_deref()
+                        .map(|name| Identifier::new(name).name());
+                    let table_name = Identifier::new(&r.get_table(sql)).name();
 
                     self.mentioned_relations
                         .entry(schema_name)
@@ -264,13 +267,13 @@ impl<'a> TreesitterContext<'a> {
                 QueryResult::TableAliases(table_alias_match) => {
                     let text = table_alias_match.get_alias(sql);
                     self.mentioned_table_aliases.insert(
-                        identifier_name(&text),
+                        Identifier::new(&text).name(),
                         TableAlias {
                             schema: table_alias_match
                                 .get_schema(sql)
                                 .as_deref()
-                                .map(identifier_name),
-                            table: identifier_name(&table_alias_match.get_table(sql)),
+                                .map(|name| Identifier::new(name).name()),
+                            table: Identifier::new(&table_alias_match.get_table(sql)).name(),
                             text,
                             start: table_alias_match.alias.start_byte(),
                         },
@@ -286,10 +289,10 @@ impl<'a> TreesitterContext<'a> {
                             .contains(&self.position) =>
                 {
                     if let Some(table) = m.get_table(sql) {
-                        let table = identifier_name(&table);
+                        let table = Identifier::new(&table).name();
                         for alias in m.get_aliases(sql) {
                             returning_aliases.insert(
-                                identifier_name(&alias.text),
+                                Identifier::new(&alias.text).name(),
                                 ReturningRowAlias {
                                     table: table.clone(),
                                     explicit: alias.explicit,
@@ -301,8 +304,11 @@ impl<'a> TreesitterContext<'a> {
 
                 QueryResult::SelectClauseColumns(c) => {
                     let mentioned = MentionedColumn {
-                        column: identifier_name(&c.get_column(sql)),
-                        alias: c.get_alias(sql).as_deref().map(identifier_name),
+                        column: Identifier::new(&c.get_column(sql)).name(),
+                        alias: c
+                            .get_alias(sql)
+                            .as_deref()
+                            .map(|name| Identifier::new(name).name()),
                     };
 
                     self.mentioned_columns
@@ -315,8 +321,11 @@ impl<'a> TreesitterContext<'a> {
 
                 QueryResult::WhereClauseColumns(c) => {
                     let mentioned = MentionedColumn {
-                        column: identifier_name(&c.get_column(sql)),
-                        alias: c.get_alias(sql).as_deref().map(identifier_name),
+                        column: Identifier::new(&c.get_column(sql)).name(),
+                        alias: c
+                            .get_alias(sql)
+                            .as_deref()
+                            .map(|name| Identifier::new(name).name()),
                     };
 
                     self.mentioned_columns
@@ -329,7 +338,7 @@ impl<'a> TreesitterContext<'a> {
 
                 QueryResult::InsertClauseColumns(c) => {
                     let mentioned = MentionedColumn {
-                        column: identifier_name(&c.get_column(sql)),
+                        column: Identifier::new(&c.get_column(sql)).name(),
                         alias: None,
                     };
 
@@ -651,8 +660,8 @@ impl<'a> TreesitterContext<'a> {
             Some(RelationName {
                 schema: schema
                     .and_then(|schema| self.get_ts_node_content(&schema))
-                    .map(|schema| identifier_name(&schema)),
-                name: identifier_name(&self.get_ts_node_content(&name)?),
+                    .map(|schema| Identifier::new(&schema).name()),
+                name: Identifier::new(&self.get_ts_node_content(&name)?).name(),
             })
         };
         let target = relation_after("keyword_into");
@@ -679,7 +688,7 @@ impl<'a> TreesitterContext<'a> {
     }
 
     /// Whether the cursor is in a `WHEN` clause of MERGE that can't see the columns of the table
-    /// `schema.table`. Both are names, see [`identifier_name`].
+    /// `schema.table`. Both are names, see [`Identifier::name`].
     pub fn is_hidden_merge_relation(&self, schema: &str, table: &str) -> bool {
         self.hidden_merge_relation.as_ref().is_some_and(|hidden| {
             hidden.name == table && hidden.schema.as_deref().is_none_or(|s| s == schema)
@@ -732,18 +741,24 @@ impl<'a> TreesitterContext<'a> {
         !self.mentioned_columns.is_empty()
     }
 
-    /// Returns the name of the head qualifier (leftmost), see [`identifier_name`].
+    /// Returns the name of the head qualifier (leftmost), see [`Identifier::name`].
     /// For `schema.table.<column>`: returns `Some("schema")`
     /// For `table.<column>`: returns `None`
     pub fn head_qualifier_sanitized(&self) -> Option<String> {
-        self.identifier_qualifiers.0.as_deref().map(identifier_name)
+        self.identifier_qualifiers
+            .0
+            .as_deref()
+            .map(|name| Identifier::new(name).name())
     }
 
-    /// Returns the name of the tail qualifier (rightmost), see [`identifier_name`].
+    /// Returns the name of the tail qualifier (rightmost), see [`Identifier::name`].
     /// For `schema.table.<column>`: returns `Some("table")`
     /// For `table.<column>`: returns `Some("table")`
     pub fn tail_qualifier_sanitized(&self) -> Option<String> {
-        self.identifier_qualifiers.1.as_deref().map(identifier_name)
+        self.identifier_qualifiers
+            .1
+            .as_deref()
+            .map(|name| Identifier::new(name).name())
     }
 
     /// Returns true if there is at least one qualifier present
