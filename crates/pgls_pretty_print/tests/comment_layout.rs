@@ -434,6 +434,10 @@ fn a_comment_before_a_dml_keyword_stays_before_the_keyword() {
              when not matched by target then insert values (1);",
         ),
         (
+            "merge into t using u on t.id = u.id when matched /* c */ then update set a = 1",
+            "merge into t using u on t.id = u.id when matched /* c */ then update set a = 1;",
+        ),
+        (
             "merge into t using u on t.id = u.id when matched and t.a > 0 /* c */ \
              then update set a = 1",
             "merge into t using u on t.id = u.id when matched and t.a > 0 /* c */ then update set a = 1;",
@@ -457,6 +461,10 @@ fn a_comment_before_a_ddl_keyword_stays_before_the_keyword() {
         (
             "create table t2 /* c */ as select 1",
             "create table t2 /* c */ as select 1;",
+        ),
+        (
+            "create table t (a int) /* c */ with (fillfactor = 10)",
+            "create table t (a int) /* c */ with (fillfactor = 10);",
         ),
         (
             "create table t (a int) /* c */ partition by range (a)",
