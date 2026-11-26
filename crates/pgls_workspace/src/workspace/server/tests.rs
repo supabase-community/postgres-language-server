@@ -2400,7 +2400,7 @@ async fn test_format_adds_no_semicolon_before_a_meta_command() {
         ),
         (
             "SELECT 'hello' AS var1 \\gset\nSELECT   :'var1';\n",
-            "SELECT 'hello' AS var1 \\gset\nselect :'var1';\n",
+            "select 'hello' as var1 \\gset\nselect :'var1';\n",
         ),
         ("SELECT   1;\n\\gexec\n", "select 1;\n\\gexec\n"),
     ] {
