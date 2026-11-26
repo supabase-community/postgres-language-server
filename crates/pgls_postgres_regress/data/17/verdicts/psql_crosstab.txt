@@ -7,8 +7,8 @@
 1300..1416 accepted
 1465..1587 accepted
 1659..1786 accepted
-1836..1866 rejected 42601
-1915..1950 rejected 42601
+1836..1852 accepted
+1915..1936 accepted
 1969..2053 accepted
 2089..2189 accepted
 2241..2352 accepted
@@ -19,11 +19,11 @@
 2690..2718 accepted
 2752..2780 accepted
 2810..2856 accepted
-2885..2907 rejected 42601
+2885..2893 accepted
 2909..2929 accepted
 2969..3014 accepted
 3016..3088 accepted
-3089..3125 rejected 42601
+3089..3111 accepted
 3127..3168 accepted
-3202..3238 rejected 42601
+3202..3224 accepted
 3240..3260 accepted

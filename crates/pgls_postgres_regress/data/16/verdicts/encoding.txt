@@ -1,4 +1,4 @@
-44..101 rejected 42601
+44..95 accepted
 111..205 rejected 42601
 206..300 rejected 42601
 301..407 rejected 42601

@@ -1,6 +1,8 @@
 804..880	pg_catalog._text
 1188..1327	pg_catalog.text
 3325..3442	pg_catalog.name
+3604..3703	pg_catalog.oid
+3710..3946	pg_catalog.oid
 4024..4162	pg_catalog.name
 4299..4437	pg_catalog.name
 4547..4685	pg_catalog.name

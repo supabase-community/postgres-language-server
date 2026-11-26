@@ -1,3 +1,4 @@
+181..258	pg_catalog.bool
 269..298	pg_catalog.name
 544..568	pg_catalog.json
 590..614	pg_catalog.json
