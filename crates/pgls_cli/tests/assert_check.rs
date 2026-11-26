@@ -1015,6 +1015,38 @@ fn check_reports_a_broken_nested_configuration_and_continues() {
     assert_eq!(level_of("b.sql"), Some("warning"), "{output}");
 }
 
+/// With `--stdin-file-path`, a nested configuration file that can't be loaded fails the command,
+/// like it does for the files of a traversal.
+#[test]
+fn stdin_fails_on_a_broken_nested_configuration() {
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        (
+            "broken/postgres-language-server.jsonc",
+            "{ this is not json",
+        ),
+    ]);
+
+    for command in ["check", "format"] {
+        let output = cargo_bin_cmd!("postgres-language-server")
+            .current_dir(root.path())
+            .args([command, "--log-level", "none", "--stdin-file-path"])
+            .arg(Path::new("broken").join("a.sql"))
+            .write_stdin("select 1;\n")
+            .output()
+            .expect("failed to run CLI");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(!output.status.success(), "{command}: {stderr}");
+        assert!(
+            stderr.contains("postgres-language-server.jsonc"),
+            "{command}: the broken configuration file is not named:\n{stderr}"
+        );
+    }
+}
+
 /// The database environment variables don't replace the database of a nested configuration file
 /// that sets one, so that `db1/` and `db2/` keep their own databases.
 #[cfg(target_os = "linux")]
