@@ -193,13 +193,59 @@ mod tests {
         }
     }
 
-    /// The scanner reads a meta-command as SQL, so a text with one isn't compared.
+    /// The data rows after `COPY … FROM STDIN` are one token, up to a line that is exactly `\.`,
+    /// and aren't lexed as SQL. Without a `\.`, they stay SQL.
     #[test]
-    fn meta_commands_are_not_compared_with_the_scanner() {
-        assert_eq!(
-            lex("select 1 \\gset\n\\echo 'a'").scanner_difference(),
-            None
-        );
+    fn copy_data() {
+        for (sql, data) in [
+            // pg_dump: tabs, `\N` and backslashes, and a row that looks like SQL
+            (
+                "COPY public.actor (actor_id, name) FROM stdin;\n1\tPENELOPE\t\\N\ta\\\\b\n2\tselect 1;\tx\n\\.\n\nSELECT 1;",
+                vec!["1\tPENELOPE\t\\N\ta\\\\b\n2\tselect 1;\tx\n\\."],
+            ),
+            // no `\.`, or one at the end of the text
+            ("copy t from STDIN;\n1\n'2\n", vec![]),
+            (
+                "copy t from stdin;\nselect 1;\ncopy u from stdin;\n1\n",
+                vec![],
+            ),
+            ("copy t from STDIN;\n1\n\\.", vec!["1\n\\."]),
+            // two blocks in a row, with options, and `\.` inside a row
+            (
+                "copy a from stdin;\n1\n\\.\ncopy b (x) from stdin with (format csv); -- c\n2 \\.\n\\.\r\nselect 1;",
+                vec!["1\n\\.", "2 \\.\n\\."],
+            ),
+            ("copy t from stdin;\r\n1\r\n\\.\r\n", vec!["1\r\n\\."]),
+            ("\\copy t (a) from stdin with csv\n1\n\\.\n", vec!["1\n\\."]),
+            ("copy t from stdin; select 1;\n1\n\\.\n", vec!["1\n\\."]),
+            ("copy t from stdin;\n", vec![]),
+            // no data
+            ("copy t to stdout;\n1\n", vec![]),
+            ("copy (select 1 from stdin) to stdout;\n1\n", vec![]),
+            ("copy t from 'f';\n1\n", vec![]),
+            ("copy \"t\" from \"stdin\";\n1\n", vec![]),
+            ("\\copy t from pstdin\n1\n", vec![]),
+            ("\\copyright\nselect 1 from stdin;\n1\n", vec![]),
+            ("select 1; copy t from stdin\n1\n", vec![]),
+        ] {
+            let lexed = lex(sql);
+            let found: Vec<_> = (0..lexed.len())
+                .filter(|&idx| lexed.kind(idx) == SyntaxKind::COPY_DATA)
+                .map(|idx| lexed.text(idx))
+                .collect();
+            assert_eq!(found, data, "{sql:?}");
+        }
+    }
+
+    /// The scanner reads meta-commands and COPY data as SQL, so a text with them isn't compared.
+    #[test]
+    fn psql_input_is_not_compared_with_the_scanner() {
+        for sql in [
+            "select 1 \\gset\n\\echo 'a'",
+            "copy t from stdin;\n1\t'a\n\\.\n",
+        ] {
+            assert_eq!(lex(sql).scanner_difference(), None, "{sql:?}");
+        }
     }
 
     #[test]

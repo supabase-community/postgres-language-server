@@ -52,6 +52,7 @@ const EXTRA: &[(&str, &str)] = &[
     ("POSITIONAL_PARAM", "a positional parameter"),
     ("NAMED_PARAM", "a named parameter"),
     ("META_COMMAND", "a psql meta-command"),
+    ("COPY_DATA", "COPY data"),
     ("ERROR", "an invalid token"),
     ("COMMENT", "a comment"),
     ("EOF", "the end of the input"),

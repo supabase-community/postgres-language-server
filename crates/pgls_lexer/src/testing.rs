@@ -12,14 +12,17 @@ const OPERATOR_CHARS: &str = "~!@#^&|`?+-*/%<>=:";
 
 impl Lexed<'_> {
     /// Where the tokens first differ from those of Postgres' scanner (`pgls_query::scan`), or
-    /// `None` if they agree, the scanner rejects the text, or the text has psql meta-commands,
-    /// which the scanner reads as SQL. Whitespace and operators aren't compared, and named
+    /// `None` if they agree, the scanner rejects the text, or the text has psql meta-commands or
+    /// COPY data, which the scanner reads as SQL. Whitespace and operators aren't compared, and named
     /// parameters (`:name`, `@name`, `$name`) are compared without their prefix, which the
     /// scanner reads as a token of its own.
     pub fn scanner_difference(&self) -> Option<TextSize> {
         let sql = self.text;
         // The scanner reads a C string, which ends at the first NUL.
-        if sql.contains('\0') || self.kind.contains(&SyntaxKind::META_COMMAND) {
+        if sql.contains('\0')
+            || self.kind.contains(&SyntaxKind::META_COMMAND)
+            || !self.copy_data.is_empty()
+        {
             return None;
         }
         let scanned = pgls_query::scan(sql).ok()?;
