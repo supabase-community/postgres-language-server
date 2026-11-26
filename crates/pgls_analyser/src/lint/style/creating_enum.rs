@@ -1,8 +1,8 @@
-use crate::utils::dotted_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Creating enum types is not recommended for new applications.
@@ -50,7 +50,9 @@ impl LinterRule for CreatingEnum {
         let mut diagnostics = Vec::new();
 
         if let pgls_query::NodeEnum::CreateEnumStmt(stmt) = &ctx.stmt() {
-            let type_name = dotted_name(&stmt.type_name);
+            let type_name = QualifiedName::of(&stmt.type_name)
+                .map(|name| name.to_string())
+                .unwrap_or_default();
 
             diagnostics.push(
                 LinterDiagnostic::new(

@@ -637,7 +637,7 @@ export interface LinterRules {
    */
   disallowUniqueConstraint?: RuleConfiguration_for_Null;
   /**
-   * A function name and argument count exist, but its argument types do not select exactly one overload.
+   * A function name and argument count exist, but its argument types do not select exactly one overload, or CALL selects a function that isn't a procedure.
    */
   functionArgumentMismatch?: RuleConfiguration_for_Null;
   /**
@@ -668,6 +668,10 @@ export interface LinterRules {
    * A MERGE, or merge_action(), that Postgres rejects.
    */
   invalidMerge?: RuleConfiguration_for_Null;
+  /**
+   * A SELECT ... INTO that Postgres rejects.
+   */
+  invalidSelectInto?: RuleConfiguration_for_Null;
   /**
    * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
    */

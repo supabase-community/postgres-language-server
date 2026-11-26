@@ -17,12 +17,13 @@ pub(crate) fn whitespace_problems(output: &str) -> Vec<String> {
     let tokens: Vec<_> = scan
         .tokens
         .iter()
-        .map(|token| {
-            (
+        .filter_map(|token| {
+            let range = token.range()?;
+            Some((
                 Token::try_from(token.token).ok(),
-                token.start as usize,
-                token.end as usize,
-            )
+                usize::from(range.start()),
+                usize::from(range.end()),
+            ))
         })
         .collect();
     let line_at = |offset: usize| {
@@ -141,7 +142,7 @@ pub(crate) fn mixed_indentation(output: &str, indent_with_tabs: bool) -> Vec<Str
         .map(|scan| {
             scan.tokens
                 .iter()
-                .map(|token| token.start as usize..token.end as usize)
+                .filter_map(|token| token.range().map(std::ops::Range::<usize>::from))
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
@@ -183,11 +184,11 @@ pub(crate) fn width_problems(
         .map(|scan| {
             scan.tokens
                 .iter()
-                .map(|token| {
-                    (
-                        token.start as usize..token.end as usize,
+                .filter_map(|token| {
+                    Some((
+                        std::ops::Range::<usize>::from(token.range()?),
                         Token::try_from(token.token) == Ok(Token::SqlComment),
-                    )
+                    ))
                 })
                 .collect()
         })

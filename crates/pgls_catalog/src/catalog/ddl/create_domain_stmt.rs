@@ -1,5 +1,5 @@
 use pgls_query::protobuf::CreateDomainStmt;
-use pgls_query_ext::utils::qualified_name;
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::Catalog;
 
@@ -11,7 +11,7 @@ pub(super) fn apply_create_domain_stmt(
     n: &CreateDomainStmt,
     search_path: &[String],
 ) {
-    if let Some(name) = qualified_name(&n.domainname) {
+    if let Some(name) = QualifiedName::of(&n.domainname) {
         let (schema, name) = c.creation_key(name, search_path);
         let base = n
             .type_name

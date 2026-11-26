@@ -126,6 +126,42 @@ impl RelationInfo {
             None => Lookup::Missing,
         }
     }
+
+    /// Whether Postgres certainly rejects `ALTER TABLE self INHERIT parent`: a partitioned table
+    /// can't change its inheritance ([`ATPrepAddInherit`]), the parent must be a table or foreign
+    /// table that isn't partitioned ([`ATExecAddInherit`]), and the table must have each column of
+    /// the parent, with the same type ([`MergeAttributesIntoExisting`]). Columns whose type isn't
+    /// known aren't compared. The other checks, like those of collations, `NOT NULL`, generated
+    /// columns, constraints and partitions, aren't modelled.
+    ///
+    /// [`ATPrepAddInherit`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17281
+    /// [`ATExecAddInherit`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17303
+    /// [`MergeAttributesIntoExisting`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L17542
+    pub(crate) fn rejects_parent(&self, parent: &RelationInfo) -> bool {
+        if self.kind == RelationKind::PartitionedTable
+            || !matches!(
+                parent.kind,
+                RelationKind::Table | RelationKind::ForeignTable
+            )
+        {
+            return true;
+        }
+        let (Some(columns), Some(parent_columns)) = (&self.columns, &parent.columns) else {
+            return false;
+        };
+        parent_columns.iter().any(|parent_column| {
+            match columns
+                .iter()
+                .find(|column| column.name == parent_column.name)
+            {
+                Some(column) => matches!(
+                    (&column.ty, &parent_column.ty),
+                    (Some(ty), Some(parent_ty)) if ty != parent_ty
+                ),
+                None => true,
+            }
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

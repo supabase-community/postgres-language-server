@@ -1,7 +1,7 @@
 use pgls_catalog::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
-    goto_node_at_position, previous_sibling_completed,
+    goto_node_at_position, goto_previous_leaf, previous_sibling_completed,
 };
 use std::ops::Range;
 
@@ -167,6 +167,21 @@ impl CompletionFilter<'_> {
             && (ctx.history_ends_with(&["alias", "any_identifier"])
                 // `o` in `returning with (old as o)` is a new name too.
                 || ctx.history_ends_with(&["returning_with_item", "any_identifier"]))
+        {
+            return None;
+        }
+
+        // The column aliases of a FROM item, `a` in `from f() as v(a)`, are new names too.
+        if ctx.history_ends_with(&["relation", "list", "column", "column_identifier"]) {
+            return None;
+        }
+
+        // A type name, as in `x::i` or `create table t (a i`, is neither a column nor a function.
+        if ctx.node_under_cursor_is_within_field(&["custom_type"])
+            && matches!(
+                self.data,
+                CompletionRelevanceData::Column(_) | CompletionRelevanceData::Function(_)
+            )
         {
             return None;
         }
@@ -373,8 +388,15 @@ impl CompletionFilter<'_> {
                     }
 
                     CompletionRelevanceData::Function(f) => match clause {
-                        WrappingClause::From
-                        | WrappingClause::Select
+                        // DELETE takes a table, not a function.
+                        WrappingClause::From => !ctx.history_ends_with(&[
+                            "delete_statement",
+                            "from",
+                            "table_reference",
+                            "any_identifier",
+                        ]),
+
+                        WrappingClause::Select
                         | WrappingClause::Returning
                         | WrappingClause::MergeWhen
                         | WrappingClause::Where
@@ -548,6 +570,19 @@ impl CompletionFilter<'_> {
         kw: &crate::providers::SqlKeyword,
     ) -> Option<()> {
         if !kw.require_prefix {
+            return Some(());
+        }
+
+        // After `WHEN [NOT] MATCHED [BY SOURCE | TARGET]` of MERGE, only `AND` and `THEN`
+        // continue the clause.
+        if goto_previous_leaf(ctx.node_under_cursor).is_some_and(|leaf| {
+            matches!(
+                leaf.kind(),
+                "keyword_matched" | "keyword_source" | "keyword_target"
+            ) && leaf
+                .parent()
+                .is_some_and(|clause| clause.kind() == "when_clause")
+        }) {
             return Some(());
         }
 
@@ -783,5 +818,80 @@ mod tests {
             QueryWithCursorPosition::cursor_marker()
         );
         assert_no_complete_results(query.as_str(), None, &pool).await;
+    }
+
+    /// Spots where Postgres rejects what was offered there, from the completion harness.
+    #[pgls_test_utils::db_test]
+    async fn no_items_that_postgres_rejects(pool: PgPool) {
+        let setup = r#"
+            create table users (id int, name text);
+            create function user_count() returns bigint language sql as 'select 1';
+        "#;
+        pool.execute(setup).await.unwrap();
+        let cursor = QueryWithCursorPosition::cursor_marker();
+
+        // The column aliases of a FROM item are new names.
+        for query in [
+            format!("select * from (values (1)) v({cursor}"),
+            format!("select * from users as u(i{cursor}"),
+            format!("select * from user_count() as c(a, {cursor}"),
+        ] {
+            assert_no_complete_results(&query, None, &pool).await;
+        }
+
+        // A type name is neither a column nor a function.
+        for query in [
+            format!("select id::u{cursor} from users"),
+            format!("create table t (a u{cursor}"),
+        ] {
+            assert_complete_results(
+                &query,
+                vec![
+                    CompletionAssertion::KindNotExists(crate::CompletionItemKind::Column),
+                    CompletionAssertion::KindNotExists(crate::CompletionItemKind::Function),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
+
+        // DELETE takes a table.
+        assert_complete_results(
+            &format!("delete from u{cursor}"),
+            vec![
+                CompletionAssertion::LabelAndKind("users".into(), crate::CompletionItemKind::Table),
+                CompletionAssertion::KindNotExists(crate::CompletionItemKind::Function),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        // Postgres has no `CREATE EXTERNAL TABLE`.
+        assert_complete_results(
+            &format!("create t{cursor}"),
+            vec![CompletionAssertion::LabelNotExists("external".into())],
+            None,
+            &pool,
+        )
+        .await;
+
+        // ALTER TABLE adds a column only after ADD.
+        for query in [
+            format!("alter table users detach p{cursor}"),
+            format!("alter table users disable tri{cursor}"),
+        ] {
+            assert_complete_results(
+                &query,
+                vec![
+                    CompletionAssertion::KindNotExists(crate::CompletionItemKind::Column),
+                    CompletionAssertion::KindNotExists(crate::CompletionItemKind::Function),
+                ],
+                None,
+                &pool,
+            )
+            .await;
+        }
     }
 }

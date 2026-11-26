@@ -186,10 +186,8 @@ fn calls_by_name(expr: &str, is_function: &impl Fn(&str) -> bool) -> bool {
             return false;
         };
         next.token == Token::Ascii40 as i32
-            && usize::try_from(name.start)
-                .ok()
-                .zip(usize::try_from(name.end).ok())
-                .and_then(|(start, end)| expr.get(start..end))
+            && name
+                .text(expr)
                 .is_some_and(|name| is_function(&Identifier::new(name).name()))
     })
 }

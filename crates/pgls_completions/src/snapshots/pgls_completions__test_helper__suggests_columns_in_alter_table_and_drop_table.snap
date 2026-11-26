@@ -67,7 +67,24 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments d|
+
+Results:
+drop - drop (Keyword)
+add - add (Keyword)
+
+--------------
+
 alter table instruments drop |
 
 Results:
@@ -176,7 +193,24 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments d|
+
+Results:
+drop - drop (Keyword)
+add - add (Keyword)
+
+--------------
+
 alter table instruments drop |
 
 Results:
@@ -315,7 +349,25 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments alter |
 
 Results:
@@ -462,7 +514,25 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments alter |
 
 Results:
@@ -603,7 +673,25 @@ _sqlx_migrations - public._sqlx_migrations (Table)
 --------------
 
 alter table public.instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table public.instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table public.instruments alter |
 
 Results:
@@ -713,7 +801,25 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments a|
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments alter |
 
 Results:
@@ -801,7 +907,26 @@ pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
 --------------
 
 alter table instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table instruments r|
+
+Results:
+rename - rename (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+
+--------------
+
 alter table instruments rename |
 
 Results:
@@ -913,7 +1038,26 @@ _sqlx_migrations - public._sqlx_migrations (Table)
 --------------
 
 alter table public.instruments |
+
+Results:
+add - add (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+rename - rename (Keyword)
+
+--------------
+
 alter table public.instruments r|
+
+Results:
+rename - rename (Keyword)
+alter - alter (Keyword)
+drop - drop (Keyword)
+owner - owner (Keyword)
+
+--------------
+
 alter table public.instruments rename |
 
 Results:

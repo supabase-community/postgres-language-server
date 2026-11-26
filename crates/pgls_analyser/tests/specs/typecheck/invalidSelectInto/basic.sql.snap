@@ -1,0 +1,32 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+create table targets (id int);
+-- expect_lint/invalidSelectInto
+select 1 as id union select 2 into ids;
+-- expect_lint/invalidSelectInto
+select 1 as id union (select 2 into ids union select 3);
+-- expect_lint/invalidSelectInto
+insert into targets select 1 union all select 2 into ids;
+
+```
+
+# Diagnostics
+lint/invalidSelectInto ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × INTO is only allowed on first SELECT of UNION/INTERSECT/EXCEPT.
+  
+
+
+lint/invalidSelectInto ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × INTO is only allowed on first SELECT of UNION/INTERSECT/EXCEPT.
+  
+
+
+lint/invalidSelectInto ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × INTO is only allowed on first SELECT of UNION/INTERSECT/EXCEPT.
