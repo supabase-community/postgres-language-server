@@ -21,7 +21,14 @@ pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
         emit_node(e, n);
         return;
     };
-    emit_keyword(e, &def.defname);
+    // The name is a `NonReservedWord` or `ANALYZE`, which the parser spells `analyze`. Any other
+    // name was quoted, and keeps its quotes and its case.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L11986
+    if def.defname != "analyze" && needs_quoting(&def.defname) {
+        emit_identifier(e, &def.defname);
+    } else {
+        emit_keyword(e, &def.defname);
+    }
     if let Some(ref arg) = def.arg {
         e.space();
         match arg.node.as_ref() {

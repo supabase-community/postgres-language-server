@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/vacuum_stmt_quoted_option.sql
+---
+vacuum ("a b`c", "Analyze", "select", analyze, x);
