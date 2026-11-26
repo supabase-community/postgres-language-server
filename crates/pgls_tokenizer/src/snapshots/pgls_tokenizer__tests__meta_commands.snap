@@ -1,0 +1,31 @@
+---
+source: crates/pgls_tokenizer/src/lib.rs
+expression: result
+---
+[
+    "\\set x 1" @ MetaCommand,
+    "\n" @ LineEnding { count: 1 },
+    "select" @ Ident,
+    " " @ Space,
+    ":x" @ NamedParam { kind: ColonRaw },
+    " " @ Space,
+    "\\gset" @ MetaCommand,
+    "\n" @ LineEnding { count: 1 },
+    "\\echo don't" @ MetaCommand,
+    "\n" @ LineEnding { count: 1 },
+    "\\echo 'a \\\\ b' \"c \\ d\" `e \\ f` \\\\" @ MetaCommand,
+    " " @ Space,
+    "select" @ Ident,
+    " " @ Space,
+    "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+    ";" @ Semi,
+    "\n" @ LineEnding { count: 1 },
+    "\\if :c " @ MetaCommand,
+    "\\echo a" @ MetaCommand,
+    "\n" @ LineEnding { count: 1 },
+    "\\copy t from stdin \\\\ x" @ MetaCommand,
+    "\n" @ LineEnding { count: 1 },
+    "\\g | cat \\\\ x" @ MetaCommand,
+    "\n" @ LineEnding { count: 1 },
+    "\\endif" @ MetaCommand,
+]

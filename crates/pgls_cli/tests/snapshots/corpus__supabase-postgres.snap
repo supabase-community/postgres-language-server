@@ -32,7 +32,7 @@ check:
   lint/requireColumnQualifier: 636
   lint/requireConcurrentRefreshMatview: 1
   lint/requireEnumValueOrdering: 3
-  lint/requireFunctionSchema: 486
+  lint/requireFunctionSchema: 489
   lint/requireIdleInTransactionTimeout: 130
   lint/requireOperatorSchema: 719
   lint/requireRelationSchema: 618
@@ -41,10 +41,8 @@ check:
   lint/requireTypeSchema: 727
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
-  syntax: 3
 format:
-  format: 1451
-  syntax: 3
+  format: 1454
 reformatted files: 213
   migrations/db/init-scripts/00000000000000-initial-schema.sql
   migrations/db/init-scripts/00000000000001-auth-schema.sql

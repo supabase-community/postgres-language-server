@@ -23,15 +23,17 @@
 1985..2032 rejected 22P02
 2067..2073 skipped
 2074..2116 accepted
-2117..2144 rejected 42601
+2117..2138 accepted
 2145..2223 rejected 42601
 2224..2231 skipped
 2262..2268 skipped
-2269..2317 rejected 42601
+2269..2303 accepted
+2310..2317 skipped
 2319..2325 skipped
-2326..2377 rejected 42601
+2326..2361 accepted
+2368..2377 skipped
 2379..2385 skipped
-2386..2427 rejected 42601
+2386..2421 accepted
 2429..2473 rejected 42601
 2474..2520 rejected 42601
 2521..2567 rejected 42601

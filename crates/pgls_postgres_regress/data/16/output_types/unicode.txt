@@ -1,3 +1,4 @@
+0..51	pg_catalog.bool
 62..129	pg_catalog.bool
 131..152	pg_catalog.text
 153..238	pg_catalog.bool

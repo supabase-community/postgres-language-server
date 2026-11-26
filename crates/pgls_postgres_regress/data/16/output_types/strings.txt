@@ -284,6 +284,7 @@
 28198..28225	pg_catalog.text
 28226..28259	pg_catalog.text
 28261..28364	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+28590..28693	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
 28950..28978	pg_catalog.text
 28980..29007	pg_catalog.text
 29008..29029	pg_catalog.text

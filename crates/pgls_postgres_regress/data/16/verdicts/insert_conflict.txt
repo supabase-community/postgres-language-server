@@ -156,14 +156,10 @@
 19353..19446 accepted
 19447..19526 accepted
 19549..20034 accepted
-20035..20036 accepted
 20065..20286 accepted
-20287..20288 accepted
 20289..20346 accepted
 20369..20662 accepted
-20663..20664 accepted
 20693..20846 accepted
-20847..20848 accepted
 20850..20869 accepted
 20945..21058 accepted
 21059..21113 accepted

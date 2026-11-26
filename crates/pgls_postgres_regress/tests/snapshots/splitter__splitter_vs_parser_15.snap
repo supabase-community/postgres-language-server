@@ -2,5 +2,5 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report(&version)
 ---
-REL_15_19: 42057 statements, 495 not checked because no text up to a `;` parses, 0 mismatches
-19 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
+REL_15_19: 42185 statements, 524 not checked because no text up to a `;` parses, 0 mismatches
+20 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried

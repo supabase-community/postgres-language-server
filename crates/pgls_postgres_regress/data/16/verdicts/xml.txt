@@ -2,7 +2,7 @@
 52..105 accepted
 106..159 accepted
 160..217 rejected 2200N
-330..381 rejected 42601
+330..375 accepted
 386..408 accepted
 440..494 accepted
 495..543 accepted
