@@ -228,7 +228,11 @@ impl Cursor<'_> {
             '%' => TokenKind::Percent,
 
             // String literal
-            '\'' => self.string_constant(|terminated| LiteralKind::Str { terminated }),
+            '\'' => TokenKind::Literal {
+                kind: LiteralKind::Str {
+                    terminated: self.string_constant(true, false),
+                },
+            },
 
             // Quoted indentifiers
             '"' => {
@@ -342,7 +346,20 @@ impl Cursor<'_> {
         match self.first() {
             '\'' => {
                 self.bump();
-                self.string_constant(mk_kind)
+                // `''` is a quote in it, except in a bit or hex string, where it ends the string
+                // and starts an empty one (`xqdouble` only applies in `<xq,xe,xus>`):
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L633
+                let doubled_quote = !matches!(
+                    mk_kind(true),
+                    LiteralKind::BitStr { .. } | LiteralKind::ByteStr { .. }
+                );
+                // In an escape string, a backslash escapes the next character, so `E'\''` is one
+                // quote (`xeescape` only applies in `<xe>`):
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L706
+                let backslash_escape = matches!(mk_kind(true), LiteralKind::EscStr { .. });
+                TokenKind::Literal {
+                    kind: mk_kind(self.string_constant(doubled_quote, backslash_escape)),
+                }
             }
             '"' if allows_double => {
                 self.bump();
@@ -479,6 +496,11 @@ impl Cursor<'_> {
         while self.as_str().len() > remaining {
             self.bump();
         }
+        // psql replaces `:'name'` with a string constant, which strings on the next lines continue:
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L224-L230
+        if matches!(kind, NamedParamKind::ColonString) {
+            while self.eat_quote_continuation() && self.single_quoted_string(true, false) {}
+        }
         Some(kind)
     }
 
@@ -491,31 +513,17 @@ impl Cursor<'_> {
         )
     }
 
-    /// Eats a string constant after its opening quote, with the strings that continue it.
-    ///
-    /// `''` is a quote in it, except in a bit or hex string, where it ends the string and starts
-    /// an empty one (`xqdouble` only applies in `<xq,xe,xus>`):
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L633
-    ///
-    /// In an escape string, a backslash escapes the next character, so `E'\''` is one quote
-    /// (`xeescape` only applies in `<xe>`):
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L706
-    fn string_constant(&mut self, kind: fn(bool) -> LiteralKind) -> TokenKind {
-        let doubled_quote = !matches!(
-            kind(true),
-            LiteralKind::BitStr { .. } | LiteralKind::ByteStr { .. }
-        );
-        let backslash_escape = matches!(kind(true), LiteralKind::EscStr { .. });
-        let terminated = loop {
+    /// Eats a string constant after its opening quote, with the strings that continue it, and
+    /// returns true if it's terminated. With `doubled_quote`, `''` is a quote in it; with
+    /// `backslash_escape`, a backslash escapes the next character.
+    fn string_constant(&mut self, doubled_quote: bool, backslash_escape: bool) -> bool {
+        loop {
             if !self.single_quoted_string(doubled_quote, backslash_escape) {
-                break false;
+                return false;
             }
             if !self.eat_quote_continuation() {
-                break true;
+                return true;
             }
-        };
-        TokenKind::Literal {
-            kind: kind(terminated),
         }
     }
 
@@ -1136,6 +1144,18 @@ e'\uAAAA \UFFFFFFFF'
             "U&'\\1100'" @ Literal { kind: UnicodeEscStr { terminated: true } },
             " " @ Space,
             ":eb" @ NamedParam { kind: ColonRaw },
+        ]
+        "#);
+    }
+
+    /// Found by the `lexer_vs_scan` fuzz target.
+    #[test]
+    fn colon_string_continues_on_the_next_line() {
+        assert_debug_snapshot!(lex(":'line'\n' - next'\n\t' - third' 'x'"), @r#"
+        [
+            ":'line'\n' - next'\n\t' - third'" @ NamedParam { kind: ColonString },
+            " " @ Space,
+            "'x'" @ Literal { kind: Str { terminated: true } },
         ]
         "#);
     }

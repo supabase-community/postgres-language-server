@@ -3,6 +3,8 @@
 //! This crate provides a function to split a SQL source string into individual statements.
 pub mod diagnostics;
 mod splitter;
+#[cfg(feature = "testing")]
+mod testing;
 
 use diagnostics::SplitDiagnostic;
 use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
@@ -1287,6 +1289,31 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn revoke_alter_system() {
+        for stmt in [
+            "REVOKE ALTER SYSTEM ON PARAMETER work_mem FROM my_user CASCADE;",
+            "REVOKE GRANT OPTION FOR ALTER SYSTEM ON PARAMETER work_mem FROM my_user;",
+            "GRANT SET, ALTER SYSTEM ON PARAMETER work_mem TO my_user;",
+        ] {
+            Tester::from(stmt).expect_statements(vec![stmt]);
+        }
+    }
+
+    #[test]
+    fn alter_extension_update() {
+        Tester::from("ALTER EXTENSION hstore UPDATE TO '2.0';\nALTER EXTENSION repmgr UPDATE;")
+            .expect_statements(vec![
+                "ALTER EXTENSION hstore UPDATE TO '2.0';",
+                "ALTER EXTENSION repmgr UPDATE;",
+            ]);
+    }
+
+    #[test]
+    fn empty_statement() {
+        Tester::from(";select 1;;\n;\nselect 2;").expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
     fn revoke_create() {
         Tester::from("REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;")
             .expect_statements(vec![
@@ -1619,6 +1646,24 @@ VALUES
         }
         Tester::from("select t.*\nalter table t add c int;")
             .expect_statements(vec!["select t.*", "alter table t add c int;"])
+            .assert_no_errors();
+    }
+
+    /// A `*` after an operand multiplies, so it needs an operand. Found by the
+    /// `splitter_vs_parser` fuzz target.
+    #[test]
+    fn statement_keywords_after_a_multiplication() {
+        for sql in [
+            "INSERT INTO tbl SELECT x, 2*INSERT INTx, NO",
+            "select x * update from t;",
+            "select (1) *\nalter, $1 * delete from t;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from("select *\nalter table t add c int;")
+            .expect_statements(vec!["select *", "alter table t add c int;"])
             .assert_no_errors();
     }
 
