@@ -18,8 +18,7 @@ pub enum CharClass {
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367
     /// `` op_chars [\~\!\@\#\^\&\|\`\?\+\-\*\/\%\<\>\=] ``
     OpChar,
-    /// The characters that Postgres returns as tokens of their own when they're one operator
-    /// character, or not an operator character at all.
+    /// The characters that are a token of their own, unless they're in a longer operator.
     ///
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L366
     /// `self [,()\[\].;\:\+\-\*\/\%\^\<\>\=]`
