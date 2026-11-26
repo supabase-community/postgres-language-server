@@ -36,6 +36,11 @@ pub(crate) fn source(p: &mut Splitter) -> SplitterResult {
             kind if TRIVIA_TOKENS.contains(&kind) || kind == SyntaxKind::LINE_ENDING => {
                 p.advance()?;
             }
+            // An empty statement, e.g. the second `;` of `select 1;;`, which Postgres discards.
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1116
+            SyntaxKind::SEMICOLON => {
+                p.advance()?;
+            }
             _ => {
                 statement(p)?;
             }
@@ -400,8 +405,15 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
                     cte_query = true;
                     p.advance()?;
                 }
-                // ALTER is unreserved too, e.g. a column in `select id, alter from t`
-                Some(SyntaxKind::ALTER_KW) if p.hold_back() => {
+                // ALTER is unreserved too, e.g. a column in `select id, alter from t`, and a
+                // privilege in `REVOKE [GRANT OPTION FOR] ALTER SYSTEM ON PARAMETER ...`.
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L7754
+                Some(SyntaxKind::ALTER_KW)
+                    if matches!(
+                        p.look_back(true),
+                        Some(SyntaxKind::GRANT_KW | SyntaxKind::REVOKE_KW | SyntaxKind::FOR_KW)
+                    ) || p.hold_back() =>
+                {
                     p.advance()?;
                 }
                 Some(SyntaxKind::CREATE_KW) => {

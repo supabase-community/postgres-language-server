@@ -2,7 +2,7 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report
 ---
-REL_18_6: 49577 recorded statements, 151 differences
+REL_18_6: 49577 recorded statements, 156 differences
 
 advisory_lock.sql:5:1:
   recorded 5:1-5:79 SELECT oid AS datoid FROM pg_database WHERE datname = current_database() \gset
@@ -52,6 +52,18 @@ indexing.sql:985:1:
 infinite_recurse.sql:16:1:
   recorded 16:1-17:26 SELECT version() ~ 'powerpc64[^,]*-linux-gnu' AS skip_test \gset
   splitter 16:1-17:20 SELECT version() ~ 'powerpc64[^,]*-linux-gnu' AS skip_test
+
+insert_conflict.sql:393:1:
+  recorded 393:1-393:2 ;
+
+insert_conflict.sql:398:1:
+  recorded 398:1-398:2 ;
+
+insert_conflict.sql:406:1:
+  recorded 406:1-406:2 ;
+
+insert_conflict.sql:411:1:
+  recorded 411:1-411:2 ;
 
 json_encoding.sql:7:1:
   recorded 7:1-8:26 SELECT getdatabaseencoding() NOT IN ('UTF8', 'SQL_ASCII') AS skip_test \gset
@@ -222,6 +234,9 @@ psql.sql:175:1:
   recorded 175:1-175:63 SELECT 3 AS x, 'Hello', 4 AS y, true AS "dirty\name" \gdesc \g
   splitter 175:1-175:53 SELECT 3 AS x, 'Hello', 4 AS y, true AS "dirty\name"
 
+psql.sql:181:1:
+  recorded 181:1-181:2 ;
+
 psql.sql:926:5:
   recorded 926:5-1977:21 (bogus forty_two; select \if false \\ (bogus \else \\ 42 \endif \\ forty_two; --…
   splitter 926:5-930:7 (bogus forty_two; select
@@ -233,8 +248,7 @@ psql.sql:926:5:
   splitter 1053:2-1053:23 SELECT 1 as one, 2, 3
   splitter 1070:2-1070:17 SELECT 1 AS one
   splitter 1081:2-1081:10 SELECT 1
-  splitter 1114:1-1117:4 create function silly_function(int) returns int begin atomic select $1; end
-  splitter 1119:1-1119:2 ;
+  splitter 1114:1-1119:2 create function silly_function(int) returns int begin atomic select $1; end ;
   splitter 1120:1-1120:5 end;
   splitter 1122:1-1122:35 drop function silly_function(int);
   splitter 1138:1-1138:30 SELECT :{?i} AS i_is_defined;
@@ -249,7 +263,6 @@ psql.sql:926:5:
   splitter 1172:1-1173:12 UNION SELECT 5 ORDER BY 1;
   splitter 1180:1-1180:34 SELECT 1 AS stuff UNION SELECT 2;
   splitter 1186:1-1186:16 SELECT 1 UNION;
-  splitter 1194:1-1194:2 ;
   splitter 1203:1-1203:38 DROP TABLE this_table_does_not_exist;
   splitter 1212:1-1212:16 SELECT 1 UNION;
   splitter 1218:1-1218:12 SELECT 1/0;
@@ -467,7 +480,6 @@ psql_pipeline.sql:71:1:
 psql_pipeline.sql:79:1:
   recorded 79:1-80:2 SELECT $1 \bind 1 ;
   splitter 79:1-79:10 SELECT $1
-  splitter 80:1-80:2 ;
 
 psql_pipeline.sql:87:1:
   recorded 87:1-87:37 SELECT $1 \bind 'val1' \sendpipeline

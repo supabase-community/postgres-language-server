@@ -2,7 +2,7 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report
 ---
-REL_15_19: 42062 recorded statements, 84 differences
+REL_15_19: 42062 recorded statements, 89 differences
 
 advisory_lock.sql:5:1:
   recorded 5:1-5:79 SELECT oid AS datoid FROM pg_database WHERE datname = current_database() \gset
@@ -40,6 +40,18 @@ euc_kr.sql:4:1:
 infinite_recurse.sql:16:1:
   recorded 16:1-17:26 SELECT version() ~ 'powerpc64[^,]*-linux-gnu' AS skip_test \gset
   splitter 16:1-17:20 SELECT version() ~ 'powerpc64[^,]*-linux-gnu' AS skip_test
+
+insert_conflict.sql:390:1:
+  recorded 390:1-390:2 ;
+
+insert_conflict.sql:395:1:
+  recorded 395:1-395:2 ;
+
+insert_conflict.sql:403:1:
+  recorded 403:1-403:2 ;
+
+insert_conflict.sql:408:1:
+  recorded 408:1-408:2 ;
 
 json_encoding.sql:7:1:
   recorded 7:1-8:26 SELECT getdatabaseencoding() NOT IN ('UTF8', 'SQL_ASCII') AS skip_test \gset
@@ -154,6 +166,9 @@ psql.sql:120:1:
   recorded 120:1-120:63 SELECT 3 AS x, 'Hello', 4 AS y, true AS "dirty\name" \gdesc \g
   splitter 120:1-120:53 SELECT 3 AS x, 'Hello', 4 AS y, true AS "dirty\name"
 
+psql.sql:126:1:
+  recorded 126:1-126:2 ;
+
 psql.sql:867:5:
   recorded 867:5-1514:26 (bogus forty_two; select \if false \\ (bogus \else \\ 42 \endif \\ forty_two; --…
   splitter 867:5-871:7 (bogus forty_two; select
@@ -163,8 +178,7 @@ psql.sql:867:5:
   splitter 981:2-981:14 :try_to_quit
   splitter 991:2-991:23 SELECT 1 as one, 2, 3
   splitter 1004:2-1004:17 SELECT 1 AS one
-  splitter 1044:1-1047:4 create function silly_function(int) returns int begin atomic select $1; end
-  splitter 1049:1-1049:2 ;
+  splitter 1044:1-1049:2 create function silly_function(int) returns int begin atomic select $1; end ;
   splitter 1050:1-1050:5 end;
   splitter 1052:1-1052:35 drop function silly_function(int);
   splitter 1068:1-1068:30 SELECT :{?i} AS i_is_defined;
@@ -179,7 +193,6 @@ psql.sql:867:5:
   splitter 1102:1-1103:12 UNION SELECT 5 ORDER BY 1;
   splitter 1110:1-1110:34 SELECT 1 AS stuff UNION SELECT 2;
   splitter 1116:1-1116:16 SELECT 1 UNION;
-  splitter 1124:1-1124:2 ;
   splitter 1133:1-1133:38 DROP TABLE this_table_does_not_exist;
   splitter 1142:1-1142:16 SELECT 1 UNION;
   splitter 1148:1-1148:12 SELECT 1/0;

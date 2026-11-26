@@ -41,10 +41,9 @@ check:
   lint/requireTypeSchema: 727
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
-  syntax: 4
+  syntax: 1
 format:
-  format: 1454
-  syntax: 3
+  format: 1455
 reformatted files: 213
   migrations/db/init-scripts/00000000000000-initial-schema.sql
   migrations/db/init-scripts/00000000000001-auth-schema.sql
@@ -68,7 +67,7 @@ reformatted files: 213
   migrations/db/migrations/20221028101028_set_authenticator_timeout.sql
   and 193 more
 crashes: 0
-format round-trip: 0
-splitter vs parser: 1
+format round-trip: 1
   nix/tests/sql/pg_tle.sql:63
+splitter vs parser: 0
 lexer vs scanner: 0
