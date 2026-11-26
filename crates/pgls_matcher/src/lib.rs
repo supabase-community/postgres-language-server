@@ -34,8 +34,6 @@ impl Matcher {
         }
     }
 
-    /// Sets the folder that relative patterns are relative to, the folder of the configuration
-    /// file, see [`Self::matches_path`].
     pub fn set_root(&mut self, root: PathBuf) {
         self.root = Some(root);
     }
@@ -63,13 +61,8 @@ impl Matcher {
 
     /// It matches the given path against the stored patterns
     ///
-    /// It returns [true] if there's at least one match. A path below the root also matches the
-    /// patterns as a path relative to it: `migrations/*.sql` matches `<root>/migrations/a.sql`.
+    /// It returns [true] if there's at least one match
     pub fn matches_path(&self, source: &Path) -> bool {
-        let relative = self
-            .root
-            .as_deref()
-            .and_then(|root| source.strip_prefix(root).ok());
         self.patterns.iter().any(|pattern| {
             // Here we cover cases where the user specifies single files inside the patterns.
             // The pattern library doesn't support single files, we here we just do a check
@@ -81,8 +74,6 @@ impl Matcher {
             // - `layout.tsx` -> does not match
             // - `routes/foo.ts` -> does not match
             pattern.matches_path_with(source, self.options)
-                || relative
-                    .is_some_and(|relative| pattern.matches_path_with(relative, self.options))
                 || source
                     .ancestors()
                     .any(|ancestor| ancestor.ends_with(pattern.as_str()))
@@ -105,7 +96,6 @@ mod test {
     use crate::Matcher;
     use crate::pattern::MatchOptions;
     use std::env;
-    use std::path::{Path, PathBuf};
 
     #[test]
     fn matches() {
@@ -176,18 +166,5 @@ mod test {
         let path = env::current_dir().unwrap().join("src/lib.rs");
         // A file name matches the paths that end with it.
         assert!(ignore.matches_path(&path));
-    }
-
-    /// A relative pattern matches the paths below the root relative to it, not anywhere below it.
-    #[test]
-    fn matches_path_relative_to_the_root() {
-        let mut ignore = Matcher::new(MatchOptions::default());
-        ignore.set_root(PathBuf::from("/repo"));
-        ignore.add_pattern("migrations/*.sql").unwrap();
-
-        assert!(ignore.matches_path(Path::new("/repo/migrations/a.sql")));
-        assert!(ignore.matches_path(Path::new("migrations/a.sql")));
-        assert!(!ignore.matches_path(Path::new("/repo/db/migrations/a.sql")));
-        assert!(!ignore.matches_path(Path::new("/other/migrations/a.sql")));
     }
 }
