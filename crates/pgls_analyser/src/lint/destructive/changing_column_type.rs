@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name, cmd_def};
+use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{
@@ -71,7 +71,7 @@ impl LinterRule for ChangingColumnType {
 
         for cmd in alter_table_cmds(ctx.stmt()) {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType {
-                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
+                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition()
                     && !rewrites(ctx, relation, &cmd.name, col_def)
                 {
                     continue;

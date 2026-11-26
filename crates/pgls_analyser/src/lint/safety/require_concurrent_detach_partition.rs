@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, detaches_concurrently};
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -43,7 +43,7 @@ impl LinterRule for RequireConcurrentDetachPartition {
 
         for cmd in alter_table_cmds(ctx.stmt()) {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtDetachPartition
-                && !detaches_concurrently(cmd)
+                && !cmd.detaches_concurrently()
             {
                 diagnostics.push(
                     LinterDiagnostic::new(

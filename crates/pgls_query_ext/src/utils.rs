@@ -7,7 +7,7 @@ use std::fmt;
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{AlterTableCmd, AlterTableStmt, CreateFunctionStmt, Node, RangeVar, TypeName},
+    protobuf::{CreateFunctionStmt, Node, RangeVar, TypeName},
 };
 
 use crate::options::find_def_elem;
@@ -110,26 +110,6 @@ impl fmt::Display for QualifiedName<'_> {
         }
         f.write_str(self.name)
     }
-}
-
-/// The subcommands of an `ALTER TABLE` statement, e.g. `ADD COLUMN` and `DROP CONSTRAINT`.
-pub fn alter_table_cmds(stmt: &AlterTableStmt) -> impl Iterator<Item = &AlterTableCmd> {
-    stmt.cmds.iter().filter_map(|cmd| match cmd.node.as_ref()? {
-        NodeEnum::AlterTableCmd(cmd) => Some(cmd.as_ref()),
-        _ => None,
-    })
-}
-
-/// The definition of an `ALTER TABLE` subcommand, e.g. the column of `ADD COLUMN` or the
-/// constraint of `ADD CONSTRAINT`.
-pub fn cmd_def(cmd: &AlterTableCmd) -> Option<&NodeEnum> {
-    cmd.def.as_ref()?.node.as_ref()
-}
-
-/// Whether the subcommand is `DETACH PARTITION ... CONCURRENTLY`, the only subcommand that
-/// Postgres can run concurrently.
-pub fn detaches_concurrently(cmd: &AlterTableCmd) -> bool {
-    matches!(cmd_def(cmd), Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent)
 }
 
 /// The string value of a `CREATE FUNCTION` option, like `language`, or `as` with the body.
