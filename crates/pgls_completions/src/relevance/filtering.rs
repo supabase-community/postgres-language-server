@@ -1,7 +1,7 @@
 use pgls_catalog::ProcKind;
 use pgls_treesitter::{
     context::{TreesitterContext, WrappingClause, WrappingNode},
-    goto_node_at_position, previous_sibling_completed,
+    goto_node_at_position, goto_previous_leaf, previous_sibling_completed,
 };
 use std::ops::Range;
 
@@ -570,6 +570,19 @@ impl CompletionFilter<'_> {
         kw: &crate::providers::SqlKeyword,
     ) -> Option<()> {
         if !kw.require_prefix {
+            return Some(());
+        }
+
+        // After `WHEN [NOT] MATCHED [BY SOURCE | TARGET]` of MERGE, only `AND` and `THEN`
+        // continue the clause.
+        if goto_previous_leaf(ctx.node_under_cursor).is_some_and(|leaf| {
+            matches!(
+                leaf.kind(),
+                "keyword_matched" | "keyword_source" | "keyword_target"
+            ) && leaf
+                .parent()
+                .is_some_and(|clause| clause.kind() == "when_clause")
+        }) {
             return Some(());
         }
 
