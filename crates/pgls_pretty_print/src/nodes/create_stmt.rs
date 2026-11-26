@@ -233,7 +233,8 @@ pub(super) fn emit_create_stmt(e: &mut EventEmitter, n: &CreateStmt) {
     }
 
     // Add WITH options if specified - use SoftOrSpace to break if needed
-    if !n.options.is_empty() {
+    if let Some(first) = n.options.first() {
+        emit_comments_before_keyword(e, "with", first);
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();

@@ -2,7 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{DropStmt, ObjectType},
 };
-use pgls_query_ext::utils::{qualified_name, type_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, Entry, key};
 use crate::lookup::Lookup;
@@ -31,7 +31,7 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                 let NodeEnum::List(list) = object else {
                     continue;
                 };
-                let Some(name) = qualified_name(&list.items) else {
+                let Some(name) = QualifiedName::of(&list.items) else {
                     continue;
                 };
                 if let Some(key) = c
@@ -69,7 +69,7 @@ pub(super) fn apply_drop_stmt(c: &mut Catalog, n: &DropStmt, search_path: &[Stri
                 let NodeEnum::TypeName(type_) = object else {
                     continue;
                 };
-                let Some(name) = type_name(type_) else {
+                let Some(name) = QualifiedName::of_type_name(type_) else {
                     continue;
                 };
                 if let Some(key) = c.type_key(name.schema, name.name, search_path) {

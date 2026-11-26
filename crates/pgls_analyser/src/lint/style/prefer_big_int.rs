@@ -1,8 +1,9 @@
-use crate::utils::{builtin_type_name, column_defs, dotted_name};
+use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Prefer BIGINT over smaller integer types.
@@ -94,7 +95,12 @@ fn check_column_def(
     // A serial type becomes an integer of its size. Otherwise only the built-in integers count,
     // not types of the user with the same name.
     let (name, integer_type) = match pgls_catalog::serial_type(type_name) {
-        Some(serial) => (dotted_name(&type_name.names), serial.integer_type()),
+        Some(serial) => (
+            QualifiedName::of_type_name(type_name)
+                .map(|name| name.to_string())
+                .unwrap_or_default(),
+            serial.integer_type(),
+        ),
         None => match builtin_type_name(type_name) {
             Some(name) => (name.to_owned(), name),
             None => return,

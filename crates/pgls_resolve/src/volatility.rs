@@ -5,7 +5,7 @@
 
 use pgls_catalog::Catalog;
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{QualifiedName, qualified_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use super::{expr::infer_expr, resolver::Resolver};
 use pgls_catalog::Behavior;
@@ -180,7 +180,7 @@ fn call_volatility(
     {
         return Decision::Unknown;
     }
-    let Some(QualifiedName { schema, name, .. }) = qualified_name(&call.funcname) else {
+    let Some(QualifiedName { schema, name, .. }) = QualifiedName::of(&call.funcname) else {
         return Decision::Unknown;
     };
     let Lookup::Found(functions) = catalog.functions(schema, name, search_path) else {
@@ -303,7 +303,7 @@ fn a_expr_volatility(
     match Kind::try_from(expr.kind) {
         Ok(Kind::AexprBetween | Kind::AexprBetweenSym) => both(">=", "<="),
         Ok(Kind::AexprNotBetween | Kind::AexprNotBetweenSym) => both("<", ">"),
-        Ok(_) => match qualified_name(&expr.name) {
+        Ok(_) => match QualifiedName::of(&expr.name) {
             Some(QualifiedName { schema, name, .. }) => {
                 operator_volatility(catalog, schema, name, kind, search_path)
             }
