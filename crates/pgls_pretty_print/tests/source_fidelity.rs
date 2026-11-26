@@ -445,3 +445,210 @@ fn a_storage_parameter_name_keeps_its_quotes() {
         r#"alter type t set ("Rec eive" = r);"#
     );
 }
+
+// Found by the format round-trip oracle of the corpus check (`pgls_cli/tests/corpus.rs`): the
+// output didn't parse, or parsed to a different statement.
+
+#[test]
+fn a_unique_index_includes_before_nulls_not_distinct() {
+    assert_eq!(
+        format("CREATE UNIQUE INDEX i ON ONLY t USING btree (a) INCLUDE (b) NULLS NOT DISTINCT"),
+        "create unique index i on only t using btree (a) include (b) nulls not distinct;"
+    );
+}
+
+#[test]
+fn an_identity_keeps_its_sequence_name() {
+    assert_eq!(
+        format(
+            "ALTER TABLE t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (SEQUENCE NAME public.t_id_seq START WITH 1)"
+        ),
+        "alter table t
+  alter column id
+  add generated always as identity (sequence name public.t_id_seq start with 1);"
+    );
+}
+
+#[test]
+fn qualified_object_names_are_dotted() {
+    assert_eq!(
+        format("ALTER EXTENSION hstore DROP TABLE public.ref_table"),
+        "alter extension hstore drop table public.ref_table;"
+    );
+    assert_eq!(
+        format("SECURITY LABEL FOR anon ON COLUMN t.c IS 'l'"),
+        "security label for anon on column t.c is 'l';"
+    );
+}
+
+#[test]
+fn depends_on_extension_names_its_object() {
+    assert_eq!(
+        format("ALTER INDEX i NO DEPENDS ON EXTENSION e"),
+        "alter index i no depends on extension e;"
+    );
+    assert_eq!(
+        format("ALTER MATERIALIZED VIEW v DEPENDS ON EXTENSION e"),
+        "alter materialized view v depends on extension e;"
+    );
+    assert_eq!(
+        format("ALTER TRIGGER tg ON t DEPENDS ON EXTENSION e"),
+        "alter trigger tg on t depends on extension e;"
+    );
+}
+
+#[test]
+fn a_qualified_operator_is_wrapped_in_operator() {
+    assert_eq!(
+        format("ALTER OPERATOR === (box, box) SET (NEGATOR = OPERATOR(s.!==))"),
+        "alter operator === (box, box) set (negator = operator(s.!==));"
+    );
+    assert_eq!(
+        format(
+            "CREATE OPERATOR s.=== (FUNCTION = s.f, LEFTARG = int, COMMUTATOR = OPERATOR(s.===))"
+        ),
+        "create operator s.=== (function = s.f, leftarg = int, commutator = operator(s.===));"
+    );
+    assert_eq!(
+        format(r#"SELECT a OPERATOR("My Schema".===) b"#),
+        r#"select a operator("My Schema".===) b;"#
+    );
+}
+
+#[test]
+fn a_publication_of_the_current_schema() {
+    assert_eq!(
+        format("ALTER PUBLICATION p SET TABLES IN SCHEMA CURRENT_SCHEMA"),
+        "alter publication p set tables in schema current_schema;"
+    );
+}
+
+#[test]
+fn alter_role_all_keeps_all() {
+    assert_eq!(
+        format("ALTER ROLE ALL RESET ALL"),
+        "alter role all reset all;"
+    );
+    assert_eq!(
+        format("ALTER USER ALL IN DATABASE d RESET x"),
+        "alter role all in database d reset x;"
+    );
+}
+
+#[test]
+fn a_server_version_can_be_null() {
+    assert_eq!(
+        format("ALTER SERVER s VERSION NULL"),
+        "alter server s version null;"
+    );
+}
+
+#[test]
+fn a_constraint_keeps_its_index_parameters() {
+    assert_eq!(
+        format(
+            "CREATE TABLE t (a int UNIQUE WITH (fillfactor = 70), b int PRIMARY KEY WITH (fillfactor = 70) USING INDEX TABLESPACE s)"
+        ),
+        "create table t (
+  a int unique with (fillfactor = 70),
+  b int primary key with (fillfactor = 70) using index tablespace s
+);"
+    );
+    assert_eq!(
+        format(
+            "CREATE TABLE t (r tsrange, EXCLUDE USING gist (r WITH &&) WITH (fillfactor = 70) USING INDEX TABLESPACE s WHERE (r IS NOT NULL))"
+        ),
+        "create table t (
+  r tsrange,
+  exclude using gist (r with &&)
+    with (fillfactor = 70)
+    using index tablespace s where (r is not null)
+);"
+    );
+}
+
+#[test]
+fn cluster_keeps_its_options() {
+    assert_eq!(
+        format("CLUSTER (VERBOSE OFF) t USING i"),
+        "cluster (verbose off) t using i;"
+    );
+}
+
+#[test]
+fn comment_on_a_cast_or_operator_class() {
+    assert_eq!(
+        format("COMMENT ON CAST (text AS int4) IS 'c'"),
+        "comment on cast (text as int4) is 'c';"
+    );
+    assert_eq!(
+        format("COMMENT ON OPERATOR CLASS s.c USING btree IS 'c'"),
+        "comment on operator class s.c using btree is 'c';"
+    );
+    assert_eq!(
+        format("COMMENT ON OPERATOR FAMILY f USING btree IS 'f'"),
+        "comment on operator family f using btree is 'f';"
+    );
+}
+
+#[test]
+fn create_database_in_the_default_tablespace() {
+    assert_eq!(
+        format("CREATE DATABASE db TABLESPACE DEFAULT"),
+        "create database db with tablespace = default;"
+    );
+}
+
+#[test]
+fn a_foreign_table_keeps_if_not_exists_inherits_and_column_options() {
+    assert_eq!(
+        format("CREATE FOREIGN TABLE IF NOT EXISTS t (a int) INHERITS (p) SERVER s"),
+        "create foreign table if not exists t (a int) inherits (p) server s;"
+    );
+    assert_eq!(
+        format(r#"CREATE FOREIGN TABLE t (a char(5) OPTIONS (a 'foo') COLLATE "C") SERVER s"#),
+        r#"create foreign table t (a char(5) options (a 'foo') collate "C") server s;"#
+    );
+}
+
+#[test]
+fn column_storage_comes_before_compression() {
+    assert_eq!(
+        format("CREATE TABLE t (a text STORAGE MAIN COMPRESSION lz4)"),
+        "create table t (a text storage main compression lz4);"
+    );
+}
+
+#[test]
+fn trigger_update_columns_follow_update() {
+    assert_eq!(
+        format(
+            "CREATE TRIGGER tg BEFORE UPDATE OF a, b OR TRUNCATE ON t FOR EACH STATEMENT EXECUTE FUNCTION f()"
+        ),
+        "create trigger tg before update of a, b or truncate on t for each statement execute function f();"
+    );
+}
+
+#[test]
+fn an_enum_without_values() {
+    assert_eq!(
+        format("CREATE TYPE e AS ENUM ()"),
+        "create type e as enum ();"
+    );
+}
+
+#[test]
+fn drop_transform() {
+    assert_eq!(
+        format("DROP TRANSFORM IF EXISTS FOR s.hstore LANGUAGE plpython3u CASCADE"),
+        "drop transform if exists for s.hstore language plpython3u cascade;"
+    );
+}
+
+#[test]
+fn grant_on_a_parameter() {
+    assert_eq!(
+        format("GRANT SET, ALTER SYSTEM ON PARAMETER work_mem, plpgsql.extra_warnings TO u"),
+        r#"grant set, alter system on parameter work_mem, "plpgsql.extra_warnings" to u;"#
+    );
+}

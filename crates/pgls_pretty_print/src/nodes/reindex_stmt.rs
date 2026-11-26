@@ -10,19 +10,7 @@ pub(super) fn emit_reindex_stmt(e: &mut EventEmitter, n: &ReindexStmt) {
     // Handle options (CONCURRENTLY, VERBOSE, TABLESPACE, etc.)
     if !n.params.is_empty() {
         e.space();
-        emit_parenthesized_list(e, &n.params, |emitter, node| {
-            if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
-                // Emit option name
-                emit_keyword(emitter, &def.defname);
-                // Emit option value if present
-                if let Some(ref arg) = def.arg {
-                    emitter.space();
-                    emit_node(emitter, arg);
-                }
-            } else {
-                emit_node(emitter, node);
-            }
-        });
+        emit_parenthesized_list(e, &n.params, emit_utility_option);
     }
 
     e.line(LineType::SoftOrSpace);

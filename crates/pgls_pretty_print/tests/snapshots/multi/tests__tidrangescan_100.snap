@@ -90,8 +90,7 @@ from
 where
   t.ctid < '(1,0)';
 
-explain (costs 'off')
-declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';
+explain (costs off) declare c scroll cursor for select ctid from tidrangescan where ctid < '(1,0)';
 
 begin;
 

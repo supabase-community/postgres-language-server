@@ -215,7 +215,7 @@ where
 
 set plan_cache_mode = auto;
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 select
   name,
@@ -228,7 +228,7 @@ where
 
 set plan_cache_mode = force_generic_plan;
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 select
   name,
@@ -269,11 +269,11 @@ from
 where
   name = 'test_mode_pp';
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 set plan_cache_mode = force_custom_plan;
 
-explain (costs 'off') execute test_mode_pp (2);
+explain (costs off) execute test_mode_pp (2);
 
 select
   name,
