@@ -13,3 +13,5 @@
 10493..10529	pg_catalog.text	pg_catalog.int8
 10696..10732	pg_catalog.text	pg_catalog.int8
 10823..10859	pg_catalog.text	pg_catalog.int8
+10932..11016	pg_catalog.oid
+11023..11154	pg_catalog.oid

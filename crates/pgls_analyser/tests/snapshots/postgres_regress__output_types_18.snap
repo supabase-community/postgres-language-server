@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: total.report(&version)
 ---
-REL_18_6: 15429 statements that return rows, 2309 without inferred output columns. Of the columns of the others, 20562 have the type Postgres described, 2337 an unknown type. 45 statements differ
+REL_18_6: 15587 statements that return rows, 2314 without inferred output columns. Of the columns of the others, 20770 have the type Postgres described, 2340 an unknown type. 45 statements differ
 
 alter_table.sql:1340:1: inferred pg_catalog.text, ?, pg_catalog.text, Postgres pg_catalog.text, pg_catalog.text
   select * from foo;

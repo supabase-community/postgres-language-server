@@ -2,26 +2,21 @@
 source: crates/pgls_completions/tests/harness.rs
 expression: harness.summary.report()
 ---
-requests: 3152
-items: 15206
-failures: 434
+requests: 3167
+items: 15115
+failures: 290
 
-not a viable prefix: Column: 142
-  indexing.sql:351:1 `alter table idxpart detach p` + `pad_attribute`
-  triggers.sql:1751:1 `alter table parent disable tri` + `trigger_catalog`
-  foreign_key.sql:1669:1 `ALTER TABLE fk_partitioned_fk_6 ATTACH PARTITION` + `partitions_done`
+not a viable prefix: Function: 156
+  incremental_sort.sql:184:1 `delete from t` + `explain_analyze_inc_sort_nodes(${1:query})`
+  identity.sql:373:1 `SELECT tableoid::r` + `pg_catalog."RI_FKey_cascade_del"()`
+  alter_table.sql:2436:1 `CREATE TABLE fail_part (LIKE list_` + `pg_catalog.pg_mcv_list_in(${1:})`
 
-not a viable prefix: Function: 150
-  rowtypes.sql:19:1 `select row('Joe', 'Blow')::full` + `pg_catalog."RI_FKey_setnull_del"()`
-  rangefuncs.sql:266:1 `SELECT * FROM (VALUES (1),(2),(3)) v(` + `rngfunc_mat(${1:}, ${2:})`
-  foreign_key.sql:1669:1 `ALTER TABLE fk_partitioned_fk_6 ATTACH PARTITION` + `pg_catalog.pg_get_partition_constraintdef(${1:})`
+not a viable prefix: Keyword: 21
+  alter_table.sql:1458:1 `create t` + `external`
+  generated_virtual.sql:320:1 `CREATE T` + `EXTERNAL`
+  inherit.sql:897:1 `create t` + `external`
 
-not a viable prefix: Keyword: 49
-  alter_table.sql:1242:1 `create t` + `external`
-  create_index.sql:346:1 `CREATE T` + `EXTERNAL`
-  create_index.sql:98:1 `CREATE T` + `EXTERNAL`
-
-not a viable prefix: Table: 93
-  triggers.sql:1751:1 `alter table parent disable tri` + `trigpart1`
-  rangefuncs.sql:266:1 `SELECT * FROM (VALUES (1),(2),(3)) v(` + `information_schema._pg_foreign_data_wrappers`
-  foreign_key.sql:1669:1 `ALTER TABLE fk_partitioned_fk_6 ATTACH PARTITION` + `fk_partitioned_fk_1`
+not a viable prefix: Table: 113
+  rangefuncs.sql:249:1 `SELECT * FROM (VALUES (1),(2),(3)) v(r` + `information_schema.referential_constraints`
+  rangefuncs.sql:36:1 `nnest(array[10,20],array['foo','bar'],array[1.0]) as z(a,b,c` + `information_schema.character_sets`
+  window.sql:2030:1 `) FROM (VALUES(1,1::numeric),(2,2),(3,'NaN'),(4,3),(5,4)) t(` + `pg_temp.datetimes`

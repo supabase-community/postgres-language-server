@@ -12,6 +12,10 @@
 1789..1912	pg_catalog.bool
 1937..1984	pg_catalog.txid_snapshot
 2074..2116	pg_catalog.bool
+2117..2138	pg_catalog.int8
+2269..2303	pg_catalog.int8
+2326..2361	pg_catalog.int8
+2386..2421	pg_catalog.int8
 2568..2590	pg_catalog.text
 2637..2659	pg_catalog.text
 2703..2725	pg_catalog.text

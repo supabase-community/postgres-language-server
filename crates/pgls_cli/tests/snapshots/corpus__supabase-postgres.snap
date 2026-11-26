@@ -32,7 +32,7 @@ check:
   lint/requireColumnQualifier: 636
   lint/requireConcurrentRefreshMatview: 1
   lint/requireEnumValueOrdering: 3
-  lint/requireFunctionSchema: 486
+  lint/requireFunctionSchema: 489
   lint/requireIdleInTransactionTimeout: 130
   lint/requireOperatorSchema: 719
   lint/requireRelationSchema: 618
@@ -41,10 +41,8 @@ check:
   lint/requireTypeSchema: 727
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
-  syntax: 7
 format:
-  format: 1451
-  syntax: 6
+  format: 1454
 reformatted files: 213
   migrations/db/init-scripts/00000000000000-initial-schema.sql
   migrations/db/init-scripts/00000000000001-auth-schema.sql
@@ -68,3 +66,6 @@ reformatted files: 213
   migrations/db/migrations/20221028101028_set_authenticator_timeout.sql
   and 193 more
 crashes: 0
+format round-trip: 0
+splitter vs parser: 0
+lexer vs scanner: 0

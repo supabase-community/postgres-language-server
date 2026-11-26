@@ -1758,12 +1758,12 @@ create table concur_appclass_tab (
 );
 
 create index concur_appclass_ind on concur_appclass_tab using gist (
-  i tsvector_ops(siglen = "1000"),
-  j tsvector_ops(siglen = "500")
+  i tsvector_ops(siglen = '1000'),
+  j tsvector_ops(siglen = '500')
 );
 
 create index concur_appclass_ind_2 on concur_appclass_tab using gist (
-  k tsvector_ops(siglen = "300"),
+  k tsvector_ops(siglen = '300'),
   j tsvector_ops
 );
 

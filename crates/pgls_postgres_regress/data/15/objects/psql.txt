@@ -1,1 +1,3 @@
+function	f	public	warn	1
+relation	r	public	bububu	a	pg_catalog.int4
 schema	public

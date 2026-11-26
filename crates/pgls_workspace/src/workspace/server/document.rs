@@ -12,7 +12,7 @@ use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
-use pgls_migrations::{MigrationTool, Preprocessed, Script, Unit};
+use pgls_migrations::{MigrationTool, Preprocessed, PsqlSyntaxDiagnostic, Script, Unit};
 
 use crate::diagnostics::FileTooLarge;
 use crate::workspace::ProjectKey;
@@ -397,6 +397,15 @@ impl Document {
         &self.content
     }
 
+    /// The psql syntax in the document that its migration tool can't run, see
+    /// [`MigrationTool::psql_diagnostics`]. None in a document too large to analyse.
+    pub(crate) fn psql_diagnostics(&self) -> Vec<PsqlSyntaxDiagnostic> {
+        if self.too_large {
+            return Vec::new();
+        }
+        self.migration_tool.psql_diagnostics(self.text())
+    }
+
     /// The text that is split and parsed: the content, with the placeholders of the migration
     /// tool if it replaces parts of it. It has the length of the content.
     pub(crate) fn text(&self) -> &str {
@@ -410,6 +419,20 @@ impl Document {
             .preprocessed
             .as_ref()
             .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
+    }
+
+    /// Whether a psql meta-command such as `\gexec` or `\gset` ends the statement in `range`
+    /// instead of a `;`. psql sends the query buffer at a `;` and again at a `\g` command, so a
+    /// `;` added before one runs the statement twice. A `\` outside of quotes starts a
+    /// meta-command, unless `;` or `:` follows it, see
+    /// <https://github.com/postgres/postgres/blob/REL_18_6/src/fe_utils/psqlscan.l#L696-L715>.
+    pub(crate) fn ends_at_meta_command(&self, range: TextRange) -> bool {
+        let content = self.content.as_str();
+        !content[range].trim_end().ends_with(';')
+            && content[usize::from(range.end())..]
+                .trim_start()
+                .strip_prefix('\\')
+                .is_some_and(|command| !command.starts_with([';', ':']))
     }
 
     /// Whether `range` overlaps a value that the migration tool replaces, but that the text
@@ -574,16 +597,18 @@ impl Document {
 
         StatementWalkInput {
             analysable: ast_option.map(|root| {
+                let conversion =
+                    pgls_lexer::convert_to_positional_params_with_metadata(id.content());
                 AnalysableStatement {
                     offsets,
                     ..AnalysableStatement::new(root, range).with_sql(id.content())
                 }
                 .with_function(function)
-                .with_identifier_parameters(
-                    pgls_lexer::convert_to_positional_params_with_metadata(id.content())
-                        .has_identifier_parameters,
+                .with_identifier_parameters(conversion.has_identifier_parameters)
+                // psql fills in the string of a `:'name'` when it runs the statement.
+                .with_unknown_values(
+                    self.touches_unknown_value(range) || !conversion.string_replacements.is_empty(),
                 )
-                .with_unknown_values(self.touches_unknown_value(range))
             }),
             syntax_error,
             unparsable,

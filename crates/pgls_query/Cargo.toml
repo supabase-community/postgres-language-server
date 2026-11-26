@@ -12,6 +12,7 @@ version              = "0.0.0"
 
 [dependencies]
 prost     = { workspace = true }
+regex     = { workspace = true }
 thiserror = { workspace = true }
 tracing   = { workspace = true }
 

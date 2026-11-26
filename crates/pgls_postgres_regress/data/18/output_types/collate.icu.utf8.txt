@@ -1,3 +1,4 @@
+119..278	pg_catalog.bool
 1108..1153	pg_catalog.int4	pg_catalog.text
 1154..1199	pg_catalog.int4	pg_catalog.text
 1200..1245	pg_catalog.int4	pg_catalog.text
@@ -102,6 +103,7 @@
 13643..13716	pg_catalog.name
 14041..14242	pg_catalog.name	pg_catalog.name	pg_catalog.text
 14356..14418	pg_catalog.name
+14575..14611	pg_catalog.name
 15427..15468	pg_catalog.bool
 15469..15514	pg_catalog.bool
 15592..15649	pg_catalog.int4	pg_catalog.text

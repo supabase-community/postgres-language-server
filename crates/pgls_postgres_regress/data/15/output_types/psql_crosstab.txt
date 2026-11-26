@@ -5,6 +5,8 @@
 1300..1416	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int8
 1465..1587	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int8
 1659..1786	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int8
+1836..1852	pg_catalog.text	pg_catalog.text
+1915..1936	pg_catalog.text	pg_catalog.text	pg_catalog.text
 1969..2053	pg_catalog.text	pg_catalog.text	pg_catalog.text
 2089..2189	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
 2241..2352	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
@@ -15,3 +17,6 @@
 2690..2718	pg_catalog.text	pg_catalog.text	pg_catalog.int4	pg_catalog.text
 2752..2780	pg_catalog.text	pg_catalog.text	pg_catalog.int4	pg_catalog.text
 2810..2856	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+2885..2893	pg_catalog.int4
+3089..3111	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
+3202..3224	pg_catalog.int4	pg_catalog.int4	pg_catalog.text

@@ -31,10 +31,9 @@ check:
   lint/requireTableSchema: 30
   lint/requireTypeSchema: 167
   lint/transactionNesting: 34
-  syntax: 22
+  syntax: 9
 format:
-  format: 491
-  syntax: 5
+  format: 496
 reformatted files: 60
   test/sql/deparse-depesz/12-explains.d/01-base.sql
   test/sql/deparse-depesz/12-explains.d/02-analyze.sql
@@ -58,3 +57,6 @@ reformatted files: 60
   test/sql/deparse-depesz/19-transactions.d/12-start_transaction_deferrable.sql
   and 40 more
 crashes: 0
+format round-trip: 0
+splitter vs parser: 0
+lexer vs scanner: 0

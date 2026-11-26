@@ -60,6 +60,13 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
             e.space();
         }
         e.token(TokenKind::UPDATE_KW);
+        // Only UPDATE has columns
+        if !n.columns.is_empty() {
+            e.space();
+            e.token(TokenKind::OF_KW);
+            e.space();
+            emit_comma_separated_list(e, &n.columns, emit_node);
+        }
         first_event = false;
     }
     if n.events & 32 != 0 {
@@ -69,14 +76,6 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
             e.space();
         }
         e.token(TokenKind::TRUNCATE_KW);
-    }
-
-    // OF columns (for UPDATE triggers) - keep on same line as events
-    if !n.columns.is_empty() {
-        e.space();
-        e.token(TokenKind::OF_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.columns, emit_node);
     }
 
     // ON table - allow break before ON for long table names
@@ -146,8 +145,12 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
     emit_dot_separated_list(e, &n.funcname);
     e.token(TokenKind::L_PAREN);
     if !n.args.is_empty() {
-        // Arguments are string literals
-        emit_comma_separated_list(e, &n.args, emit_node);
+        // `TriggerFuncArg` in gram.y: a word or a constant, which the parser turns into a string.
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L6198
+        emit_comma_separated_list(e, &n.args, |e, arg| match arg.node.as_ref() {
+            Some(NodeEnum::String(s)) => emit_word_or_string(e, &s.sval),
+            _ => emit_node(e, arg),
+        });
     }
     e.token(TokenKind::R_PAREN);
 

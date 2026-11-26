@@ -75,7 +75,8 @@ fn get_test_workspace(
 }
 
 /// The diagnostics say which version of the document they are for, so that the language server
-/// doesn't convert them with the line index of another one.
+/// doesn't convert them with the line index of another one. A second open without a close
+/// replaces the document, so the diagnostics are for the new text.
 #[test]
 fn pulled_diagnostics_are_for_the_version_of_the_document() {
     let mut conf = PartialConfiguration::init();
@@ -101,7 +102,6 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
                 database_checks: DatabaseChecks::Run,
             })
             .expect("Unable to pull diagnostics")
-            .version
     };
 
     workspace
@@ -112,7 +112,7 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
             version: 3,
         })
         .expect("Unable to open test file");
-    assert_eq!(pull(), Some(3));
+    assert_eq!(pull().version, Some(3));
 
     workspace
         .change_file(crate::workspace::ChangeFileParams {
@@ -122,50 +122,18 @@ fn pulled_diagnostics_are_for_the_version_of_the_document() {
             version: 4,
         })
         .expect("Unable to change test file");
-    assert_eq!(pull(), Some(4));
-}
+    assert_eq!(pull().version, Some(4));
 
-/// A second open without a close replaces the document, so the diagnostics are for the new text.
-#[test]
-fn opening_an_open_file_again_replaces_it() {
-    let mut conf = PartialConfiguration::init();
-    conf.merge_with(PartialConfiguration {
-        db: Some(PartialDatabaseConfiguration {
-            disable_connection: Some(true),
-            ..Default::default()
-        }),
-        ..Default::default()
-    });
-    let (workspace, project_key) =
-        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
-    let path = PgLSPath::new("test.sql");
-    let open = |content: &str, version| {
-        workspace
-            .open_file(OpenFileParams {
-                project_key,
-                path: path.clone(),
-                content: content.into(),
-                version,
-            })
-            .expect("Unable to open test file");
-        workspace
-            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
-                project_key,
-                path: path.clone(),
-                categories: RuleCategories::all(),
-                max_diagnostics: 100,
-                only: vec![],
-                skip: vec![],
-                database_checks: DatabaseChecks::Run,
-            })
-            .expect("Unable to pull diagnostics")
-    };
-
-    let first = open("select 1;", 1);
-    assert!(first.diagnostics.is_empty());
-
-    let second = open("select 1;\nseect 2;", 2);
-    assert_eq!(second.version, Some(2));
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: "select 1;\nseect 2;".into(),
+            version: 5,
+        })
+        .expect("Unable to open test file again");
+    let reopened = pull();
+    assert_eq!(reopened.version, Some(5));
     assert_eq!(
         workspace
             .get_file_content(crate::workspace::GetFileContentParams {
@@ -175,7 +143,7 @@ fn opening_an_open_file_again_replaces_it() {
             .expect("Unable to get the file content"),
         "select 1;\nseect 2;"
     );
-    let spans: Vec<_> = second
+    let spans: Vec<_> = reopened
         .diagnostics
         .iter()
         .map(|diagnostic| diagnostic.location().span)
@@ -950,6 +918,69 @@ async fn format_preserves_named_parameters() {
 }
 
 #[tokio::test]
+async fn format_restores_psql_string_variables_and_defined_tests() {
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        format: Some(PartialFormatConfiguration {
+            enabled: Some(true),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("psql-variables.sql");
+    // The last statement joins the placeholder with the string on the next line, so it can't be
+    // restored and is kept as written.
+    let content = "copy t from :'fname';\nload :'lib';\ncreate function f() returns int as :'regresslib', 'f' language c;\nset x.y = :'v';\nselect * from :\"s\".t where :{?flag};\nselect :'a'\n' - next';\n";
+
+    workspace
+        .open_file(OpenFileParams {
+            project_key,
+            path: path.clone(),
+            content: content.into(),
+            version: 1,
+        })
+        .expect("Unable to open test file");
+
+    let diagnostics = workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key,
+            path: path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+            database_checks: DatabaseChecks::Run,
+        })
+        .expect("Unable to pull diagnostics")
+        .diagnostics;
+    let syntax_errors = diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic
+                .category()
+                .is_some_and(|category| category.name() == "syntax")
+        })
+        .count();
+    assert_eq!(syntax_errors, 0, "{diagnostics:?}");
+
+    let result = workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key,
+            path,
+            range: None,
+        })
+        .expect("Unable to format file");
+
+    assert_eq!(
+        result.formatted,
+        "copy t from :'fname';\nload :'lib';\ncreate function f()\nreturns int\nlanguage c\nas :'regresslib', 'f';\nset x.y = :'v';\nselect * from :\"s\".t where :{?flag};\nselect :'a'\n' - next';\n"
+    );
+}
+
+#[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
     conf.merge_with(PartialConfiguration {
@@ -1304,7 +1335,10 @@ async fn test_positional_params(test_db: PgPool) {
     ";
     test_db.execute(setup_sql).await.expect("setup sql failed");
 
-    let content = r#"select * from users where id = @one and name = :two and email = :'three';"#;
+    // psql fills in the string of `:'four'`, so the statement isn't typechecked with its
+    // placeholder, which isn't an integer.
+    let content = r#"select * from users where id = @one and name = :two and email = :three;
+select * from users where id = :'four';"#;
 
     workspace
         .open_file(OpenFileParams {
@@ -2415,6 +2449,29 @@ async fn test_format_statement_that_the_splitter_cuts_as_one() {
         "select 1;\ncopy t to stdout with (format 'csv');\nselect 2;\n"
     );
     assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+}
+
+/// A statement that a psql meta-command like `\gexec` ends gets no `;`: psql would run it at the
+/// `;` and again at the command.
+#[tokio::test]
+async fn test_format_adds_no_semicolon_before_a_meta_command() {
+    for (content, expected) in [
+        (
+            "SELECT format('create index on t(%I)', attname)\nFROM pg_attribute\n\\gexec\n",
+            "select format('create index on t(%I)', attname) from pg_attribute\n\\gexec\n",
+        ),
+        (
+            "SELECT   1 AS a\n\n\\g out.txt\nSELECT   2;\n",
+            "select 1 as a\n\n\\g out.txt\nselect 2;\n",
+        ),
+        (
+            "SELECT 'hello' AS var1 \\gset\nSELECT   :'var1';\n",
+            "select 'hello' as var1 \\gset\nselect :'var1';\n",
+        ),
+        ("SELECT   1;\n\\gexec\n", "select 1;\n\\gexec\n"),
+    ] {
+        assert_eq!(format_content(content), expected, "{content}");
+    }
 }
 
 /// The `END` of a `CASE` in a `BEGIN ATOMIC` body was taken as the end of the body, and the real
@@ -5354,6 +5411,23 @@ impl TestProject {
 
     /// The severities of the `banDropColumn` diagnostics of a file with the given content.
     fn severities_of(&self, path: impl AsRef<Path>, content: &str) -> Vec<Severity> {
+        self.diagnostics_of(path, content)
+            .iter()
+            .filter(|diagnostic| {
+                diagnostic
+                    .category()
+                    .is_some_and(|category| category.name() == "lint/banDropColumn")
+            })
+            .map(|diagnostic| diagnostic.severity())
+            .collect()
+    }
+
+    /// The diagnostics of a file with the given content.
+    fn diagnostics_of(
+        &self,
+        path: impl AsRef<Path>,
+        content: &str,
+    ) -> Vec<pgls_diagnostics::serde::Diagnostic> {
         let path = PgLSPath::new(path.as_ref());
         self.workspace
             .open_file(OpenFileParams {
@@ -5376,14 +5450,6 @@ impl TestProject {
             })
             .expect("Unable to pull diagnostics")
             .diagnostics
-            .iter()
-            .filter(|diagnostic| {
-                diagnostic
-                    .category()
-                    .is_some_and(|category| category.name() == "lint/banDropColumn")
-            })
-            .map(|diagnostic| diagnostic.severity())
-            .collect()
     }
 
     fn is_ignored(&self, path: impl AsRef<Path>) -> bool {
@@ -6058,6 +6124,41 @@ ALTER TABLE users DROP COLUMN email;
     assert!(project.is_ignored("/repo/db/migrations/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/db/20230101000000_old.sql"));
     assert!(!project.is_ignored("/repo/migrations/20230101000000_old.sql"));
+}
+
+/// The migrations of a tool that runs them without psql report psql syntax. Other files, like
+/// Supabase's tests, which run with psql, don't.
+#[test]
+fn migrations_run_without_psql_report_psql_syntax() {
+    const CONTENT: &str = "-- migrate:up\n-- +goose Up\n\\set a 1\nselect :'a';\n";
+    for tool in ["supabase", "dbmate", "goose", "none"] {
+        let mut fs = MemoryFileSystem::default();
+        fs.insert(
+            Path::new("/repo").join(ConfigName::pgls_jsonc()),
+            format!(r#"{{ "migrations": {{ "migrationsDir": "migrations", "tool": "{tool}" }} }}"#),
+        );
+        let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+        let project = TestProject::without_nested_configurations(&fs, Path::new("/repo"));
+        let psql = |path: &str| {
+            project
+                .diagnostics_of(path, CONTENT)
+                .iter()
+                .filter(|diagnostic| {
+                    diagnostic
+                        .category()
+                        .is_some_and(|category| category.name() == "migrations/psqlSyntax")
+                })
+                .count()
+        };
+
+        let expected = if tool == "none" { 0 } else { 2 };
+        assert_eq!(
+            psql("/repo/migrations/20250301120000_init.sql"),
+            expected,
+            "{tool}"
+        );
+        assert_eq!(psql("/repo/tests/init.sql"), 0, "{tool}");
+    }
 }
 
 /// `after` is a number or a string, read like the versions of the migration files: the number

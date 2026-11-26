@@ -15,48 +15,7 @@ pub(super) fn emit_create_fdw_stmt(e: &mut EventEmitter, n: &CreateFdwStmt) {
     e.space();
     emit_identifier_maybe_quoted(e, &n.fdwname);
 
-    // Handler and validator functions
-    if !n.func_options.is_empty() {
-        e.line(LineType::SoftOrSpace);
-        e.indent_start();
-        for opt in &n.func_options {
-            let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
-                emit_node(e, opt);
-                continue;
-            };
-
-            match def_elem.defname.as_str() {
-                "handler" => {
-                    if let Some(ref arg) = def_elem.arg {
-                        e.token(TokenKind::HANDLER_KW);
-                        e.space();
-                        emit_node(e, arg);
-                    } else {
-                        e.token(TokenKind::NO_KW);
-                        e.space();
-                        e.token(TokenKind::HANDLER_KW);
-                    }
-                }
-                "validator" => {
-                    if let Some(ref arg) = def_elem.arg {
-                        e.token(TokenKind::VALIDATOR_KW);
-                        e.space();
-                        emit_node(e, arg);
-                    } else {
-                        e.token(TokenKind::NO_KW);
-                        e.space();
-                        e.token(TokenKind::VALIDATOR_KW);
-                    }
-                }
-                _ => {
-                    // Fallback for unknown options
-                    emit_node(e, opt);
-                }
-            }
-            e.space();
-        }
-        e.indent_end();
-    }
+    emit_fdw_functions(e, &n.func_options);
 
     // Options
     if !n.options.is_empty() {

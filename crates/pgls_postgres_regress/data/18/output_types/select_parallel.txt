@@ -1,4 +1,5 @@
 81..115	pg_catalog.void
+116..317	pg_catalog.int8	pg_catalog.int8
 2048..2081	pg_catalog.text
 2407..2529	pg_catalog.text
 8147..8189	pg_catalog.int8

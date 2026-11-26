@@ -9,6 +9,7 @@
 3274..3397	pg_catalog._text
 3452..3524	pg_catalog._text
 3694..3741	pg_catalog.bool
+3886..3974	pg_catalog.oid
 4621..4693	pg_catalog._text
 4694..4817	pg_catalog._text
 4944..5020	pg_catalog._text

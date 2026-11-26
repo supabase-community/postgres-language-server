@@ -1,4 +1,4 @@
-183..266 rejected 42601
+183..260 accepted
 271..300 accepted
 406..430 rejected 42601
 460..486 rejected 42601

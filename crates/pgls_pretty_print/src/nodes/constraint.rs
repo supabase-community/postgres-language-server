@@ -30,17 +30,21 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
     // the first continuation line, so a column list on the first line breaks relative to it.
     let mut continued = false;
 
+    // Every constraint can be named, only the attributes (`DEFERRABLE`, ...) can't, and the parser
+    // leaves their name empty (`ColConstraint`, `TableConstraint` and `DomainConstraint`,
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L3903).
+    if !n.conname.is_empty() {
+        e.token(TokenKind::CONSTRAINT_KW);
+        e.space();
+        emit_identifier_maybe_quoted(e, &n.conname);
+        e.space();
+    }
+
     match n.contype {
         x if x == ConstrType::ConstrNull as i32 => {
             e.token(TokenKind::NULL_KW);
         }
         x if x == ConstrType::ConstrNotnull as i32 => {
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
             e.token(TokenKind::NOT_KW);
             e.space();
             e.token(TokenKind::NULL_KW);
@@ -93,13 +97,6 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
         }
         x if x == ConstrType::ConstrIdentity as i32 => {
             // CONSTRAINT name GENERATED {ALWAYS | BY DEFAULT} AS IDENTITY
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
-
             e.token(TokenKind::GENERATED_KW);
             e.space();
 
@@ -165,13 +162,6 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
         }
         x if x == ConstrType::ConstrCheck as i32 => {
             // CONSTRAINT name CHECK (expr) [NO INHERIT]
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
-
             e.token(TokenKind::CHECK_KW);
 
             if let Some(ref raw_expr) = n.raw_expr {
@@ -199,13 +189,6 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
         }
         x if x == ConstrType::ConstrPrimary as i32 => {
             // CONSTRAINT name PRIMARY KEY (columns)
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
-
             e.token(TokenKind::PRIMARY_KW);
             e.space();
             e.token(TokenKind::KEY_KW);
@@ -238,29 +221,12 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 emit_identifier_maybe_quoted(e, &n.indexname);
             }
 
-            // USING INDEX TABLESPACE for PRIMARY KEY
-            if !n.indexspace.is_empty() {
-                continue_line(e, &mut continued);
-                e.token(TokenKind::USING_KW);
-                e.space();
-                e.token(TokenKind::INDEX_KW);
-                e.space();
-                e.token(TokenKind::TABLESPACE_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.indexspace);
-            }
+            emit_index_parameters(e, n, &mut continued);
 
             emit_deferrable(e, n, &mut continued);
         }
         x if x == ConstrType::ConstrUnique as i32 => {
             // CONSTRAINT name UNIQUE (columns)
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
-
             e.token(TokenKind::UNIQUE_KW);
 
             // For a table constraint the qualifier sits between the keyword and the column list,
@@ -303,29 +269,12 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 emit_identifier_maybe_quoted(e, &n.indexname);
             }
 
-            // USING INDEX TABLESPACE for UNIQUE
-            if !n.indexspace.is_empty() {
-                continue_line(e, &mut continued);
-                e.token(TokenKind::USING_KW);
-                e.space();
-                e.token(TokenKind::INDEX_KW);
-                e.space();
-                e.token(TokenKind::TABLESPACE_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.indexspace);
-            }
+            emit_index_parameters(e, n, &mut continued);
 
             emit_deferrable(e, n, &mut continued);
         }
         x if x == ConstrType::ConstrExclusion as i32 => {
             // CONSTRAINT name EXCLUDE [USING method] (exclusion_list) [WHERE (predicate)]
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
-
             e.token(TokenKind::EXCLUDE_KW);
 
             if !n.access_method.is_empty() {
@@ -354,6 +303,8 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
                 });
             }
 
+            emit_index_parameters(e, n, &mut continued);
+
             if let Some(ref where_clause) = n.where_clause {
                 e.space();
                 e.token(TokenKind::WHERE_KW);
@@ -365,13 +316,6 @@ fn emit_constraint_of(e: &mut EventEmitter, n: &Constraint, owner: Owner) {
         }
         x if x == ConstrType::ConstrForeign as i32 => {
             // CONSTRAINT name FOREIGN KEY (fk_attrs) REFERENCES pktable (pk_attrs) [actions]
-            if !n.conname.is_empty() {
-                e.token(TokenKind::CONSTRAINT_KW);
-                e.space();
-                emit_identifier_maybe_quoted(e, &n.conname);
-                e.space();
-            }
-
             // Table-level constraint has FOREIGN KEY (...)
             // Column-level constraint just has REFERENCES
             if !n.fk_attrs.is_empty() {
@@ -532,6 +476,27 @@ fn continue_line(e: &mut EventEmitter, continued: &mut bool) {
         *continued = true;
     }
     e.line(LineType::SoftOrSpace);
+}
+
+/// `WITH (...)` and `USING INDEX TABLESPACE` of the index behind a primary key, unique or exclusion
+/// constraint (`opt_definition OptConsTableSpace`,
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L4230).
+fn emit_index_parameters(e: &mut EventEmitter, n: &Constraint, continued: &mut bool) {
+    if !n.options.is_empty() {
+        continue_line(e, continued);
+        emit_with_options(e, &n.options);
+    }
+
+    if !n.indexspace.is_empty() {
+        continue_line(e, continued);
+        e.token(TokenKind::USING_KW);
+        e.space();
+        e.token(TokenKind::INDEX_KW);
+        e.space();
+        e.token(TokenKind::TABLESPACE_KW);
+        e.space();
+        emit_identifier_maybe_quoted(e, &n.indexspace);
+    }
 }
 
 /// `INITIALLY DEFERRED` implies `DEFERRABLE` in the AST, so emitting both round-trips either spelling.

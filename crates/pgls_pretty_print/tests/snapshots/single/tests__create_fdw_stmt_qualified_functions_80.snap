@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/create_fdw_stmt_qualified_functions.sql
+---
+create foreign data wrapper f handler te.t_fdw_handler validator s.v;

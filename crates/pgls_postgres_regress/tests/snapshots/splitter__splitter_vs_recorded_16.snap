@@ -2,4 +2,4 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report
 ---
-REL_16_15: 43632 recorded statements, 0 differences
+REL_16_15: 43812 recorded statements, 0 differences

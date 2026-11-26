@@ -1,4 +1,4 @@
-use pgls_query::protobuf::{DefElem, DefineStmt, List, ObjectType};
+use pgls_query::protobuf::{DefElem, DefineStmt, ObjectType};
 
 use super::prelude::*;
 
@@ -155,21 +155,11 @@ fn emit_operator_def_elem(e: &mut EventEmitter, def: &DefElem) {
 
 fn emit_operator_def_arg(e: &mut EventEmitter, arg: &Node) {
     match arg.node.as_ref() {
-        Some(NodeEnum::List(list)) => emit_operator_list(e, list),
+        Some(NodeEnum::List(list)) => emit_operator(e, &list.items),
+        // A reserved keyword or a string constant (`def_arg` in gram.y). Quoted as an identifier,
+        // it would read as a type name.
+        Some(NodeEnum::String(s)) => emit_string_literal(e, s),
         _ => emit_node(e, arg),
-    }
-}
-
-fn emit_operator_list(e: &mut EventEmitter, list: &List) {
-    for (idx, item) in list.items.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-
-        match item.node.as_ref() {
-            Some(NodeEnum::String(s)) => e.token(TokenKind::IDENT(s.sval.clone())),
-            _ => emit_node(e, item),
-        }
     }
 }
 

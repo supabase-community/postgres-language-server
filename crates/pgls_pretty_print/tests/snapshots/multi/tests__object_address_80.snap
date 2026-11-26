@@ -27,7 +27,7 @@ create text search template addr_ts_temp (lexize = dsimple_lexize);
 create text search parser addr_ts_prs (
   start = prsd_start,
   gettoken = prsd_nexttoken,
-  "end" = prsd_end,
+  end = prsd_end,
   lextypes = prsd_lextype
 );
 

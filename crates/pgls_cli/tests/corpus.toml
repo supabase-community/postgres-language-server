@@ -28,10 +28,10 @@ paths = ["test/sql/plpgsql_regress", "test/sql/deparse", "test/sql/deparse-depes
 repo  = "https://github.com/pganalyze/libpg_query.git"
 rev   = "27112f8af5de70368319a12c346c2fb37cd74476"
 
-# The schema files only: the data files are mostly COPY rows.
+# `pagila-data.sql` is a pg_dump of 13 MiB, mostly `COPY … FROM stdin` data rows.
 [[source]]
 name  = "pagila"
-paths = ["pagila-schema.sql", "pagila-schema-jsonb.sql", "pagila-temporal-setup.sql", "pg_partman-setup.sql"]
+paths = ["pagila-data.sql", "pagila-schema.sql", "pagila-schema-jsonb.sql", "pagila-temporal-setup.sql", "pg_partman-setup.sql"]
 repo  = "https://github.com/devrimgunduz/pagila.git"
 rev   = "6ea53f812254c91a602f61c0ef62beca3fa676b1"
 

@@ -1,12 +1,8 @@
 use std::collections::HashMap;
 
-use pgls_query::protobuf::Token;
+use pgls_query::{Identifier, protobuf::Token};
 
 use crate::source::Source;
-
-/// The longest identifier Postgres keeps, `NAMEDATALEN - 1` bytes. The parser cuts longer ones
-/// down, so the AST only has their first 63 bytes.
-const MAX_IDENTIFIER_LENGTH: usize = 63;
 
 /// The identifiers of the statement that are longer than Postgres keeps, by the name the parser cut them
 /// down to.
@@ -23,14 +19,14 @@ pub(crate) fn truncated_identifiers(source: &Source<'_>) -> HashMap<String, Stri
         let Some(text) = source.sql.get(token.start as usize..token.end as usize) else {
             continue;
         };
-        let name = identifier_name(text);
+        let name = Identifier::new(text).untruncated_name();
         // A name of exactly the maximum length takes part too: written next to a longer one with
         // the same prefix, it is not clear which spelling to restore.
-        if name.len() < MAX_IDENTIFIER_LENGTH {
+        if name.len() < Identifier::NAME_BYTES_MAX {
             continue;
         }
 
-        let truncated = truncate(&name).to_string();
+        let truncated = Identifier::truncate(&name).to_string();
         by_truncated
             .entry(truncated)
             .and_modify(|existing| {
@@ -46,28 +42,6 @@ pub(crate) fn truncated_identifiers(source: &Source<'_>) -> HashMap<String, Stri
         .filter_map(|(truncated, name)| Some((truncated, name?)))
         .filter(|(truncated, name)| truncated != name)
         .collect()
-}
-
-/// The name an identifier token stands for: a quoted identifier without its quotes, an unquoted
-/// one in lower case, as `downcase_identifier` does for ASCII letters.
-fn identifier_name(text: &str) -> String {
-    match text
-        .strip_prefix('"')
-        .and_then(|rest| rest.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => text.to_ascii_lowercase(),
-    }
-}
-
-/// The longest prefix of whole characters that fits in `MAX_IDENTIFIER_LENGTH` bytes, as
-/// `truncate_identifier` keeps it.
-fn truncate(name: &str) -> &str {
-    let mut end = MAX_IDENTIFIER_LENGTH;
-    while !name.is_char_boundary(end) {
-        end -= 1;
-    }
-    &name[..end]
 }
 
 #[cfg(test)]

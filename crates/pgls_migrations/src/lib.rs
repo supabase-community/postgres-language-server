@@ -10,6 +10,9 @@
 //! - [`MigrationTool::read`]: what the text says, like its up and down sections, and what the
 //!   tool replaces in it before it runs it, like goose's `ENVSUB`.
 //!
+//! For the diagnostics of a migration, it also asks [`MigrationTool::psql_diagnostics`]: the psql
+//! syntax that the tool can't run.
+//!
 //! `init` asks every tool for its projects with [`detect::find_projects`].
 //!
 //! The tools:
@@ -22,6 +25,7 @@ mod dbmate;
 pub mod detect;
 mod goose;
 mod markers;
+mod psql;
 mod supabase;
 
 use std::path::Path;
@@ -33,6 +37,7 @@ use serde::{Deserialize, Serialize};
 
 pub use detect::{Detected, LocalDatabase, Root};
 pub use markers::{Direction, SectionMarkerDiagnostic, Unit};
+pub use psql::PsqlSyntaxDiagnostic;
 
 // The value of `migrations.tool`: the doc comments are the documentation of the setting.
 /// The migration tool that runs the migration files.
@@ -150,6 +155,24 @@ impl MigrationTool {
             Self::Supabase => Script::default(),
             Self::Dbmate => dbmate::read(text),
             Self::Goose => goose::read(text),
+        }
+    }
+
+    /// The psql meta-commands and variables in the text of a migration, if the tool runs it
+    /// without psql. Postgres receives them as written and rejects them.
+    pub fn psql_diagnostics(self, text: &str) -> Vec<PsqlSyntaxDiagnostic> {
+        match self {
+            // Plain SQL files are run by hand, often with psql.
+            Self::Plain => Vec::new(),
+            // The Supabase CLI sends the statements one by one:
+            // https://github.com/supabase/cli/blob/4917b23eca3248faa5bda108a7f7c71093a9b5c9/apps/cli/src/command-internal/migration-apply.ts#L431-L436
+            // dbmate sends each section as one query:
+            // https://github.com/amacneil/dbmate/blob/744050a0e7b3c10f3831c3039e18a9c8d1a2c00d/pkg/dbmate/db.go#L438-L440
+            // goose sends the statements one by one:
+            // https://github.com/pressly/goose/blob/e1ba75a648286c2b1224f3b3d1e0b15280e4c45d/migration_sql.go#L37-L39
+            Self::Supabase | Self::Dbmate | Self::Goose => {
+                PsqlSyntaxDiagnostic::all_in(text, self.name())
+            }
         }
     }
 }
@@ -330,6 +353,24 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use tempfile::TempDir;
+
+    #[test]
+    fn psql_syntax_is_reported_for_the_tools_that_run_migrations_without_psql() {
+        let text = "\\set ON_ERROR_STOP on\ncreate table t (a int[]);\nselect a[1:n], :'v', '\\' from t;\n";
+        for tool in [
+            MigrationTool::Supabase,
+            MigrationTool::Dbmate,
+            MigrationTool::Goose,
+        ] {
+            let spans: Vec<&str> = tool
+                .psql_diagnostics(text)
+                .iter()
+                .map(|diagnostic| &text[diagnostic.span])
+                .collect();
+            assert_eq!(spans, ["\\set ON_ERROR_STOP on", ":'v'"], "{}", tool.name());
+        }
+        assert!(MigrationTool::Plain.psql_diagnostics(text).is_empty());
+    }
 
     pub(crate) fn sections(text: &str, tool: MigrationTool) -> Vec<(&str, Direction, bool)> {
         tool.read(text)

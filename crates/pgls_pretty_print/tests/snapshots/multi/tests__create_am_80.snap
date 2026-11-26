@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/create_am.sql
-snapshot_kind: text
 ---
 create access method gist2 type index handler gisthandler;
 
@@ -543,7 +542,7 @@ as select * from tableam_tbl_heapx;
 
 create sequence tableam_seq_heapx;
 
-create foreign data wrapper fdw_heap2 validator postgresql_fdw_validator ;
+create foreign data wrapper fdw_heap2 validator postgresql_fdw_validator;
 
 create server fs_heap2 foreign data wrapper fdw_heap2;
 

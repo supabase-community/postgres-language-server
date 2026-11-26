@@ -10,17 +10,24 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
     e.token(TokenKind::FOREIGN_KW);
     e.space();
     e.token(TokenKind::TABLE_KW);
-    e.space();
 
     // Emit the base CREATE TABLE structure
     if let Some(ref base) = n.base_stmt {
+        if base.if_not_exists {
+            e.space();
+            emit_if_not_exists(e);
+        }
+
         // Emit table name
         if let Some(ref relation) = base.relation {
+            e.space();
             super::emit_range_var(e, relation);
         }
 
-        // PARTITION OF parent_table
-        if let Some(first) = base.inh_relations.first() {
+        // PARTITION OF parent_table, which only a partition has a bound for
+        if let Some(first) = base.inh_relations.first()
+            && base.partbound.is_some()
+        {
             e.line(crate::emitter::LineType::SoftOrSpace);
             e.token(TokenKind::PARTITION_KW);
             e.space();
@@ -51,6 +58,13 @@ pub(super) fn emit_create_foreign_table_stmt(e: &mut EventEmitter, n: &CreateFor
                 e.line(crate::emitter::LineType::Soft);
             }
             e.token(TokenKind::R_PAREN);
+
+            if !base.inh_relations.is_empty() {
+                e.line(crate::emitter::LineType::SoftOrSpace);
+                e.token(TokenKind::INHERITS_KW);
+                e.space();
+                emit_parenthesized_list(e, &base.inh_relations, emit_node);
+            }
         }
     }
 

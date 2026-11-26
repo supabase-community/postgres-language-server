@@ -5,13 +5,17 @@
     reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
 )]
 
-use pgls_pretty_print::{FormatConfig, format_statement};
+use pgls_pretty_print::{FormatConfig, FormatStatementParams, format_statement};
 
 fn format_idempotently(sql: &str, config: &FormatConfig) -> String {
     let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
-    let first = format_statement(&ast, sql, config).unwrap().formatted;
+    let first = format_statement(FormatStatementParams::new(&ast, sql, config))
+        .unwrap()
+        .formatted;
     let ast = pgls_query::parse(&first).unwrap().into_root().unwrap();
-    let second = format_statement(&ast, &first, config).unwrap().formatted;
+    let second = format_statement(FormatStatementParams::new(&ast, &first, config))
+        .unwrap()
+        .formatted;
     assert_eq!(first, second);
     first
 }

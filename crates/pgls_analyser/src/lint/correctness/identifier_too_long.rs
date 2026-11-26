@@ -1,10 +1,8 @@
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
-use pgls_catalog::{
-    MAX_IDENTIFIER_BYTES, truncate_identifier, unicode_identifier_name, untruncated_identifier_name,
-};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::Identifier;
 use pgls_query::protobuf::{ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -71,7 +69,7 @@ impl LinterRule for IdentifierTooLong {
                 continue;
             };
             let (identifier, replaceable) = match token.token() {
-                Token::Ident => (untruncated_identifier_name(token_text), true),
+                Token::Ident => (Identifier::new(token_text).untruncated_name(), true),
                 Token::Uident => {
                     let uescape = match (tokens.get(i + 1), tokens.get(i + 2)) {
                         (Some(uescape), Some(escape)) if uescape.token() == Token::Uescape => {
@@ -82,7 +80,7 @@ impl LinterRule for IdentifierTooLong {
                         }
                         _ => None,
                     };
-                    match unicode_identifier_name(token_text, uescape) {
+                    match Identifier::new(token_text).unicode_name(uescape) {
                         // Rewriting a `U&"..."` identifier would leave its UESCAPE clause behind.
                         Some(identifier) => (identifier, false),
                         None => continue,
@@ -90,7 +88,7 @@ impl LinterRule for IdentifierTooLong {
                 }
                 _ => continue,
             };
-            if identifier.len() <= MAX_IDENTIFIER_BYTES {
+            if identifier.len() <= Identifier::NAME_BYTES_MAX {
                 continue;
             }
             let occurrence = Occurrence {
@@ -107,7 +105,7 @@ impl LinterRule for IdentifierTooLong {
         names
             .into_iter()
             .map(|(identifier, occurrences)| {
-                let truncated = truncate_identifier(&identifier);
+                let truncated = Identifier::truncate(&identifier);
                 LinterDiagnostic::new(
                     rule_category!(),
                     occurrences.first().map(|occurrence| occurrence.range),
@@ -143,7 +141,7 @@ fn truncate(sql: &str, truncated: &str, occurrences: &[Occurrence]) -> Option<Ru
             format!("\"{}\"", truncated.replace('"', "\"\""))
         } else {
             // Keep the case as written, downcasing it doesn't change the length.
-            truncate_identifier(&sql[occurrence.range]).to_owned()
+            Identifier::truncate(&sql[occurrence.range]).to_owned()
         };
         fix = fix.replace(occurrence.range, replacement);
     }
@@ -178,7 +176,7 @@ fn may_contain_long_identifier(sql: &str) -> bool {
                 quoted = quoted.map(|length| length + quotes);
             } else {
                 // The other quotes of the run belong to the identifier that ends or starts here.
-                if quoted.is_some_and(|length| length + quotes - 1 > MAX_IDENTIFIER_BYTES) {
+                if quoted.is_some_and(|length| length + quotes - 1 > Identifier::NAME_BYTES_MAX) {
                     return true;
                 }
                 quoted = Some(quotes - 1);
@@ -190,7 +188,7 @@ fn may_contain_long_identifier(sql: &str) -> bool {
         } else {
             0
         };
-        if word > MAX_IDENTIFIER_BYTES {
+        if word > Identifier::NAME_BYTES_MAX {
             return true;
         }
         quoted = quoted.map(|length| length + 1);

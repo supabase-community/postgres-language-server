@@ -3,6 +3,8 @@
 //! This crate provides a function to split a SQL source string into individual statements.
 pub mod diagnostics;
 mod splitter;
+#[cfg(feature = "testing")]
+mod testing;
 
 use diagnostics::SplitDiagnostic;
 use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
@@ -16,6 +18,8 @@ pub struct SplitResult {
     pub errors: Vec<SplitDiagnostic>,
     /// How many of the `errors` come from the lexer.
     lex_errors: usize,
+    /// The ranges of the COPY data blocks, which [`split_edited`] doesn't split on their own.
+    copy_data: Vec<TextRange>,
 }
 
 /// Splits `sql` into the ranges of the statements it contains.
@@ -55,6 +59,7 @@ pub fn split(sql: &str) -> SplitResult {
         ranges: Vec::with_capacity(coarse.ranges.len()),
         lex_errors: errors.len(),
         errors,
+        copy_data: lexed.copy_data().collect(),
     };
 
     for range in coarse.ranges {
@@ -182,8 +187,8 @@ const LEXER_STATE_BYTES: &[u8] = b"$'\"/*-\\";
 /// [`EDIT_CONTEXT_STATEMENTS`] statements before it to as many after it. The rest is taken from
 /// `previous`, shifted by the change in length. The result is the same as `split(new)`. It
 /// falls back to splitting all of `new` when the change can affect statements far from it:
-/// when it touches a quote, a comment or a psql command, or when the statements at the edges of
-/// the region don't come out as before.
+/// when it touches a quote, a comment or a psql command, when the region holds COPY data, or
+/// when the statements at the edges of the region don't come out as before.
 pub fn split_edited(old: &str, previous: &SplitResult, new: &str) -> SplitResult {
     split_region(old, previous, new).unwrap_or_else(|| split(new))
 }
@@ -313,6 +318,26 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     if start > prefix || new_region_end < new_end {
         return None;
     }
+    // COPY data is read after its COPY statement, so a region with COPY data whose statement is
+    // before it can't be lexed on its own, and changing a COPY statement in the region can turn
+    // text after the region into data or back.
+    let old_region_end = (new_region_end + old.len()).checked_sub(new.len())?;
+    let is_copy = |text: &str, range: &TextRange| {
+        text.get(usize::from(range.start())..)
+            .and_then(|statement| statement.get(..4))
+            .is_some_and(|word| word.eq_ignore_ascii_case("copy"))
+    };
+    if previous
+        .copy_data
+        .iter()
+        .any(|data| usize::from(data.end()) > start && usize::from(data.start()) < old_region_end)
+        || ranges
+            .get(first..last)?
+            .iter()
+            .any(|range| is_copy(old, range))
+    {
+        return None;
+    }
     let offset = to_size(start)?;
     // Moves a range of `old` that lies after the change to where it is in `new`.
     let shift = |range: TextRange| -> Option<TextRange> {
@@ -323,6 +348,13 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
 
     // `split` returns ranges relative to the region; `+ offset` makes them offsets into `new`.
     let region = split(&new[start..new_region_end]);
+    if region
+        .ranges
+        .iter()
+        .any(|range| is_copy(&new[start..new_region_end], range))
+    {
+        return None;
+    }
     let region_ranges: Vec<TextRange> = region.ranges.iter().map(|range| *range + offset).collect();
 
     // Step 3: the statements before and after the change come out as before, so the region
@@ -419,10 +451,24 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
     let lex_errors = errors.len();
     errors.extend(place(old_split, region_split)?);
 
+    // None of the COPY data is in the region.
+    let copy_data = previous
+        .copy_data
+        .iter()
+        .map(|&data| {
+            if usize::from(data.end()) <= start {
+                Some(data)
+            } else {
+                shift(data)
+            }
+        })
+        .collect::<Option<_>>()?;
+
     Some(SplitResult {
         ranges: result_ranges,
         errors,
         lex_errors,
+        copy_data,
     })
 }
 
@@ -1287,6 +1333,31 @@ values ('insert', new.id, now());",
     }
 
     #[test]
+    fn revoke_alter_system() {
+        for stmt in [
+            "REVOKE ALTER SYSTEM ON PARAMETER work_mem FROM my_user CASCADE;",
+            "REVOKE GRANT OPTION FOR ALTER SYSTEM ON PARAMETER work_mem FROM my_user;",
+            "GRANT SET, ALTER SYSTEM ON PARAMETER work_mem TO my_user;",
+        ] {
+            Tester::from(stmt).expect_statements(vec![stmt]);
+        }
+    }
+
+    #[test]
+    fn alter_extension_update() {
+        Tester::from("ALTER EXTENSION hstore UPDATE TO '2.0';\nALTER EXTENSION repmgr UPDATE;")
+            .expect_statements(vec![
+                "ALTER EXTENSION hstore UPDATE TO '2.0';",
+                "ALTER EXTENSION repmgr UPDATE;",
+            ]);
+    }
+
+    #[test]
+    fn empty_statement() {
+        Tester::from(";select 1;;\n;\nselect 2;").expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
     fn revoke_create() {
         Tester::from("REVOKE CREATE ON SCHEMA public FROM introspector_postgres_user;")
             .expect_statements(vec![
@@ -1398,7 +1469,7 @@ VALUES
 
     /// Regression: a backslash command without a trailing newline (so that the
     /// command runs all the way to EOF) used to cause an out-of-bounds panic in
-    /// the splitter. See `plpgsql_command` in `splitter/common.rs`.
+    /// the splitter.
     #[test]
     #[timeout(1000)]
     fn does_not_panic_on_backslash_dot_at_eof() {
@@ -1453,8 +1524,6 @@ VALUES
     #[test]
     #[timeout(1000)]
     fn does_not_panic_on_backslash_only_followed_by_newline() {
-        // Trailing newline goes through the LINE_ENDING branch of
-        // `plpgsql_command`, exercising a different exit path.
         let _ = split("\\\n");
     }
 
@@ -1502,6 +1571,63 @@ VALUES
     fn backslash_commands_surrounding_statements() {
         Tester::from("\\dt\nselect 1;\n\\du\nselect 2;\n\\dn")
             .expect_statements(vec!["select 1;", "select 2;"]);
+    }
+
+    #[test]
+    fn meta_command_after_a_query_ends_it() {
+        Tester::from("select 1 as x \\gset\nselect :x;")
+            .expect_statements(vec!["select 1 as x", "select :x;"])
+            .assert_no_errors();
+        Tester::from("select 1\n  from t \\g out.txt\nselect 2;")
+            .expect_statements(vec!["select 1\n  from t", "select 2;"]);
+        Tester::from("select (1 \\gset\nselect 2;")
+            .expect_statements(vec!["select (1", "select 2;"]);
+    }
+
+    #[test]
+    fn meta_commands_between_statements() {
+        Tester::from("\\set x 1\n\\if :x\nselect 1;\n\\else\n  select 2;\n\\endif\nselect 3;")
+            .expect_statements(vec!["select 1;", "select 2;", "select 3;"])
+            .assert_no_errors();
+        Tester::from("\\copy t from stdin with csv\n1,2\n\\.\nselect 1;")
+            .expect_statements(vec!["select 1;"]);
+    }
+
+    /// The arguments of a meta-command aren't SQL, so a quote in them opens no string.
+    #[test]
+    fn meta_command_arguments_are_not_sql() {
+        Tester::from("\\echo don't\nselect 1;\n\\echo it's\nselect 2;")
+            .expect_statements(vec!["select 1;", "select 2;"])
+            .assert_no_errors();
+    }
+
+    /// `\\` ends a meta-command, and the SQL after it on the same line starts a statement.
+    #[test]
+    fn double_backslash_separates_meta_command_and_sql() {
+        Tester::from("\\set x 1 \\\\ select :x;\nselect 2;")
+            .expect_statements(vec!["select :x;", "select 2;"]);
+        Tester::from("\\echo 'a \\\\ b' select 1;\nselect 2;").expect_statements(vec!["select 2;"]);
+    }
+
+    /// The data after `COPY … FROM STDIN` belongs to no statement, even where a row looks like
+    /// SQL.
+    #[test]
+    fn copy_data_between_statements() {
+        Tester::from(
+            "COPY public.actor (actor_id, name) FROM stdin;\n1\tPENELOPE\t\\N\n2\tselect 1;\n\\.\n\nSELECT 1;",
+        )
+        .expect_statements(vec!["COPY public.actor (actor_id, name) FROM stdin;", "SELECT 1;"])
+        .assert_no_errors();
+        Tester::from("copy a from stdin;\n1\n\\.\ncopy b from stdin;\n2\n\\.\nselect 1;")
+            .expect_statements(vec![
+                "copy a from stdin;",
+                "copy b from stdin;",
+                "select 1;",
+            ]);
+        // Without a `\.`, the lines after it stay SQL.
+        Tester::from("copy t from stdin;\nselect 1;\n")
+            .expect_statements(vec!["copy t from stdin;", "select 1;"]);
+        Tester::from("\\copy t from stdin\n1\n\\.\nselect 1;").expect_statements(vec!["select 1;"]);
     }
 
     // --- Blank lines inside a statement (issue #784) --------------------------
@@ -1622,6 +1748,24 @@ VALUES
             .assert_no_errors();
     }
 
+    /// A `*` after an operand multiplies, so it needs an operand. Found by the
+    /// `splitter_vs_parser` fuzz target.
+    #[test]
+    fn statement_keywords_after_a_multiplication() {
+        for sql in [
+            "INSERT INTO tbl SELECT x, 2*INSERT INTx, NO",
+            "select x * update from t;",
+            "select (1) *\nalter, $1 * delete from t;",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from("select *\nalter table t add c int;")
+            .expect_statements(vec!["select *", "alter table t add c int;"])
+            .assert_no_errors();
+    }
+
     /// Next to a `.` a keyword is a name, even a reserved one: a column label after it, a
     /// qualifier before it.
     #[test]
@@ -1630,6 +1774,10 @@ VALUES
             "select testschema.select from t;",
             "select c2[2].select from t;",
             "select t.create from t;",
+            "select t.with from t;",
+            "select t.values from t;",
+            "select t.table from t;",
+            "SELECT pg_s.WITH REC$aRS",
             "create operator class alter.c for type int4 using btree as operator 1 <;",
             "create view update.v as select 1;",
         ] {
@@ -1640,6 +1788,9 @@ VALUES
         // After an unfinished statement, as for the keywords after other operators.
         Tester::from("select t.\nselect 1;")
             .expect_statements(vec!["select t.", "select 1;"])
+            .assert_no_errors();
+        Tester::from("select t.\nwith c as (select 1) select * from c;")
+            .expect_statements(vec!["select t.", "with c as (select 1) select * from c;"])
             .assert_no_errors();
     }
 
@@ -1723,7 +1874,6 @@ VALUES
         assert_splits_like_psql(&[
             "COPY t TO stdout WITH (FORMAT csv);",
             "COPY t TO stdout WITH CSV HEADER;",
-            "COPY t FROM stdin WITH DELIMITER AS '|';",
             "DECLARE c CURSOR WITH HOLD FOR SELECT 1;",
             "DECLARE c CURSOR FOR SELECT * FROM t FETCH FIRST 2 ROWS WITH TIES;",
             "DROP DATABASE d WITH (FORCE);",
@@ -1732,6 +1882,12 @@ VALUES
             "CREATE CAST (int4 AS t) WITH INOUT AS IMPLICIT;",
             "CREATE ROLE r WITH LOGIN PASSWORD 'x';",
         ]);
+        Tester::from("COPY t FROM stdin WITH DELIMITER AS '|';\n1|2\n\\.\nSELECT 1;")
+            .expect_statements(vec![
+                "COPY t FROM stdin WITH DELIMITER AS '|';",
+                "SELECT 1;",
+            ])
+            .assert_no_errors();
     }
 
     #[test]
@@ -1853,6 +2009,10 @@ VALUES
         "select 1\n\nfrom t;",
         "selec 1;",
         "grant select on t to public;",
+        "select 1 as x \\gset\n",
+        "\\set x 1 \\\\ select :x;",
+        "\\if :x\n",
+        "copy t from stdin;\n1\tx\n\\N\tselect 1;\n\\.\n",
     ];
 
     /// Text inserted by the edits: whole statements, and fragments that can merge, cut or quote
@@ -1880,6 +2040,12 @@ VALUES
         "delete",
         "create table q (a int);",
         "\\d t\n",
+        "\\gset",
+        "\\\\",
+        "`",
+        "\\echo don't\n",
+        "copy t from stdin;\n",
+        "stdin",
         "é",
         "insert into",
         "case when true then 1 end",
@@ -1915,6 +2081,39 @@ VALUES
             at
         };
         format!("{}{inserted}{}", &sql[..at], &sql[end..])
+    }
+
+    /// A line break added to or removed from a meta-command moves text between it and the SQL
+    /// around it without touching a `\`; the region around the change covers it.
+    #[test]
+    fn split_edited_around_meta_commands() {
+        let old = "select 1;\nselect 2;\nselect 3;\n\\echo a b\nselect 4;\nselect 5;\nselect 6;\n";
+        let previous = split(old);
+        for new in [
+            old.replace("a b", "a\nb"),
+            old.replace("a b\n", "a b"),
+            old.replace("\n\\echo", "\\echo"),
+            old.replace("select 2;", "select 2 \\gset"),
+        ] {
+            assert_eq!(split_edited(old, &previous, &new), split(&new), "{new}");
+        }
+    }
+
+    /// COPY data can start after a statement before the region, so a region that holds some is
+    /// split with the whole file.
+    #[test]
+    fn split_edited_around_copy_data() {
+        let old = "select 0;\ncopy t from stdin; select 1; select 2;\nfoo bar\n\\.\nselect 3;\nselect 4;\nselect 5;\nselect 6;\n";
+        let previous = split(old);
+        for new in [
+            old.replace("select 3", "select 33"),
+            old.replace("foo", "fooo"),
+            old.replace("stdin", "stdon"),
+            old.replace("select 0", "copy u from stdin"),
+            old.replace("select 6;", "copy u from stdin;\nselect 6;"),
+        ] {
+            assert_eq!(split_edited(old, &previous, &new), split(&new), "{new}");
+        }
     }
 
     #[test]

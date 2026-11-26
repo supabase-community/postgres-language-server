@@ -338,8 +338,9 @@ jobs:
           cp Cargo.lock fuzz/Cargo.lock
           cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
 
-  # Runs the CLI over real-world SQL (crates/pgls_cli/tests/corpus.toml) and compares a summary per
-  # source with its snapshot. In release, because `format` of GitLab's schema takes minutes in debug.
+  # Runs the CLI and the fuzzers' oracles over real-world SQL (crates/pgls_cli/tests/corpus.toml)
+  # and compares a summary per source with its snapshot. In release, because `format` of GitLab's
+  # schema takes minutes in debug.
   # Also runs the completion harness over the Postgres regression SQL
   # (crates/pgls_completions/tests/harness.rs), which takes minutes in debug too.
   corpus:
