@@ -801,12 +801,14 @@ module.exports = grammar({
         ),
       ),
 
-    table_statement: ($) =>
-      partialSeq(
-        $.keyword_table,
-        optional($.keyword_only),
-        field("end", $.table_reference),
-        optional("*"),
+    table_statement: ($) => partialSeq($.keyword_table, $._relation_expr),
+
+    // A table with or without its descendants: `ONLY t`, or `t` and `t *`, not both
+    // (`relation_expr` in Postgres).
+    _relation_expr: ($) =>
+      choice(
+        partialSeq($.keyword_only, field("end", $.table_reference)),
+        seq(field("end", $.table_reference), optional("*")),
       ),
 
     _show_statement: ($) =>
@@ -961,15 +963,10 @@ module.exports = grammar({
     _delete_from: ($) =>
       partialSeq(
         $.keyword_from,
-        optional($.keyword_only),
-        field("end", $.table_reference),
-        optional("*"),
+        $._relation_expr,
         optional($.alias),
         optional($.delete_using),
         optional(choice($.where, $.where_current_of)),
-        optional($.order_by),
-        optional($.limit),
-        optional($.offset),
       ),
 
     delete_using: ($) =>
@@ -2646,17 +2643,7 @@ module.exports = grammar({
 
     // A table and its columns in VACUUM and ANALYZE (`vacuum_relation` in Postgres).
     table_and_columns: ($) =>
-      choice(
-        partialSeq($.keyword_only, $._table_and_columns),
-        $._table_and_columns,
-      ),
-
-    _table_and_columns: ($) =>
-      seq(
-        field("end", $.table_reference),
-        optional("*"),
-        optional($.table_columns),
-      ),
+      seq($._relation_expr, optional($.table_columns)),
 
     table_columns: ($) =>
       wrapped_in_parenthesis(comma_list($.column_identifier, true)),
@@ -2670,16 +2657,7 @@ module.exports = grammar({
         optional(choice($.where, $.where_current_of)),
       ),
 
-    update_target: ($) =>
-      choice(
-        partialSeq(
-          $.keyword_only,
-          field("end", $.table_reference),
-          optional("*"),
-          optional($.alias),
-        ),
-        seq(field("end", $.table_reference), optional("*"), optional($.alias)),
-      ),
+    update_target: ($) => seq($._relation_expr, optional($.alias)),
 
     update_set_values: ($) =>
       partialSeq($.keyword_set, field("end", comma_list($.assignment, true))),
