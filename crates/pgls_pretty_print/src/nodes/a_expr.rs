@@ -621,18 +621,3 @@ fn operator_prefers_line_break(name: &[Node]) -> bool {
         _ => true,
     }
 }
-
-fn emit_operand_with_parens(
-    e: &mut EventEmitter,
-    node: &Node,
-    parent: Option<OperatorInfo>,
-    side: OperandSide,
-) {
-    if needs_parentheses(node, Position::Operand { parent, side }) {
-        e.token(TokenKind::L_PAREN);
-        emit_node(e, node);
-        e.token(TokenKind::R_PAREN);
-    } else {
-        emit_node(e, node);
-    }
-}
