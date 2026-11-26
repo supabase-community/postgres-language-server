@@ -2711,6 +2711,7 @@ dependencies = [
  "pgls_query_macros",
  "prost",
  "prost-build",
+ "regex",
  "thiserror 1.0.69",
  "tracing",
 ]
@@ -2971,7 +2972,6 @@ dependencies = [
  "pgls_walk",
  "pgls_workspace_macros",
  "proptest",
- "regex",
  "rustc-hash",
  "schemars",
  "serde",

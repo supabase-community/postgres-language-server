@@ -31,7 +31,7 @@ check:
   lint/requireTableSchema: 30
   lint/requireTypeSchema: 167
   lint/transactionNesting: 34
-  syntax: 22
+  syntax: 14
 format:
   format: 491
   syntax: 5

@@ -1,4 +1,7 @@
 use std::ffi::{CStr, CString};
+use std::sync::LazyLock;
+
+use regex::Regex;
 
 use crate::bindings::*;
 use crate::error::*;
@@ -59,4 +62,72 @@ pub fn parse_plpgsql_json(stmt: &str) -> Result<String> {
     };
     unsafe { pg_query_free_plpgsql_parse_result(result) };
     structure
+}
+
+/// Messages libpg_query reports on valid PL/pgSQL functions because it compiles them without a
+/// catalog: it only knows the types of `pg_catalog`, reads an unknown type in `public` as
+/// `record`, so an array of one as `_record`, finds no element type for a `VARIADIC` array, and
+/// fails with `Not implemented` on anything else, e.g. a type in another schema.
+/// https://github.com/pganalyze/libpg_query/blob/18.1.0/src/postgres/src_backend_utils_cache_syscache.c#L332-L344
+const NO_CATALOG_ERRORS: &[&str] = &[
+    "Not implemented",
+    "cannot accept type _record",
+    "cannot return type _record",
+    "VARIADIC parameter must be an array",
+];
+
+/// `"v_row.id" is not a known variable`: without a catalog, libpg_query doesn't know the fields
+/// of a composite type. https://github.com/pganalyze/libpg_query/issues/159
+#[expect(
+    clippy::unwrap_used,
+    reason = "the pattern is a constant, which `recognises_composite_type_errors` compiles"
+)]
+static COMPOSITE_TYPE_ERROR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\\?"([^"\\]+\.[^"\\]+)\\?" is not a known variable"#).unwrap());
+
+impl Error {
+    /// Whether [`parse_plpgsql`] reports this error on a function that may be valid, because
+    /// libpg_query compiles it without a catalog: it doesn't know the fields of a composite type
+    /// or any type outside `pg_catalog`.
+    pub fn is_false_positive_without_catalog(&self) -> bool {
+        match self {
+            Error::Parse(message) => {
+                COMPOSITE_TYPE_ERROR_RE.is_match(message)
+                    || NO_CATALOG_ERRORS
+                        .iter()
+                        .any(|error| message.contains(error))
+            }
+            _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recognises_composite_type_errors() {
+        assert!(
+            Error::Parse(r#""v_row.id" is not a known variable"#.to_string())
+                .is_false_positive_without_catalog()
+        );
+        assert!(
+            !Error::Parse(r#""v_id" is not a known variable"#.to_string())
+                .is_false_positive_without_catalog()
+        );
+    }
+
+    #[test]
+    fn recognises_errors_on_functions_valid_without_a_catalog() {
+        for input in [
+            "create function f(x my_enum[]) returns void language plpgsql as $$ begin end $$",
+            "create function f() returns my_enum[] language plpgsql as $$ begin return null; end $$",
+            "create function f() returns void language plpgsql as $$ declare u auth.users; begin end $$",
+            "create function f(variadic b int[]) returns void language plpgsql as $$ begin end $$",
+        ] {
+            let err = parse_plpgsql(input).expect_err(input);
+            assert!(err.is_false_positive_without_catalog(), "{input}: {err}");
+        }
+    }
 }
