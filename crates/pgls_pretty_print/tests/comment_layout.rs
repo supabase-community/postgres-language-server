@@ -391,6 +391,36 @@ fn a_comment_before_a_comma_stays_before_the_comma_in_every_list() {
 }
 
 #[test]
+fn a_comment_before_an_argument_comma_stays_before_the_comma() {
+    for config in [FormatConfig::default(), leading_comma_config()] {
+        for (sql, expected) in [
+            (
+                "select nullif(a /* c */, b);",
+                "select nullif(a /* c */, b);",
+            ),
+            (
+                "select xmlelement(name e /* c */, xmlattributes(a), b);",
+                "select xmlelement(name e /* c */, xmlattributes(a), b);",
+            ),
+            (
+                "select xmlelement(name e /* c */, b);",
+                "select xmlelement(name e /* c */, b);",
+            ),
+            (
+                "select xmlpi(name p /* c */, b);",
+                "select xmlpi(name p /* c */, b);",
+            ),
+            (
+                "select json_query(a /* c */, '$.b');",
+                "select json_query(a /* c */, '$.b');",
+            ),
+        ] {
+            assert_eq!(format_idempotently(sql, &config), expected);
+        }
+    }
+}
+
+#[test]
 fn lists_that_wrote_their_own_commas_follow_the_comma_style() {
     assert_eq!(
         format_idempotently(

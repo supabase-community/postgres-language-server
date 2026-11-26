@@ -32,7 +32,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
 
             // Named args represent XML attributes (XMLATTRIBUTES)
             if !n.named_args.is_empty() {
-                e.token(TokenKind::COMMA);
+                emit_argument_comma(e, n.named_args.first());
                 e.line(LineType::SoftOrSpace);
                 e.token(TokenKind::XMLATTRIBUTES_KW);
                 emit_parenthesized_list(e, &n.named_args, emit_node);
@@ -40,7 +40,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
 
             // Args represent content
             if !n.args.is_empty() {
-                e.token(TokenKind::COMMA);
+                emit_argument_comma(e, n.args.first());
                 e.line(LineType::SoftOrSpace);
                 emit_comma_separated_list(e, &n.args, emit_node);
             }
@@ -81,7 +81,7 @@ pub(super) fn emit_xml_expr(e: &mut EventEmitter, n: &XmlExpr) {
             emit_identifier_maybe_quoted(e, &n.name);
 
             if let Some(first) = n.args.first() {
-                e.token(TokenKind::COMMA);
+                emit_argument_comma(e, Some(first));
                 e.line(LineType::SoftOrSpace);
                 emit_node(e, first);
             }

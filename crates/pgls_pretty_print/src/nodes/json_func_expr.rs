@@ -39,7 +39,7 @@ pub(super) fn emit_json_func_expr(e: &mut EventEmitter, n: &JsonFuncExpr) {
         }
     }
 
-    e.token(TokenKind::COMMA);
+    emit_argument_comma(e, n.pathspec.as_deref());
     e.line(LineType::SoftOrSpace);
 
     if let Some(ref pathspec) = n.pathspec {
