@@ -7,7 +7,7 @@ use std::sync::{
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_lexer::SyntaxKind;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
-use pgls_statement_splitter::SplitResult;
+use pgls_statement_splitter::{SplitResult, TextChange};
 use pgls_suppressions::Suppressions;
 use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, UnparsableStatement};
@@ -175,15 +175,15 @@ impl Document {
         // The text that is split is the content with the placeholders of the migration tool.
         let old_text = self.text();
         let new_text = text(&content, migration_script.preprocessed.as_ref());
-        let unchanged = common_prefix(old_text, new_text);
-        let unchanged_suffix = common_suffix(old_text, new_text, unchanged);
+        let change = TextChange::between(old_text, new_text);
+        let unchanged = TextSize::try_from(change.start).unwrap_or_default();
         // Only the statements around the change are split again.
         let split = pgls_statement_splitter::split_edited(old_text, &self.split, new_text);
         let changed = changed_statements(
             &self.split.ranges,
             &split.ranges,
             unchanged,
-            TextSize::of(old_text) - unchanged_suffix,
+            TextSize::try_from(change.old_end).unwrap_or_default(),
             new_text.len() as i64 - old_text.len() as i64,
         );
         // The statements before the change keep what the walks cached for them. The splitter
@@ -736,61 +736,6 @@ fn text<'a>(content: &'a str, preprocessed: Option<&'a Preprocessed>) -> &'a str
     preprocessed.map_or(content, |preprocessed| &preprocessed.text)
 }
 
-/// The length of the longest common prefix of `a` and `b`, on a character boundary.
-fn common_prefix(a: &str, b: &str) -> TextSize {
-    /// Compares this many bytes at a time, which is faster than comparing each byte.
-    const BLOCK_BYTES: usize = 64;
-    let (a, b) = (a.as_bytes(), b.as_bytes());
-    let blocks = a
-        .as_chunks::<BLOCK_BYTES>()
-        .0
-        .iter()
-        .zip(b.as_chunks::<BLOCK_BYTES>().0)
-        .take_while(|(a, b)| a == b)
-        .count();
-    let mut equal = blocks * BLOCK_BYTES;
-    equal += a
-        .iter()
-        .skip(equal)
-        .zip(b.iter().skip(equal))
-        .take_while(|(a, b)| a == b)
-        .count();
-    // A change inside a character starts at its first byte.
-    while equal > 0 && a.get(equal).is_some_and(|byte| (byte & 0xC0) == 0x80) {
-        equal -= 1;
-    }
-    TextSize::try_from(equal).unwrap_or_default()
-}
-
-/// The length of the longest common suffix of `a` and `b` that doesn't overlap the common
-/// prefix of length `prefix`, on a character boundary.
-fn common_suffix(a: &str, b: &str, prefix: TextSize) -> TextSize {
-    const BLOCK_BYTES: usize = 64;
-    let (a, b) = (a.as_bytes(), b.as_bytes());
-    let len = a.len().min(b.len()).saturating_sub(usize::from(prefix));
-    // The `equal` bytes at the end of `a` and `b`, and the `more` bytes before them.
-    let ends_equal = |equal: usize, more: usize| {
-        let (a_start, b_start) = (a.len() - equal - more, b.len() - equal - more);
-        a.get(a_start..a.len() - equal)
-            .is_some_and(|a| b.get(b_start..b.len() - equal) == Some(a))
-    };
-    let mut equal = 0;
-    while equal + BLOCK_BYTES <= len && ends_equal(equal, BLOCK_BYTES) {
-        equal += BLOCK_BYTES;
-    }
-    while equal < len && ends_equal(equal, 1) {
-        equal += 1;
-    }
-    // A change inside a character ends after its last byte.
-    while equal > 0
-        && a.get(a.len() - equal)
-            .is_some_and(|byte| (byte & 0xC0) == 0x80)
-    {
-        equal -= 1;
-    }
-    TextSize::try_from(equal).unwrap_or_default()
-}
-
 /// The indexes of the statements of the split `old` that an edit changed, given the split `new`
 /// of the text after it. The text before `unchanged`, and from `unchanged_from` on in the old
 /// text, is the same, and `shift` is the change in length. A statement is unchanged if it is in
@@ -1092,23 +1037,6 @@ mod tests {
                 d.equals_a_fresh_document()?;
             }
         }
-    }
-
-    #[test]
-    fn common_prefix_stops_at_the_first_difference_on_a_char_boundary() {
-        let long = "select 1;\n".repeat(20);
-        assert_eq!(common_prefix("", ""), TextSize::from(0));
-        assert_eq!(common_prefix(&long, &long), TextSize::of(long.as_str()));
-        assert_eq!(common_prefix(&long, "select 2;"), TextSize::from(7));
-        assert_eq!(
-            common_prefix(&format!("{long}x"), &format!("{long}y")),
-            TextSize::of(long.as_str())
-        );
-        // `ä` and `ö` share their first byte, so the change starts at that byte.
-        assert_eq!(
-            common_prefix(&format!("{long}ä"), &format!("{long}ö")),
-            TextSize::of(long.as_str())
-        );
     }
 
     #[test]
@@ -1638,12 +1566,12 @@ $$ LANGUAGE plpgsql;";
                 pgls_statement_splitter::split(old),
                 pgls_statement_splitter::split(new),
             );
-            let unchanged = common_prefix(old, new);
+            let change = TextChange::between(old, new);
             let range = changed_statements(
                 &old_split.ranges,
                 &new_split.ranges,
-                unchanged,
-                TextSize::of(old) - common_suffix(old, new, unchanged),
+                TextSize::try_from(change.start).unwrap(),
+                TextSize::try_from(change.old_end).unwrap(),
                 new.len() as i64 - old.len() as i64,
             );
             old_split.ranges[range]
