@@ -33,6 +33,7 @@ pub enum CharClass {
 impl CharClass {
     /// Whether `c` is in the class. `\200-\377` in a class are bytes, so every non-ASCII
     /// character is in a class that has them: all bytes of its UTF-8 encoding are in that range.
+    #[inline]
     pub fn contains(self, c: char) -> bool {
         match self {
             CharClass::IdentStart => matches!(c, 'a'..='z' | 'A'..='Z' | '_') || !c.is_ascii(),
@@ -41,6 +42,7 @@ impl CharClass {
             }
             CharClass::NonNewlineSpace => matches!(c, ' ' | '\t' | '\u{000C}' | '\u{000B}'),
             CharClass::Newline => matches!(c, '\n' | '\r'),
+            // A `match`, not a string search: the tokenizer asks for every operator character.
             CharClass::OpChar => matches!(
                 c,
                 '~' | '!'
@@ -60,25 +62,7 @@ impl CharClass {
                     | '>'
                     | '='
             ),
-            CharClass::SelfChar => matches!(
-                c,
-                ',' | '('
-                    | ')'
-                    | '['
-                    | ']'
-                    | '.'
-                    | ';'
-                    | ':'
-                    | '+'
-                    | '-'
-                    | '*'
-                    | '/'
-                    | '%'
-                    | '^'
-                    | '<'
-                    | '>'
-                    | '='
-            ),
+            CharClass::SelfChar => ",()[].;:+-*/%^<>=".contains(c),
             CharClass::VariableChar => CharClass::IdentStart.contains(c) || c.is_ascii_digit(),
         }
     }
