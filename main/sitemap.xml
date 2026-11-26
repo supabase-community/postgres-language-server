@@ -316,6 +316,9 @@
         <loc>https://pg-language-server.com/main/reference/rules/invalid-merge/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/invalid-select-into/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/lock-timeout-warning/</loc>
       </url>
       <url>
