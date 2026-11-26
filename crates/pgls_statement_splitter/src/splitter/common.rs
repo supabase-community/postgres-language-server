@@ -26,9 +26,12 @@ pub(crate) type SplitterResult = std::result::Result<(), ReachedEOFException>;
 
 pub(crate) fn source(p: &mut Splitter) -> SplitterResult {
     loop {
-        match p.current() {
+        match p.kind(p.current_pos) {
             SyntaxKind::EOF => {
                 break;
+            }
+            SyntaxKind::META_COMMAND | SyntaxKind::COPY_DATA => {
+                p.skip_psql_input();
             }
             kind if TRIVIA_TOKENS.contains(&kind) || kind == SyntaxKind::LINE_ENDING => {
                 p.advance()?;
@@ -37,9 +40,6 @@ pub(crate) fn source(p: &mut Splitter) -> SplitterResult {
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1116
             SyntaxKind::SEMICOLON => {
                 p.advance()?;
-            }
-            SyntaxKind::BACKSLASH => {
-                plpgsql_command(p)?;
             }
             _ => {
                 statement(p)?;
@@ -162,26 +162,6 @@ pub(crate) fn parenthesis(p: &mut Splitter) -> SplitterResult {
     Ok(())
 }
 
-pub(crate) fn plpgsql_command(p: &mut Splitter) -> SplitterResult {
-    p.expect(SyntaxKind::BACKSLASH)?;
-
-    loop {
-        match p.current() {
-            SyntaxKind::LINE_ENDING => {
-                p.advance()?;
-                break;
-            }
-            _ => {
-                // advance the splitter to the next token without ignoring irrelevant tokens
-                // we would skip a newline with `advance()`
-                p.step()?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
 /// Skips a `CASE ... END` expression, including the `CASE` expressions nested in it. The depth
 /// is a counter, so nesting costs neither stack nor memory, and every iteration moves by one
 /// token.
@@ -263,27 +243,6 @@ pub(crate) fn unknown(p: &mut Splitter, exclude: &[SyntaxKind]) -> SplitterResul
             }
             SyntaxKind::CASE_KW if !at_label(p) => {
                 case(p)?;
-            }
-            SyntaxKind::BACKSLASH => {
-                // pgsql commands
-                // we want to check if the previous token non-trivia token is a LINE_ENDING
-                // we cannot use the is_trivia() method because that would exclude LINE_ENDINGs
-                // with count > 1
-                if (0..p.current_pos)
-                    .rev()
-                    .find_map(|idx| {
-                        let kind = p.kind(idx);
-                        if !TRIVIA_TOKENS.contains(&kind) {
-                            Some(kind)
-                        } else {
-                            None
-                        }
-                    })
-                    .is_some_and(|t| t == SyntaxKind::LINE_ENDING)
-                {
-                    break;
-                }
-                p.advance()?;
             }
             SyntaxKind::L_PAREN => {
                 parenthesis(p)?;

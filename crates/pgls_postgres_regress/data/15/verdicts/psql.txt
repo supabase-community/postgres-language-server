@@ -1,36 +1,36 @@
-249..277 rejected 42601
-279..311 rejected 42601
-359..387 rejected 42601
-389..421 rejected 42601
-455..514 rejected 42601
-516..563 rejected 42601
-576..642 rejected 42601
+249..274 accepted
+279..307 accepted
+359..384 accepted
+389..417 accepted
+455..480 accepted
+516..541 accepted
+576..628 accepted
 680..703 accepted
-706..751 rejected 42601
-797..851 rejected 42601
-852..919 rejected 42601
-920..987 rejected 42601
-988..1052 rejected 42601
-1089..1136 rejected 42601
-1172..1237 rejected 42601
-1238..1303 rejected 42601
-1352..1406 rejected 42601
-1407..1474 rejected 42601
-1475..1540 rejected 42601
-1541..1606 rejected 42601
+706..738 accepted
+797..818 accepted
+852..873 accepted
+920..941 accepted
+988..1009 accepted
+1089..1130 accepted
+1172..1231 accepted
+1238..1297 accepted
+1352..1373 accepted
+1407..1428 accepted
+1475..1534 accepted
+1541..1600 accepted
 1621..1788 rejected 42P02
 1854..1901 accepted
-1902..1949 rejected 42601
-1989..2006 rejected 42601
-2045..2058 rejected 42601
-2059..2092 rejected 42601
-2138..2151 rejected 42P01
+1902..1914 accepted
+1922..1942 accepted
+1989..1999 rejected 42601
+2045..2051 accepted
+2059..2085 accepted
+2138..2151 accepted
 2202..2254 accepted
-2277..2339 rejected 42601
+2277..2329 accepted
 2415..2441 accepted
 2442..2448 skipped
 2449..2455 rejected 42601
-2456..2457 accepted
 2459..2468 skipped
 2481..2547 accepted
 2548..2693 accepted
@@ -204,4 +204,118 @@
 8532..8546 rejected 42601
 8658..8664 accepted
 8670..8672 rejected 42601
-8678..17269 rejected 42601
+8678..8706 rejected 42601
+8720..8726 rejected 42601
+8736..8738 rejected 42601
+8749..8759 rejected 42601
+9483..9495 rejected 42601
+9506..9527 accepted
+9555..9570 accepted
+9784..9863 accepted
+9864..9868 skipped
+9870..9904 accepted
+9952..9981 rejected 42601
+9983..10040 rejected 42601
+10060..10126 rejected P0001
+10129..10195 rejected P0001
+10198..10264 rejected P0001
+10313..10322 accepted
+10324..10332 accepted
+10337..10345 accepted
+10349..10363 rejected 42601
+10367..10393 rejected 42601
+10470..10503 accepted
+10524..10539 rejected 42601
+10624..10661 rejected 42P01
+10748..10763 rejected 42601
+10769..10780 rejected 22012
+10805..10833 accepted
+10869..10880 rejected 42601
+10941..10993 rejected 42P01
+11058..11117 rejected 42P01
+11126..11149 accepted
+11150..11188 accepted
+11190..11247 accepted
+11249..11287 accepted
+11345..11373 accepted
+11375..11418 accepted
+11419..11463 accepted
+11464..11527 accepted
+11528..11593 accepted
+11595..11665 accepted
+11666..11737 accepted
+11739..11800 accepted
+11801..11864 accepted
+11923..11950 accepted
+11951..11979 accepted
+11980..12006 accepted
+12007..12034 accepted
+12036..12093 accepted
+12094..12139 accepted
+12140..12218 accepted
+12219..12299 accepted
+12300..12380 accepted
+12381..12435 accepted
+12436..12539 accepted
+12540..12621 accepted
+12622..12704 accepted
+12705..12760 accepted
+12773..12803 accepted
+12805..12826 accepted
+12828..12855 accepted
+12857..12877 accepted
+12878..12914 accepted
+13075..13096 accepted
+13099..13114 accepted
+13210..13239 accepted
+13242..13273 accepted
+13274..13281 skipped
+13282..13304 accepted
+13305..13312 skipped
+13314..13345 accepted
+13346..13355 skipped
+13356..13378 accepted
+13379..13386 skipped
+13388..13394 skipped
+13395..13426 accepted
+13427..13434 skipped
+13435..13457 accepted
+13458..13465 skipped
+13467..13473 skipped
+13474..13505 accepted
+13506..13515 skipped
+13516..13538 accepted
+13539..13546 skipped
+13549..13568 accepted
+13569..13591 rejected 42P01
+13639..13669 accepted
+13671..13677 skipped
+13678..13710 accepted
+13711..13747 rejected 22P02
+13748..13780 accepted
+13781..13788 skipped
+13789..13812 accepted
+13814..13820 skipped
+13821..13853 accepted
+13854..13863 skipped
+13864..13887 accepted
+13889..13895 skipped
+13896..13928 accepted
+13929..13946 skipped
+13947..13979 accepted
+13980..13987 skipped
+13988..14011 accepted
+14013..14033 accepted
+14052..14076 rejected 42P01
+14105..14233 accepted
+14248..14266 rejected 42601
+14267..14288 rejected 42601
+14289..14306 accepted
+14343..14363 rejected 42601
+14364..14385 rejected 42601
+14386..14402 accepted
+14447..14458 rejected 42601
+14459..14472 rejected 42601
+14473..14494 rejected 42601
+14495..14505 accepted
+14555..17269 skipped

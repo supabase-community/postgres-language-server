@@ -1,3 +1,4 @@
+0..77	pg_catalog.bool
 655..677	pg_catalog.varchar
 715..737	pg_catalog.varchar
 777..848	pg_catalog.text

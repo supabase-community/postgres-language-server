@@ -325,6 +325,7 @@
 30716..30743	pg_catalog.text
 30744..30777	pg_catalog.text
 30779..30882	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
+31108..31211	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text
 31468..31496	pg_catalog.text
 31498..31525	pg_catalog.text
 31526..31547	pg_catalog.text

@@ -2,19 +2,4 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report
 ---
-REL_17_11: 46044 recorded statements, 5 differences
-
-insert_conflict.sql:393:1:
-  recorded 393:1-393:2 ;
-
-insert_conflict.sql:398:1:
-  recorded 398:1-398:2 ;
-
-insert_conflict.sql:406:1:
-  recorded 406:1-406:2 ;
-
-insert_conflict.sql:411:1:
-  recorded 411:1-411:2 ;
-
-psql.sql:144:1:
-  recorded 144:1-144:2 ;
+REL_17_11: 46227 recorded statements, 0 differences

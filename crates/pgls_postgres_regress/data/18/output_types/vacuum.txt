@@ -22,3 +22,5 @@
 13860..13896	pg_catalog.text	pg_catalog.int8
 14063..14099	pg_catalog.text	pg_catalog.int8
 14190..14226	pg_catalog.text	pg_catalog.int8
+14299..14383	pg_catalog.oid
+14390..14521	pg_catalog.oid

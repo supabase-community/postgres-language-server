@@ -1,3 +1,4 @@
+183..260	pg_catalog.bool
 271..300	pg_catalog.name
 625..653	pg_catalog.jsonpath
 734..799	pg_catalog.jsonpath

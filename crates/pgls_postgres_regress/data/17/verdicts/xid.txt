@@ -60,15 +60,17 @@
 4067..4112 rejected 22P02
 4153..4159 skipped
 4160..4208 accepted
-4209..4242 rejected 42601
+4209..4236 accepted
 4243..4331 rejected 42601
 4332..4339 skipped
 4370..4376 skipped
-4377..4431 rejected 42601
+4377..4417 accepted
+4424..4431 skipped
 4433..4439 skipped
-4440..4497 rejected 42601
+4440..4481 accepted
+4488..4497 skipped
 4499..4505 skipped
-4506..4553 rejected 42601
+4506..4547 accepted
 4555..4614 rejected 42601
 4615..4676 rejected 42601
 4677..4738 rejected 42601

@@ -1,3 +1,4 @@
+330..375	pg_catalog.bool
 386..408	pg_catalog.int4	pg_catalog.xml
 440..494	pg_catalog.bool
 495..543	pg_catalog.bool

@@ -1,4 +1,4 @@
-221..473 rejected 42601
+221..467 accepted
 478..506 accepted
 508..536 accepted
 537..569 accepted
@@ -180,7 +180,7 @@
 13738..13762 accepted
 13763..13791 accepted
 13804..13844 accepted
-13890..13932 rejected 42601
+13890..13926 accepted
 13933..13985 rejected 42601
 14005..14037 accepted
 14039..14100 accepted

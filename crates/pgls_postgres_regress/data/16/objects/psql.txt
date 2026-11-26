@@ -1,1 +1,6 @@
+function	f	public	psql_df_internal	1
+function	f	public	psql_df_plpgsql	1
+function	f	public	psql_df_sql	1
+function	f	public	warn	1
+relation	r	public	bububu	a	pg_catalog.int4
 schema	public
