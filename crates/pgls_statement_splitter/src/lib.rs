@@ -1767,10 +1767,11 @@ VALUES
     }
 
     /// Next to a `.` a keyword is a name, even a reserved one: a column label after it, a
-    /// qualifier before it.
+    /// qualifier before it. After `AS` too, it's a column label.
     #[test]
     fn statement_keywords_next_to_a_dot() {
         for sql in [
+            "select 1 as create from t;",
             "select testschema.select from t;",
             "select c2[2].select from t;",
             "select t.create from t;",
@@ -1941,6 +1942,7 @@ VALUES
             "PREPARE p AS WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x;",
             "DECLARE c CURSOR FOR WITH x AS (SELECT 1) SELECT * FROM x;",
             "create rule r as on insert to t do also\n  insert into u (a)\n  select new.a;",
+            "create rule r as on insert to t do select new.a;",
             "CREATE RULE r AS ON UPDATE TO x DO INSTEAD WITH t AS (SELECT OLD.*)\n  UPDATE y SET a = t.n FROM t;",
             "CREATE RULE r AS ON INSERT TO x DO INSTEAD WITH t AS (INSERT INTO y DEFAULT VALUES RETURNING *)\n  INSERT INTO z SELECT * FROM t;",
         ]);
