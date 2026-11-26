@@ -105,11 +105,7 @@ fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
                         let Some(NodeEnum::ColumnRef(column)) = arg.node.as_ref() else {
                             continue;
                         };
-                        let is_star = matches!(
-                            column.fields.last().and_then(|field| field.node.as_ref()),
-                            Some(NodeEnum::AStar(_))
-                        );
-                        if is_star && is_whole_row(arg, table) {
+                        if column.star_qualifier().is_some() && is_whole_row(arg, table) {
                             let all = table.columns.as_ref()?;
                             columns.extend(all.iter().map(|column| column.name.clone()));
                         }

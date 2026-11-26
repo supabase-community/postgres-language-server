@@ -7,9 +7,7 @@ use std::fmt;
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{
-        AlterTableCmd, AlterTableStmt, ColumnRef, CreateFunctionStmt, Node, RangeVar, TypeName,
-    },
+    protobuf::{AlterTableCmd, AlterTableStmt, CreateFunctionStmt, Node, RangeVar, TypeName},
 };
 
 use crate::options::find_def_elem;
@@ -114,27 +112,6 @@ impl fmt::Display for QualifiedName<'_> {
     }
 }
 
-/// Whether a select list entry is a `*` that expands to any number of columns, like `*`, `t.*`
-/// or `(t.c).*`.
-pub fn is_star(value: &NodeEnum) -> bool {
-    let last = match value {
-        NodeEnum::ColumnRef(column) => column.fields.last(),
-        NodeEnum::AIndirection(indirection) => indirection.indirection.last(),
-        _ => None,
-    };
-    matches!(
-        last.and_then(|last| last.node.as_ref()),
-        Some(NodeEnum::AStar(_))
-    )
-}
-
-/// The fields before the `*` of a column reference like `*`, `t.*` or `s.t.*`. `None` if the
-/// reference doesn't end in `*`.
-pub fn star_qualifier(column: &ColumnRef) -> Option<&[Node]> {
-    let (last, qualifier) = column.fields.split_last()?;
-    matches!(last.node, Some(NodeEnum::AStar(_))).then_some(qualifier)
-}
-
 /// The subcommands of an `ALTER TABLE` statement, e.g. `ADD COLUMN` and `DROP CONSTRAINT`.
 pub fn alter_table_cmds(stmt: &AlterTableStmt) -> impl Iterator<Item = &AlterTableCmd> {
     stmt.cmds.iter().filter_map(|cmd| match cmd.node.as_ref()? {
@@ -209,7 +186,7 @@ pub fn find_option_value_mut<'a>(
 mod tests {
     use pgls_query::NodeEnum;
 
-    use crate::utils::{NameParts, QualifiedName, find_option_value, is_star, star_qualifier};
+    use crate::utils::{NameParts, QualifiedName, find_option_value};
 
     fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
         match pgls_query::parse(sql).unwrap().into_root().unwrap() {
@@ -317,52 +294,6 @@ mod tests {
             panic!("Expected ColumnRef");
         };
         assert_eq!(QualifiedName::of(&column.fields), None);
-    }
-
-    fn select_values(sql: &str) -> Vec<NodeEnum> {
-        let NodeEnum::SelectStmt(select) = pgls_query::parse(sql).unwrap().into_root().unwrap()
-        else {
-            panic!("Expected SelectStmt");
-        };
-        select
-            .target_list
-            .iter()
-            .map(|target| match target.node.as_ref().unwrap() {
-                NodeEnum::ResTarget(target) => target.val.as_ref().unwrap().node.clone().unwrap(),
-                _ => panic!("Expected ResTarget"),
-            })
-            .collect()
-    }
-
-    #[test]
-    fn stars() {
-        let values = select_values("select *, t.*, s.t.*, (t.c).*, t.c, (t.c).f from t");
-        let stars: Vec<_> = values.iter().map(is_star).collect();
-        assert_eq!(stars, [true, true, true, true, false, false]);
-
-        let qualifiers: Vec<_> = values
-            .iter()
-            .map(|value| match value {
-                NodeEnum::ColumnRef(column) => star_qualifier(column).map(|qualifier| {
-                    qualifier
-                        .iter()
-                        .map(|field| field.string_value().unwrap())
-                        .collect::<Vec<_>>()
-                }),
-                _ => None,
-            })
-            .collect();
-        assert_eq!(
-            qualifiers,
-            [
-                Some(vec![]),
-                Some(vec!["t"]),
-                Some(vec!["s", "t"]),
-                None,
-                None,
-                None
-            ]
-        );
     }
 
     #[test]
