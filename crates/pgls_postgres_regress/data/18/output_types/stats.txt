@@ -1,10 +1,13 @@
 191..209	pg_catalog.text
 297..427	pg_catalog.text	pg_catalog.text	pg_catalog.text
+746..817	pg_catalog.oid
 3548..3582	pg_catalog.void
 3655..3811	pg_catalog.name	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8	pg_catalog.int8
 3813..4112	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool	pg_catalog.bool
 4114..4367	pg_catalog.bool	pg_catalog.bool
 4369..4461	pg_catalog.bool
+4600..4670	pg_catalog.oid
+4761..4831	pg_catalog.oid
 5044..5070	pg_catalog.void
 5134..5160	pg_catalog.void
 5402..5428	pg_catalog.void
@@ -14,6 +17,9 @@
 5669..5703	pg_catalog.void
 6826..6852	pg_catalog.void
 6866..6892	pg_catalog.void
+7296..7358	pg_catalog.oid
+7452..7524	pg_catalog.oid
+7624..7702	pg_catalog.oid
 7710..7744	pg_catalog.void
 8485..8519	pg_catalog.void
 9020..9054	pg_catalog.void
@@ -27,35 +33,55 @@
 11499..11573	pg_catalog.text
 11574..11628	pg_catalog.int8
 11629..11663	pg_catalog.void
+11719..11853	pg_catalog.timestamptz	pg_catalog.timestamptz
 11860..11881	pg_catalog.void
 12073..12149	pg_catalog.text
 12150..12206	pg_catalog.int8
 12207..12241	pg_catalog.void
+12535..12669	pg_catalog.timestamptz	pg_catalog.timestamptz
 12676..12697	pg_catalog.void
 12833..12907	pg_catalog.text
 12908..12962	pg_catalog.int8
 12963..12997	pg_catalog.void
+13286..13420	pg_catalog.timestamptz	pg_catalog.timestamptz
 13427..13448	pg_catalog.void
 13591..13665	pg_catalog.text
 13666..13720	pg_catalog.int8
 13721..13755	pg_catalog.void
+14203..14327	pg_catalog.text
+14383..14419	pg_catalog.name
 14486..14520	pg_catalog.void
 14565..14681	pg_catalog.bool
 14782..14855	pg_catalog.void
 14856..14972	pg_catalog.bool
+14973..15057	pg_catalog.timestamptz
 15096..15169	pg_catalog.void
+15574..15675	pg_catalog.int8
 15683..15717	pg_catalog.void
+15905..15972	pg_catalog.int8
+16000..16053	pg_catalog.numeric
+16095..16186	pg_catalog.numeric
 16647..16681	pg_catalog.void
 16930..17095	pg_catalog.bool
+17218..17313	pg_catalog.timestamptz
+17320..17402	pg_catalog.timestamptz
 17409..17455	pg_catalog.void
+17568..17663	pg_catalog.timestamptz
 17758..17786	pg_catalog.void
+18073..18134	pg_catalog.timestamptz
 18141..18181	pg_catalog.void
+18335..18396	pg_catalog.timestamptz
 18403..18443	pg_catalog.void
+18601..18670	pg_catalog.timestamptz
 18677..18721	pg_catalog.void
+18892..18971	pg_catalog.timestamptz
 18978..19027	pg_catalog.void
+19195..19253	pg_catalog.timestamptz
 19260..19296	pg_catalog.void
+19442..19493	pg_catalog.timestamptz
 19500..19535	pg_catalog.void
 19869..19892	pg_catalog.void
+19893..19992	pg_catalog.timestamptz
 19999..20022	pg_catalog.void
 20279..20319	pg_catalog.timestamptz
 20374..20411	pg_catalog.int8
@@ -71,27 +97,59 @@
 21240..21277	pg_catalog.int8
 21278..21345	pg_catalog.bool
 21428..21472	pg_catalog.bool
+21855..21917	pg_catalog.oid
 21951..21993	pg_catalog.int4
+22422..22484	pg_catalog.oid
 22491..22533	pg_catalog.int4
+22795..22857	pg_catalog.oid
 22864..22906	pg_catalog.int4
+23135..23197	pg_catalog.oid
 23652..23694	pg_catalog.record
 23695..23739	pg_catalog.record
+24372..24462	pg_catalog.int4
+24469..24587	pg_catalog.numeric
+24594..24747	pg_catalog.numeric
+24754..24851	pg_catalog.numeric	pg_catalog.numeric
+24880..25007	pg_catalog.numeric	pg_catalog.numeric
+25039..25154	pg_catalog.numeric	pg_catalog.numeric
 25289..25323	pg_catalog.void
+25324..25441	pg_catalog.numeric
+25517..25669	pg_catalog.numeric
+25985..26082	pg_catalog.numeric	pg_catalog.numeric
+26282..26409	pg_catalog.numeric	pg_catalog.numeric
+26626..26741	pg_catalog.numeric	pg_catalog.numeric
 26773..26825	pg_catalog.bool
+27227..27341	pg_catalog.numeric
 27684..27720	pg_catalog.int8
 27729..27763	pg_catalog.void
+27764..27877	pg_catalog.numeric
+27951..28063	pg_catalog.numeric
 28516..28614	pg_catalog.text
 28615..28693	pg_catalog.int8
 28702..28736	pg_catalog.void
+28737..28848	pg_catalog.numeric
+29494..29650	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
 30026..30111	pg_catalog.bool
+30113..30231	pg_catalog.numeric
 30284..30319	pg_catalog.int8
 30320..30354	pg_catalog.void
+30355..30553	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
 31071..31105	pg_catalog.void
+31106..31230	pg_catalog.numeric
+32180..32301	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
 32811..32845	pg_catalog.void
+32846..32967	pg_catalog.numeric	pg_catalog.numeric	pg_catalog.numeric
+33385..33494	pg_catalog.numeric
 33583..33617	pg_catalog.void
+33618..33726	pg_catalog.numeric
 33850..33888	pg_catalog.bool
+33889..34050	pg_catalog.numeric
+34057..34251	pg_catalog.numeric
 34258..34292	pg_catalog.void
+34293..34455	pg_catalog.numeric
+34513..34708	pg_catalog.numeric
 34872..34925	pg_catalog.void
+34926..35129	pg_catalog.numeric
 35254..35290	pg_catalog.record
 35291..35324	pg_catalog.record
 36897..36962	pg_catalog.int8

@@ -1,3 +1,3 @@
-0..50 rejected 42601
+0..44 accepted
 52..109 rejected XX000
 138..196 rejected XX000

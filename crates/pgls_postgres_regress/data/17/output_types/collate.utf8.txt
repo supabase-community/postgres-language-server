@@ -1,3 +1,4 @@
+168..219	pg_catalog.bool
 783..1077	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
 1173..1212	pg_catalog.text
 1213..1256	pg_catalog.text

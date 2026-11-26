@@ -2,9 +2,5 @@
 source: crates/pgls_postgres_regress/tests/splitter.rs
 expression: report(&version)
 ---
-REL_16_15: 43819 statements, 625 not checked because no text up to a `;` parses, 1 mismatches
+REL_16_15: 43812 statements, 619 not checked because no text up to a `;` parses, 0 mismatches
 14 statements hit a limit: more than 16 statements without a `;` or 64 `;` tried
-
-psql.sql:1058:1: the parser reads 1058:1-1063:2, the splitter 1058:1-1061:4, 1063:1-1063:2
-  1058:1   create function silly_function(int) returns int begin atomic select $1; end
-  1063:1   ;

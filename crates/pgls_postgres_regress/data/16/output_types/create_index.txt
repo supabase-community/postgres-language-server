@@ -101,5 +101,6 @@
 42429..42491	pg_catalog.text
 42528..42775	pg_catalog.regclass	pg_catalog.int8
 42814..43072	pg_catalog.regclass	pg_catalog.int2	pg_catalog.int2
+44401..44461	pg_catalog.regnamespace
 44515..44751	pg_catalog.name	pg_catalog.char	pg_catalog.text
 46215..46446	pg_catalog.name	pg_catalog.char	pg_catalog.text

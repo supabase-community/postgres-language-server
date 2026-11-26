@@ -101,6 +101,7 @@
 50599..50661	pg_catalog.text
 50698..50945	pg_catalog.regclass	pg_catalog.int8
 50984..51242	pg_catalog.regclass	pg_catalog.int2	pg_catalog.int2
+52571..52631	pg_catalog.regnamespace
 52685..52921	pg_catalog.name	pg_catalog.char	pg_catalog.text
 54010..54093	pg_catalog.text
 54409..54512	pg_catalog.text

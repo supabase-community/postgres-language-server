@@ -24,3 +24,4 @@
 7061..7187	pg_catalog.text
 7750..8696	pg_catalog._int4	pg_catalog._uuid	pg_catalog._text	pg_catalog.int4	pg_catalog.int4	pg_catalog.uuid	pg_catalog.text	pg_catalog.int8
 8767..9428	pg_catalog._int4	pg_catalog._uuid	pg_catalog._text	pg_catalog.int4	pg_catalog.int4	pg_catalog.uuid	pg_catalog.text	pg_catalog.int8
+9932..10261	pg_catalog.text

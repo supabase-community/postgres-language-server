@@ -1,0 +1,1 @@
+714..779	pg_catalog.bool
