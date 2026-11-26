@@ -18,6 +18,14 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     // for the next column.
     e.indent_start();
 
+    // Add storage clause if specified
+    if !n.storage_name.is_empty() {
+        e.space();
+        e.token(TokenKind::STORAGE_KW);
+        e.space();
+        e.token(TokenKind::IDENT(n.storage_name.clone()));
+    }
+
     // Add compression clause if specified
     if !n.compression.is_empty() {
         e.space();
@@ -26,12 +34,11 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
         emit_identifier_maybe_quoted(e, &n.compression);
     }
 
-    // Add storage clause if specified
-    if !n.storage_name.is_empty() {
-        e.space();
-        e.token(TokenKind::STORAGE_KW);
-        e.space();
-        e.token(TokenKind::IDENT(n.storage_name.clone()));
+    // Storage, compression and the FDW options come in this order before the other clauses:
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L3814
+    if !n.fdwoptions.is_empty() {
+        e.line(LineType::SoftOrSpace);
+        emit_options_clause(e, &n.fdwoptions);
     }
 
     // Add NOT NULL constraint if specified
@@ -54,28 +61,6 @@ pub(super) fn emit_column_def(e: &mut EventEmitter, n: &ColumnDef) {
     if let Some(ref coll_clause) = n.coll_clause {
         e.line(LineType::SoftOrSpace);
         super::emit_collate_clause(e, coll_clause);
-    }
-
-    // Add column-level FDW OPTIONS clause (for foreign tables) - must come before constraints
-    // Uses SoftOrSpace to allow break if needed
-    if !n.fdwoptions.is_empty() {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::OPTIONS_KW);
-        e.space();
-        e.token(TokenKind::L_PAREN);
-        emit_comma_separated_list_with_spacing(
-            e,
-            &n.fdwoptions,
-            ListSeparatorSpacing::Space,
-            |e, opt| {
-                let Some(NodeEnum::DefElem(def_elem)) = opt.node.as_ref() else {
-                    emit_node(e, opt);
-                    return;
-                };
-                emit_options_def_elem(e, def_elem);
-            },
-        );
-        e.token(TokenKind::R_PAREN);
     }
 
     // Add constraints if any

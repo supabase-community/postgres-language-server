@@ -14,12 +14,17 @@ pub(super) fn emit_alter_foreign_server_stmt(e: &mut EventEmitter, n: &AlterFore
         emit_identifier_maybe_quoted(e, &n.servername);
     }
 
-    if n.has_version && !n.version.is_empty() {
+    if n.has_version {
         e.line(LineType::SoftOrSpace);
         e.indent_start();
         emit_keyword(e, "VERSION");
         e.space();
-        emit_single_quoted_str(e, &n.version);
+        // `VERSION NULL` leaves the version empty
+        if n.version.is_empty() {
+            e.token(TokenKind::NULL_KW);
+        } else {
+            emit_single_quoted_str(e, &n.version);
+        }
         e.indent_end();
     }
 

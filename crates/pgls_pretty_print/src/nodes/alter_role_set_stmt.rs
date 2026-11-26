@@ -11,8 +11,9 @@ pub(super) fn emit_alter_role_set_stmt(e: &mut EventEmitter, n: &AlterRoleSetStm
     e.token(TokenKind::ROLE_KW);
     e.space();
 
-    if let Some(ref role) = n.role {
-        emit_role_spec(e, role);
+    match n.role {
+        Some(ref role) => emit_role_spec(e, role),
+        None => e.token(TokenKind::ALL_KW),
     }
 
     // Optional: IN DATABASE clause

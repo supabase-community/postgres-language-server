@@ -751,7 +751,7 @@ prepare p1 (int) as select * from t1 where a <= $1;
 
 execute p1 (2);
 
-explain (costs 'off') execute p1 (2);
+explain (costs off) execute p1 (2);
 
 reset session_authorization;
 
@@ -763,13 +763,13 @@ select * from t1 where f_leak(b);
 
 execute p1 (2);
 
-explain (costs 'off') execute p1 (2);
+explain (costs off) execute p1 (2);
 
 prepare p2 (int) as select * from t1 where a = $1;
 
 execute p2 (2);
 
-explain (costs 'off') execute p2 (2);
+explain (costs off) execute p2 (2);
 
 set session authorization regress_rls_bob;
 
@@ -777,7 +777,7 @@ set row_security = 'on';
 
 execute p2 (2);
 
-explain (costs 'off') execute p2 (2);
+explain (costs off) execute p2 (2);
 
 set session authorization regress_rls_bob;
 
@@ -1171,4 +1171,4 @@ select * from z1 where f_leak(b);
 
 prepare plancache_test as select * from z1 where f_leak(b);
 
-explain (costs 'off') execute plancache_test;
+explain (costs off) execute plancache_test;

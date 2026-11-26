@@ -224,14 +224,14 @@ drop subscription regress_testsub restrict;
 create subscription regress_testsub
   connection 'dbname=regress_doesnotexist'
   publication testpub
-  with (connect = 'false', "binary" = foo);
+  with (connect = 'false', binary = foo);
 
 create subscription regress_testsub
   connection 'dbname=regress_doesnotexist'
   publication testpub
-  with (connect = 'false', "binary" = 'true');
+  with (connect = 'false', binary = 'true');
 
-alter subscription regress_testsub set ("binary" = 'false');
+alter subscription regress_testsub set (binary = 'false');
 
 alter subscription regress_testsub set (slot_name = 'none');
 

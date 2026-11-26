@@ -16,11 +16,11 @@ fn emit_qualified_operator(e: &mut EventEmitter, name: &[Node]) {
     e.token(TokenKind::OPERATOR_KW);
     e.token(TokenKind::L_PAREN);
 
-    for (idx, part) in name.iter().enumerate() {
-        if idx > 0 {
-            e.token(TokenKind::DOT);
-        }
-        emit_operator_part(e, part);
+    // The schema is an identifier, the last part the symbol
+    if let Some((symbol, schema)) = name.split_last() {
+        emit_dot_separated_list(e, schema);
+        e.token(TokenKind::DOT);
+        emit_operator_part(e, symbol);
     }
 
     e.token(TokenKind::R_PAREN);
