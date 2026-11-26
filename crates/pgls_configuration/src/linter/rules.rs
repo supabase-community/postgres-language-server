@@ -743,7 +743,7 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disallow_unique_constraint:
         Option<RuleConfiguration<pgls_analyser::options::DisallowUniqueConstraint>>,
-    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload."]
+    #[doc = "A function name and argument count exist, but its argument types do not select exactly one overload, or CALL selects a function that isn't a procedure."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_argument_mismatch:
         Option<RuleConfiguration<pgls_analyser::options::FunctionArgumentMismatch>>,
