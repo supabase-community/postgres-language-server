@@ -1,0 +1,12 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/null_test_is_operand.sql
+---
+select
+  (a is distinct from b) is null,
+  (a is not distinct from b) is true,
+  (a and b) is not null,
+  (not a) is null,
+  (a or b) is unknown
+from
+  t;

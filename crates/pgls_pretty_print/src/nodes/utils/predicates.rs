@@ -185,6 +185,14 @@ pub(crate) struct OperatorInfo {
 }
 
 impl OperatorInfo {
+    /// `IS NULL`, `IS TRUE`, `IS DISTINCT FROM`, ...: non-associative, and binding less tightly
+    /// than every operator but AND, OR and NOT.
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L830
+    pub(crate) const IS: Self = Self {
+        precedence: PREC_IS,
+        associativity: OperatorAssociativity::None,
+    };
+
     /// The precedence of an operator expression, from the precedence table of the grammar.
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L825
     pub(crate) fn of_aexpr(expr: &AExpr) -> Option<Self> {
@@ -194,10 +202,7 @@ impl OperatorInfo {
             AExprKind::AexprOpAny | AExprKind::AexprOpAll => {
                 operator_info(&expr.name, OperatorArity::Binary)
             }
-            AExprKind::AexprDistinct | AExprKind::AexprNotDistinct => Some(Self {
-                precedence: PREC_IS,
-                associativity: OperatorAssociativity::None,
-            }),
+            AExprKind::AexprDistinct | AExprKind::AexprNotDistinct => Some(Self::IS),
             AExprKind::AexprIn
             | AExprKind::AexprLike
             | AExprKind::AexprIlike
@@ -266,11 +271,7 @@ pub(crate) enum OperandSide {
 pub(crate) fn node_operator_info(node: &Node) -> Option<OperatorInfo> {
     match node.node.as_ref()? {
         NodeEnum::AExpr(expr) => OperatorInfo::of_aexpr(expr),
-        // IS [NOT] NULL and IS [NOT] TRUE have PREC_IS precedence
-        NodeEnum::NullTest(_) | NodeEnum::BooleanTest(_) => Some(OperatorInfo {
-            precedence: PREC_IS,
-            associativity: OperatorAssociativity::None,
-        }),
+        NodeEnum::NullTest(_) | NodeEnum::BooleanTest(_) => Some(OperatorInfo::IS),
         NodeEnum::SubLink(sub_link) => OperatorInfo::of_sub_link(sub_link),
         // Boolean expressions (AND/OR) need parens when nested in comparison
         // Use a low precedence so they get wrapped

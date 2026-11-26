@@ -40,6 +40,20 @@ pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
     }
 }
 
+/// Emits the value of a definition option, `name = value` in CREATE OPERATOR, CREATE AGGREGATE,
+/// CREATE TYPE, a text search dictionary, ... (`def_arg`). The parser makes a reserved keyword and
+/// a string constant both a string, which prints as a string constant: quoted as an identifier, it
+/// would be a type name. An operator (`qual_all_Op`) is a list and prints as an operator, not as a
+/// list of identifiers.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L6540
+pub(crate) fn emit_def_arg(e: &mut EventEmitter, arg: &Node) {
+    match arg.node.as_ref() {
+        Some(NodeEnum::List(list)) => emit_operator(e, &list.items),
+        Some(NodeEnum::String(s)) => emit_string_literal(e, s),
+        _ => emit_node(e, arg),
+    }
+}
+
 /// Emits the `HANDLER` and `VALIDATOR` functions of CREATE or ALTER FOREIGN DATA WRAPPER
 /// (`fdw_option`), each on a line of its own when the statement breaks. A function is a qualified
 /// name (`handler_name`), not a list.

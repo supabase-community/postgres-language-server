@@ -26,16 +26,13 @@ impl<'a> StatementTokens<'a> {
 
     /// The range of the token at `index`.
     pub fn range(&self, index: usize) -> TextRange {
-        let Some(token) = self.tokens.get(index) else {
+        let Some(range) = self.tokens.get(index).and_then(ScanToken::range) else {
             // Callers pass indices of tokens they found. An empty range at the end keeps a fix
             // from touching the statement, and the fix is checked before it's offered.
             debug_assert!(false, "token {index} of {}", self.tokens.len());
             return TextRange::empty(TextSize::of(self.sql));
         };
-        TextRange::new(
-            TextSize::from(token.start as u32),
-            TextSize::from(token.end as u32),
-        )
+        range
     }
 
     /// The text of the token at `index`.
@@ -223,10 +220,9 @@ impl<'a> StatementTokens<'a> {
     pub fn replace_keeping_comments(&self, fix: RuleFix, range: TextRange, text: &str) -> RuleFix {
         let mut replacement = text.to_string();
         for comment in self.comments {
-            let comment_range = TextRange::new(
-                TextSize::from(comment.start as u32),
-                TextSize::from(comment.end as u32),
-            );
+            let Some(comment_range) = comment.range() else {
+                continue;
+            };
             if range.contains_range(comment_range) {
                 replacement.push(' ');
                 replacement.push_str(self.sql[comment_range].trim_end());
