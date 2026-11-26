@@ -197,13 +197,16 @@ pub(crate) fn token_kind_mod() -> proc_macro2::TokenStream {
                     TokenKind::DOUBLE_COLON => "::".to_string(),
                     TokenKind::DOLLAR => "$".to_string(),
                     TokenKind::IDENT(ident) => ident.clone(),
+                    // Only ASCII letters: Postgres folds no others in a name, so `Ѻ` or `ß`
+                    // in another case would be another name.
+                    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scansup.c#L46
                     TokenKind::TYPE_IDENT(type_name) => match config.type_case {
-                        crate::config::KeywordCase::Upper => type_name.to_uppercase(),
-                        crate::config::KeywordCase::Lower => type_name.to_lowercase(),
+                        crate::config::KeywordCase::Upper => type_name.to_ascii_uppercase(),
+                        crate::config::KeywordCase::Lower => type_name.to_ascii_lowercase(),
                     },
                     TokenKind::WORD(word) => match config.keyword_case {
-                        crate::config::KeywordCase::Upper => word.to_uppercase(),
-                        crate::config::KeywordCase::Lower => word.to_lowercase(),
+                        crate::config::KeywordCase::Upper => word.to_ascii_uppercase(),
+                        crate::config::KeywordCase::Lower => word.to_ascii_lowercase(),
                     },
                     TokenKind::STRING(s) => s.clone(),
                     TokenKind::ESC_STRING(s) => s.clone(),
