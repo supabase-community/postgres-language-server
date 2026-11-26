@@ -2500,10 +2500,19 @@ module.exports = grammar({
     when_clause: ($) =>
       partialSeq(
         $.keyword_when,
-        optional($.keyword_not),
-        $.keyword_matched,
-        optional(
-          partialSeq($.keyword_by, choice($.keyword_source, $.keyword_target)),
+        choice(
+          $.keyword_matched,
+          // Only `NOT MATCHED` names the side: `BY SOURCE` or `BY TARGET`.
+          partialSeq(
+            $.keyword_not,
+            $.keyword_matched,
+            optional(
+              partialSeq(
+                $.keyword_by,
+                choice($.keyword_source, $.keyword_target),
+              ),
+            ),
+          ),
         ),
         optional(
           partialSeq($.keyword_and, optional_parenthesis($._expression)),

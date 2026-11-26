@@ -1,5 +1,5 @@
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name};
+use pgls_query_ext::utils::{NameParts, QualifiedName};
 
 use super::infer_expr;
 use crate::{
@@ -263,7 +263,7 @@ pub(super) fn infer_a_expr(r: &mut Resolver<'_>, n: &pgls_query::protobuf::AExpr
             }
             _ => {}
         }
-        let QualifiedName { schema, name, .. } = qualified_name(&n.name)?;
+        let QualifiedName { schema, name, .. } = QualifiedName::of(&n.name)?;
         let right = infer_expr(r, n.rexpr.as_deref()?.node.as_ref()?)?;
         let (kind, left) = match n.lexpr.as_deref().and_then(|x| x.node.as_ref()) {
             Some(left) => (OperatorKind::Infix, Some(infer_expr(r, left)?)),

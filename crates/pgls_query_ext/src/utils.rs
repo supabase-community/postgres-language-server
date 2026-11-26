@@ -3,6 +3,8 @@
 //! Name lists like `funcname` or `TypeName::names` only ever hold `String` nodes. A list with
 //! any other node is not a name, and the helpers return `None` for it.
 
+use std::fmt;
+
 use pgls_query::{
     NodeEnum,
     protobuf::{
@@ -78,45 +80,55 @@ pub struct QualifiedName<'a> {
     pub name: &'a str,
 }
 
-/// Reads a possibly qualified name from a name list, like [`DeconstructQualifiedName`]. `None`
-/// for an empty list, more than three parts, which Postgres rejects, and lists with nodes that
-/// are not strings.
-///
-/// Postgres only accepts a catalog that is the current database, and then ignores it. We
-/// don't know the current database, so callers use the schema and the name.
-///
-/// [`DeconstructQualifiedName`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L3304
-pub fn qualified_name(nodes: &[Node]) -> Option<QualifiedName<'_>> {
-    let names = NameParts::of(nodes)?;
-    let (catalog, schema, name) = match names.as_slice() {
-        [name] => (None, None, *name),
-        [schema, name] => (None, Some(*schema), *name),
-        [catalog, schema, name] => (Some(*catalog), Some(*schema), *name),
-        _ => return None,
-    };
-    Some(QualifiedName {
-        catalog,
-        schema,
-        name,
-    })
+impl<'a> QualifiedName<'a> {
+    /// Reads a possibly qualified name from a name list, like [`DeconstructQualifiedName`].
+    /// `None` for an empty list, more than three parts, which Postgres rejects, and lists with
+    /// nodes that are not strings.
+    ///
+    /// Postgres only accepts a catalog that is the current database, and then ignores it. We
+    /// don't know the current database, so callers use the schema and the name.
+    ///
+    /// [`DeconstructQualifiedName`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/catalog/namespace.c#L3304
+    pub fn of(nodes: &'a [Node]) -> Option<Self> {
+        let names = NameParts::of(nodes)?;
+        let (catalog, schema, name) = match names.as_slice() {
+            [name] => (None, None, *name),
+            [schema, name] => (None, Some(*schema), *name),
+            [catalog, schema, name] => (Some(*catalog), Some(*schema), *name),
+            _ => return None,
+        };
+        Some(Self {
+            catalog,
+            schema,
+            name,
+        })
+    }
+
+    /// The name of a `RangeVar`, like `t`, `s.t` or `db.s.t`.
+    pub fn of_range_var(range_var: &'a RangeVar) -> Self {
+        let part = |value: &'a str| (!value.is_empty()).then_some(value);
+        Self {
+            catalog: part(&range_var.catalogname),
+            schema: part(&range_var.schemaname),
+            name: &range_var.relname,
+        }
+    }
+
+    /// The name of a type as the parser stores it, e.g. `pg_catalog.int4` for `integer`. `None`
+    /// for names that [`Self::of`] doesn't read.
+    pub fn of_type_name(type_name: &'a TypeName) -> Option<Self> {
+        Self::of(&type_name.names)
+    }
 }
 
-/// The name of a `RangeVar`, like `t`, `s.t` or `db.s.t`.
-pub fn range_var_name(range_var: &RangeVar) -> QualifiedName<'_> {
-    fn part(value: &str) -> Option<&str> {
-        (!value.is_empty()).then_some(value)
+/// The name with its qualifiers, like `myschema.mood`, unquoted like in Postgres' messages.
+impl fmt::Display for QualifiedName<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for qualifier in [self.catalog, self.schema].into_iter().flatten() {
+            write!(f, "{qualifier}.")?;
+        }
+        f.write_str(self.name)
     }
-    QualifiedName {
-        catalog: part(&range_var.catalogname),
-        schema: part(&range_var.schemaname),
-        name: &range_var.relname,
-    }
-}
-
-/// The name of a type as the parser stores it, e.g. `pg_catalog.int4` for `integer`. `None`
-/// for names that are not a [`qualified_name`].
-pub fn type_name(type_name: &TypeName) -> Option<QualifiedName<'_>> {
-    qualified_name(&type_name.names)
 }
 
 /// Whether a select list entry is a `*` that expands to any number of columns, like `*`, `t.*`
@@ -215,8 +227,7 @@ mod tests {
     use pgls_query::NodeEnum;
 
     use crate::utils::{
-        NameParts, QualifiedName, find_option_value, is_star, qualified_name, range_var_name,
-        star_qualifier, string_value,
+        NameParts, QualifiedName, find_option_value, is_star, star_qualifier, string_value,
     };
 
     fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
@@ -252,7 +263,7 @@ mod tests {
         assert!(find_option_value(&create_fn, "as").is_some(),);
 
         assert_eq!(
-            qualified_name(&create_fn.return_type.as_ref().unwrap().names),
+            QualifiedName::of(&create_fn.return_type.as_ref().unwrap().names),
             Some(QualifiedName {
                 catalog: None,
                 schema: Some("pg_catalog"),
@@ -288,7 +299,7 @@ mod tests {
         let funcname = |sql: &str| create_function(sql).funcname;
 
         assert_eq!(
-            qualified_name(&funcname("create function f() returns int return 1")),
+            QualifiedName::of(&funcname("create function f() returns int return 1")),
             Some(QualifiedName {
                 catalog: None,
                 schema: None,
@@ -296,7 +307,7 @@ mod tests {
             })
         );
         assert_eq!(
-            qualified_name(&funcname("create function db.s.f() returns int return 1")),
+            QualifiedName::of(&funcname("create function db.s.f() returns int return 1")),
             Some(QualifiedName {
                 catalog: Some("db"),
                 schema: Some("s"),
@@ -305,10 +316,10 @@ mod tests {
         );
         // Postgres rejects more than three parts.
         assert_eq!(
-            qualified_name(&funcname("create function a.db.s.f() returns int return 1")),
+            QualifiedName::of(&funcname("create function a.db.s.f() returns int return 1")),
             None
         );
-        assert_eq!(qualified_name(&[]), None);
+        assert_eq!(QualifiedName::of(&[]), None);
 
         // `t.*` is not a name.
         let NodeEnum::SelectStmt(select) = pgls_query::parse("select t.* from t")
@@ -324,7 +335,7 @@ mod tests {
         let Some(NodeEnum::ColumnRef(column)) = target.val.as_ref().unwrap().node.as_ref() else {
             panic!("Expected ColumnRef");
         };
-        assert_eq!(qualified_name(&column.fields), None);
+        assert_eq!(QualifiedName::of(&column.fields), None);
     }
 
     fn select_values(sql: &str) -> Vec<NodeEnum> {
@@ -387,8 +398,8 @@ mod tests {
             .iter()
             .map(|item| match item.node.as_ref().unwrap() {
                 NodeEnum::RangeVar(range_var) => {
-                    let name = range_var_name(range_var);
-                    (name.catalog, name.schema, name.name)
+                    let name = QualifiedName::of_range_var(range_var);
+                    (name.catalog, name.schema, name.name, name.to_string())
                 }
                 _ => panic!("Expected RangeVar"),
             })
@@ -396,9 +407,9 @@ mod tests {
         assert_eq!(
             names,
             [
-                (None, None, "t"),
-                (None, Some("s"), "t"),
-                (Some("db"), Some("s"), "t")
+                (None, None, "t", "t".to_string()),
+                (None, Some("s"), "t", "s.t".to_string()),
+                (Some("db"), Some("s"), "t", "db.s.t".to_string())
             ]
         );
     }
