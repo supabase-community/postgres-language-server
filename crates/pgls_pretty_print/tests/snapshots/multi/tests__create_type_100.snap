@@ -95,7 +95,7 @@ create type int42 (
   input = int42_in,
   output = int42_out,
   alignment = int4,
-  "default" = 42,
+  default = 42,
   passedbyvalue
 );
 
@@ -104,7 +104,7 @@ create type text_w_default (
   input = text_w_default_in,
   output = text_w_default_out,
   alignment = int4,
-  "default" = 'zippo'
+  default = 'zippo'
 );
 
 create table default_test (

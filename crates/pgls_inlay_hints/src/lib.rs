@@ -5,9 +5,9 @@
 //! resolution. Calls with unknown argument types, or that match no function or more than one,
 //! get none.
 
-use pgls_catalog::{Catalog, identifier_name};
-use pgls_query::NodeEnum;
+use pgls_catalog::Catalog;
 use pgls_query::protobuf::{ScanToken, Token};
+use pgls_query::{Identifier, NodeEnum};
 use pgls_resolve::{FunctionContext, Reference, ResolveParams, resolve};
 use pgls_text_size::TextSize;
 
@@ -243,7 +243,7 @@ fn is_reference_to(sql: &str, tokens: &[ScanToken], name: &str) -> bool {
         && tokens
             .last()
             .and_then(text)
-            .is_some_and(|last| identifier_name(last) == name)
+            .is_some_and(|last| Identifier::new(last).name() == name)
 }
 
 /// Postgres treats every non-ASCII character as a letter in identifiers.

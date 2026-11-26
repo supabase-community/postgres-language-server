@@ -86,7 +86,7 @@ impl<'a> AnalysisRequest<'a> {
 
 impl WorkspaceServer {
     /// Whether the file is a migration. Migration-only rules don't run on other files.
-    fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
+    pub(super) fn file_kind(&self, settings: &Settings, path: &Path) -> FileKind {
         let Some((tool, migrations_dir)) = settings
             .migrations
             .as_ref()

@@ -2,7 +2,7 @@
 source: crates/pgls_cli/tests/corpus.rs
 expression: summary.to_string()
 ---
-files: 4 (0 skipped)
+files: 5 (0 skipped)
 check:
   lint/avoidAttachingPartition: 55
   lint/avoidCreateTrigger: 16
@@ -22,10 +22,14 @@ check:
   lint/requireTypeSchema: 176
   lint/runningStatementWhileHoldingAccessExclusive: 353
 format:
-  format: 417
-reformatted files: 4
+  format: 511
+reformatted files: 5
+  pagila-data.sql
   pagila-schema-jsonb.sql
   pagila-schema.sql
   pagila-temporal-setup.sql
   pg_partman-setup.sql
 crashes: 0
+format round-trip: 0
+splitter vs parser: 0
+lexer vs scanner: 0

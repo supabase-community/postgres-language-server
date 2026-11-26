@@ -19,17 +19,7 @@ pub(super) fn emit_alter_type_stmt(e: &mut EventEmitter, n: &AlterTypeStmt) {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::SET_KW);
         e.space();
-        emit_parenthesized_list(e, &n.options, |emitter, node| {
-            if let Some(NodeEnum::DefElem(def)) = node.node.as_ref() {
-                emitter.token(TokenKind::IDENT(def.defname.clone()));
-                if let Some(ref arg) = def.arg {
-                    emitter.space();
-                    emitter.token(TokenKind::IDENT("=".to_string()));
-                    emitter.space();
-                    emit_node(emitter, arg);
-                }
-            }
-        });
+        emit_parenthesized_list(e, &n.options, emit_node);
     }
 
     e.group_end();

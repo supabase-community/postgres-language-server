@@ -6,14 +6,19 @@
 )]
 
 use pgls_pretty_print::{
-    CommaStyle, FormatConfig, IndentStyle, KeywordCase, Layout, format_statement,
+    CommaStyle, FormatConfig, FormatStatementParams, IndentStyle, KeywordCase, Layout,
+    format_statement,
 };
 
 fn format_idempotently(sql: &str, config: &FormatConfig) -> String {
     let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
-    let first = format_statement(&ast, sql, config).unwrap().formatted;
+    let first = format_statement(FormatStatementParams::new(&ast, sql, config))
+        .unwrap()
+        .formatted;
     let ast = pgls_query::parse(&first).unwrap().into_root().unwrap();
-    let second = format_statement(&ast, &first, config).unwrap().formatted;
+    let second = format_statement(FormatStatementParams::new(&ast, &first, config))
+        .unwrap()
+        .formatted;
     assert_eq!(first, second);
     first
 }
@@ -252,7 +257,7 @@ fn values_keeps_order_by_and_limit() {
             "values (1), (2) order by 1 fetch first 1 rows with ties",
         ] {
             let ast = pgls_query::parse(sql).unwrap().into_root().unwrap();
-            let output = format_statement(&ast, sql, &config);
+            let output = format_statement(FormatStatementParams::new(&ast, sql, &config));
             assert!(output.is_ok(), "{sql}: {output:?}");
             format_idempotently(sql, &config);
         }

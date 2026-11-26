@@ -221,6 +221,7 @@ export type Category =
   | "plpgsql_check"
   | "internalError/panic"
   | "syntax"
+  | "migrations/psqlSyntax"
   | "migrations/sectionMarkers"
   | "dummy"
   | "lint"

@@ -2,7 +2,7 @@
 source: crates/pgls_analyser/tests/postgres_regress.rs
 expression: "report(&version, &analysed, &rejected, &artefacts, &known_false_positives)"
 ---
-REL_18_6: 49577 statements and 421 in SQL function bodies, 1898 findings on statements Postgres rejected
+REL_18_6: 49882 statements and 423 in SQL function bodies, 1906 findings on statements Postgres rejected
 
 ambiguousColumn 42702: 6
 ambiguousColumn 42712: 2
@@ -21,7 +21,7 @@ invalidMerge 42P01: 2
 missingFromClauseEntry 42P01: 13
 operatorTypeMismatch 42725: 1
 operatorTypeMismatch 42883: 12
-unknownColumn 42703: 40
+unknownColumn 42703: 41
 unknownColumn 42P01: 2
 unknownFunction 42704: 4
 unknownFunction 42883: 99
@@ -30,7 +30,7 @@ unknownRelation 0A000: 2
 unknownRelation 25006: 1
 unknownRelation 25P01: 3
 unknownRelation 42501: 1
-unknownRelation 42P01: 1554
+unknownRelation 42P01: 1561
 unknownType 42704: 88
 unknownType 42P01: 2
 
@@ -272,6 +272,9 @@ create_index_spgist.sql:19:1 42P01 unknownRelation
 create_table.sql:59:1 42P01 unknownRelation
 create_table.sql:60:1 42P01 unknownRelation
 create_table.sql:537:1 42701 banDuplicateColumnAssignments
+create_view.sql:29:1 42P01 unknownRelation
+create_view.sql:34:1 42P01 unknownRelation
+create_view.sql:39:1 42P01 unknownRelation
 delete.sql:16:1 42P01 missingFromClauseEntry
 encoding.sql:257:1 42703 unknownColumn
 equivclass.sql:259:1 42P01 unknownRelation
@@ -1030,6 +1033,10 @@ merge.sql:527:1 42P01 missingFromClauseEntry
 merge.sql:873:1 42P01 ambiguousColumn
 merge.sql:944:1 42P01 invalidMerge
 merge.sql:945:1 42P01 invalidMerge
+misc.sql:26:1 42P01 unknownRelation
+misc.sql:29:1 42P01 unknownRelation
+misc.sql:48:1 42P01 unknownRelation
+misc.sql:52:1 42P01 unknownRelation
 misc_functions.sql:77:1 42883 unknownFunction
 misc_functions.sql:78:1 42883 unknownFunction
 multirangetypes.sql:8:1 42704 unknownType
@@ -1255,6 +1262,7 @@ privileges.sql:451:1 42P01 unknownRelation
 privileges.sql:451:1 42P01 unknownRelation
 privileges.sql:458:1 42P01 unknownRelation
 privileges.sql:458:1 42P01 unknownRelation
+psql.sql:90:1 42703 unknownColumn
 rangefuncs.sql:359:1 42P13 functionReturnTypeMismatch
 rangefuncs.sql:361:1 42P13 functionReturnTypeMismatch
 rangefuncs.sql:367:1 42P01 unknownRelation

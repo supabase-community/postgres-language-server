@@ -1,7 +1,6 @@
 ---
 source: crates/pgls_pretty_print/tests/tests.rs
 input_file: crates/pgls_pretty_print/tests/data/multi/without_overlaps.sql
-snapshot_kind: text
 ---
 set datestyle = iso, ymd;
 
@@ -43,7 +42,7 @@ select pg_get_constraintdef(oid) from pg_constraint where conname = 'temporal_rn
 
 select pg_get_indexdef(conindid, 0, true) from pg_constraint where conname = 'temporal_rng2_pk';
 
-create type textrange2 as range (subtype = text, "collation" = "C");
+create type textrange2 as range (subtype = text, collation = "C");
 
 alter table temporal_rng3
   drop constraint temporal_rng3_pk;
@@ -72,7 +71,7 @@ select pg_get_indexdef(conindid, 0, true) from pg_constraint where conname = 'te
 
 drop table temporal_rng3;
 
-create type textrange2 as range (subtype = text, "collation" = "C");
+create type textrange2 as range (subtype = text, collation = "C");
 
 alter table temporal_rng3
   drop constraint temporal_rng3_uq;

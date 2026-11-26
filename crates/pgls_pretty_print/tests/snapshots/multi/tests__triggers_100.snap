@@ -603,7 +603,7 @@ create trigger show_trigger_data_trig
 before insert or delete or update
 on trigger_test
 for each row
-execute function trigger_data("23",
+execute function trigger_data('23',
 skidoo);
 
 insert into trigger_test values (1, 'insert');
@@ -2075,7 +2075,7 @@ after insert
 on parted_trig
 for each row
 execute function trigger_notice(quirky,
-"1");
+'1');
 
 create table parted_trig2 partition of parted_trig for values in (2);
 

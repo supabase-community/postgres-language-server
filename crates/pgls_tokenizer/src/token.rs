@@ -30,8 +30,10 @@ pub enum TokenKind {
     Eof,
     /// `/`
     Slash,
-    /// `\`
+    /// `\` of `\;` or `\:`, which psql puts into the query as `;` or `:`
     Backslash,
+    /// A psql meta-command with its arguments, e.g. `\set x 1` or `\gset`
+    MetaCommand,
     /// `-- foo`
     LineComment,
     /// ```
@@ -130,12 +132,17 @@ pub enum NamedParamKind {
     /// e.g. `:'name'` (quoted string substitution)
     ///
     /// Used in: psql
-    ColonString { terminated: bool },
+    ColonString,
 
     /// e.g. `:"name"` (quoted identifier substitution)
     ///
     /// Used in: psql
-    ColonIdentifier { terminated: bool },
+    ColonIdentifier,
+
+    /// e.g. `:{?name}` (`TRUE` if the variable is set, `FALSE` if not)
+    ///
+    /// Used in: psql
+    ColonDefined,
 
     /// e.g. `$name`
     DollarRaw,

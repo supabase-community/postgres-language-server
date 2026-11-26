@@ -31,8 +31,9 @@
 3201..3271 accepted
 3272..3281 skipped
 3325..3442 accepted
-3604..3709 rejected 42601
-3710..4023 rejected 42601
+3604..3703 accepted
+3710..3946 accepted
+3953..4023 accepted
 4024..4162 accepted
 4163..4233 accepted
 4234..4298 accepted

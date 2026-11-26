@@ -52,28 +52,28 @@ check:
   lint/renamingColumn: 8
   lint/renamingObject: 36
   lint/renamingTable: 1
-  lint/requireColumnQualifier: 553
+  lint/requireColumnQualifier: 557
   lint/requireConcurrentDetachPartition: 1
   lint/requireConcurrentIndexCreation: 20
   lint/requireConcurrentIndexDeletion: 10
   lint/requireConcurrentRefreshMatview: 3
   lint/requireConcurrentReindex: 7
   lint/requireEnumValueOrdering: 1
-  lint/requireFunctionSchema: 156
+  lint/requireFunctionSchema: 157
   lint/requireIdleInTransactionTimeout: 232
   lint/requireOperatorSchema: 465
-  lint/requireRelationSchema: 611
+  lint/requireRelationSchema: 615
   lint/requireSeparateConstraintValidation: 1
   lint/requireStatementTimeout: 232
   lint/requireTableSchema: 299
   lint/requireTypeSchema: 463
   lint/runningStatementWhileHoldingAccessExclusive: 187
   lint/transactionNesting: 24
-  syntax: 52
+  syntax: 30
 format:
-  format: 2303
-  syntax: 49
-reformatted files: 225
+  format: 2312
+  syntax: 29
+reformatted files: 226
   test/fixtures/dialects/postgres/alter_aggregate.sql
   test/fixtures/dialects/postgres/alter_collation.sql
   test/fixtures/dialects/postgres/alter_conversion.sql
@@ -94,5 +94,8 @@ reformatted files: 225
   test/fixtures/dialects/postgres/alter_policy.sql
   test/fixtures/dialects/postgres/alter_procedure.sql
   test/fixtures/dialects/postgres/alter_publication.sql
-  and 205 more
+  and 206 more
 crashes: 0
+format round-trip: 0
+splitter vs parser: 0
+lexer vs scanner: 0

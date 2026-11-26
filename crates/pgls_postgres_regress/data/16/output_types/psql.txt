@@ -1,5 +1,30 @@
+249..274	pg_catalog.int4	pg_catalog.int4
+279..307	pg_catalog.int4	pg_catalog.int4
+359..384	pg_catalog.int4	pg_catalog.int4
+389..417	pg_catalog.int4	pg_catalog.int4
+455..480	pg_catalog.int4	pg_catalog.int4
+516..541	pg_catalog.int4	pg_catalog.int4
+602..610	pg_catalog.int4
+752..760	pg_catalog.int4
+824..876	pg_catalog.int4	pg_catalog.int4	pg_catalog.text
 928..951	pg_catalog.int4
+954..986	pg_catalog.int4	pg_catalog.text
+1045..1066	pg_catalog.int4	pg_catalog.int4
+1100..1121	pg_catalog.int4	pg_catalog.int4
+1168..1189	pg_catalog.int4	pg_catalog.int4
+1236..1257	pg_catalog.int4	pg_catalog.int4
+1337..1378	pg_catalog.int4	pg_catalog.text	pg_catalog.int4
+1420..1479	pg_catalog.int4	pg_catalog.int4
+1486..1545	pg_catalog.int4	pg_catalog.int4
+1600..1621	pg_catalog.int4	pg_catalog.int4
+1655..1676	pg_catalog.int4	pg_catalog.int4
+1723..1782	pg_catalog.int4	pg_catalog.int4
+1789..1848	pg_catalog.int4	pg_catalog.int4
+2150..2162	pg_catalog.int4	pg_catalog.int4
+2170..2190	pg_catalog.text
+2386..2399	pg_catalog.int4
 2450..2502	pg_catalog.int4	pg_catalog.text	pg_catalog.int4	pg_catalog.bool
+2525..2577	pg_catalog.int4	pg_catalog.text	pg_catalog.int4	pg_catalog.bool
 2796..2941	pg_catalog.text
 3071..3294	pg_catalog.text	pg_catalog.text
 3771..3781	pg_catalog.text	pg_catalog.text
@@ -131,3 +156,22 @@
 8513..8523	pg_catalog.text	pg_catalog.text	pg_catalog.text	pg_catalog.int4
 8727..8741	pg_catalog.text
 8744..8764	pg_catalog.text
+9754..9775	pg_catalog.int4	pg_catalog.int4	pg_catalog.int4
+9803..9818	pg_catalog.int4
+10561..10570	pg_catalog.int4
+10572..10580	pg_catalog.int4
+10585..10593	pg_catalog.int4
+10718..10751	pg_catalog.int4
+11053..11081	pg_catalog.int4	pg_catalog.int4
+14146..14168	pg_catalog.int4
+14220..14242	pg_catalog.int4
+14299..14321	pg_catalog.int4
+14380..14402	pg_catalog.int4
+14653..14676	pg_catalog.int4
+14728..14751	pg_catalog.int4
+14852..14875	pg_catalog.int4
+15153..15170	pg_catalog.int4
+15250..15266	pg_catalog.int4
+15359..15369	pg_catalog.int4
+16149..16162	pg_catalog.int4
+16514..16528	pg_catalog.int4

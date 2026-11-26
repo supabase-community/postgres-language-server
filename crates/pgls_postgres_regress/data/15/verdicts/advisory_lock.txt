@@ -1,4 +1,4 @@
-25..103 rejected 42601
+25..97 accepted
 105..111 skipped
 113..245 accepted
 247..405 rejected 42601

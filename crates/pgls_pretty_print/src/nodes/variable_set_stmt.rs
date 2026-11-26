@@ -11,16 +11,13 @@ fn emit_set_arg(e: &mut EventEmitter, node: &Node) {
         // In SET statements, simple identifiers like schema names are stored as string constants
         // but should be emitted without quotes. A value that an unquoted word cannot spell keeps
         // its quotes: unquoted, `SET datestyle = German` would set `german`.
-        let val = &s.sval;
-        if !needs_quoting(val) {
-            e.group_start();
-            e.token(TokenKind::IDENT(val.clone()));
-            e.group_end();
-            return;
-        }
+        e.group_start();
+        emit_word_or_string(e, &s.sval);
+        e.group_end();
+        return;
     }
 
-    // For all other cases (numbers, actual string literals with special chars, etc.),
+    // For all other cases (numbers, typed constants, etc.),
     // use the normal emission. The value is a constant, so an interval is `interval '1' hour`.
     // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1848
     super::emit_constant(e, node);

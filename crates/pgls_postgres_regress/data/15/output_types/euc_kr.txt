@@ -1,1 +1,2 @@
+194..261	pg_catalog.bool
 332..461	pg_catalog.int4

@@ -1,3 +1,4 @@
+44..95	pg_catalog.bool
 1024..1079	pg_catalog.text	pg_catalog.text	pg_catalog.text
 1081..1123	pg_catalog.int4
 1124..1175	pg_catalog.text

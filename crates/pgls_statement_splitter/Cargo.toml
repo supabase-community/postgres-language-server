@@ -17,9 +17,15 @@ pgls_lexer.workspace     = true
 pgls_query.workspace     = true
 pgls_text_size.workspace = true
 
+pgls_pretty_print = { workspace = true, optional = true }
+
 [dev-dependencies]
 criterion.workspace = true
 ntest               = "0.9.3"
+
+[features]
+# `SplitResult::parser_difference`, for tests that compare the splitter with Postgres' parser.
+testing = ["dep:pgls_pretty_print"]
 
 [[bench]]
 harness = false

@@ -20,14 +20,15 @@ pub(super) fn emit_publication_obj_spec(e: &mut EventEmitter, n: &PublicationObj
             }
         }
         3 => {
-            // TABLES IN CURRENT SCHEMA
+            // TABLES IN SCHEMA CURRENT_SCHEMA
+            // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L10692
             e.token(TokenKind::TABLES_KW);
             e.space();
             e.token(TokenKind::IN_KW);
             e.space();
-            e.token(TokenKind::CURRENT_KW);
-            e.space();
             e.token(TokenKind::SCHEMA_KW);
+            e.space();
+            e.token(TokenKind::CURRENT_SCHEMA_KW);
         }
         _ => {
             // TABLE table_name with optional columns and WHERE clause

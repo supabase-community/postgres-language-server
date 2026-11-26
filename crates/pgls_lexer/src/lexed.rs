@@ -31,6 +31,8 @@ pub struct Lexed<'a> {
     pub(crate) error: Vec<LexError>,
     pub(crate) line_ending_counts: Vec<usize>,
     pub(crate) has_blank_line: bool,
+    /// The indices of the `COPY_DATA` tokens.
+    pub(crate) copy_data: Vec<u32>,
 }
 
 impl Lexed<'_> {
@@ -64,6 +66,13 @@ impl Lexed<'_> {
     /// Returns whether the source contains at least one blank line.
     pub fn has_blank_line(&self) -> bool {
         self.has_blank_line
+    }
+
+    /// Returns the text ranges of the COPY data blocks.
+    pub fn copy_data(&self) -> impl Iterator<Item = TextRange> + '_ {
+        self.copy_data
+            .iter()
+            .map(|&token| self.text_range(token as usize))
     }
 
     /// Returns the text range of token at the given index, an empty range at the end of the text

@@ -12,6 +12,73 @@ pub(crate) fn emit_with_options(e: &mut EventEmitter, options: &[Node]) {
     emit_parenthesized_list(e, options, emit_node);
 }
 
+/// Emits an option of `EXPLAIN (...)`, `VACUUM (...)`, `CLUSTER (...)` or `REINDEX (...)`:
+/// `name [value]`. The parser makes a word, a keyword (`true`, `on`) or a string constant all a
+/// string (`utility_option_arg`), so a string prints as a word where it can.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L11992
+pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
+    let Some(NodeEnum::DefElem(def)) = n.node.as_ref() else {
+        emit_node(e, n);
+        return;
+    };
+    // The name is a `NonReservedWord` or `ANALYZE`, which the parser spells `analyze`. Any other
+    // name was quoted, and keeps its quotes and its case.
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L11986
+    if def.defname != "analyze" && needs_quoting(&def.defname) {
+        emit_identifier(e, &def.defname);
+    } else {
+        emit_keyword(e, &def.defname);
+    }
+    if let Some(ref arg) = def.arg {
+        e.space();
+        match arg.node.as_ref() {
+            Some(NodeEnum::Boolean(b)) if b.boolval => e.token(TokenKind::TRUE_KW),
+            Some(NodeEnum::Boolean(_)) => e.token(TokenKind::FALSE_KW),
+            Some(NodeEnum::String(s)) => emit_word_or_string(e, &s.sval),
+            _ => emit_node(e, arg),
+        }
+    }
+}
+
+/// Emits the `HANDLER` and `VALIDATOR` functions of CREATE or ALTER FOREIGN DATA WRAPPER
+/// (`fdw_option`), each on a line of its own when the statement breaks. A function is a qualified
+/// name (`handler_name`), not a list.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L5461
+pub(crate) fn emit_fdw_functions(e: &mut EventEmitter, functions: &[Node]) {
+    if functions.is_empty() {
+        return;
+    }
+    e.indent_start();
+    for function in functions {
+        e.line(LineType::SoftOrSpace);
+        let Some(NodeEnum::DefElem(def)) = function.node.as_ref() else {
+            emit_node(e, function);
+            continue;
+        };
+        let keyword = match def.defname.as_str() {
+            "handler" => TokenKind::HANDLER_KW,
+            "validator" => TokenKind::VALIDATOR_KW,
+            _ => {
+                emit_node(e, function);
+                continue;
+            }
+        };
+        match def.arg {
+            Some(ref name) => {
+                e.token(keyword);
+                e.space();
+                emit_any_name(e, name);
+            }
+            None => {
+                e.token(TokenKind::NO_KW);
+                e.space();
+                e.token(keyword);
+            }
+        }
+    }
+    e.indent_end();
+}
+
 /// Emits `OPTIONS (option 'value', ...)` of a foreign data wrapper, server, table or user mapping.
 pub(crate) fn emit_options_clause(e: &mut EventEmitter, options: &[Node]) {
     e.token(TokenKind::OPTIONS_KW);
@@ -379,12 +446,17 @@ pub(crate) fn emit_sequence_option(e: &mut EventEmitter, n: &DefElem) {
             e.token(TokenKind::BY_KW);
             if let Some(ref arg) = n.arg {
                 e.space();
-                // The arg is a list of identifiers that should be dot-separated (table.column)
-                if let Some(pgls_query::NodeEnum::List(list)) = arg.node.as_ref() {
-                    emit_dot_separated_list(e, &list.items);
-                } else {
-                    emit_node(e, arg);
-                }
+                // `table.column`
+                emit_any_name(e, arg);
+            }
+        }
+        "sequence_name" => {
+            e.token(TokenKind::SEQUENCE_KW);
+            e.space();
+            e.token(TokenKind::NAME_KW);
+            if let Some(ref arg) = n.arg {
+                e.space();
+                emit_any_name(e, arg);
             }
         }
         "as" => {

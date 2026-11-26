@@ -1,7 +1,7 @@
 //! What running a PL/pgSQL function may do, from libpg_query's parse tree of its body.
 
 use pgls_query::{
-    NodeEnum,
+    Identifier, NodeEnum,
     protobuf::{Token, a_const},
 };
 use serde_json::Value;
@@ -190,22 +190,8 @@ fn calls_by_name(expr: &str, is_function: &impl Fn(&str) -> bool) -> bool {
                 .ok()
                 .zip(usize::try_from(name.end).ok())
                 .and_then(|(start, end)| expr.get(start..end))
-                .is_some_and(|name| is_function(&identifier(name)))
+                .is_some_and(|name| is_function(&Identifier::new(name).name()))
     })
-}
-
-/// The name that the identifier token `token` stands for: unquoted names are folded to lower
-/// case like [`downcase_identifier`] does, quoted ones are taken as written.
-///
-/// [`downcase_identifier`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scansup.c#L46
-fn identifier(token: &str) -> String {
-    match token
-        .strip_prefix('"')
-        .and_then(|token| token.strip_suffix('"'))
-    {
-        Some(quoted) => quoted.replace("\"\"", "\""),
-        None => token.to_ascii_lowercase(),
-    }
 }
 
 #[cfg(test)]

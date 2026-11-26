@@ -39,6 +39,7 @@ use pgls_lexer::convert_to_positional_params_with_metadata;
 #[cfg(feature = "db")]
 use runtime::WorkspaceRuntime;
 
+use pgls_analyser::FileKind;
 use pgls_catalog::Snapshot;
 use pgls_configuration::inlay_hints::ParameterNameHints;
 use pgls_diagnostics::{
@@ -1317,6 +1318,13 @@ impl Workspace for WorkspaceServer {
                 .into_iter()
                 .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
         );
+        if self.file_kind(settings, &params.path) == FileKind::Migration {
+            diagnostics.extend(
+                doc.psql_diagnostics().into_iter().map(|diagnostic| {
+                    SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))
+                }),
+            );
+        }
 
         let should_stop = self.should_stop(&params.path, doc);
         let Some(analysis) = self.analyse_document(

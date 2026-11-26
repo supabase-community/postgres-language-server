@@ -1,3 +1,4 @@
+168..219	pg_catalog.bool
 399..461	pg_catalog.bool
 462..524	pg_catalog.bool
 569..634	pg_catalog.bool

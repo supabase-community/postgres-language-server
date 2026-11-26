@@ -221,7 +221,7 @@ create trigger t
 before truncate
 on trunc_trigger_test
 for each statement
-execute function trunctrigger("before trigger truncate");
+execute function trunctrigger('before trigger truncate');
 
 select count(*) as "Row count in test table" from trunc_trigger_test;
 
@@ -243,7 +243,7 @@ create trigger tt
 after truncate
 on trunc_trigger_test
 for each statement
-execute function trunctrigger("after trigger truncate");
+execute function trunctrigger('after trigger truncate');
 
 select count(*) as "Row count in test table" from trunc_trigger_test;
 

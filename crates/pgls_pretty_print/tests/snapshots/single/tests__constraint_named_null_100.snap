@@ -1,0 +1,9 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/constraint_named_null.sql
+---
+create table t (
+  a int not null constraint c null,
+  b int constraint d default 1,
+  c int constraint e generated always as (b) stored
+);

@@ -30,7 +30,7 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
         e.indent_start();
         match object_type {
             ObjectType::ObjectCast => {
-                emit_comma_separated_list(e, &n.objects, emit_drop_cast_object);
+                emit_comma_separated_list(e, &n.objects, emit_cast_object);
             }
             ObjectType::ObjectOpclass | ObjectType::ObjectOpfamily => {
                 // DROP OPERATOR CLASS/FAMILY uses: name USING access_method
@@ -38,6 +38,25 @@ pub(super) fn emit_drop_stmt(e: &mut EventEmitter, n: &DropStmt) {
                     match operator_class_parts(object) {
                         Some((method, name)) => emit_operator_class_name(e, method, name),
                         None => emit_node(e, object),
+                    }
+                });
+            }
+            ObjectType::ObjectTransform => {
+                // DROP TRANSFORM FOR type LANGUAGE lang, stored as [type, lang]
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L9276
+                emit_comma_separated_list(e, &n.objects, |e, object| {
+                    if let Some(NodeEnum::List(list)) = object.node.as_ref()
+                        && let [type_name, language] = list.items.as_slice()
+                    {
+                        e.token(TokenKind::FOR_KW);
+                        e.space();
+                        emit_node(e, type_name);
+                        e.space();
+                        e.token(TokenKind::LANGUAGE_KW);
+                        e.space();
+                        emit_node(e, language);
+                    } else {
+                        emit_node(e, object);
                     }
                 });
             }
@@ -85,24 +104,6 @@ fn emit_dot_separated_identifiers(e: &mut EventEmitter, items: &[pgls_query::pro
             emit_node(e, item);
         }
     });
-}
-
-fn emit_drop_cast_object(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {
-    if let Some(pgls_query::NodeEnum::List(list)) = node.node.as_ref()
-        && let [source, target] = list.items.as_slice()
-    {
-        e.token(TokenKind::L_PAREN);
-        emit_node(e, source);
-        e.space();
-        e.token(TokenKind::AS_KW);
-        e.space();
-        emit_node(e, target);
-        e.token(TokenKind::R_PAREN);
-        return;
-    }
-
-    // Fallback for unexpected structure
-    emit_node(e, node);
 }
 
 /// Emit DROP RULE/TRIGGER/POLICY object.

@@ -17,9 +17,9 @@ pgls_configuration      = { path = "../crates/pgls_configuration" }
 pgls_fs                 = { path = "../crates/pgls_fs" }
 pgls_lexer              = { path = "../crates/pgls_lexer" }
 pgls_lsp                = { path = "../crates/pgls_lsp", features = ["testing"] }
-pgls_pretty_print       = { path = "../crates/pgls_pretty_print" }
+pgls_pretty_print       = { path = "../crates/pgls_pretty_print", features = ["testing"] }
 pgls_query              = { path = "../crates/pgls_query" }
-pgls_statement_splitter = { path = "../crates/pgls_statement_splitter" }
+pgls_statement_splitter = { path = "../crates/pgls_statement_splitter", features = ["testing"] }
 pgls_text_size          = { path = "../crates/pgls_text_size" }
 pgls_workspace          = { path = "../crates/pgls_workspace" }
 serde_json              = "1"
