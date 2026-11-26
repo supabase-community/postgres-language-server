@@ -7,10 +7,11 @@ use pgls_resolve::{FindingKind, MatchFailure};
 
 declare_lint_rule! {
     /// A function name and argument count exist, but its argument types do not select exactly
-    /// one overload.
+    /// one overload, or `CALL` selects a function that isn't a procedure.
     ///
-    /// Postgres raises `42883 undefined_function` when no function matches, and
-    /// `42725 ambiguous_function` when the call is ambiguous.
+    /// Postgres raises `42883 undefined_function` when no function matches,
+    /// `42725 ambiguous_function` when the call is ambiguous, and `42809 wrong_object_type` when
+    /// `CALL` selects a function.
     ///
     /// ## Examples
     ///
@@ -42,14 +43,16 @@ impl LinterRule for FunctionArgumentMismatch {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
         for finding in ctx.findings() {
-            let FindingKind::FunctionArgumentMismatch {
-                schema,
-                name,
-                args,
-                failure,
-            } = &finding.kind
-            else {
-                continue;
+            let (schema, name, args, failure) = match &finding.kind {
+                FindingKind::FunctionArgumentMismatch {
+                    schema,
+                    name,
+                    args,
+                    failure,
+                    procedure,
+                } => (schema, name, args, Some((*failure, *procedure))),
+                FindingKind::NotAProcedure { schema, name, args } => (schema, name, args, None),
+                _ => continue,
             };
             let catalog = ctx.catalog();
             let Some(args) = args
@@ -62,13 +65,25 @@ impl LinterRule for FunctionArgumentMismatch {
             let name = qualified_name(schema.as_deref(), name);
             let call = format!("{name}({})", args.join(", "));
             let (message, note) = match failure {
-                MatchFailure::NoMatch => (
+                Some((MatchFailure::NoMatch, false)) => (
                     format!("Function {call} does not exist."),
                     "No function matches the given name and argument types. You might need to add explicit type casts.",
                 ),
-                MatchFailure::Ambiguous => (
+                Some((MatchFailure::Ambiguous, false)) => (
                     format!("Function {call} is not unique."),
                     "Could not choose a best candidate function. You might need to add explicit type casts.",
+                ),
+                Some((MatchFailure::NoMatch, true)) => (
+                    format!("Procedure {call} does not exist."),
+                    "No procedure matches the given name and argument types. You might need to add explicit type casts.",
+                ),
+                Some((MatchFailure::Ambiguous, true)) => (
+                    format!("Procedure {call} is not unique."),
+                    "Could not choose a best candidate procedure. You might need to add explicit type casts.",
+                ),
+                None => (
+                    format!("{call} is not a procedure."),
+                    "To call a function, use SELECT.",
                 ),
             };
             diagnostics

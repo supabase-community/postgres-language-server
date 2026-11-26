@@ -196,10 +196,10 @@ impl Harness {
         };
         let mut cursors = Vec::new();
         for token in scanned.tokens {
-            let (Ok(start), Ok(end)) = (usize::try_from(token.start), usize::try_from(token.end))
-            else {
+            let Some(range) = token.range() else {
                 continue;
             };
+            let (start, end) = (usize::from(range.start()), usize::from(range.end()));
             let len = end.saturating_sub(start);
             let mut offsets = vec![0, 1, len / 2, len];
             offsets.retain(|offset| *offset <= len);
