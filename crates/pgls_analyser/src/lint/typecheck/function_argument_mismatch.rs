@@ -1,8 +1,8 @@
-use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 use pgls_resolve::{FindingKind, MatchFailure};
 
 declare_lint_rule! {
@@ -59,7 +59,12 @@ impl LinterRule for FunctionArgumentMismatch {
             else {
                 continue;
             };
-            let name = qualified_name(schema.as_deref(), name);
+            let name = QualifiedName {
+                catalog: None,
+                schema: schema.as_deref(),
+                name,
+            }
+            .to_string();
             let call = format!("{name}({})", args.join(", "));
             let (message, note) = match failure {
                 MatchFailure::NoMatch => (
