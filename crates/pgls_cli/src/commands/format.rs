@@ -44,7 +44,10 @@ pub(crate) fn format(
     if let Some(stdin_path) = args.targets.stdin_file_path() {
         print_diagnostics(session.console(), &configuration_errors);
         let payload = read_stdin_payload(stdin_path, session.console(), "format")?;
-        let report = run_stdin(&mut session, &execution, payload)?;
+        let mut report = run_stdin(&mut session, &execution, payload)?;
+        for error in configuration_errors.into_iter().rev() {
+            report.prepend_diagnostic(error);
+        }
         return enforce_exit_codes(cli_options, &report, category!("format"));
     }
 
