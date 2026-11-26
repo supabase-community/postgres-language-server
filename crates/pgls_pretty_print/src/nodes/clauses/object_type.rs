@@ -31,6 +31,7 @@ pub(crate) fn object_type_keywords(object_type: ObjectType) -> Option<&'static s
         ObjectType::ObjectOpclass => "OPERATOR CLASS",
         ObjectType::ObjectOperator => "OPERATOR",
         ObjectType::ObjectOpfamily => "OPERATOR FAMILY",
+        ObjectType::ObjectParameterAcl => "PARAMETER",
         ObjectType::ObjectPolicy => "POLICY",
         ObjectType::ObjectProcedure => "PROCEDURE",
         ObjectType::ObjectPublication => "PUBLICATION",
@@ -58,7 +59,6 @@ pub(crate) fn object_type_keywords(object_type: ObjectType) -> Option<&'static s
         | ObjectType::ObjectAttribute
         | ObjectType::ObjectDefault
         | ObjectType::ObjectDefacl
-        | ObjectType::ObjectParameterAcl
         | ObjectType::ObjectPublicationNamespace
         | ObjectType::ObjectPublicationRel => return None,
     };

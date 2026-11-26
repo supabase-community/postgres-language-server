@@ -126,7 +126,7 @@ impl Snapshot {
     }
 
     // The `find_*` lookups take names, not identifiers as written: convert SQL text with
-    // [`crate::identifier_name`] first.
+    // [`pgls_query::Identifier::name`] first.
 
     /// The extension `name`, if the server has it available. See [`Extension::is_installed`].
     pub fn extension(&self, name: &str) -> Option<&Extension> {

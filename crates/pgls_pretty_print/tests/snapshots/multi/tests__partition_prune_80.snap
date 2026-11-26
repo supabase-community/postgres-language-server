@@ -868,10 +868,10 @@ prepare ab_q1
 (int, int, int)
 as select * from ab where a between $1 and $2 and b <= $3;
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q1 (2, 2, 3);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q1 (1, 2, 3);
 
 deallocate ab_q1;
@@ -880,24 +880,24 @@ prepare ab_q1
 (int, int)
 as select a from ab where a between $1 and $2 and b < 3;
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q1 (2, 2);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q1 (2, 4);
 
 prepare ab_q2
 (int, int)
 as select a from ab where a between $1 and $2 and b < (select 3);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q2 (2, 2);
 
 prepare ab_q3
 (int, int)
 as select a from ab where b between $1 and $2 and a < (select 3);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q3 (2, 2);
 
 create table hp1 partition of hp for values with (modulus 4, remainder 1);
@@ -908,7 +908,7 @@ create table hp3 partition of hp for values with (modulus 4, remainder 3);
 
 prepare hp_q1 (text) as select * from hp where a is null and b = $1;
 
-explain (costs 'off') execute hp_q1 ('xxx');
+explain (costs off) execute hp_q1 ('xxx');
 
 deallocate hp_q1;
 
@@ -1136,7 +1136,7 @@ from
 where
   a = $1 and b = (select -10);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ab_q6 (1);
 
 execute ab_q6 (100);
@@ -1327,7 +1327,7 @@ prepare part_abc_q1
 (int, int, int)
 as select * from part_abc where a = $1 and b = $2 and c = $3;
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute part_abc_q1 (1, 2, 3);
 
 deallocate part_abc_q1;
@@ -1352,13 +1352,13 @@ select * from listp where b = 1;
 
 prepare q1 (int, int) as select * from listp where b in ($1, $2);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute q1 (1, 1);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute q1 (2, 2);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute q1 (0, 0);
 
 deallocate q1;
@@ -1367,10 +1367,10 @@ prepare q1
 (int, int, int, int)
 as select * from listp where b in ($1, $2) and $3 <> b and $4 <> b;
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute q1 (1, 2, 2, 0);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute q1 (1, 2, 2, 1);
 
 select * from listp where a = (select cast(null as int));
@@ -1460,14 +1460,14 @@ select * from mc3p where a < 3 and abs(b) = 1;
 
 prepare ps1 as select * from mc3p where a = $1 and abs(b) < (select 3);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ps1 (1);
 
 deallocate ps1;
 
 prepare ps2 as select * from mc3p where a <= $1 and abs(b) < (select 3);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute ps2 (1);
 
 deallocate ps2;
@@ -1517,17 +1517,17 @@ prepare mt_q1
 (int)
 as select a from ma_test where a >= $1 and a % 10 = 5 order by b;
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute mt_q1 (15);
 
 execute mt_q1 (15);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute mt_q1 (25);
 
 execute mt_q1 (25);
 
-explain (analyze, costs 'off', summary 'off', timing 'off', buffers 'off')
+explain (analyze, costs off, summary off, timing off, buffers off)
 execute mt_q1 (35);
 
 execute mt_q1 (35);
@@ -1536,14 +1536,7 @@ deallocate mt_q1;
 
 prepare mt_q2 (int) as select * from ma_test where a >= $1 order by b limit 1;
 
-explain (
-  analyze,
-  verbose,
-  costs 'off',
-  summary 'off',
-  timing 'off',
-  buffers 'off'
-)
+explain (analyze, verbose, costs off, summary off, timing off, buffers off)
 execute mt_q2 (35);
 
 deallocate mt_q2;
@@ -1806,7 +1799,7 @@ from
 where
   s.a = $1 and s.b = $2 and s.c = (select 1);
 
-explain (costs 'off') execute q (1, 1);
+explain (costs off) execute q (1, 1);
 
 execute q (1, 1);
 
@@ -2121,15 +2114,15 @@ with cascaded check option;
 
 update part_abc_view set b = $2 where a = $1 returning *;
 
-explain (verbose, costs 'off') execute update_part_abc_view (1, 'd');
+explain (verbose, costs off) execute update_part_abc_view (1, 'd');
 
 execute update_part_abc_view (1, 'd');
 
-explain (verbose, costs 'off') execute update_part_abc_view (2, 'a');
+explain (verbose, costs off) execute update_part_abc_view (2, 'a');
 
 execute update_part_abc_view (2, 'a');
 
-explain (verbose, costs 'off') execute update_part_abc_view (3, 'a');
+explain (verbose, costs off) execute update_part_abc_view (3, 'a');
 
 execute update_part_abc_view (3, 'a');
 

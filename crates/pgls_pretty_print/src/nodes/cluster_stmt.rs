@@ -7,10 +7,9 @@ pub(super) fn emit_cluster_stmt(e: &mut EventEmitter, n: &ClusterStmt) {
 
     e.token(TokenKind::CLUSTER_KW);
 
-    // VERBOSE option - check params
     if !n.params.is_empty() {
         e.space();
-        e.token(TokenKind::VERBOSE_KW);
+        emit_parenthesized_list(e, &n.params, emit_utility_option);
     }
 
     // Table name

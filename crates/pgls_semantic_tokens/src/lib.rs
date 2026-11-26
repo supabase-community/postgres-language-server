@@ -7,10 +7,10 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
-use pgls_catalog::{Catalog, identifier_name};
+use pgls_catalog::Catalog;
 use pgls_line_index::{LineBreak, Lines};
-use pgls_query::NodeEnum;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
+use pgls_query::{Identifier, NodeEnum};
 use pgls_resolve::{ColumnSource, FunctionContext, Reference, ResolveParams, resolve};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -166,7 +166,7 @@ pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec
                     // `table.column` or `cte.column`, and otherwise `alias.column`: the qualifier
                     // is the name of the FROM item the column comes from.
                     [qualifier, _] => {
-                        let qualifier_name = identifier_name(&sql[*qualifier]);
+                        let qualifier_name = Identifier::new(&sql[*qualifier]).name();
                         let is_own_name = match source {
                             ColumnSource::Relation { name, .. } | ColumnSource::Cte { name } => {
                                 qualifier_name == *name

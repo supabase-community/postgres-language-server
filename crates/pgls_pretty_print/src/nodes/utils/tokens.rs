@@ -1,12 +1,11 @@
 //! Keywords, identifiers and literals: when a name needs quotes, and how a string is quoted.
 
-use pgls_query::protobuf::String as PgString;
+use pgls_query::{Identifier, protobuf::String as PgString};
 
 use crate::{
     TokenKind,
     codegen::token_kind::{KeywordCategory, keyword_category},
     emitter::EventEmitter,
-    identifiers::MAX_IDENTIFIER_LENGTH,
 };
 
 pub(crate) fn emit_string_literal(e: &mut EventEmitter, n: &PgString) {
@@ -48,6 +47,23 @@ pub(crate) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
     }
 }
 
+/// Emits a name that may be any word, keywords included, adding quotes only if necessary. The
+/// grammar spells it as `ColLabel`: an option name (`def_elem`, `reloption_elem`) or the last part
+/// of a qualified function name, for instance.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17655
+pub(crate) fn emit_label_maybe_quoted(e: &mut EventEmitter, value: &str) {
+    if value.is_empty() {
+        return;
+    }
+
+    let value = e.source_identifier(value).to_string();
+    if needs_quoting_as_label(&value) {
+        emit_identifier(e, &value);
+    } else {
+        e.token(TokenKind::IDENT(value));
+    }
+}
+
 /// Emits a string that the grammar takes as a word or a string constant, both of which give the
 /// same string: a language (`NonReservedWord_or_Sconst`), a trigger argument (`TriggerFuncArg`) or
 /// a `SET` value (`var_value`). It is a word only if it needs no quotes and fits in an identifier:
@@ -55,7 +71,7 @@ pub(crate) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L1092
 pub(crate) fn emit_word_or_string(e: &mut EventEmitter, value: &str) {
     let word = e.source_identifier(value).to_string();
-    if value.len() > MAX_IDENTIFIER_LENGTH || needs_quoting(&word) {
+    if value.len() > Identifier::NAME_BYTES_MAX || needs_quoting(&word) {
         emit_single_quoted_str(e, value);
     } else {
         e.token(TokenKind::IDENT(word));

@@ -20,10 +20,16 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
         // For COLUMN, the object is a list of identifiers that should be dot-separated
         // e.g., "table.column" not "table, column"
         if object_type == ObjectType::ObjectColumn {
-            if let Some(pgls_query::NodeEnum::List(list)) = object.node.as_ref() {
-                emit_dot_separated_list(e, &list.items);
-            } else {
-                emit_node(e, object);
+            emit_any_name(e, object);
+        } else if object_type == ObjectType::ObjectCast {
+            emit_cast_object(e, object);
+        } else if matches!(
+            object_type,
+            ObjectType::ObjectOpclass | ObjectType::ObjectOpfamily
+        ) {
+            match operator_class_parts(object) {
+                Some((method, name)) => emit_operator_class_name(e, method, name),
+                None => emit_node(e, object),
             }
         } else if object_type == ObjectType::ObjectAggregate {
             // An aggregate needs (*) for any arguments
@@ -134,11 +140,7 @@ pub(super) fn emit_comment_stmt(e: &mut EventEmitter, n: &CommentStmt) {
             // For most object types (TABLE, INDEX, SEQUENCE, VIEW, etc.), the object
             // is a List of String nodes representing a schema-qualified name that must
             // be dot-separated (e.g., public.my_table), not comma-separated.
-            if let Some(pgls_query::NodeEnum::List(list)) = object.node.as_ref() {
-                emit_dot_separated_list(e, &list.items);
-            } else {
-                emit_node(e, object);
-            }
+            emit_any_name(e, object);
         }
     }
 
