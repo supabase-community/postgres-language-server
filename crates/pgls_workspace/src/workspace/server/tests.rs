@@ -5542,6 +5542,30 @@ fn files_use_the_nearest_configuration_file() {
     assert!(project.is_ignored("/repo/legacy/a.sql"));
 }
 
+/// The globs of `files.ignore` are relative to the folder of their configuration file, also for
+/// the absolute paths of the editor.
+#[test]
+fn files_ignore_globs_are_relative_to_their_configuration_file() {
+    let fs = file_system_with_configurations(&[
+        (
+            "/repo",
+            r#"{ "files": { "ignore": ["migrations/*.sql"] } }"#,
+        ),
+        (
+            "/repo/db1",
+            r#"{ "files": { "ignore": ["generated/*.sql"] } }"#,
+        ),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let (project, _) = TestProject::new(&fs, Path::new("/repo"));
+
+    assert!(project.is_ignored("/repo/migrations/a.sql"));
+    assert!(project.is_ignored("migrations/a.sql"));
+    assert!(project.is_ignored("/repo/db1/generated/a.sql"));
+    assert!(!project.is_ignored("/repo/other/migrations/a.sql"));
+    assert!(!project.is_ignored("/repo/db1/a.sql"));
+}
+
 /// Updating the root settings with `replace` resets what the configuration doesn't set, while a
 /// merge keeps it, which the wasm `format` call relies on.
 #[test]
