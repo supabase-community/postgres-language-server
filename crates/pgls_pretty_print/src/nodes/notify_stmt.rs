@@ -14,9 +14,8 @@ pub(super) fn emit_notify_stmt(e: &mut EventEmitter, n: &NotifyStmt) {
 
     // Optional payload
     if !n.payload.is_empty() {
-        e.line(LineType::SoftOrSpace);
         e.token(TokenKind::COMMA);
-        e.space();
+        e.line(LineType::SoftOrSpace);
         emit_single_quoted_str(e, &n.payload);
     }
 
