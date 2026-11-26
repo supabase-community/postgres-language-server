@@ -2340,7 +2340,9 @@ dependencies = [
  "pgls_line_index",
  "pgls_lsp",
  "pgls_migrations",
+ "pgls_pretty_print",
  "pgls_query",
+ "pgls_statement_splitter",
  "pgls_test_utils",
  "pgls_text_edit",
  "pgls_text_size",
@@ -2532,6 +2534,7 @@ name = "pgls_lexer"
 version = "0.0.0"
 dependencies = [
  "pgls_diagnostics",
+ "pgls_lexer",
  "pgls_lexer_codegen",
  "pgls_query",
  "pgls_text_size",
@@ -2708,6 +2711,7 @@ dependencies = [
  "pgls_query_macros",
  "prost",
  "prost-build",
+ "regex",
  "thiserror 1.0.69",
  "tracing",
 ]
@@ -2784,6 +2788,7 @@ dependencies = [
  "ntest",
  "pgls_diagnostics",
  "pgls_lexer",
+ "pgls_pretty_print",
  "pgls_query",
  "pgls_text_size",
 ]
@@ -2967,7 +2972,6 @@ dependencies = [
  "pgls_walk",
  "pgls_workspace_macros",
  "proptest",
- "regex",
  "rustc-hash",
  "schemars",
  "serde",

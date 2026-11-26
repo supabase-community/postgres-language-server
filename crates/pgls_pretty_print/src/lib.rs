@@ -96,6 +96,21 @@ impl<'a> FormatStatementParams<'a> {
     }
 }
 
+#[cfg(feature = "testing")]
+impl FormatResult {
+    /// Whether the output formats to itself: [`format_statement`] of the output, which checks the
+    /// round trip again, returns it unchanged.
+    pub fn formats_to_itself(&self, config: &FormatConfig) -> bool {
+        pgls_query::parse(&self.formatted)
+            .ok()
+            .and_then(|parsed| parsed.into_root())
+            .is_some_and(|ast| {
+                format_statement(FormatStatementParams::new(&ast, &self.formatted, config))
+                    .is_ok_and(|again| again.formatted == self.formatted)
+            })
+    }
+}
+
 /// Format a single SQL statement from its AST.
 ///
 /// This function takes an already-parsed AST, formats it according to the
