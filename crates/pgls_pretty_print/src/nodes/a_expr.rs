@@ -546,11 +546,7 @@ fn extract_simple_operator(name: &[Node]) -> Option<&str> {
     let [name] = name else {
         return None;
     };
-
-    match name.node.as_ref() {
-        Some(NodeEnum::String(s)) => Some(&s.sval),
-        _ => None,
-    }
+    name.string_value()
 }
 
 /// Whether the emitted operand begins with an operator character: a prefix operator, or a numeric

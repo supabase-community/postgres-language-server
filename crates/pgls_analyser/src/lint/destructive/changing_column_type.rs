@@ -7,7 +7,6 @@ use pgls_catalog::{
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{ColumnDef, RangeVar};
-use pgls_query_ext::utils::string_value;
 
 declare_lint_rule! {
     /// Changing a column type may require a table rewrite and break existing clients.
@@ -142,7 +141,7 @@ fn rewrites(
 fn is_column(expr: &pgls_query::NodeEnum, column: &str) -> bool {
     match expr {
         pgls_query::NodeEnum::ColumnRef(column_ref) => {
-            matches!(column_ref.fields.as_slice(), [field] if string_value(field) == Some(column))
+            matches!(column_ref.fields.as_slice(), [field] if field.string_value() == Some(column))
         }
         _ => false,
     }

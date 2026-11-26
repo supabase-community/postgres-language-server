@@ -319,10 +319,7 @@ pub(crate) fn operator_info(name: &[Node], arity: OperatorArity) -> Option<Opera
 }
 
 pub(crate) fn operator_symbol(name: &[Node]) -> Option<&str> {
-    name.last().and_then(|node| match node.node.as_ref()? {
-        NodeEnum::String(s) => Some(s.sval.as_str()),
-        _ => None,
-    })
+    name.last().and_then(Node::string_value)
 }
 
 fn operand_needs_parentheses(node: &Node, parent: Option<OperatorInfo>, side: OperandSide) -> bool {

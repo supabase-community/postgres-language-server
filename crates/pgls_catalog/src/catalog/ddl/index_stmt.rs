@@ -145,13 +145,7 @@ fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
                         && call.over.is_none()
                         && !call.func_variadic
                         && matches!(call.args.as_slice(), [arg] if is_whole_row(arg, table));
-                    let name = call
-                        .funcname
-                        .first()
-                        .and_then(|name| match name.node.as_ref() {
-                            Some(NodeEnum::String(name)) => Some(name.sval.as_str()),
-                            _ => None,
-                        });
+                    let name = call.funcname.first().and_then(Node::string_value);
                     let is_column = |name: &str| {
                         table
                             .columns
