@@ -224,10 +224,34 @@ fn delete_target_alias_and_using() {
 }
 
 #[test]
+fn rejects_what_postgres_rejects() {
+    let mut parser = tree_sitter::Parser::new();
+    let _ = parser.set_language(&pgls_treesitter_grammar::LANGUAGE.into());
+    for sql in [
+        // A table is `ONLY t`, or `t` and `t *`, not both.
+        "delete from only users * where id = 1;",
+        "update only users * set id = 1;",
+        "vacuum only users *;",
+        "table only users *;",
+        // DELETE has no ORDER BY, LIMIT or OFFSET.
+        "delete from users order by id;",
+        "delete from users limit 1;",
+        "delete from users offset 1;",
+    ] {
+        let tree = parser.parse(sql, None).expect("Unable to parse!");
+        assert!(
+            tree.root_node().has_error(),
+            "{sql}:\n{}",
+            printed_tree(sql)
+        );
+    }
+}
+
+#[test]
 fn vacuum_options() {
     valid_snapshot(
         "vacuum_options",
-        "vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users *, posts (id);",
+        "vacuum (full, freeze false, index_cleanup auto, parallel 4, buffer_usage_limit '256kB') only users, posts * (id);",
     );
     valid_snapshot(
         "vacuum_legacy_options",
