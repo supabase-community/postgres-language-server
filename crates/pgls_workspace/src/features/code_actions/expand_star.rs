@@ -68,18 +68,18 @@ fn is_at_star_in(text: &str, cursor: usize) -> bool {
         [as_, string]
             if as_.token() == Token::As
                 && string.token() == Token::Sconst
-                && usize::try_from(string.start).is_ok_and(|start| start < cursor)
-                && usize::try_from(string.end).is_ok_and(|end| cursor < end) =>
+                && string.range().is_some_and(|range| {
+                    usize::from(range.start()) < cursor && cursor < usize::from(range.end())
+                }) =>
         {
             Some(string)
         }
         _ => None,
     }) {
-        let (Ok(start), Ok(end)) = (usize::try_from(string.start), usize::try_from(string.end))
-        else {
+        let (Some(range), Some(constant)) = (string.range(), string.text(text)) else {
             return true;
         };
-        let constant = &text[start..end];
+        let start = usize::from(range.start());
         let quote = if constant.starts_with('\'') {
             1
         } else if let Some(after_dollar) = constant.strip_prefix('$') {
@@ -125,9 +125,9 @@ fn is_at_star_in(text: &str, cursor: usize) -> bool {
             });
         let start = tokens
             .get(before.len())
-            .and_then(|first| usize::try_from(first.start).ok())
-            .unwrap_or(usize::MAX);
-        let end = usize::try_from(star.end).unwrap_or(0);
+            .and_then(|first| first.range())
+            .map_or(usize::MAX, |range| range.start().into());
+        let end = star.range().map_or(0, |range| range.end().into());
         star_like && (start..=end).contains(&cursor)
     })
 }

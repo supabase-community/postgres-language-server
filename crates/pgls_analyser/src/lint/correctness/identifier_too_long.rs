@@ -4,7 +4,7 @@ use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::Identifier;
 use pgls_query::protobuf::{ScanToken, Token};
-use pgls_text_size::{TextRange, TextSize};
+use pgls_text_size::TextRange;
 
 declare_lint_rule! {
     /// Identifiers longer than 63 bytes are silently truncated.
@@ -54,13 +54,7 @@ impl LinterRule for IdentifierTooLong {
         };
 
         let tokens = &scan.tokens;
-        let text = |token: &ScanToken| {
-            let range = TextRange::new(
-                TextSize::from(u32::try_from(token.start).ok()?),
-                TextSize::from(u32::try_from(token.end).ok()?),
-            );
-            Some((range, sql.get(range.start().into()..range.end().into())?))
-        };
+        let text = |token: &ScanToken| Some((token.range()?, token.text(sql)?));
 
         // Each long name, with the identifiers that spell it.
         let mut names: Vec<(String, Vec<Occurrence>)> = Vec::new();
