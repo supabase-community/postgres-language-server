@@ -1,14 +1,15 @@
 # functionArgumentMismatch
 
 **Group** [`typecheck`](../rules.md#typecheck) · **Recommended** · **Needs a database connection** · **Since** `0.27.0`  
-**Diagnostic** `lint/functionArgumentMismatch` · **Postgres error** `42883`, `42725`
+**Diagnostic** `lint/functionArgumentMismatch` · **Postgres error** `42883`, `42725`, `42809`
 
 ## Description
 A function name and argument count exist, but its argument types do not select exactly
-one overload.
+one overload, or `CALL` selects a function that isn't a procedure.
 
-Postgres raises `42883 undefined_function` when no function matches, and
-`42725 ambiguous_function` when the call is ambiguous.
+Postgres raises `42883 undefined_function` when no function matches,
+`42725 ambiguous_function` when the call is ambiguous, and `42809 wrong_object_type` when
+`CALL` selects a function.
 
 ## Examples
 
