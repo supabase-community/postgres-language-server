@@ -1,4 +1,4 @@
-use pgls_catalog::identifier_name;
+use pgls_query::Identifier;
 use pgls_treesitter::WrappingClause;
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ impl HoveredNode {
         }
 
         // The catalog holds names, not identifiers as written.
-        let name = identifier_name(&node_content);
+        let name = Identifier::new(&node_content).name();
 
         let under_cursor = &ctx.node_under_cursor;
 

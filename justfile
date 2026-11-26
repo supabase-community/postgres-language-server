@@ -94,7 +94,7 @@ test-crate name:
 test-doc:
 	cargo test --doc
 
-# Runs the CLI over the real-world SQL in crates/pgls_cli/tests/corpus.toml and compares a summary per source with its snapshot. Fetches the sources on the first run.
+# Runs the CLI and the fuzzers' oracles over the real-world SQL in crates/pgls_cli/tests/corpus.toml and compares a summary per source with its snapshot. Fetches the sources on the first run.
 corpus:
 	cargo test -p pgls_cli --release --test corpus -- --ignored
 

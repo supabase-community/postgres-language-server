@@ -60,6 +60,13 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
             e.space();
         }
         e.token(TokenKind::UPDATE_KW);
+        // Only UPDATE has columns
+        if !n.columns.is_empty() {
+            e.space();
+            e.token(TokenKind::OF_KW);
+            e.space();
+            emit_comma_separated_list(e, &n.columns, emit_node);
+        }
         first_event = false;
     }
     if n.events & 32 != 0 {
@@ -69,14 +76,6 @@ pub(super) fn emit_create_trig_stmt(e: &mut EventEmitter, n: &CreateTrigStmt) {
             e.space();
         }
         e.token(TokenKind::TRUNCATE_KW);
-    }
-
-    // OF columns (for UPDATE triggers) - keep on same line as events
-    if !n.columns.is_empty() {
-        e.space();
-        e.token(TokenKind::OF_KW);
-        e.space();
-        emit_comma_separated_list(e, &n.columns, emit_node);
     }
 
     // ON table - allow break before ON for long table names

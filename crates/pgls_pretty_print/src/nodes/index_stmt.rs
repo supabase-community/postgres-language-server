@@ -65,6 +65,16 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         emit_parenthesized_list(e, &n.index_params, emit_node);
     }
 
+    // INCLUDE columns
+    if !n.index_including_params.is_empty() {
+        e.line(LineType::SoftOrSpace);
+        e.token(TokenKind::INCLUDE_KW);
+        e.space();
+        emit_parenthesized_list(e, &n.index_including_params, emit_node);
+    }
+
+    // `opt_include opt_unique_null_treatment`:
+    // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L8197
     if n.nulls_not_distinct {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::NULLS_KW);
@@ -72,14 +82,6 @@ pub(super) fn emit_index_stmt(e: &mut EventEmitter, n: &IndexStmt) {
         e.token(TokenKind::NOT_KW);
         e.space();
         e.token(TokenKind::DISTINCT_KW);
-    }
-
-    // INCLUDE columns
-    if !n.index_including_params.is_empty() {
-        e.line(LineType::SoftOrSpace);
-        e.token(TokenKind::INCLUDE_KW);
-        e.space();
-        emit_parenthesized_list(e, &n.index_including_params, emit_node);
     }
 
     // WITH options

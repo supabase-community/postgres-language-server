@@ -21,7 +21,7 @@ as $$int8out$$;
 create type int8alias1 (
   input = int8alias1in,
   output = int8alias1out,
-  "like" = int8
+  like = int8
 );
 
 create type int8alias2;
@@ -43,7 +43,7 @@ as $$int8out$$;
 create type int8alias2 (
   input = int8alias2in,
   output = int8alias2out,
-  "like" = int8
+  like = int8
 );
 
 create cast (int8 as int8alias1) without function;

@@ -166,7 +166,7 @@ immutable
 strict
 as $$hashint4$$;
 
-create type myint (input = myintin, output = myintout, "like" = int4);
+create type myint (input = myintin, output = myintout, like = int4);
 
 create cast (int4 as myint) without function;
 

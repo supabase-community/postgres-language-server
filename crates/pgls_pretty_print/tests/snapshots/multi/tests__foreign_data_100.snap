@@ -37,7 +37,7 @@ create foreign data wrapper dummy;
 
 comment on foreign data wrapper dummy is 'useless';
 
-create foreign data wrapper postgresql validator postgresql_fdw_validator ;
+create foreign data wrapper postgresql validator postgresql_fdw_validator;
 
 select
   fdwname,
@@ -54,7 +54,7 @@ select srvname, srvoptions from pg_foreign_server;
 
 select * from pg_user_mapping;
 
-create foreign data wrapper foo validator bar ;
+create foreign data wrapper foo validator bar;
 
 create foreign data wrapper foo;
 
@@ -78,18 +78,18 @@ create foreign data wrapper foo;
 
 reset role;
 
-create foreign data wrapper foo validator postgresql_fdw_validator ;
+create foreign data wrapper foo validator postgresql_fdw_validator;
 
 create function invalid_fdw_handler()
 returns int
 language sql
 as $$SELECT 1;$$;
 
-create foreign data wrapper test_fdw handler invalid_fdw_handler ;
+create foreign data wrapper test_fdw handler invalid_fdw_handler;
 
-create foreign data wrapper test_fdw handler test_fdw_handler handler invalid_fdw_handler ;
+create foreign data wrapper test_fdw handler test_fdw_handler handler invalid_fdw_handler;
 
-create foreign data wrapper test_fdw handler test_fdw_handler ;
+create foreign data wrapper test_fdw handler test_fdw_handler;
 
 drop foreign data wrapper test_fdw;
 
@@ -1080,9 +1080,8 @@ create table fd_pt1 (
   c3 date
 );
 
-create foreign table ft2
-partition of fd_pt1
-default server s0 options (delimiter ',', quote '"', "be quoted" 'value');
+create foreign table ft2 ()
+inherits (fd_pt1) server s0 options (delimiter ',', quote '"', "be quoted" 'value');
 
 drop foreign table ft2;
 
@@ -1098,7 +1097,7 @@ alter foreign table ft2
 create table ct3 ()
 inherits (ft2);
 
-create foreign table ft3 partition of ft2 default server s0;
+create foreign table ft3 (c1 int not null, c2 text, c3 date) inherits (ft2) server s0;
 
 alter table fd_pt1
   add column c4 int;

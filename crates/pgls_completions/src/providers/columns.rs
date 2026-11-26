@@ -1,4 +1,5 @@
-use pgls_catalog::{Column, NamePosition, Snapshot, identifier_name};
+use pgls_catalog::{Column, NamePosition, Snapshot};
+use pgls_query::Identifier;
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
@@ -41,7 +42,7 @@ fn get_completion_text(ctx: &TreesitterContext, col: &Column) -> CompletionText 
     let alias = (ctx.node_under_cursor.kind() != "column_identifier")
         .then(|| ctx.get_used_alias_for_table(&col.schema_name, &col.table_name))
         .flatten()
-        .map(|alias| identifier_name(&alias));
+        .map(|alias| Identifier::new(&alias).name());
 
     let with_schema_or_alias = with_schema_or_alias(
         ctx,

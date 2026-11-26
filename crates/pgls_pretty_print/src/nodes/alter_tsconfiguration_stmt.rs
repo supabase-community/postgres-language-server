@@ -47,26 +47,18 @@ pub(super) fn emit_alter_tsconfiguration_stmt(e: &mut EventEmitter, n: &AlterTsC
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::REPLACE_KW);
             e.space();
-            emit_dictionary(e, old);
+            emit_any_name(e, old);
             e.line(LineType::SoftOrSpace);
             e.token(TokenKind::WITH_KW);
             e.space();
-            emit_dictionary(e, new);
+            emit_any_name(e, new);
         }
     } else if !n.dicts.is_empty() {
         e.line(LineType::SoftOrSpace);
         e.token(TokenKind::WITH_KW);
         e.space();
-        emit_comma_separated_list(e, &n.dicts, emit_dictionary);
+        emit_comma_separated_list(e, &n.dicts, emit_any_name);
     }
 
     e.group_end();
-}
-
-/// A dictionary is a possibly qualified name, stored as a `List` of its parts.
-fn emit_dictionary(e: &mut EventEmitter, node: &Node) {
-    match node.node.as_ref() {
-        Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
-        _ => emit_node(e, node),
-    }
 }

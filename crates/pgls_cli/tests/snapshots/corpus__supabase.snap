@@ -62,3 +62,6 @@ reformatted files: 89
   examples/edge-functions/supabase/migrations/20260911000000_authenticated-mcp-server.sql
   and 69 more
 crashes: 0
+format round-trip: 0
+splitter vs parser: 0
+lexer vs scanner: 0

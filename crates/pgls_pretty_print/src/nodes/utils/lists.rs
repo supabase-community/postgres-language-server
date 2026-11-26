@@ -146,6 +146,15 @@ pub(crate) fn emit_dot_separated_list(e: &mut EventEmitter, nodes: &[Node]) {
     emit_dot_separated_list_with(e, nodes, emit_node);
 }
 
+/// Emits a possibly qualified name (`any_name`), which the parser stores as a `List` of its parts:
+/// `schema.name`. Any other node prints as itself.
+pub(crate) fn emit_any_name(e: &mut EventEmitter, node: &Node) {
+    match node.node.as_ref() {
+        Some(NodeEnum::List(list)) => emit_dot_separated_list(e, &list.items),
+        _ => emit_node(e, node),
+    }
+}
+
 pub(crate) fn emit_dot_separated_list_with<F>(e: &mut EventEmitter, nodes: &[Node], render: F)
 where
     F: Fn(&mut EventEmitter, &Node),
