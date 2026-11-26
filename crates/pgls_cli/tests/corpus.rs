@@ -28,7 +28,7 @@
 )]
 
 use pgls_line_index::LineIndex;
-use pgls_pretty_print::{FormatConfig, FormatError, format_statement};
+use pgls_pretty_print::{FormatConfig, FormatError, FormatStatementParams, format_statement};
 use pgls_text_size::TextSize;
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -504,7 +504,7 @@ impl Summary {
                     else {
                         return true;
                     };
-                    match format_statement(&ast, statement, &config) {
+                    match format_statement(FormatStatementParams::new(&ast, statement, &config)) {
                         Ok(result) => result.formats_to_itself(&config),
                         Err(
                             FormatError::ParseError { .. } | FormatError::BetaUnsupported { .. },
