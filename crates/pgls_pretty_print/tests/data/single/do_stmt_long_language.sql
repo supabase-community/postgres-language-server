@@ -1,0 +1,2 @@
+-- A language longer than an identifier stays a string.
+DO LANGUAGE 'sqlQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ' 'select 1';

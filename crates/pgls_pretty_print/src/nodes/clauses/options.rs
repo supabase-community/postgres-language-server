@@ -33,6 +33,45 @@ pub(crate) fn emit_utility_option(e: &mut EventEmitter, n: &Node) {
     }
 }
 
+/// Emits the `HANDLER` and `VALIDATOR` functions of CREATE or ALTER FOREIGN DATA WRAPPER
+/// (`fdw_option`), each on a line of its own when the statement breaks. A function is a qualified
+/// name (`handler_name`), not a list.
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L5461
+pub(crate) fn emit_fdw_functions(e: &mut EventEmitter, functions: &[Node]) {
+    if functions.is_empty() {
+        return;
+    }
+    e.indent_start();
+    for function in functions {
+        e.line(LineType::SoftOrSpace);
+        let Some(NodeEnum::DefElem(def)) = function.node.as_ref() else {
+            emit_node(e, function);
+            continue;
+        };
+        let keyword = match def.defname.as_str() {
+            "handler" => TokenKind::HANDLER_KW,
+            "validator" => TokenKind::VALIDATOR_KW,
+            _ => {
+                emit_node(e, function);
+                continue;
+            }
+        };
+        match def.arg {
+            Some(ref name) => {
+                e.token(keyword);
+                e.space();
+                emit_any_name(e, name);
+            }
+            None => {
+                e.token(TokenKind::NO_KW);
+                e.space();
+                e.token(keyword);
+            }
+        }
+    }
+    e.indent_end();
+}
+
 /// Emits `OPTIONS (option 'value', ...)` of a foreign data wrapper, server, table or user mapping.
 pub(crate) fn emit_options_clause(e: &mut EventEmitter, options: &[Node]) {
     e.token(TokenKind::OPTIONS_KW);

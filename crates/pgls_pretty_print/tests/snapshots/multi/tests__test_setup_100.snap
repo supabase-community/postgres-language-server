@@ -193,7 +193,7 @@ create type stoplight as enum ('red', 'yellow', 'green');
 
 create type float8range as range (subtype = float8, subtype_diff = float8mi);
 
-create type textrange as range (subtype = text, "collation" = "C");
+create type textrange as range (subtype = text, collation = "C");
 
 create function binary_coercible(oid, oid)
 returns bool
