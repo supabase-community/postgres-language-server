@@ -41,7 +41,7 @@ check:
   lint/requireTypeSchema: 727
   lint/runningStatementWhileHoldingAccessExclusive: 25
   lint/transactionNesting: 116
-  syntax: 4
+  syntax: 3
 format:
   format: 1452
   syntax: 3
