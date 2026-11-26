@@ -21,9 +21,15 @@ impl PsqlSyntaxDiagnostic {
     /// in text order.
     pub(crate) fn all_in(text: &str, tool: &str) -> Vec<Self> {
         let lexed = pgls_lexer::lex(text);
-        // An unquoted `\` is never server SQL: it starts a psql meta-command.
+        // An unquoted `\` is never server SQL: it starts a psql meta-command, or is psql's `\;` or
+        // `\:`.
         let meta_commands = (0..lexed.len())
-            .filter(|idx| lexed.kind(*idx) == SyntaxKind::BACKSLASH)
+            .filter(|idx| {
+                matches!(
+                    lexed.kind(*idx),
+                    SyntaxKind::META_COMMAND | SyntaxKind::BACKSLASH
+                )
+            })
             .map(|idx| Self {
                 span: lexed.range(idx),
                 message: MessageAndDescription::from(format!(

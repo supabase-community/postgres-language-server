@@ -367,7 +367,7 @@ mod tests {
                 .iter()
                 .map(|diagnostic| &text[diagnostic.span])
                 .collect();
-            assert_eq!(spans, ["\\", ":'v'"], "{}", tool.name());
+            assert_eq!(spans, ["\\set ON_ERROR_STOP on", ":'v'"], "{}", tool.name());
         }
         assert!(MigrationTool::Plain.psql_diagnostics(text).is_empty());
     }
