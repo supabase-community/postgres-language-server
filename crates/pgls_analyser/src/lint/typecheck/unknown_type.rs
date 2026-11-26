@@ -1,8 +1,8 @@
-use crate::utils::qualified_name;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 use pgls_resolve::FindingKind;
 
 declare_lint_rule! {
@@ -43,7 +43,12 @@ impl LinterRule for UnknownType {
         ctx.findings()
             .filter_map(|finding| match &finding.kind {
                 FindingKind::UnknownType { schema, name } => {
-                    let name = qualified_name(schema.as_deref(), name);
+                    let name = QualifiedName {
+                        catalog: None,
+                        schema: schema.as_deref(),
+                        name,
+                    }
+                    .to_string();
                     Some(LinterDiagnostic::new(
                         rule_category!(),
                         finding.span,

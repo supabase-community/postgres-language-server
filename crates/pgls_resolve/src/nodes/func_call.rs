@@ -2,7 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CoercionForm, FuncCall},
 };
-use pgls_query_ext::utils::{NameParts, QualifiedName, qualified_name};
+use pgls_query_ext::utils::{NameParts, QualifiedName};
 
 use super::{Resolver, resolve_list, resolve_node, resolve_opt};
 use crate::{
@@ -33,7 +33,7 @@ pub(super) fn resolve_func_call(r: &mut Resolver, n: &FuncCall) {
         return;
     }
 
-    let Some(QualifiedName { schema, name, .. }) = qualified_name(&n.funcname) else {
+    let Some(QualifiedName { schema, name, .. }) = QualifiedName::of(&n.funcname) else {
         r.depends_on_file();
         return;
     };

@@ -63,12 +63,24 @@ fn resolve_query(r: &mut Resolver, n: &SelectStmt, insert_source: bool) -> Optio
 }
 
 /// Set operations take their column names from the left-most query and the common type of each
-/// column pair. Their ORDER BY and LIMIT reference the output columns and are not checked. Port
-/// of [`transformSetOperationStmt`] and [`transformSetOperationTree`].
+/// column pair. Their ORDER BY and LIMIT reference the output columns and are not checked. Only
+/// the left-most select may have an `INTO`. Port of [`transformSetOperationStmt`] and
+/// [`transformSetOperationTree`].
 ///
 /// [`transformSetOperationStmt`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L1751
-/// [`transformSetOperationTree`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2056
+/// [`transformSetOperationTree`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/analyze.c#L2068
 fn resolve_set_operation(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
+    // Every select but the left-most one is the left-most select of the right arm of a set
+    // operation.
+    if let Some(into) = n
+        .rarg
+        .as_deref()
+        .and_then(SelectStmt::leftmost)
+        .and_then(|select| select.into_clause.as_deref())
+    {
+        let location = into.rel.as_ref().map_or(-1, |rel| rel.location);
+        r.report(crate::FindingKind::IntoNotOnFirstSelect, location);
+    }
     let left = n
         .larg
         .as_deref()

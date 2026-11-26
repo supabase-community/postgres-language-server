@@ -13,6 +13,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 - [invalidCast](./rules/invalid-cast.md) 
 - [invalidDropTypeSignature](./rules/invalid-drop-type-signature.md) 
 - [invalidMerge](./rules/invalid-merge.md) 
+- [invalidSelectInto](./rules/invalid-select-into.md) 
 - [missingFromClauseEntry](./rules/missing-from-clause-entry.md) 
 - [operatorTypeMismatch](./rules/operator-type-mismatch.md) 
 - [requireColumnQualifier](./rules/require-column-qualifier.md) 

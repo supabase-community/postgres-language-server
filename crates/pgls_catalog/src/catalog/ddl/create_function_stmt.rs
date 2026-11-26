@@ -2,7 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameterMode as Mode},
 };
-use pgls_query_ext::utils::{qualified_name, type_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use super::alter_function_stmt::volatility_option;
 use crate::Behavior;
@@ -21,7 +21,7 @@ pub(super) fn apply_create_function_stmt(
     n: &CreateFunctionStmt,
     search_path: &[String],
 ) {
-    let Some(name) = qualified_name(&n.funcname) else {
+    let Some(name) = QualifiedName::of(&n.funcname) else {
         return;
     };
     let (schema, name) = c.creation_key(name, search_path);
@@ -50,7 +50,7 @@ pub(super) fn apply_create_function_stmt(
                 parameter
                     .arg_type
                     .as_ref()
-                    .and_then(type_name)
+                    .and_then(QualifiedName::of_type_name)
                     .map(|name| name.name.to_owned()),
                 argument_type.clone().map(crate::typing::Type::Named),
             ));
@@ -105,7 +105,7 @@ pub(super) fn apply_create_function_stmt(
     let has_outputs = !outputs.is_empty();
     let return_columns = if !has_outputs {
         return_type
-            .and_then(type_name)
+            .and_then(QualifiedName::of_type_name)
             .and_then(|name| c.type_(name.schema, name.name, search_path).found())
             .and_then(|type_info| type_info.attributes)
     } else {
