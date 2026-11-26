@@ -2,7 +2,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateStmt, TableLikeOption},
 };
-use pgls_query_ext::utils::type_name;
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, key, overlay::column_info};
 use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
@@ -68,7 +68,7 @@ pub(super) fn create_table(
 
     // Typed tables (`OF type`) take the attributes of the type.
     if let Some(of_type) = &n.of_typename {
-        let attributes = type_name(of_type).and_then(|name| {
+        let attributes = QualifiedName::of_type_name(of_type).and_then(|name| {
             c.type_(name.schema, name.name, search_path)
                 .found()
                 .and_then(|type_info| type_info.attributes)

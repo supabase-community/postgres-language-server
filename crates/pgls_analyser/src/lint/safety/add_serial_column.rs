@@ -1,8 +1,9 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints, dotted_name};
+use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
@@ -59,7 +60,9 @@ impl LinterRule for AddSerialColumn {
                 if let Some(type_name) = &col_def.type_name
                     && pgls_catalog::serial_type(type_name).is_some()
                 {
-                    let type_str = dotted_name(&type_name.names);
+                    let type_str = QualifiedName::of_type_name(type_name)
+                        .map(|name| name.to_string())
+                        .unwrap_or_default();
                     diagnostics.push(
                         LinterDiagnostic::new(
                             rule_category!(),

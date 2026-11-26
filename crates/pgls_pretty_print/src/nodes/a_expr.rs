@@ -268,7 +268,7 @@ fn emit_aexpr_nullif(e: &mut EventEmitter, n: &AExpr) {
         emit_node(e, lexpr);
     }
 
-    e.token(TokenKind::COMMA);
+    emit_argument_comma(e, n.rexpr.as_deref());
     e.space();
 
     if let Some(ref rexpr) = n.rexpr {

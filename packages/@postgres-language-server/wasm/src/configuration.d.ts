@@ -669,6 +669,10 @@ export interface LinterRules {
    */
   invalidMerge?: RuleConfiguration_for_Null;
   /**
+   * A SELECT ... INTO that Postgres rejects.
+   */
+  invalidSelectInto?: RuleConfiguration_for_Null;
+  /**
    * Taking a dangerous lock without setting a lock timeout can cause indefinite blocking.
    */
   lockTimeoutWarning?: RuleConfiguration_for_Null;

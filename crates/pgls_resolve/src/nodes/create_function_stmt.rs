@@ -9,7 +9,7 @@ use pgls_query::{
 };
 use pgls_query_ext::{
     function_body::Language,
-    utils::{QualifiedName, find_option_value, qualified_name},
+    utils::{QualifiedName, find_option_value},
 };
 
 use super::{Resolver, resolve_node_enum};
@@ -224,7 +224,7 @@ impl FunctionContext {
                 continue;
             }
             let type_name = param.arg_type.as_ref()?;
-            let type_ = qualified_name(&type_name.names)?;
+            let type_ = QualifiedName::of(&type_name.names)?;
             params.push(FunctionParam {
                 name: (!param.name.is_empty()).then(|| param.name.clone()),
                 type_name: type_.name.to_owned(),
@@ -233,7 +233,7 @@ impl FunctionContext {
             });
         }
         Some(FunctionContext {
-            function_name: qualified_name(&n.funcname)?.name.to_owned(),
+            function_name: QualifiedName::of(&n.funcname)?.name.to_owned(),
             params,
         })
     }
@@ -296,7 +296,7 @@ fn declared_result(
 }
 
 fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
-    let QualifiedName { schema, name, .. } = qualified_name(&type_name.names)?;
+    let QualifiedName { schema, name, .. } = QualifiedName::of(&type_name.names)?;
     let is_array = !type_name.array_bounds.is_empty();
     let builtin = schema.is_none_or(|schema| schema == "pg_catalog");
     let mut label = match schema {
@@ -374,7 +374,7 @@ fn declared_type(r: &Resolver, type_name: &TypeName) -> Option<Declared> {
 }
 
 fn is_pseudo_type(type_name: &TypeName) -> bool {
-    let Some(QualifiedName { schema, name, .. }) = qualified_name(&type_name.names) else {
+    let Some(QualifiedName { schema, name, .. }) = QualifiedName::of(&type_name.names) else {
         return true;
     };
     schema.is_none_or(|schema| schema == "pg_catalog") && is_pseudo_type_name(name)

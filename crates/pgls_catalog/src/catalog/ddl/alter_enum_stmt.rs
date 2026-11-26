@@ -1,5 +1,5 @@
 use pgls_query::protobuf::AlterEnumStmt;
-use pgls_query_ext::utils::qualified_name;
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::Catalog;
 
@@ -9,7 +9,7 @@ use crate::catalog::Catalog;
 ///
 /// [`AlterEnum`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/typecmds.c#L1313
 pub(super) fn apply_alter_enum_stmt(c: &mut Catalog, n: &AlterEnumStmt, search_path: &[String]) {
-    let Some(name) = qualified_name(&n.type_name) else {
+    let Some(name) = QualifiedName::of(&n.type_name) else {
         return;
     };
     c.change_type(name, search_path, |_, _| {});

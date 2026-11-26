@@ -41,16 +41,21 @@ pub(super) fn emit_merge_when_clause(e: &mut EventEmitter, clause: &MergeWhenCla
         emit_clause_condition(e, cond);
     }
 
-    // A comment before `THEN` is attached to the node after the condition, which has to be in
-    // this branch's action: after `THEN DELETE` it belongs to a later branch.
-    if let Some(after_condition) = clause
+    // A comment before `THEN` is attached to the node after the condition, or without one to the
+    // branch's first node, which has to be in this branch's action: after `THEN DELETE` it
+    // belongs to a later branch.
+    let branch = pgls_query::NodeRef::MergeWhenClause(clause);
+    let after_condition = match clause
         .condition
         .as_ref()
         .and_then(|cond| cond.node.as_ref())
-        .and_then(|cond| crate::comments::last_node_location(cond.to_ref()))
-        .and_then(|location| e.next_node_location(location))
-        && crate::comments::last_node_location(pgls_query::NodeRef::MergeWhenClause(clause))
-            .is_some_and(|last| after_condition <= last)
+    {
+        Some(cond) => crate::comments::last_node_location(cond.to_ref())
+            .and_then(|location| e.next_node_location(location)),
+        None => crate::comments::first_node_location(branch),
+    };
+    if let Some(after_condition) = after_condition
+        && crate::comments::last_node_location(branch).is_some_and(|last| after_condition <= last)
     {
         e.take_comments_before_keyword_at(after_condition, "then");
     }
