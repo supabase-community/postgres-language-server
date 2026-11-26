@@ -287,13 +287,6 @@ fn tokens(sql: &str) -> Option<Vec<ScanToken>> {
     )
 }
 
-fn token_range(token: &ScanToken) -> Option<TextRange> {
-    Some(TextRange::new(
-        TextSize::try_from(usize::try_from(token.start).ok()?).ok()?,
-        TextSize::try_from(usize::try_from(token.end).ok()?).ok()?,
-    ))
-}
-
 /// A string body: its value, where the value is in the statement, and how they map.
 struct StringBody {
     value: String,
@@ -362,10 +355,10 @@ fn string_body(
         }
         let string = tokens.get(i + 1)?;
         match string.token() {
-            Token::Sconst => string_constant(value, token_range(string)?, sql, None),
+            Token::Sconst => string_constant(value, string.range()?, sql, None),
             Token::Usconst => {
                 let escape = unicode_escape_character(tokens.get(i + 2..)?, sql)?;
-                string_constant(value, token_range(string)?, sql, Some(escape))
+                string_constant(value, string.range()?, sql, Some(escape))
             }
             _ => None,
         }
@@ -384,7 +377,7 @@ fn unicode_escape_character(tokens: &[ScanToken], sql: &str) -> Option<u8> {
     if uescape.token() != Token::Uescape {
         return Some(b'\\');
     }
-    let range = token_range(string)?;
+    let range = string.range()?;
     match sql
         .get(usize::from(range.start())..usize::from(range.end()))?
         .as_bytes()
@@ -650,7 +643,7 @@ fn atomic_body(
             Token::Case => cases += 1,
             Token::EndP => cases = cases.saturating_sub(1),
             Token::Ascii59 if parens == 0 && cases == 0 => {
-                if let (Some(first), Some(last)) = (token_range(first), token_range(token)) {
+                if let (Some(first), Some(last)) = (first.range(), token.range()) {
                     ranges.push(first.cover(last));
                 }
                 statement_start = None;
@@ -699,12 +692,12 @@ fn return_body(
         .iter()
         .rev()
         .find(|token| token.token() != Token::Ascii59)?;
-    let end = token_range(last)?.end();
+    let end = last.range()?.end();
     tokens
         .iter()
         .filter(|token| token.token() == Token::Return)
         .find_map(|keyword| {
-            let body = returned_expression(token_range(keyword)?.cover_offset(end), sql)?;
+            let body = returned_expression(keyword.range()?.cover_offset(end), sql)?;
             selects(&body, returned).then_some(body)
         })
 }

@@ -1,7 +1,7 @@
 mod common;
-mod data;
 mod ddl;
 mod dml;
+mod start;
 
 pub(crate) use common::source;
 
@@ -13,12 +13,12 @@ use crate::splitter::common::{ReachedEOFException, SplitterResult};
 pub(crate) struct SplitResult {
     pub ranges: Vec<TextRange>,
     pub errors: Vec<SplitError>,
-    /// The statement keywords after a token that needs an operand, see [`Splitter::hold_back`].
+    /// The statement keywords after a token that needs an operand, see [`Splitter::at_operand`].
     pub operand_keywords: OperandKeywords,
 }
 
 /// The offsets of the statement keywords after a token that needs an operand, in order, see
-/// [`Splitter::hold_back`].
+/// [`Splitter::at_operand`].
 #[derive(Debug, Default)]
 pub(crate) struct OperandKeywords(Vec<TextSize>);
 
@@ -58,11 +58,11 @@ fn is_col_id(kind: SyntaxKind) -> bool {
         )
 }
 
-/// Tokens a statement can't end with: operators, and keywords that need an operand or a name
-/// after them. A statement keyword after one of them is an operand or a name, e.g. the column in
-/// `where update = 1` or `select id, alter from t`, unless the statement before it is unfinished
-/// and misses its `;`. `SELECT` can end a statement, but is followed by its target list in
-/// practice, e.g. `select update, delete from permissions`.
+/// Tokens a statement can't end with, besides the operators, see [`OPERATOR_CHARS`]: punctuation
+/// and keywords that need an operand or a name after them. A statement keyword after one of them
+/// is an operand or a name, e.g. the column in `where update = 1` or `select id, alter from t`,
+/// unless the statement before it is unfinished and misses its `;`. `SELECT` can end a statement,
+/// but is followed by its target list in practice, e.g. `select update, delete from permissions`.
 static NEEDS_OPERAND: &[SyntaxKind] = &[
     SyntaxKind::COMMA,
     SyntaxKind::DOT,
@@ -70,21 +70,6 @@ static NEEDS_OPERAND: &[SyntaxKind] = &[
     SyntaxKind::L_BRACK,
     SyntaxKind::COLON,
     SyntaxKind::DOUBLE_COLON,
-    SyntaxKind::EQ,
-    SyntaxKind::L_ANGLE,
-    SyntaxKind::R_ANGLE,
-    SyntaxKind::PLUS,
-    SyntaxKind::MINUS,
-    SyntaxKind::SLASH,
-    SyntaxKind::PERCENT,
-    SyntaxKind::CARET,
-    SyntaxKind::TILDE,
-    SyntaxKind::BANG,
-    SyntaxKind::AT,
-    SyntaxKind::POUND,
-    SyntaxKind::AMP,
-    SyntaxKind::PIPE,
-    SyntaxKind::QUESTION,
     SyntaxKind::SELECT_KW,
     SyntaxKind::DISTINCT_KW,
     SyntaxKind::FROM_KW,
@@ -112,6 +97,30 @@ static NEEDS_OPERAND: &[SyntaxKind] = &[
     SyntaxKind::ELSE_KW,
 ];
 
+/// The tokens of Postgres' operator characters, `op_chars`. Postgres reads a run of them as one
+/// operator.
+///
+/// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367-L368
+static OPERATOR_CHARS: &[SyntaxKind] = &[
+    SyntaxKind::TILDE,
+    SyntaxKind::BANG,
+    SyntaxKind::AT,
+    SyntaxKind::POUND,
+    SyntaxKind::CARET,
+    SyntaxKind::AMP,
+    SyntaxKind::PIPE,
+    SyntaxKind::BACKTICK,
+    SyntaxKind::QUESTION,
+    SyntaxKind::PLUS,
+    SyntaxKind::MINUS,
+    SyntaxKind::STAR,
+    SyntaxKind::SLASH,
+    SyntaxKind::PERCENT,
+    SyntaxKind::L_ANGLE,
+    SyntaxKind::R_ANGLE,
+    SyntaxKind::EQ,
+];
+
 /// Internal error type used during splitting
 #[derive(Debug, Clone)]
 pub struct SplitError {
@@ -128,7 +137,8 @@ pub(crate) struct Splitter<'a> {
     current_stmt_start: Option<usize>,
     /// Whether a blank line terminates the current statement.
     blank_line_is_boundary: bool,
-    /// Whether to hold back statement starts, see [`Splitter::hold_back`].
+    /// Whether a statement keyword that is an operand continues the statement, see
+    /// [`Splitter::at_operand`].
     hold_back_statement_starts: bool,
     /// The tokens of the statement keywords after a token that needs an operand.
     operand_keywords: Vec<usize>,
@@ -139,7 +149,7 @@ impl<'a> Splitter<'a> {
     /// line is a statement boundary too: a recovery pass on fragments PostgreSQL cannot parse,
     /// where there is no better signal to resynchronize on. If `hold_back_statement_starts`, a
     /// statement keyword after a token that needs an operand doesn't start a statement, see
-    /// [`Splitter::hold_back`].
+    /// [`Splitter::at_operand`].
     pub(crate) fn new(
         lexed: &'a Lexed<'a>,
         blank_line_is_boundary: bool,
@@ -182,77 +192,49 @@ impl<'a> Splitter<'a> {
         }
     }
 
-    /// Whether the statement keyword at the current token continues the statement because it
-    /// follows a token that needs an operand, see [`NEEDS_OPERAND`], and statement starts are held
-    /// back. Notes the keyword in either case: [`crate::split`] decides with Postgres' parser
-    /// whether it starts a statement after all.
-    fn hold_back(&mut self) -> bool {
-        let Some(prev) = (0..self.current_pos)
-            .rev()
-            .find(|&idx| !self.is_trivia(idx))
-        else {
-            return false;
-        };
-        if !NEEDS_OPERAND.contains(&self.lexed.kind(prev)) && !self.star_needs_operand(prev) {
-            return false;
+    /// Whether the statement keyword at the current token is an operand or a name: a reserved
+    /// one only as a column label, see [`Splitter::at_label`], and an unreserved one after a
+    /// token that needs an operand, see [`Splitter::needs_operand`].
+    fn at_operand(&self) -> bool {
+        if self.current().keyword_category() == Some(KeywordCategory::Reserved) {
+            return self.at_label();
         }
-        self.operand_keywords.push(self.current_pos);
-        self.hold_back_statement_starts
+        self.prev_non_trivia(self.current_pos)
+            .is_some_and(|prev| self.needs_operand(prev))
     }
 
-    /// Whether the `*` at `idx` needs an operand: it ends an operator of several characters, e.g.
-    /// `~*`, or it multiplies, e.g. `2*`. A `*` on its own can end a statement, e.g. `select *`
-    /// or `select t.*`. Postgres reads a run of operator characters as one operator:
-    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L367-L368
-    /// and a `*` after an operand is `a_expr '*' a_expr`:
+    /// Whether the token at `idx` needs an operand after it, see [`NEEDS_OPERAND`] and
+    /// [`OPERATOR_CHARS`]. A `*` only if it ends an operator of several characters, e.g. `~*`, or
+    /// multiplies, e.g. `2*`: on its own it can end a statement, e.g. `select *` or `select t.*`.
+    /// A `*` after an operand is `a_expr '*' a_expr`:
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L14988
-    fn star_needs_operand(&self, idx: usize) -> bool {
-        if self.lexed.kind(idx) != SyntaxKind::STAR {
-            return false;
+    fn needs_operand(&self, idx: usize) -> bool {
+        match self.kind(idx) {
+            SyntaxKind::STAR => {
+                let multiplies = self.prev_non_trivia(idx).is_some_and(|before| {
+                    matches!(
+                        self.kind(before),
+                        SyntaxKind::INT_NUMBER
+                            | SyntaxKind::FLOAT_NUMBER
+                            | SyntaxKind::IDENT
+                            | SyntaxKind::STRING
+                            | SyntaxKind::ESC_STRING
+                            | SyntaxKind::BIT_STRING
+                            | SyntaxKind::BYTE_STRING
+                            | SyntaxKind::DOLLAR_QUOTED_STRING
+                            | SyntaxKind::POSITIONAL_PARAM
+                            | SyntaxKind::NAMED_PARAM
+                            | SyntaxKind::R_PAREN
+                            | SyntaxKind::R_BRACK
+                    )
+                });
+                multiplies
+                    || idx
+                        .checked_sub(1)
+                        .is_some_and(|before| OPERATOR_CHARS.contains(&self.kind(before)))
+            }
+            kind => NEEDS_OPERAND.contains(&kind) || OPERATOR_CHARS.contains(&kind),
         }
-        let multiplies = (0..idx)
-            .rev()
-            .find(|&before| !self.is_trivia(before))
-            .is_some_and(|before| {
-                matches!(
-                    self.lexed.kind(before),
-                    SyntaxKind::INT_NUMBER
-                        | SyntaxKind::FLOAT_NUMBER
-                        | SyntaxKind::IDENT
-                        | SyntaxKind::STRING
-                        | SyntaxKind::ESC_STRING
-                        | SyntaxKind::BIT_STRING
-                        | SyntaxKind::BYTE_STRING
-                        | SyntaxKind::DOLLAR_QUOTED_STRING
-                        | SyntaxKind::POSITIONAL_PARAM
-                        | SyntaxKind::NAMED_PARAM
-                        | SyntaxKind::R_PAREN
-                        | SyntaxKind::R_BRACK
-                )
-            });
-        multiplies
-            || idx.checked_sub(1).is_some_and(|before| {
-                matches!(
-                    self.lexed.kind(before),
-                    SyntaxKind::TILDE
-                        | SyntaxKind::BANG
-                        | SyntaxKind::AT
-                        | SyntaxKind::POUND
-                        | SyntaxKind::CARET
-                        | SyntaxKind::AMP
-                        | SyntaxKind::PIPE
-                        | SyntaxKind::BACKTICK
-                        | SyntaxKind::QUESTION
-                        | SyntaxKind::PLUS
-                        | SyntaxKind::MINUS
-                        | SyntaxKind::STAR
-                        | SyntaxKind::SLASH
-                        | SyntaxKind::PERCENT
-                        | SyntaxKind::L_ANGLE
-                        | SyntaxKind::R_ANGLE
-                        | SyntaxKind::EQ
-                )
-            })
     }
 
     pub(crate) fn start_stmt(&mut self) {
@@ -281,9 +263,8 @@ impl<'a> Splitter<'a> {
         );
 
         // The start token isn't trivia, so this finds it at the latest.
-        let end_token_pos = (0..self.current_pos)
-            .rev()
-            .find(|&idx| !self.is_trivia(idx))
+        let end_token_pos = self
+            .prev_non_trivia(self.current_pos)
             .unwrap_or(start_token_pos);
 
         self.stmt_ranges.push((start_token_pos, end_token_pos));
@@ -356,15 +337,9 @@ impl<'a> Splitter<'a> {
         Ok(self.lexed.kind(self.current_pos))
     }
 
-    /// The next token, or EOF at the end.
-    fn look_ahead(&self, ignore_trivia: bool) -> SyntaxKind {
-        let pos = if ignore_trivia {
-            (self.current_pos + 1..self.lexed.len()).find(|&idx| !self.is_trivia(idx))
-        } else {
-            (self.current_pos + 1..self.lexed.len()).next()
-        };
-        // There is nothing after EOF, e.g. after a `WITH` at the end of the text.
-        pos.map_or(SyntaxKind::EOF, |pos| self.lexed.kind(pos))
+    /// The next token, ignoring trivia, or EOF at the end.
+    fn look_ahead(&self) -> SyntaxKind {
+        self.nth(1)
     }
 
     /// The `n`th token after the current one (`n` starts at 1), ignoring trivia, or EOF after
@@ -377,18 +352,15 @@ impl<'a> Splitter<'a> {
             .map_or(SyntaxKind::EOF, |pos| self.lexed.kind(pos))
     }
 
-    /// Returns `None` if there are no previous relevant tokens
-    fn look_back(&self, ignore_trivia: bool) -> Option<SyntaxKind> {
-        if ignore_trivia {
-            (0..self.current_pos)
-                .rev()
-                .find(|&idx| !self.is_trivia(idx))
-                .map(|idx| self.lexed.kind(idx))
-        } else {
-            (0..self.current_pos)
-                .next_back()
-                .map(|idx| self.lexed.kind(idx))
-        }
+    /// The previous token, ignoring trivia, or `None` at the start.
+    fn look_back(&self) -> Option<SyntaxKind> {
+        self.prev_non_trivia(self.current_pos)
+            .map(|idx| self.lexed.kind(idx))
+    }
+
+    /// The last token before `idx` that isn't trivia.
+    fn prev_non_trivia(&self, idx: usize) -> Option<usize> {
+        (0..idx).rev().find(|&idx| !self.is_trivia(idx))
     }
 
     fn is_trivia(&self, idx: usize) -> bool {

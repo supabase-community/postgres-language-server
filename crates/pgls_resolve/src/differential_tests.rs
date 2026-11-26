@@ -35,6 +35,8 @@ create function greet(name text, greeting text default 'hello') returns text lan
 create function total(variadic nums int[]) returns int language sql
     as 'select sum(n)::int from unnest(nums) n';
 create function pick(a anyelement, b anyelement) returns anyelement language sql as 'select a';
+create procedure note_item(id int8, note text) language sql as 'select 1';
+create procedure note_item(id numeric, note text) language sql as 'select 1';
 create view item_names as select id, name from items;
 create table totals (price int, qty int, total int generated always as (price * qty) stored);
 create table child_totals (note text) inherits (totals);
@@ -293,6 +295,13 @@ const CASES: &[(&str, Expect)] = &[
         Detect("42883", Kind::Function),
     ),
     ("select add_one(now())", Detect("42883", Kind::Function)),
+    ("call note_item(1::int8, 'x')", Accept),
+    ("call note_item(1, 'x')", Detect("42725", Kind::Function)),
+    (
+        "call note_item(now(), 'x')",
+        Detect("42883", Kind::Function),
+    ),
+    ("call add_one(1)", Detect("42809", Kind::Function)),
     ("select make_interval(nope => 1)", Miss("42883")),
     // Casts
     (
@@ -655,7 +664,9 @@ fn analyse(catalog: &Catalog, sql: &str) -> (Vec<FindingKind>, Option<Vec<Option
 fn kind(finding: &FindingKind) -> Option<Kind> {
     match finding {
         FindingKind::OperatorMismatch { .. } => Some(Kind::Operator),
-        FindingKind::FunctionArgumentMismatch { .. } => Some(Kind::Function),
+        FindingKind::FunctionArgumentMismatch { .. } | FindingKind::NotAProcedure { .. } => {
+            Some(Kind::Function)
+        }
         FindingKind::InvalidCast { .. } => Some(Kind::Cast),
         FindingKind::AssignmentMismatch { .. } => Some(Kind::Assignment),
         FindingKind::FunctionReturnMismatch { .. } => Some(Kind::Return),

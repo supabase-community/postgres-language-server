@@ -1734,6 +1734,43 @@ VALUES
         }
     }
 
+    /// An unreserved statement keyword is a name unless the token after it is the one its
+    /// statement needs, e.g. `INSERT INTO`. Found by the `splitter_vs_parser` fuzz target.
+    #[test]
+    fn statement_keywords_as_names() {
+        for sql in [
+            "create type insert",
+            "create type insert as (a int);",
+            "create type update as enum ('a');",
+            "create domain insert as int;",
+            "create sequence insert;",
+            "create index insert on t (a);",
+            "create function f() returns insert language sql as 'select 1';",
+            "comment on type insert is 'x';",
+            "truncate insert;",
+            "create type alter as (a int);",
+            "select * from t update where true;",
+            "select * from t alter join u on true;",
+            "select * from t join u insert on true;",
+            "delete from t delete where true;",
+            "MERGE INTO t USING s insert ON t.a = s.a\n\nWHEN NOT MATCHED THEN INSERT VALUES (s.a);",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from(
+            "select * from t\nupdate only t set a = 1;\nselect * from t\nalter type x rename to y;",
+        )
+        .expect_statements(vec![
+            "select * from t",
+            "update only t set a = 1;",
+            "select * from t",
+            "alter type x rename to y;",
+        ])
+        .assert_no_errors();
+    }
+
     /// `*` at the end of an operator like `~*` needs an operand too. A `*` on its own can end a
     /// statement.
     #[test]
@@ -1767,10 +1804,11 @@ VALUES
     }
 
     /// Next to a `.` a keyword is a name, even a reserved one: a column label after it, a
-    /// qualifier before it.
+    /// qualifier before it. After `AS` too, it's a column label.
     #[test]
     fn statement_keywords_next_to_a_dot() {
         for sql in [
+            "select 1 as create from t;",
             "select testschema.select from t;",
             "select c2[2].select from t;",
             "select t.create from t;",
@@ -1941,6 +1979,7 @@ VALUES
             "PREPARE p AS WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x;",
             "DECLARE c CURSOR FOR WITH x AS (SELECT 1) SELECT * FROM x;",
             "create rule r as on insert to t do also\n  insert into u (a)\n  select new.a;",
+            "create rule r as on insert to t do select new.a;",
             "CREATE RULE r AS ON UPDATE TO x DO INSTEAD WITH t AS (SELECT OLD.*)\n  UPDATE y SET a = t.n FROM t;",
             "CREATE RULE r AS ON INSERT TO x DO INSTEAD WITH t AS (INSERT INTO y DEFAULT VALUES RETURNING *)\n  INSERT INTO z SELECT * FROM t;",
         ]);

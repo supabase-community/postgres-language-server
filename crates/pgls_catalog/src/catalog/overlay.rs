@@ -5,9 +5,7 @@ use std::sync::Arc;
 
 use crate::{FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::{
-    QualifiedName, qualified_name, range_var_name, string_values, type_name,
-};
+use pgls_query_ext::utils::{QualifiedName, string_values};
 use rustc_hash::FxHashSet;
 
 use super::{Catalog, Entry, Key, explicit_schemas, key};
@@ -31,7 +29,7 @@ impl Catalog {
     }
 
     /// Where a new object with `name` is created. A catalog name is ignored, like in
-    /// [`qualified_name`].
+    /// [`QualifiedName::of`].
     pub(super) fn creation_key(&self, name: QualifiedName, search_path: &[String]) -> Key {
         (
             self.creation_schema(name.schema, search_path),
@@ -50,7 +48,7 @@ impl Catalog {
         range_var: &protobuf::RangeVar,
         search_path: &[String],
     ) -> Option<Key> {
-        let name = range_var_name(range_var);
+        let name = QualifiedName::of_range_var(range_var);
         if range_var.relpersistence == "t" {
             return Some(key("pg_temp", name.name));
         }
@@ -486,7 +484,7 @@ impl Catalog {
         new_name: &str,
         search_path: &[String],
     ) {
-        let name = range_var_name(range_var);
+        let name = QualifiedName::of_range_var(range_var);
         let index = match self.index(name.schema, name.name, search_path) {
             Lookup::Found(index) => index,
             Lookup::Missing => return,
@@ -705,7 +703,7 @@ impl Catalog {
         object: &protobuf::ObjectWithArgs,
         search_path: &[String],
     ) -> Option<FunctionInfo> {
-        let name = qualified_name(&object.objname)?;
+        let name = QualifiedName::of(&object.objname)?;
         let key = self.function_key(name.schema, name.name, search_path)?;
         let Lookup::Found(mut overloads) = self.functions_in(&key.0, &key.1) else {
             return None;
@@ -799,7 +797,7 @@ impl Catalog {
                 self.add_function(function);
             }
             None => {
-                let Some(name) = qualified_name(&object.objname) else {
+                let Some(name) = QualifiedName::of(&object.objname) else {
                     return;
                 };
                 let schema = new_schema
@@ -829,7 +827,7 @@ pub(super) fn column_info(
                 )
             }
             None => (
-                type_name(name).map(|name| name.name.to_owned()),
+                QualifiedName::of_type_name(name).map(|name| name.name.to_owned()),
                 crate::typing::normalize_type_name(catalog, name, search_path).0,
             ),
         },

@@ -132,19 +132,7 @@ pub(super) fn emit_sub_link(e: &mut EventEmitter, n: &SubLink) {
 /// The expression before `op ANY`, `op ALL` or `IN`, which ends at an operator that binds less
 /// tightly than `op`: `(a = b) = any (select …)` keeps its parentheses.
 fn emit_test_expr(e: &mut EventEmitter, n: &SubLink, testexpr: &Node) {
-    if needs_parentheses(
-        testexpr,
-        Position::Operand {
-            parent: OperatorInfo::of_sub_link(n),
-            side: OperandSide::Left,
-        },
-    ) {
-        e.token(TokenKind::L_PAREN);
-        emit_node(e, testexpr);
-        e.token(TokenKind::R_PAREN);
-    } else {
-        emit_node(e, testexpr);
-    }
+    emit_operand_with_parens(e, testexpr, OperatorInfo::of_sub_link(n), OperandSide::Left);
 }
 
 fn emit_subquery(e: &mut EventEmitter, node: &pgls_query::protobuf::Node) {

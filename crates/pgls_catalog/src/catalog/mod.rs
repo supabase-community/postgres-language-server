@@ -20,7 +20,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
-use pgls_query_ext::utils::{qualified_name, range_var_name};
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::Candidates;
 use crate::lookup::{
@@ -379,7 +379,7 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> Lookup<RelationInfo> {
-        let name = range_var_name(range_var);
+        let name = QualifiedName::of_range_var(range_var);
         self.relation(name.schema, name.name, search_path)
     }
 
@@ -405,7 +405,7 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> (String, String) {
-        let name = range_var_name(range_var);
+        let name = QualifiedName::of_range_var(range_var);
         let in_schema = |schema: &str| {
             self.relation_or_index_in(schema, name.name)
                 .map(|()| key(schema, name.name))
@@ -460,7 +460,7 @@ impl Catalog {
         names: &[pgls_query::protobuf::Node],
         search_path: &[String],
     ) -> Lookup<IndexInfo> {
-        match qualified_name(names) {
+        match QualifiedName::of(names) {
             Some(name) => self.index(name.schema, name.name, search_path),
             None => Lookup::Unknown,
         }
@@ -494,7 +494,7 @@ impl Catalog {
         range_var: &pgls_query::protobuf::RangeVar,
         search_path: &[String],
     ) -> bool {
-        let name = range_var_name(range_var);
+        let name = QualifiedName::of_range_var(range_var);
         self.is_partitioned(self.index(name.schema, name.name, search_path))
     }
 
