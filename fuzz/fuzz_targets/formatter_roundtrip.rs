@@ -62,8 +62,8 @@ fuzz_target!(|data: &[u8]| {
 /// A template syntax, and the workspace that formats its files. An input that has directives of
 /// the template and renders to SQL that parses (`Template::render`) is formatted like `format`
 /// formats a file of the template, and the output, rendered with the same sample values, must
-/// have the same statements (`NormalizedStatements`): the formatter didn't change what the host sends to
-/// Postgres. A statement that it can't restore stays as written, which renders the same.
+/// have the same statements (`NormalizedStatements`): the formatter didn't change what the host
+/// sends to Postgres. A statement that it can't restore stays as written, which renders the same.
 struct TemplateFormat {
     template: Template,
     workspace: &'static OnceLock<(WorkspaceServer, ProjectKey)>,
@@ -83,13 +83,20 @@ impl TemplateFormat {
         if self.template.read(sql).is_none() {
             return;
         }
-        let Some(expected) = NormalizedStatements::of(&self.template.render(sql)) else {
+        let rendered = self.template.render(sql);
+        let Some(expected) = NormalizedStatements::of(&rendered) else {
             return;
         };
+        // Where the splitter cuts a statement that Postgres reads as one, like before a `SET`
+        // after a `;` in a comment, the formatter ends it with a `;` of its own, with or without
+        // a template. `splitter_vs_parser` checks that the two agree.
+        let statements = pgls_query::parse(&rendered).map_or(0, |parsed| parsed.stmts().len());
+        if pgls_statement_splitter::split(&rendered).ranges.len() != statements {
+            return;
+        }
         let formatted = self.format(sql);
-        let rendered = self.template.render(&formatted);
         assert_eq!(
-            NormalizedStatements::of(&rendered).as_ref(),
+            NormalizedStatements::of(&self.template.render(&formatted)).as_ref(),
             Some(&expected),
             "formatter_roundtrip: formatting the {:?} template changed the program\n{sql}\n---\n{formatted}",
             self.template
