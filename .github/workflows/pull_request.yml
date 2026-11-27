@@ -357,6 +357,47 @@ jobs:
           path: target/release/postgres-language-server
           retention-days: 1
 
+  # The fuzz targets are a workspace of their own (fuzz/), so the other jobs don't build them. Nightly
+  # runs them (nightly.yml); here they only have to build and pass clippy.
+  fuzz-targets:
+    name: Fuzz Targets
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install toolchain
+        uses: moonrepo/setup-rust@v1
+        with:
+          components: clippy
+          cache: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # fuzz/ has no lockfile of its own: the root one pins the dependencies they share.
+      - name: Use the root lockfile
+        run: cp Cargo.lock fuzz/Cargo.lock
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: fuzz-targets
+          workspaces: fuzz -> target
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
+      - name: Run clippy
+        run: cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
+
   # Runs the CLI and the fuzzers' oracles over real-world SQL (crates/pgls_cli/tests/corpus.toml)
   # and compares a summary per source with its snapshot.
   # Also runs the completion harness over the Postgres regression SQL
