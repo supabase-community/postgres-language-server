@@ -9,6 +9,14 @@ use crate::cursor::Cursor;
 const NOT_IN_SQL_OPERATORS: &str = "~!@#^&|`?%";
 
 impl Cursor<'_> {
+    /// How many bytes of a run of operator characters are read as one operator. Postgres rejects
+    /// an operator of `NAMEDATALEN` (64) characters or more, so a valid operator is read whole:
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L981-L988
+    ///
+    /// A longer run is cut into pieces of this length. The limit keeps a long run of `+` and `-`,
+    /// which is put back to one character at a time, from being scanned again for each of them.
+    const OPERATOR_BYTES_MAX: usize = 64;
+
     /// Eats an operator after its first character `first`. Postgres reads a run of operator
     /// characters as one operator. The run stops before `/*` and `--`, which start a comment, and
     /// trailing `+` and `-` are put back unless the run has a character that no SQL operator has,
@@ -22,7 +30,7 @@ impl Cursor<'_> {
         // The operator characters are ASCII.
         let bytes = rest.as_bytes();
         let mut len = 0;
-        while let Some(&b) = bytes.get(len) {
+        while let Some(&b) = bytes.get(len).filter(|_| len < Cursor::OPERATOR_BYTES_MAX) {
             let comment = matches!(
                 (b, bytes.get(len + 1)),
                 (b'/', Some(b'*')) | (b'-', Some(b'-'))
