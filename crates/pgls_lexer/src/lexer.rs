@@ -266,6 +266,8 @@ impl<'a> Lexer<'a> {
                 pgls_tokenizer::TokenKind::Question => SyntaxKind::QUESTION,
                 pgls_tokenizer::TokenKind::Colon => SyntaxKind::COLON,
                 pgls_tokenizer::TokenKind::DoubleColon => SyntaxKind::DOUBLE_COLON,
+                pgls_tokenizer::TokenKind::ColonEquals => SyntaxKind::COLON_EQUALS,
+                pgls_tokenizer::TokenKind::Operator => SyntaxKind::OPERATOR,
                 pgls_tokenizer::TokenKind::Eq => SyntaxKind::EQ,
                 pgls_tokenizer::TokenKind::Bang => SyntaxKind::BANG,
                 pgls_tokenizer::TokenKind::Lt => SyntaxKind::L_ANGLE,

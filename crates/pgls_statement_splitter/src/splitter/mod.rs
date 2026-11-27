@@ -70,6 +70,8 @@ static NEEDS_OPERAND: &[SyntaxKind] = &[
     SyntaxKind::L_BRACK,
     SyntaxKind::COLON,
     SyntaxKind::DOUBLE_COLON,
+    SyntaxKind::COLON_EQUALS,
+    SyntaxKind::OPERATOR,
     SyntaxKind::SELECT_KW,
     SyntaxKind::DISTINCT_KW,
     SyntaxKind::FROM_KW,
