@@ -6928,6 +6928,38 @@ fn template_directives_are_neither_fixed_nor_formatted() {
 }
 
 #[test]
+fn ambiguous_template_placeholders_are_reported_on_the_directive() {
+    let file = TemplateFile::open(
+        r#"{ "templating": { "syntax": "go-printf" } }"#,
+        "queries.sql",
+        "select a %s from t;\nselect a as %s from t where id = %d;\n",
+    );
+    assert_eq!(
+        file.diagnostics(),
+        [("syntax".to_string(), "%s".to_string())]
+    );
+    let message = file
+        .workspace
+        .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+            project_key: file.project_key,
+            path: file.path.clone(),
+            categories: RuleCategories::all(),
+            max_diagnostics: 100,
+            only: vec![],
+            skip: vec![],
+            database_checks: DatabaseChecks::Run,
+        })
+        .unwrap()
+        .diagnostics[0]
+        .description_text()
+        .to_string();
+    assert_eq!(
+        message,
+        "A template placeholder directly after `a` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause."
+    );
+}
+
+#[test]
 fn templating_follows_settings_changes() {
     let file = TemplateFile::open("{}", "queries.sql", "select * from %s.%s where id = %d;\n");
     assert_eq!(file.categories(), ["syntax"]);

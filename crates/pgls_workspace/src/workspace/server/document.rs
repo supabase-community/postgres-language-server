@@ -448,6 +448,17 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
     }
 
+    /// The first template placeholder in `range` that can't be read where it is, see
+    /// [`pgls_templating::Ambiguity`].
+    fn ambiguity_in(&self, range: TextRange) -> Option<&pgls_templating::Ambiguity> {
+        let ambiguous = &self.migration_script.preprocessed.as_ref()?.ambiguous;
+        let first =
+            ambiguous.partition_point(|ambiguity| ambiguity.placeholder.start() < range.start());
+        ambiguous
+            .get(first)
+            .filter(|ambiguity| ambiguity.placeholder.end() <= range.end())
+    }
+
     /// Whether a psql meta-command such as `\gexec` or `\gset` ends the statement in `range`
     /// instead of a `;`. psql sends the query buffer at a `;` and again at a `\g` command, so a
     /// `;` added before one runs the statement twice.
@@ -618,6 +629,18 @@ impl Document {
                 }
             }
             Err(diag) => (None, Some(diag.clone().span(range))),
+        };
+        // A template placeholder that can't be read where it is makes the statement a syntax
+        // error that says why, also where the text with its placeholder happens to parse.
+        let (ast_option, syntax_error) = match self.ambiguity_in(range) {
+            Some(ambiguity) => (
+                None,
+                Some(SyntaxDiagnostic::new(
+                    ambiguity.message(&self.content),
+                    Some(ambiguity.placeholder),
+                )),
+            ),
+            None => (ast_option, syntax_error),
         };
         let unparsable =
             (ast_option.is_none() && id.parent().is_none()).then(|| UnparsableStatement {

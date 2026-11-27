@@ -3,7 +3,7 @@
 use pgls_lexer::SyntaxKind;
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::{Expansion, Preprocessed, Value};
+use crate::{Ambiguity, Expansion, Preprocessed, Value};
 
 impl Preprocessed {
     /// The text that the analysis reads for `text`, with placeholders for `expansions`, which
@@ -21,6 +21,16 @@ impl Preprocessed {
     ///
     /// Cost: one lex of the text, and one pass over the tokens and the expansions.
     pub fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
+        Self::substitute_reading(text, expansions, |_, _| false)
+    }
+
+    /// [`Preprocessed::substitute`], with the identifiers with expansions that directly follow a
+    /// token for which `ambiguous_after` holds in [`Preprocessed::ambiguous`].
+    pub(crate) fn substitute_reading(
+        text: &str,
+        expansions: &[Expansion],
+        ambiguous_after: impl Fn(SyntaxKind, &str) -> bool,
+    ) -> Preprocessed {
         // Lex the text with each unknown value as an identifier of the same length, and each
         // known one as its text, to find the tokens that the expansions are part of.
         let mut filled = String::with_capacity(text.len());
@@ -48,11 +58,15 @@ impl Preprocessed {
         // expansion is.
         let mut identifiers: Vec<TextRange> = Vec::new();
         let mut places = vec![Place::AsWritten; expansions.len()];
+        let mut ambiguous = Vec::new();
+        // The token before the current one, without trivia.
+        let mut previous: Option<(SyntaxKind, TextRange)> = None;
         for (index, kind) in lexed.tokens().enumerate() {
             if kind.is_trivia() || kind == SyntaxKind::EOF {
                 continue;
             }
             let token = lexed.range(index);
+            let before = previous.replace((kind, token));
             let first =
                 expansions.partition_point(|expansion| expansion.range.end() <= token.start());
             let in_token = expansions
@@ -84,14 +98,29 @@ impl Preprocessed {
                 }
                 continue;
             }
-            let Some(range) = expansions.get(in_token).unwrap_or_default().iter().fold(
-                None,
-                |range: Option<TextRange>, expansion| {
+            let in_token = expansions.get(in_token).unwrap_or_default();
+            let Some(range) = in_token
+                .iter()
+                .fold(None, |range: Option<TextRange>, expansion| {
                     Some(range.unwrap_or(token).cover(expansion.range))
-                },
-            ) else {
+                })
+            else {
                 continue;
             };
+            // Only a value of the host makes the identifier ambiguous, not a `%%` in a quoted
+            // name.
+            let has_unknown = in_token
+                .iter()
+                .any(|expansion| matches!(expansion.value, Value::Unknown(_)));
+            if let Some((before_kind, before)) = before
+                && has_unknown
+                && ambiguous_after(before_kind, &filled[before])
+            {
+                ambiguous.push(Ambiguity {
+                    placeholder: range,
+                    after: before,
+                });
+            }
             match identifiers.last_mut() {
                 Some(last) if last.end() > range.start() => *last = last.cover(range),
                 _ => identifiers.push(range),
@@ -104,6 +133,7 @@ impl Preprocessed {
             substituted: String::with_capacity(text.len()),
             placeholders: Vec::new(),
             unknown_values: Vec::new(),
+            ambiguous,
             end: TextSize::from(0),
         };
         let mut next = 0;
@@ -163,6 +193,7 @@ struct Substitution<'a> {
     substituted: String,
     placeholders: Vec<TextRange>,
     unknown_values: Vec<TextRange>,
+    ambiguous: Vec<Ambiguity>,
     /// Where the text is written up to.
     end: TextSize,
 }
@@ -205,6 +236,7 @@ impl Substitution<'_> {
             text: self.substituted,
             placeholders: self.placeholders,
             unknown_values: self.unknown_values,
+            ambiguous: self.ambiguous,
         }
     }
 }

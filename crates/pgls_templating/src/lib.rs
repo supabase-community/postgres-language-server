@@ -12,6 +12,7 @@ mod substitute;
 
 use std::str::FromStr;
 
+use pgls_lexer::SyntaxKind;
 use pgls_text_size::TextRange;
 use serde::{Deserialize, Serialize};
 
@@ -70,7 +71,34 @@ impl Template {
             );
             directives.truncate(Self::EXPANSIONS_MAX);
         }
-        (!directives.is_empty()).then(|| Preprocessed::substitute(text, &directives))
+        (!directives.is_empty())
+            .then(|| Preprocessed::substitute_reading(text, &directives, Self::is_ambiguous_after))
+    }
+
+    /// Whether a directive directly after a token of `kind` with `text` can't be read: after a
+    /// name, a value, a `)`, a `]` or another directive, like `select a %s from t` or
+    /// `from t {alias}`, it stands for an alias without `AS` or for a part of a clause, which a
+    /// placeholder can't be. After a keyword, like `as %s`, or punctuation, like `%s.%s`,
+    /// `= %d` or `in (%s)`, it is a name or a value.
+    fn is_ambiguous_after(kind: SyntaxKind, text: &str) -> bool {
+        match kind {
+            // Keywords have kinds of their own, so these are names, quoted or not.
+            SyntaxKind::IDENT
+            | SyntaxKind::INT_NUMBER
+            | SyntaxKind::FLOAT_NUMBER
+            | SyntaxKind::STRING
+            | SyntaxKind::ESC_STRING
+            | SyntaxKind::BYTE_STRING
+            | SyntaxKind::BIT_STRING
+            | SyntaxKind::DOLLAR_QUOTED_STRING
+            | SyntaxKind::POSITIONAL_PARAM
+            | SyntaxKind::NAMED_PARAM
+            | SyntaxKind::R_PAREN
+            | SyntaxKind::R_BRACK => true,
+            // Characters that SQL doesn't know, like the `{` of a Rust directive in Go mode.
+            SyntaxKind::ERROR => text.chars().any(|c| c.is_alphanumeric() || c == '_'),
+            _ => false,
+        }
     }
 }
 
@@ -114,6 +142,30 @@ pub struct Preprocessed {
     /// The placeholders that stay as written in a value, like in a string literal, in file
     /// order. The text holds what is written there, not the value that the host puts there.
     pub unknown_values: Vec<TextRange>,
+    /// The placeholders that can't be read where they are, in file order. Only templates have
+    /// them, see [`Template::read`].
+    pub ambiguous: Vec<Ambiguity>,
+}
+
+/// A placeholder that can't be read where it is, because it directly follows a name or a value,
+/// like the `%s` of `select a %s from t`: it stands for an alias without `AS` or for a part of a
+/// clause.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ambiguity {
+    pub placeholder: TextRange,
+    /// The token it follows.
+    pub after: TextRange,
+}
+
+impl Ambiguity {
+    /// What the diagnostic of the placeholder says, given the text of the file.
+    pub fn message(&self, text: &str) -> String {
+        format!(
+            "A template placeholder directly after `{}` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.",
+            text.get(std::ops::Range::<usize>::from(self.after))
+                .unwrap_or_default()
+        )
+    }
 }
 
 impl Preprocessed {
@@ -164,6 +216,17 @@ mod tests {
                 unknown_values: written(&preprocessed.unknown_values),
                 text: preprocessed.text,
             })
+        }
+
+        /// The placeholders that can't be read where they are, with the text they follow.
+        fn ambiguous(template: Template, text: &'a str) -> Vec<(&'a str, &'a str)> {
+            template
+                .read(text)
+                .map(|preprocessed| preprocessed.ambiguous)
+                .unwrap_or_default()
+                .iter()
+                .map(|ambiguity| (&text[ambiguity.placeholder], &text[ambiguity.after]))
+                .collect()
         }
 
         fn new(text: &str, placeholders: &[&'a str], unknown_values: &[&'a str]) -> Option<Self> {
@@ -315,6 +378,54 @@ mod tests {
         assert_eq!(
             Read::of(Template::RustFmt, text),
             Read::new(text, &["{}", "{x}", "{0}"], &["{}", "{x}"])
+        );
+    }
+
+    #[test]
+    fn directives_after_a_name_or_a_value_are_ambiguous() {
+        for (text, ambiguous) in [
+            ("select a %s from t;", ("%s", "a")),
+            ("select \"a\" %s from t;", ("%s", "\"a\"")),
+            ("select 1 %s;", ("%s", "1")),
+            ("select 'a' %s;", ("%s", "'a'")),
+            ("select f(x) %s;", ("%s", ")")),
+            ("select a[1] %s;", ("%s", "]")),
+            ("select $1 %s;", ("%s", "$1")),
+            ("select %s %s from t;", ("%s", "%s")),
+            ("select * from t app_%s;", ("app_%s", "t")),
+        ] {
+            assert_eq!(
+                Read::ambiguous(Template::GoPrintf, text),
+                [ambiguous],
+                "{text}"
+            );
+        }
+        assert_eq!(
+            Read::ambiguous(Template::RustFmt, "select * from t {alias};"),
+            [("{alias}", "t")]
+        );
+        assert_eq!(
+            Read::ambiguous(Template::RustFmt, "select * from t {}{}, t {0}_x;"),
+            [("{}{}", "t"), ("{0}_x", "t")]
+        );
+        for text in [
+            "select a as %s, %s.%s, app_%s, tenant_x from t where id = %d and x in (%s);",
+            "select * from %s join %s on %s.id = %d limit %d offset %d;",
+            "select 7 %% %d, a::%s, '%s' as x, \"%s\" from t; -- a %s",
+            "select a \"100%%\" from t;",
+        ] {
+            assert_eq!(
+                Read::ambiguous(Template::GoPrintf, text),
+                Vec::<(&str, &str)>::new(),
+                "{text}"
+            );
+        }
+        assert_eq!(
+            Read::ambiguous(
+                Template::RustFmt,
+                "select * from {schema}.{table} as {alias} where tenant_{schema}.id = {};"
+            ),
+            Vec::<(&str, &str)>::new()
         );
     }
 
