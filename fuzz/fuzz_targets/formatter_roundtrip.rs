@@ -12,8 +12,9 @@ use std::sync::OnceLock;
 use libfuzzer_sys::fuzz_target;
 use pgls_configuration::PartialConfiguration;
 use pgls_fs::PgLSPath;
-use pgls_pretty_print::{FormatConfig, FormatError, FormatStatementParams, format_statement};
-use pgls_query::NodeEnum;
+use pgls_pretty_print::{
+    FormatConfig, FormatError, FormatStatementParams, NormalizedStatements, format_statement,
+};
 use pgls_templating::Template;
 use pgls_workspace::{
     Workspace,
@@ -61,7 +62,7 @@ fuzz_target!(|data: &[u8]| {
 /// A template syntax, and the workspace that formats its files. An input that has directives of
 /// the template and renders to SQL that parses (`Template::render`) is formatted like `format`
 /// formats a file of the template, and the output, rendered with the same sample values, must
-/// parse to the same normalized trees: the formatter didn't change what the host sends to
+/// have the same statements (`NormalizedStatements`): the formatter didn't change what the host sends to
 /// Postgres. A statement that it can't restore stays as written, which renders the same.
 struct TemplateFormat {
     template: Template,
@@ -82,33 +83,17 @@ impl TemplateFormat {
         if self.template.read(sql).is_none() {
             return;
         }
-        let Some(expected) = Self::trees(&self.template.render(sql)) else {
+        let Some(expected) = NormalizedStatements::of(&self.template.render(sql)) else {
             return;
         };
         let formatted = self.format(sql);
         let rendered = self.template.render(&formatted);
         assert_eq!(
-            Self::trees(&rendered).as_ref(),
+            NormalizedStatements::of(&rendered).as_ref(),
             Some(&expected),
             "formatter_roundtrip: formatting the {:?} template changed the program\n{sql}\n---\n{formatted}",
             self.template
         );
-    }
-
-    /// The normalized trees of the statements of `sql`, if it parses.
-    fn trees(sql: &str) -> Option<Vec<NodeEnum>> {
-        let parsed = pgls_query::parse(sql).ok()?;
-        Some(
-            parsed
-                .stmts()
-                .into_iter()
-                .map(|statement| {
-                    let mut statement = statement.clone();
-                    pgls_pretty_print::normalize_ast(&mut statement);
-                    statement
-                })
-                .collect(),
-        )
     }
 
     /// `sql` formatted as a file of the template.

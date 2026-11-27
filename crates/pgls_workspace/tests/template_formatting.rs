@@ -20,6 +20,7 @@ use insta::{assert_snapshot, with_settings};
 use pgls_configuration::PartialConfiguration;
 use pgls_fs::PgLSPath;
 use pgls_migrations::MigrationTool;
+use pgls_pretty_print::NormalizedStatements;
 use pgls_templating::{Preprocessed, Template};
 use pgls_text_size::TextRange;
 use pgls_workspace::{
@@ -109,21 +110,11 @@ impl Syntax {
             .unwrap_or_default()
     }
 
-    /// The normalized trees of the statements of `text` as the host would write it, like the
-    /// formatter compares them.
-    fn rendered_trees(self, text: &str) -> Vec<pgls_query::NodeEnum> {
+    /// The statements of `text` as the host would write it, like the round trip of the formatter
+    /// compares them.
+    fn rendered_statements(self, text: &str) -> NormalizedStatements {
         let rendered = self.render(text);
-        let parsed = pgls_query::parse(&rendered)
-            .unwrap_or_else(|error| panic!("{rendered}\ndoesn't parse: {error}"));
-        parsed
-            .stmts()
-            .into_iter()
-            .map(|statement| {
-                let mut statement = statement.clone();
-                pgls_pretty_print::normalize_ast(&mut statement);
-                statement
-            })
-            .collect()
+        NormalizedStatements::of(&rendered).unwrap_or_else(|| panic!("{rendered}\ndoesn't parse"))
     }
 
     /// `text` formatted at `width` through the workspace.
@@ -206,15 +197,20 @@ impl<'a> FormatFixture<'a> {
             input: fixture.content(),
         };
         let placeholders = syntax.placeholders(fixture.input);
-        let trees = syntax.rendered_trees(fixture.input);
+        let statements = syntax.rendered_statements(fixture.input);
         for width in LINE_WIDTHS {
-            fixture.check_width(width, &placeholders, &trees);
+            fixture.check_width(width, &placeholders, &statements);
         }
     }
 
-    /// Formats the fixture at `width`, given the placeholders of the input and its trees as the
-    /// host would write it.
-    fn check_width(&self, width: usize, placeholders: &[String], trees: &[pgls_query::NodeEnum]) {
+    /// Formats the fixture at `width`, given the placeholders of the input and its statements as
+    /// the host would write it.
+    fn check_width(
+        &self,
+        width: usize,
+        placeholders: &[String],
+        statements: &NormalizedStatements,
+    ) {
         let Self {
             syntax,
             name,
@@ -240,8 +236,8 @@ impl<'a> FormatFixture<'a> {
         );
         // The host sends the same program to Postgres.
         assert_eq!(
-            syntax.rendered_trees(output),
-            trees,
+            &syntax.rendered_statements(output),
+            statements,
             "{name} at {width}: the rendered program changed"
         );
         // A statement that couldn't be restored stays as written.
