@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
-  # A change to this file runs it, with short fuzz runs.
+  # A change to this file runs it, with the fuzz targets only replaying their inputs.
   pull_request:
     paths:
       - ".github/workflows/nightly.yml"
@@ -51,7 +51,8 @@ jobs:
   # Runs each target of fuzz/ for 10 minutes with debug assertions, seeded from the regression SQL
   # and the corpus sources, and with AddressSanitizer in libpg_query and the tree-sitter grammar
   # (fuzz/asan-cc). The corpus a run finds is kept in the Actions cache for the next one; a crash
-  # fails the job and is uploaded as an artifact.
+  # fails the job and is uploaded as an artifact. On a pull request, it only replays the seeds and the
+  # cached corpus (-runs=0), so it fails on a known input but leaves new finds to the nightly run.
   fuzz:
     name: Fuzz ${{ matrix.target }}
     needs: corpus-sources
@@ -94,7 +95,7 @@ jobs:
           path: target/tmp/corpus
           key: corpus-sources-${{ hashFiles('crates/pgls_cli/tests/corpus.toml') }}
       - name: Fuzz
-        run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && 60 || 600 }}
+        run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && '0 -runs=0' || 600 }}
         env:
           CC: ${{ github.workspace }}/fuzz/asan-cc
           RUSTFLAGS: -Clinker=clang -Clink-arg=-fsanitize=address
