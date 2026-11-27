@@ -8,6 +8,7 @@ use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::{FormatConfig, FormatStatementParams, Terminator};
 use pgls_text_size::TextRange;
 
+use pgls_query_ext::diagnostics::SyntaxDiagnostic;
 use pgls_templating::Template;
 
 use super::{StatementId, document::Document, sql_function};
@@ -173,6 +174,20 @@ pub(super) fn format_document(
                 .with_file_span(stmt_range),
             )
         };
+
+        // A template placeholder that can't be read where it is, like an alias without `AS`, may
+        // parse as something else, like `four $1` as a cast: the statement stays as written.
+        if let Some(ambiguity) = doc.ambiguity_in(stmt_range) {
+            diagnostics.push(SDiagnostic::new(
+                pgls_diagnostics::Error::from(SyntaxDiagnostic::new(
+                    ambiguity.message(source),
+                    Some(ambiguity.placeholder),
+                ))
+                .with_file_path(path),
+            ));
+            formatted_output.push_str(written);
+            continue;
+        }
 
         match &**ast_result {
             Ok(ast) => {

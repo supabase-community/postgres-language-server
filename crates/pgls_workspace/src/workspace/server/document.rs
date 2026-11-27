@@ -455,7 +455,7 @@ impl Document {
 
     /// The first template placeholder in `range` that can't be read where it is, see
     /// [`pgls_templating::Ambiguity`].
-    fn ambiguity_in(&self, range: TextRange) -> Option<&pgls_templating::Ambiguity> {
+    pub(crate) fn ambiguity_in(&self, range: TextRange) -> Option<&pgls_templating::Ambiguity> {
         let ambiguous = &self.migration_script.preprocessed.as_ref()?.ambiguous;
         let first =
             ambiguous.partition_point(|ambiguity| ambiguity.placeholder.start() < range.start());
