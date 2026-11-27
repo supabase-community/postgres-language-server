@@ -1,16 +1,12 @@
-//! Helpers to read names, options and `ALTER TABLE` subcommands out of the parse tree.
+//! The names of the parse tree.
 //!
 //! Name lists like `funcname` or `TypeName::names` only ever hold `String` nodes. A list with
-//! any other node is not a name, and the helpers return `None` for it.
+//! any other node is not a name, and [`NameParts::of`] and [`QualifiedName::of`] return `None`
+//! for it.
 
 use std::fmt;
 
-use pgls_query::{
-    NodeEnum,
-    protobuf::{CreateFunctionStmt, Node, RangeVar, TypeName},
-};
-
-use crate::options::find_def_elem;
+use pgls_query::protobuf::{Node, RangeVar, TypeName};
 
 /// The most parts a name has: `catalog.schema.table.column`.
 const NAME_PARTS_MAX: usize = 4;
@@ -112,111 +108,17 @@ impl fmt::Display for QualifiedName<'_> {
     }
 }
 
-/// The string value of a `CREATE FUNCTION` option, like `language`, or `as` with the body.
-///
-/// The argument is a string or, for `as`, a list of strings. A list of two strings is the
-/// object file and the link symbol of a C function ([`interpret_AS_clause`]), so only a list
-/// of one string has a value.
-///
-/// [`interpret_AS_clause`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L866
-pub fn find_option_value<'a>(
-    create_fn: &'a CreateFunctionStmt,
-    option_name: &str,
-) -> Option<&'a str> {
-    let option = find_def_elem(&create_fn.options, option_name)?;
-    match option.arg.as_deref()?.node.as_ref()? {
-        NodeEnum::String(value) => Some(value.sval.as_str()),
-        NodeEnum::List(list) => match list.items.as_slice() {
-            [item] => item.string_value(),
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
-/// [`find_option_value`], to change the value. Like [`find_def_elem`], it reads the last option
-/// with the name; Postgres rejects a repeated option of `CREATE FUNCTION`.
-pub fn find_option_value_mut<'a>(
-    create_fn: &'a mut CreateFunctionStmt,
-    option_name: &str,
-) -> Option<&'a mut String> {
-    let option =
-        create_fn
-            .options
-            .iter_mut()
-            .rev()
-            .find_map(|option| match option.node.as_mut()? {
-                NodeEnum::DefElem(option) if option.defname == option_name => Some(option),
-                _ => None,
-            })?;
-    match option.arg.as_deref_mut()?.node.as_mut()? {
-        NodeEnum::String(value) => Some(&mut value.sval),
-        NodeEnum::List(list) => match list.items.as_mut_slice() {
-            [item] => match item.node.as_mut()? {
-                NodeEnum::String(value) => Some(&mut value.sval),
-                _ => None,
-            },
-            _ => None,
-        },
-        _ => None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use pgls_query::NodeEnum;
 
-    use crate::utils::{NameParts, QualifiedName, find_option_value};
+    use crate::utils::{NameParts, QualifiedName};
 
     fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
         match pgls_query::parse(sql).unwrap().into_root().unwrap() {
             NodeEnum::CreateFunctionStmt(stmt) => *stmt,
             _ => panic!("Expected CreateFunctionStmt"),
         }
-    }
-
-    #[test]
-    fn test_find_option_value() {
-        let input = "
-            CREATE OR REPLACE FUNCTION public.f1()
-            RETURNS boolean
-            LANGUAGE plpgsql
-            AS $function$
-            declare r t1 := (select t1 from t1 where a = 1);
-            BEGIN
-              if r.c is null or
-                 true is false
-                then -- there is bug - table t1 missing \"c\" column
-                RAISE NOTICE 'c is null';
-              end if;
-            END;
-            $function$;
-"
-        .trim();
-
-        let create_fn = create_function(input);
-
-        assert_eq!(find_option_value(&create_fn, "language"), Some("plpgsql"));
-
-        assert!(find_option_value(&create_fn, "as").is_some(),);
-
-        assert_eq!(
-            QualifiedName::of(&create_fn.return_type.as_ref().unwrap().names),
-            Some(QualifiedName {
-                catalog: None,
-                schema: Some("pg_catalog"),
-                name: "bool",
-            })
-        );
-    }
-
-    #[test]
-    fn the_object_file_of_a_c_function_is_not_its_body() {
-        let create_fn =
-            create_function("create function f() returns int language c as 'my_lib', 'my_symbol'");
-
-        assert_eq!(find_option_value(&create_fn, "language"), Some("c"));
-        assert_eq!(find_option_value(&create_fn, "as"), None);
     }
 
     #[test]
@@ -250,6 +152,19 @@ mod tests {
                 catalog: Some("db"),
                 schema: Some("s"),
                 name: "f",
+            })
+        );
+        assert_eq!(
+            QualifiedName::of_type_name(
+                create_function("create function f() returns boolean return true")
+                    .return_type
+                    .as_ref()
+                    .unwrap()
+            ),
+            Some(QualifiedName {
+                catalog: None,
+                schema: Some("pg_catalog"),
+                name: "bool",
             })
         );
         // Postgres rejects more than three parts.
