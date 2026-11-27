@@ -6767,6 +6767,198 @@ fn test_goose_envsub_expansion_in_a_string_is_not_typechecked() {
     assert_eq!(categories, ["lint/unknownColumn"]);
 }
 
+/// A file of a workspace with the configuration of `init`.
+struct TemplateFile {
+    workspace: WorkspaceServer,
+    project_key: ProjectKey,
+    path: PgLSPath,
+}
+
+impl TemplateFile {
+    /// Opens `content` at `path` in a workspace with `configuration` on top of `init`.
+    fn open(configuration: &str, path: &str, content: &str) -> Self {
+        let mut conf = PartialConfiguration::init();
+        conf.merge_with(serde_json::from_str::<PartialConfiguration>(configuration).unwrap());
+        let (workspace, project_key) =
+            get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+        let file = Self {
+            workspace,
+            project_key,
+            path: PgLSPath::new(path),
+        };
+        file.workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: file.path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+        file
+    }
+
+    /// The category of each diagnostic, with the text it points at, sorted.
+    fn diagnostics(&self) -> Vec<(String, String)> {
+        let content = self
+            .workspace
+            .get_file_content(crate::workspace::GetFileContentParams {
+                project_key: self.project_key,
+                path: self.path.clone(),
+            })
+            .expect("Unable to get the file content");
+        let mut diagnostics = self
+            .workspace
+            .pull_file_diagnostics(crate::workspace::PullFileDiagnosticsParams {
+                project_key: self.project_key,
+                path: self.path.clone(),
+                categories: RuleCategories::all(),
+                max_diagnostics: 100,
+                only: vec![],
+                skip: vec![],
+                database_checks: DatabaseChecks::Run,
+            })
+            .expect("Unable to pull diagnostics")
+            .diagnostics
+            .iter()
+            .map(|diagnostic| {
+                (
+                    diagnostic.category().map_or("", |c| c.name()).to_string(),
+                    diagnostic
+                        .location()
+                        .span
+                        .map_or("", |span| &content[span])
+                        .to_string(),
+                )
+            })
+            .collect::<Vec<_>>();
+        diagnostics.sort();
+        diagnostics
+    }
+
+    /// The categories of the diagnostics, sorted.
+    fn categories(&self) -> Vec<String> {
+        self.diagnostics()
+            .into_iter()
+            .map(|(category, _)| category)
+            .collect()
+    }
+}
+
+#[test]
+fn go_printf_templates_are_analysed_around_their_directives() {
+    let content = "create table events (id bigint, payload json);\nselect * from %s.%s where id = %d and note = '%s' and id %% 2 = 0;\nselect missing from events where id = %d;\nselect 'abc'::int + %d;\nselect %d frm t;\n";
+    let file = TemplateFile::open(
+        r#"{ "templating": { "syntax": "go-printf" }, "linter": { "rules": { "preferJsonb": "warn" } } }"#,
+        "queries.sql",
+        content,
+    );
+    // The statements with a value placeholder are still checked against the catalog and
+    // typechecked.
+    assert_eq!(
+        file.diagnostics(),
+        [
+            (
+                "lint/preferJsonb".to_string(),
+                "create table events (id bigint, payload json);".to_string()
+            ),
+            ("lint/unknownColumn".to_string(), "missing".to_string()),
+            ("syntax".to_string(), "select %d frm t;".to_string()),
+            ("typecheck".to_string(), "'abc'".to_string()),
+        ]
+    );
+    // Without the setting, the directives are syntax errors.
+    let file = TemplateFile::open("{}", "queries.sql", content);
+    assert_eq!(
+        file.categories()
+            .iter()
+            .filter(|category| *category == "syntax")
+            .count(),
+        4,
+    );
+}
+
+#[test]
+fn rust_fmt_templates_are_analysed_around_their_directives() {
+    let file = TemplateFile::open(
+        r#"{ "templating": { "syntax": "rust-fmt" }, "linter": { "rules": { "preferJsonb": "warn" } } }"#,
+        "queries.sql",
+        "create table {schema}.events (id bigint, payload json);\nselect * from {schema}.{table} where id = {} and tags = '{{a,b}}' and n = {0:>4};\n",
+    );
+    assert_eq!(file.categories(), ["lint/preferJsonb"]);
+}
+
+#[test]
+fn template_directives_are_neither_fixed_nor_formatted() {
+    let file = TemplateFile::open(
+        r#"{ "templating": { "syntax": "go-printf" }, "format": { "enabled": true } }"#,
+        "queries.sql",
+        "update users set name = 'a', name = 'b';\nupdate users set name = %s, name = %s;\nselect   %s   from   t;\nselect   1;\n",
+    );
+    // The fix of the second statement would remove a directive.
+    let fixed = file
+        .workspace
+        .fix_file(FixFileParams {
+            project_key: file.project_key,
+            path: file.path.clone(),
+            fix_file_mode: FixFileMode::SafeAndUnsafeFixes,
+            only: vec!["correctness/banDuplicateColumnAssignments".parse().unwrap()],
+            skip: vec![],
+        })
+        .expect("Unable to fix file")
+        .code;
+    assert_eq!(
+        fixed,
+        "update users set name = 'b';\nupdate users set name = %s, name = %s;\nselect   %s   from   t;\nselect   1;\n"
+    );
+    // The formatter leaves the statements with directives as written.
+    let formatted = file
+        .workspace
+        .pull_file_formatting(PullFileFormattingParams {
+            project_key: file.project_key,
+            path: file.path.clone(),
+            range: None,
+        })
+        .expect("Unable to format file")
+        .formatted;
+    assert!(
+        formatted
+            .contains("update users set name = %s, name = %s;\nselect   %s   from   t;\nselect 1;"),
+        "{formatted}"
+    );
+}
+
+#[test]
+fn templating_follows_settings_changes() {
+    let file = TemplateFile::open("{}", "queries.sql", "select * from %s.%s where id = %d;\n");
+    assert_eq!(file.categories(), ["syntax"]);
+    file.workspace
+        .update_settings(UpdateSettingsParams {
+            project_key: file.project_key,
+            configuration: serde_json::from_str(r#"{ "templating": { "syntax": "go-printf" } }"#)
+                .unwrap(),
+            gitignore_matches: vec![],
+            vcs_base_path: None,
+            workspace_directory: None,
+            replace: false,
+        })
+        .expect("Unable to update the settings");
+    assert_eq!(file.categories(), Vec::<String>::new());
+}
+
+#[test]
+fn templating_include_selects_the_template_files() {
+    let configuration = r#"{ "templating": { "syntax": "go-printf", "include": ["queries/**"] } }"#;
+    let content = "select * from %s where id = %d;\n";
+    assert_eq!(
+        TemplateFile::open(configuration, "queries/users.sql", content).categories(),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        TemplateFile::open(configuration, "migrations/users.sql", content).categories(),
+        ["syntax"]
+    );
+}
+
 /// Lint, hover and completions see the same catalog at each statement: after a down section,
 /// after a statement that doesn't parse, and after a statement on identifier parameters.
 #[sqlx::test(migrator = "pgls_test_utils::MIGRATIONS")]

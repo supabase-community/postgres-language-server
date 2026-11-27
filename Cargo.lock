@@ -2407,6 +2407,7 @@ dependencies = [
  "pgls_matcher",
  "pgls_migrations",
  "pgls_pretty_print",
+ "pgls_templating",
  "pgls_text_size",
  "rustc-hash",
  "schemars",
@@ -2617,6 +2618,7 @@ dependencies = [
  "pgls_fs",
  "pgls_lexer",
  "pgls_statement_splitter",
+ "pgls_templating",
  "pgls_text_size",
  "schemars",
  "serde",
@@ -2808,6 +2810,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pgls_templating"
+version = "0.0.0"
+dependencies = [
+ "pgls_lexer",
+ "pgls_text_size",
+ "schemars",
+ "serde",
+ "tracing",
+]
+
+[[package]]
 name = "pgls_test_macros"
 version = "0.0.0"
 dependencies = [
@@ -2968,6 +2981,7 @@ dependencies = [
  "pgls_splinter",
  "pgls_statement_splitter",
  "pgls_suppressions",
+ "pgls_templating",
  "pgls_test_utils",
  "pgls_text_edit",
  "pgls_text_size",

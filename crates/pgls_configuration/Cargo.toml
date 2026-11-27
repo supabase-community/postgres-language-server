@@ -25,6 +25,7 @@ pgls_line_index           = { workspace = true }
 pgls_matcher              = { workspace = true }
 pgls_migrations           = { workspace = true }
 pgls_pretty_print         = { workspace = true }
+pgls_templating           = { workspace = true }
 pgls_text_size            = { workspace = true }
 rustc-hash                = { workspace = true }
 schemars                  = { workspace = true, features = ["indexmap1"], optional = true }
@@ -35,7 +36,7 @@ serde_json                = { workspace = true, features = ["raw_value"] }
 doctest = false
 
 [features]
-schema = ["dep:schemars", "pgls_migrations/schema", "schemars/indexmap"]
+schema = ["dep:schemars", "pgls_migrations/schema", "pgls_templating/schema", "schemars/indexmap"]
 
 [lints]
 workspace = true

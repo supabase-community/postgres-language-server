@@ -744,6 +744,32 @@ fn check_skip_errors_skips_files_with_syntax_errors() {
     assert!(output.contains("Invalid statement"), "{output}");
 }
 
+#[test]
+fn check_reads_the_sql_around_template_directives() {
+    let query = "alter table users drop column name;\nselect * from %s.users where id = %d and name like '%%a';\n";
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{
+                "db": { "disableConnection": true },
+                "templating": { "syntax": "go-printf", "include": ["queries/**"] }
+            }"#,
+        ),
+        ("queries/users.sql", query),
+        ("other/users.sql", query),
+    ]);
+
+    let (success, output) = check_in(root.path(), &["queries/users.sql"], &[]);
+    assert!(success, "{output}");
+    assert!(output.contains("lint/banDropColumn"), "{output}");
+    assert!(!output.contains("syntax"), "{output}");
+
+    // The file that isn't a template has syntax errors.
+    let (success, output) = check_in(root.path(), &["other/users.sql"], &[]);
+    assert!(!success, "{output}");
+    assert!(output.contains("syntax"), "{output}");
+}
+
 /// Writes `files` below a new temporary directory.
 fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
     let root = tempfile::tempdir().unwrap();

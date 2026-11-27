@@ -251,6 +251,29 @@ Things to keep in mind:
 - When a configuration file is passed explicitly with `--config-path`, it applies to all files and nested configuration files are not looked up.
 - `dblint` uses the configuration of the working directory.
 
+## SQL templates of Go and Rust programs
+
+Some SQL files are format strings of a program, like the queries a Go program fills in with `fmt.Sprintf`, or a Rust program with `format!`. Set `templating.syntax` to read them as such: `"go-printf"` for Go's `fmt.Sprintf`, `"rust-fmt"` for Rust's `format!`, or `"none"`, the default. `templating.include` and `templating.ignore` select the files with globs, like `files.include` and `files.ignore`. Without `include`, every file of the configuration is a template.
+
+```json
+{
+  "templating": {
+    "syntax": "go-printf",
+    "include": ["internal/queries/**/*.sql"]
+  }
+}
+```
+
+Check, lint and the editor features then read the SQL around the directives:
+
+- A directive (`%s`, `%d`, `%[1]v`, `%5.2f` of [Go](https://pkg.go.dev/fmt#hdr-Printing), `{}`, `{0}`, `{name}`, `{name:>8}` of [Rust](https://doc.rust-lang.org/std/fmt/index.html#syntax)) is analysed like a psql variable, as goose's `ENVSUB` expansions are (see [Checking migrations](guides/checking_migrations.md)): as an identifier after keywords like `TABLE`, `FROM` or `REFERENCES` and before a `.`, and as a value elsewhere. So `select * from %s.%s where id = %d` reads two identifiers and a value. A statement whose directives are all values, like `select * from users where id = %d`, is typechecked; one with a directive in an identifier isn't. An identifier with a directive, like `app_%s`, `tenant_{schema}` or `"%s"`, is one identifier.
+- Directives in string literals and comments stay as written. A statement with a directive in a string literal isn't typechecked, since its value is unknown.
+- `%%` writes `%` in Go, `{{` and `}}` write `{` and `}` in Rust. In string literals they stay as written. Elsewhere, Go's `%%` is read as the `%` operator, so `id %% 2` is the modulo `id % 2`.
+- A `%` or `{` that doesn't start a directive, like the `%` of `7 % 2` or the `{` of `'{1,2}'`, is read as SQL. Go and Rust would reject or mangle it, so write `%%` and `{{` in the template.
+- Fixes that would edit a directive are left out, statements with a directive can't be executed from the editor, and the formatter leaves them as they are.
+
+The setting applies per configuration file, so Go and Rust templates in different folders of one project each get a [nested configuration](#nested-configurations--monorepos), or one configuration selects them with `include`. A file that is also a goose migration with `ENVSUB` is read as a template: where the file has template directives, their placeholders take the place of the `ENVSUB` expansions, which stay as written.
+
 ## Specifying files to process
 
 You can control the files/folders to process using different strategies, either CLI, configuration and VCS.

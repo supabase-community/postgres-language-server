@@ -132,6 +132,17 @@
         }
       ]
     },
+    "templating": {
+      "description": "The configuration of SQL files that are format strings of a host language",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TemplatingConfiguration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "typecheck": {
       "description": "The configuration for type checking",
       "anyOf": [
@@ -3371,6 +3382,72 @@
         "type": "string"
       },
       "uniqueItems": true
+    },
+    "Template": {
+      "description": "The format strings of a host language that the SQL files are.",
+      "oneOf": [
+        {
+          "description": "The files are SQL as written (default).",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "description": "Go's `fmt.Sprintf`: `%s`, `%d`, `%[1]v`, `%5.2f`, and `%%` for `%`.",
+          "type": "string",
+          "enum": [
+            "go-printf"
+          ]
+        },
+        {
+          "description": "Rust's `format!`: `{}`, `{0}`, `{name}`, `{name:>8}`, and `{{` and `}}` for `{` and `}`.",
+          "type": "string",
+          "enum": [
+            "rust-fmt"
+          ]
+        }
+      ]
+    },
+    "TemplatingConfiguration": {
+      "description": "The configuration of SQL files that are format strings of a host language, like the queries of a Go program that fills them in with `fmt.Sprintf`.",
+      "type": "object",
+      "properties": {
+        "ignore": {
+          "description": "A list of Unix shell style patterns. The files that match them are no templates.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "include": {
+          "description": "A list of Unix shell style patterns. Only the files that match them are templates.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StringSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "syntax": {
+          "description": "The format strings that the files are: \"go-printf\" for Go's `fmt.Sprintf` (`%s`, `%d`, `%[1]v`, `%%`), \"rust-fmt\" for Rust's `format!` (`{}`, `{0}`, `{name}`, `{{`), or \"none\". The analysis reads the SQL around the placeholders. Default: \"none\".",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Template"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "TypecheckConfiguration": {
       "description": "The configuration for type checking.",

@@ -18,6 +18,7 @@ pub mod plpgsql_check;
 pub mod rules;
 pub mod semantic_tokens;
 pub mod splinter;
+pub mod templating;
 pub mod typecheck;
 pub mod utils;
 pub mod vcs;
@@ -70,6 +71,9 @@ use serde::{Deserialize, Serialize};
 use splinter::{
     PartialSplinterConfiguration, SplinterConfiguration, partial_splinter_configuration,
 };
+use templating::{
+    PartialTemplatingConfiguration, TemplatingConfiguration, partial_templating_configuration,
+};
 pub use typecheck::{
     PartialTypecheckConfiguration, TypecheckConfiguration, partial_typecheck_configuration,
 };
@@ -107,6 +111,13 @@ pub struct Configuration {
         bpaf(external(partial_migrations_configuration), optional, hide_usage)
     )]
     pub migrations: MigrationsConfiguration,
+
+    /// The configuration of SQL files that are format strings of a host language
+    #[partial(
+        type,
+        bpaf(external(partial_templating_configuration), optional, hide_usage)
+    )]
+    pub templating: TemplatingConfiguration,
 
     /// The configuration for the linter
     #[partial(type, bpaf(external(partial_linter_configuration), optional))]
@@ -173,6 +184,7 @@ impl PartialConfiguration {
                 ..Default::default()
             }),
             migrations: None,
+            templating: None,
             vcs: Some(PartialVcsConfiguration {
                 enabled: Some(false),
                 client_kind: Some(VcsClientKind::Git),

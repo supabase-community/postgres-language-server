@@ -671,6 +671,10 @@ export interface PartialConfiguration {
    */
   splinter?: PartialSplinterConfiguration;
   /**
+   * The configuration of SQL files that are format strings of a host language
+   */
+  templating?: PartialTemplatingConfiguration;
+  /**
    * The configuration for type checking
    */
   typecheck?: PartialTypecheckConfiguration;
@@ -960,6 +964,23 @@ export interface PartialSplinterConfiguration {
    * List of rules
    */
   rules?: SplinterRules;
+}
+/**
+ * The configuration of SQL files that are format strings of a host language, like the queries of a Go program that fills them in with `fmt.Sprintf`.
+ */
+export interface PartialTemplatingConfiguration {
+  /**
+   * A list of Unix shell style patterns. The files that match them are no templates.
+   */
+  ignore?: StringSet;
+  /**
+   * A list of Unix shell style patterns. Only the files that match them are templates.
+   */
+  include?: StringSet;
+  /**
+   * The format strings that the files are: "go-printf" for Go's `fmt.Sprintf` (`%s`, `%d`, `%[1]v`, `%%`), "rust-fmt" for Rust's `format!` (`{}`, `{0}`, `{name}`, `{{`), or "none". The analysis reads the SQL around the placeholders. Default: "none".
+   */
+  syntax?: Template;
 }
 /**
  * The configuration for type checking.
@@ -1473,6 +1494,10 @@ export interface SplinterRules {
   recommended?: boolean;
   security?: Security;
 }
+/**
+ * The format strings of a host language that the SQL files are.
+ */
+export type Template = "none" | "go-printf" | "rust-fmt";
 export type VcsClientKind = "git";
 export type RulePlainConfiguration = "warn" | "error" | "info" | "off";
 export type RuleConfiguration_for_Null = RulePlainConfiguration | RuleWithOptions_for_Null;

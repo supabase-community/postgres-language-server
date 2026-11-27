@@ -14,6 +14,7 @@ use pgls_walk::{AnalysableStatement, UnparsableStatement};
 use rustc_hash::FxHashSet;
 
 use pgls_migrations::{MigrationTool, Preprocessed, PsqlSyntaxDiagnostic, Script, Unit};
+use pgls_templating::Template;
 
 use crate::diagnostics::FileTooLarge;
 use crate::workspace::ProjectKey;
@@ -44,7 +45,10 @@ pub(crate) struct Document {
     settings_version: u64,
     /// The migration tool that runs the file, from its settings. See [`Document::open`].
     migration_tool: MigrationTool,
-    /// How `migration_tool` runs the content.
+    /// The format strings of a host language that the file is, from its settings.
+    template: Template,
+    /// How `migration_tool` runs the content, with the placeholders of `template`, see
+    /// [`Document::script`].
     migration_script: Script,
     /// Where the last change of the content starts.
     edited_at: Option<TextSize>,
@@ -69,6 +73,7 @@ impl Document {
             ProjectKey::default(),
             0,
             MigrationTool::Plain,
+            Template::None,
             NonZeroU64::MAX,
             content,
             version,
@@ -76,12 +81,13 @@ impl Document {
     }
 
     /// A document of the project `project_key`, whose settings at `settings_version` make
-    /// `migration_tool` run the file and limit its size to `max_size`. When the settings or the
-    /// project change, [`Document::set_settings`] applies them.
+    /// `migration_tool` run the file, make it a `template`, and limit its size to `max_size`.
+    /// When the settings or the project change, [`Document::set_settings`] applies them.
     pub(crate) fn open(
         project_key: ProjectKey,
         settings_version: u64,
         migration_tool: MigrationTool,
+        template: Template,
         max_size: NonZeroU64,
         content: String,
         version: i32,
@@ -98,6 +104,7 @@ impl Document {
             project_key,
             settings_version,
             migration_tool,
+            template,
             migration_script: Script::default(),
             edited_at: None,
             max_size,
@@ -118,7 +125,7 @@ impl Document {
             self.suppressions = Suppressions::default();
             (Script::default(), pgls_statement_splitter::split(""))
         } else {
-            let migration_script = self.migration_tool.read(&self.content);
+            let migration_script = self.script(&self.content);
             let split = pgls_statement_splitter::split(text(
                 &self.content,
                 migration_script.preprocessed.as_ref(),
@@ -132,6 +139,17 @@ impl Document {
             std::mem::replace(&mut self.migration_script, migration_script),
             std::mem::replace(&mut self.split, split),
         )
+    }
+
+    /// How the migration tool runs `content`. A template's placeholders take the place of the
+    /// tool's, like those of goose's `ENVSUB`: the host fills in the template before the tool
+    /// sees it.
+    fn script(&self, content: &str) -> Script {
+        let mut script = self.migration_tool.read(content);
+        if let Some(preprocessed) = self.template.read(content) {
+            script.preprocessed = Some(preprocessed);
+        }
+        script
     }
 
     fn exceeds_max_size(&self, content: &str) -> bool {
@@ -171,7 +189,7 @@ impl Document {
             self.version = version;
             return self.reread(&old_content);
         }
-        let migration_script = self.migration_tool.read(&content);
+        let migration_script = self.script(&content);
         // The text that is split is the content with the placeholders of the migration tool.
         let old_text = self.text();
         let new_text = text(&content, migration_script.preprocessed.as_ref());
@@ -267,19 +285,21 @@ impl Document {
         &self.cache
     }
 
-    /// Applies the migration tool and the size limit of the settings of `project_key` at
-    /// `settings_version`. Returns what the change invalidated in the cache, for the caller to
-    /// drop, see [`StaleEntries::drop_in_background`].
+    /// Applies the migration tool, the template syntax and the size limit of the settings of
+    /// `project_key` at `settings_version`. Returns what the change invalidated in the cache, for
+    /// the caller to drop, see [`StaleEntries::drop_in_background`].
     pub(crate) fn set_settings(
         &mut self,
         project_key: ProjectKey,
         settings_version: u64,
         migration_tool: MigrationTool,
+        template: Template,
         max_size: NonZeroU64,
     ) -> StaleEntries {
         self.project_key = project_key;
         self.settings_version = settings_version;
         self.migration_tool = migration_tool;
+        self.template = template;
         let max_size_changed = max_size != self.max_size;
         self.max_size = max_size;
         if self.too_large || (max_size_changed && self.exceeds_max_size(&self.content)) {
@@ -288,7 +308,7 @@ impl Document {
             let content = self.content.clone();
             return self.reread(&content);
         }
-        let migration_script = migration_tool.read(&self.content);
+        let migration_script = self.script(&self.content);
         let resplit = migration_script.preprocessed != self.migration_script.preprocessed;
         let old_script = std::mem::replace(&mut self.migration_script, migration_script);
         let old_split = resplit.then(|| {
@@ -346,6 +366,11 @@ impl Document {
     /// The migration tool that runs the file, from its settings.
     pub(crate) fn migration_tool(&self) -> MigrationTool {
         self.migration_tool
+    }
+
+    /// The format strings of a host language that the file is, from its settings.
+    pub(crate) fn template(&self) -> Template {
+        self.template
     }
 
     /// `files.maxSize` of the settings of the file.
@@ -413,8 +438,9 @@ impl Document {
         text(&self.content, self.migration_script.preprocessed.as_ref())
     }
 
-    /// Whether `range` overlaps a part of the content that the migration tool replaces, like a
-    /// goose `ENVSUB` expansion. Edits there would write the placeholder into the file.
+    /// Whether `range` overlaps a part of the content that the host replaces, like a goose
+    /// `ENVSUB` expansion or a template directive. Edits there would write the placeholder into
+    /// the file.
     pub(crate) fn touches_placeholder(&self, range: TextRange) -> bool {
         self.migration_script
             .preprocessed
@@ -822,6 +848,7 @@ mod tests {
                 self.project_key,
                 self.settings_version,
                 self.migration_tool,
+                self.template,
                 self.max_size,
                 self.content.clone(),
                 self.version,
@@ -894,12 +921,13 @@ mod tests {
             "create function h() returns int language sql as 'select 1; select ''é''';\n",
             "copy t from stdin;\n1\n\\.\n",
             "insert into t values (${A}, ${B:-x});\n",
+            "select * from %s.{t} where id = %d and x = '%%{{' and y = 7 %% 2;\n",
             "update t set x = 1\n\nselect 2;\n",
         ];
 
         /// The pieces that a change can open or close a statement, a string, a comment or a
-        /// function body with, line breaks, and the markers of the migration tools and of
-        /// suppressions.
+        /// function body with, line breaks, the markers of the migration tools and of
+        /// suppressions, and the directives of the templates.
         const PIECES: &[&str] = &[
             "select",
             " ",
@@ -929,6 +957,11 @@ mod tests {
             "-- +goose StatementEnd\n",
             "-- migrate:up\n",
             "-- migrate:down\n",
+            "%",
+            "%d",
+            "{",
+            "}",
+            "{x}",
         ];
 
         /// Up to `parts_max` of [`Self::STATEMENTS`] and [`Self::PIECES`], `statement_weight`
@@ -977,7 +1010,7 @@ mod tests {
     #[derive(Debug, Clone)]
     enum DocumentEvent {
         Changes(Vec<ClientChange>),
-        Settings(MigrationTool, NonZeroU64),
+        Settings(MigrationTool, Template, NonZeroU64),
     }
 
     impl DocumentEvent {
@@ -985,19 +1018,25 @@ mod tests {
             prop_oneof![
                 9 => proptest::collection::vec(ClientChange::arbitrary(), 1..3)
                     .prop_map(DocumentEvent::Changes),
-                1 => Self::settings()
-                    .prop_map(|(tool, max_size)| DocumentEvent::Settings(tool, max_size)),
+                1 => Self::settings().prop_map(|(tool, template, max_size)| {
+                    DocumentEvent::Settings(tool, template, max_size)
+                }),
             ]
         }
 
-        /// A migration tool, and a size limit that the content is often above.
-        fn settings() -> impl Strategy<Value = (MigrationTool, NonZeroU64)> {
+        /// A migration tool, a template syntax, and a size limit that the content is often above.
+        fn settings() -> impl Strategy<Value = (MigrationTool, Template, NonZeroU64)> {
             (
                 proptest::sample::select(vec![
                     MigrationTool::Plain,
                     MigrationTool::Supabase,
                     MigrationTool::Dbmate,
                     MigrationTool::Goose,
+                ]),
+                proptest::sample::select(vec![
+                    Template::None,
+                    Template::GoPrintf,
+                    Template::RustFmt,
                 ]),
                 prop_oneof![
                     3 => Just(NonZeroU64::MAX),
@@ -1013,12 +1052,20 @@ mod tests {
         /// although it only splits the text around a change and keeps its cache.
         #[test]
         fn edited_documents_equal_the_documents_opened_on_their_content(
-            (tool, max_size) in DocumentEvent::settings(),
+            (tool, template, max_size) in DocumentEvent::settings(),
             content in ClientChange::text(40, 4),
             events in proptest::collection::vec(DocumentEvent::arbitrary(), 1..12),
         ) {
             let mut content = content;
-            let mut d = Document::open(ProjectKey::default(), 0, tool, max_size, content.clone(), 0);
+            let mut d = Document::open(
+                ProjectKey::default(),
+                0,
+                tool,
+                template,
+                max_size,
+                content.clone(),
+                0,
+            );
             d.equals_a_fresh_document()?;
             for (version, event) in (1..).zip(events) {
                 match event {
@@ -1028,9 +1075,15 @@ mod tests {
                         }
                         d.update_content(content.clone(), version).drop_in_background();
                     }
-                    DocumentEvent::Settings(tool, max_size) => {
-                        d.set_settings(ProjectKey::default(), version.unsigned_abs().into(), tool, max_size)
-                            .drop_in_background();
+                    DocumentEvent::Settings(tool, template, max_size) => {
+                        d.set_settings(
+                            ProjectKey::default(),
+                            version.unsigned_abs().into(),
+                            tool,
+                            template,
+                            max_size,
+                        )
+                        .drop_in_background();
                     }
                 }
                 prop_assert_eq!(d.get_document_content(), content.as_str());
@@ -1484,6 +1537,7 @@ $$ LANGUAGE plpgsql;";
             ProjectKey::default(),
             0,
             goose,
+            Template::None,
             NonZeroU64::MAX,
             lines.join("\n"),
             0,
@@ -1498,6 +1552,7 @@ $$ LANGUAGE plpgsql;";
                 ProjectKey::default(),
                 0,
                 goose,
+                Template::None,
                 NonZeroU64::MAX,
                 content.clone(),
                 0,

@@ -38,6 +38,7 @@ pgls_query_ext                    = { workspace = true }
 pgls_semantic_tokens              = { workspace = true }
 pgls_statement_splitter           = { workspace = true }
 pgls_suppressions                 = { workspace = true }
+pgls_templating                   = { workspace = true }
 pgls_text_edit                    = { workspace = true, features = ["serde"] }
 pgls_text_size.workspace          = true
 pgls_tokenizer                    = { workspace = true }
