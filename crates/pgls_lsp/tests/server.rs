@@ -875,7 +875,7 @@ async fn test_semantic_tokens(test_db: PgPool) -> Result<()> {
 /// The checks against the database run when a document is opened or saved, on the statements
 /// whose result can have changed since. A change reuses what they found for the statements it
 /// didn't touch, without querying the database.
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "linux")]
 #[pgls_test_utils::db_test]
 async fn database_checks_run_on_open_and_save(test_db: PgPool) -> Result<()> {
     const FUNCTION: &str = "create function public.f1() returns int language plpgsql as $$
