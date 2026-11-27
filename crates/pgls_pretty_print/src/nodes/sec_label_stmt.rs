@@ -14,7 +14,7 @@ pub(super) fn emit_sec_label_stmt(e: &mut EventEmitter, n: &SecLabelStmt) {
         e.space();
         e.token(TokenKind::FOR_KW);
         e.space();
-        emit_identifier_maybe_quoted(e, &n.provider);
+        emit_word_or_string(e, &n.provider);
     }
 
     // Emit ON object_type object
