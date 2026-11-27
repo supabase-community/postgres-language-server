@@ -2,6 +2,7 @@
 //! dispatch to child nodes, the helpers in `utils` and the shared constructs in `clauses`.
 
 pub(super) use pgls_query::{Node, NodeEnum};
+pub(super) use pgls_tokenizer::NamePosition;
 
 pub(super) use crate::TokenKind;
 pub(super) use crate::emitter::{EventEmitter, LineType};

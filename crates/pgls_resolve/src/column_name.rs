@@ -1,7 +1,6 @@
 //! The names Postgres gives to unnamed select list entries.
 
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::is_star;
 
 const UNNAMED: &str = "?column?";
 
@@ -32,7 +31,7 @@ fn figure_column_name_with(
     value: &NodeEnum,
     subquery_column: SubqueryColumn<'_>,
 ) -> Option<String> {
-    if is_star(value) {
+    if value.is_star() {
         return None;
     }
     figure_column_name_with_strength(value, subquery_column).map(|(name, _)| name)
@@ -264,7 +263,7 @@ fn first_column<'a>(select: &'a protobuf::SelectStmt, wrapper: Wrapper<'a>) -> S
         return Step::Named(Some((target.name.clone(), 2)));
     }
     match target.val.as_deref().and_then(|value| value.node.as_ref()) {
-        Some(value) if !is_star(value) => Step::Into(value, wrapper),
+        Some(value) if !value.is_star() => Step::Into(value, wrapper),
         _ => Step::Named(None),
     }
 }

@@ -1,5 +1,6 @@
 mod class;
 mod cursor;
+mod identifier;
 mod keyword;
 mod number;
 mod operator;
@@ -10,6 +11,7 @@ mod trivia;
 
 pub use class::CharClass;
 use cursor::Cursor;
+pub use identifier::NamePosition;
 pub use keyword::{Keyword, KeywordCategory};
 use quoted::Quote;
 pub use token::{Base, LiteralKind, NamedParamKind, Token, TokenKind};

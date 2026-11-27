@@ -1,4 +1,5 @@
-use pgls_catalog::{NamePosition, Snapshot, Table};
+use pgls_catalog::{Snapshot, Table};
+use pgls_tokenizer::NamePosition;
 use pgls_treesitter::TreesitterContext;
 
 use crate::{
