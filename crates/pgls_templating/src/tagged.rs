@@ -260,11 +260,11 @@ mod tests {
             &[
                 crate::Expansion {
                     range: TextRange::at(TextSize::from(13), TextSize::from(9)),
-                    value: crate::Value::Unknown("SCHEMA"),
+                    value: crate::Value::variable("SCHEMA"),
                 },
                 crate::Expansion {
                     range: TextRange::at(TextSize::from(60), TextSize::from(7)),
-                    value: crate::Value::Unknown("NOTE"),
+                    value: crate::Value::variable("NOTE"),
                 },
             ],
         );

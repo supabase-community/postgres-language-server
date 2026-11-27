@@ -675,8 +675,13 @@ impl Document {
                 .with_function(function)
                 .with_identifier_parameters(conversion.has_identifier_parameters)
                 // psql fills in the string of a `:'name'` when it runs the statement.
+                // Two arguments of a template that got the same placeholder are one parameter.
                 .with_unknown_values(
-                    self.touches_unknown_value(range) || !conversion.string_replacements.is_empty(),
+                    self.touches_unknown_value(range)
+                        || !conversion.string_replacements.is_empty()
+                        || self
+                            .preprocessed()
+                            .is_some_and(|preprocessed| preprocessed.shares_names_in(range)),
                 )
             }),
             syntax_error,

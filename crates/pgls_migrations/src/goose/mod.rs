@@ -112,7 +112,7 @@ fn envsub(text: &str) -> Option<Preprocessed> {
             };
             expansions.push(Expansion {
                 range: TextRange::new(range.start() + start, range.start() + end),
-                value: Value::Unknown(expansion.name),
+                value: Value::variable(expansion.name),
             });
         }
     }

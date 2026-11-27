@@ -11,6 +11,7 @@ mod rust;
 mod substitute;
 mod tagged;
 
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use pgls_lexer::SyntaxKind;
@@ -74,8 +75,34 @@ impl Template {
             );
             directives.truncate(Self::EXPANSIONS_MAX);
         }
+        Self::name_arguments(&mut directives);
         (!directives.is_empty())
             .then(|| Preprocessed::substitute_reading(text, &directives, Self::is_ambiguous_after))
+    }
+
+    /// The characters that name the placeholder of an argument, see [`Template::name_arguments`].
+    const NAMES: &'static str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+
+    /// Names the placeholders of `directives` by the argument they take, so that the parameter
+    /// conversion reads two directives as one parameter only if they take the same argument.
+    ///
+    /// A directive like `%s` only has room for `$` and one character, so the arguments get the
+    /// characters of [`Template::NAMES`] in the order they first appear, and the 54th distinct
+    /// argument gets the name of the first again. Where two arguments with the same name meet in
+    /// one statement, [`Preprocessed::shared_names`] says so, and the statement isn't
+    /// typechecked.
+    fn name_arguments(directives: &mut [Expansion]) {
+        let mut names: HashMap<Argument, &'static str> = HashMap::new();
+        for directive in directives {
+            let Value::Unknown { name, argument } = &mut directive.value else {
+                continue;
+            };
+            let count = names.len();
+            *name = names.entry(*argument).or_insert_with(|| {
+                let index = count % Self::NAMES.len();
+                Self::NAMES.get(index..index + 1).unwrap_or("e")
+            });
+        }
     }
 
     /// Whether a directive directly after a token of `kind` with `text` can't be read: after a
@@ -115,21 +142,43 @@ pub struct Expansion<'a> {
 /// What the host writes in place of an [`Expansion`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Value<'a> {
-    /// A value that only the host knows, like an argument or an environment variable. Its name,
-    /// like the name of the variable, names the placeholder.
-    Unknown(&'a str),
+    /// A value that only the host knows: `argument`, like an argument of the format string or an
+    /// environment variable. Two expansions of the same argument have the same value. `name`
+    /// names the placeholder.
+    Unknown {
+        name: &'a str,
+        argument: Argument<'a>,
+    },
     /// This text, like `%` for Go's `%%`. It isn't longer than the expansion.
     Known(&'static str),
 }
 
 impl<'a> Value<'a> {
+    /// A value of the variable `name`, which also names its placeholder, like an environment
+    /// variable of goose's `ENVSUB`.
+    pub fn variable(name: &'a str) -> Self {
+        Self::Unknown {
+            name,
+            argument: Argument::Named(name),
+        }
+    }
+
     /// What names the placeholder of an identifier with this value.
     fn name(self) -> &'a str {
         match self {
-            Self::Unknown(name) => name,
+            Self::Unknown { name, .. } => name,
             Self::Known(text) => text,
         }
     }
+}
+
+/// The argument that an [`Expansion`] takes from the host.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Argument<'a> {
+    /// By position, from 0, like Go's `%s` or `%[2]d` or Rust's `{}` or `{0}`.
+    Index(usize),
+    /// By name, like Rust's `{name}` or an environment variable.
+    Named(&'a str),
 }
 
 /// The text that the analysis reads instead of the file as written, with placeholders where the
@@ -148,6 +197,19 @@ pub struct Preprocessed {
     /// The placeholders that can't be read where they are, in file order. Only templates have
     /// them, see [`Template::read`].
     pub ambiguous: Vec<Ambiguity>,
+    /// The placeholders with the text of an earlier one, but another value, in file order. A
+    /// statement with both of them reads them as one parameter, so it isn't typechecked.
+    pub shared_names: Vec<SharedName>,
+}
+
+/// A placeholder with the text of an earlier placeholder of another value, like the 54th
+/// distinct argument of a template, which has the name of the first. See
+/// [`Template::name_arguments`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SharedName {
+    pub placeholder: TextRange,
+    /// The last placeholder before it with its text.
+    pub earlier: TextRange,
 }
 
 /// A placeholder that can't be read where it is, because it directly follows a name or a value,
@@ -177,6 +239,20 @@ impl Preprocessed {
         self.placeholders
             .iter()
             .any(|placeholder| Self::overlaps(*placeholder, range))
+    }
+
+    /// Whether a statement at `range` has two placeholders of different values with the same
+    /// text, which the parameter conversion reads as one, see [`Preprocessed::shared_names`].
+    pub fn shares_names_in(&self, range: TextRange) -> bool {
+        let first = self
+            .shared_names
+            .partition_point(|shared| shared.placeholder.start() < range.start());
+        self.shared_names
+            .get(first..)
+            .unwrap_or_default()
+            .iter()
+            .take_while(|shared| shared.placeholder.end() <= range.end())
+            .any(|shared| shared.earlier.start() >= range.start())
     }
 
     /// Whether `range` overlaps a placeholder that stays as written in a value.
@@ -264,7 +340,7 @@ mod tests {
         );
         assert_eq!(
             read.text,
-            "select $v, $d_, $s__, $x_, $d_, $f____, $g__, $d_, $s___, $f____________, $T from t;"
+            "select $a, $b_, $c__, $d_, $e_, $f____, $g__, $h_, $a___, $a____________, $b from t;"
         );
     }
 
@@ -276,7 +352,7 @@ mod tests {
                 "select * from %s.%s where id = %d and name = %q;"
             ),
             Read::new(
-                "select * from $s.$s where id = $d and name = $q;",
+                "select * from $a.$b where id = $c and name = $d;",
                 &["%s", "%s", "%d", "%q"],
                 &[]
             )
@@ -288,7 +364,7 @@ mod tests {
                 "create table app_%s (id bigint);\nselect * from 漢é_%s_x, \"%s\", %s%s;"
             ),
             Read::new(
-                "create table $app_s (id bigint);\nselect * from $_s_x_____, $s__, $ss_;",
+                "create table $app_a (id bigint);\nselect * from $_b_x_____, $c__, $de_;",
                 &["app_%s", "漢é_%s_x", "\"%s\"", "%s%s"],
                 &[]
             )
@@ -304,7 +380,7 @@ mod tests {
                 "select 7 %% 2, '100%%', 7 % 2, 8, a %d;"
             ),
             Read::new(
-                "select 7 %  2, '100%%', 7 % 2, 8, a $d;",
+                "select 7 %  2, '100%%', 7 % 2, 8, a $a;",
                 &["%%", "%%", "%d"],
                 &["%%"]
             )
@@ -334,7 +410,7 @@ mod tests {
         assert_eq!(
             Read::of(Template::RustFmt, text),
             Read::new(
-                "select $e, $e0, $name_, $name____, $e_, $value____________________, $e__ from $tenant_schema_, $_t______;",
+                "select $a, $a_, $b____, $b_______, $c_, $d________________________, $e__ from $tenant_f______, $_g______;",
                 &[
                     "{}",
                     "{0}",
@@ -432,17 +508,80 @@ mod tests {
         );
     }
 
+    /// The placeholders of the directives of `text`, and the shared names among them, as their
+    /// text in the file.
+    fn shared_names(template: Template, text: &str) -> Vec<(&str, &str)> {
+        template
+            .read(text)
+            .map(|preprocessed| preprocessed.shared_names)
+            .unwrap_or_default()
+            .iter()
+            .map(|shared| (&text[shared.placeholder], &text[shared.earlier]))
+            .collect()
+    }
+
+    #[test]
+    fn placeholders_are_named_by_the_argument_they_take() {
+        // Distinct implicit arguments get distinct placeholders, an index takes its argument,
+        // and the directives after it continue from there. `%*d` takes the width from the
+        // third argument and the value from the fourth.
+        assert_eq!(
+            Read::of(
+                Template::GoPrintf,
+                "select %v, %v, %[1]s, %s, %[1]d, %*d, %d from t;"
+            )
+            .map(|read| read.text),
+            Some("select $a, $b, $a___, $b, $a___, $c_, $d from t;".to_string())
+        );
+        // `{}` takes the next positional argument, `{0}` the first, and `{name}` the same
+        // argument every time. A precision `.*` takes an argument before the value.
+        assert_eq!(
+            Read::of(
+                Template::RustFmt,
+                "select {}, {}, {0}, {name}, {name:>4}, {:.*}, {};"
+            )
+            .map(|read| read.text),
+            Some("select $a, $b, $a_, $c____, $c_______, $d___, $e;".to_string())
+        );
+        assert_eq!(
+            shared_names(Template::GoPrintf, "select %v, %v, %[1]v;"),
+            Vec::<(&str, &str)>::new()
+        );
+    }
+
+    #[test]
+    fn more_arguments_than_names_are_not_merged_silently() {
+        // The 54th distinct argument gets the name of the first.
+        let text = format!("select {};", vec!["%v"; 54].join(", "));
+        let read = Read::of(Template::GoPrintf, &text).unwrap();
+        assert!(read.text.starts_with("select $a, $b,"), "{}", read.text);
+        assert!(read.text.ends_with(", $_, $a;"), "{}", read.text);
+        assert_eq!(shared_names(Template::GoPrintf, &text), [("%v", "%v")]);
+        let preprocessed = Template::GoPrintf.read(&text).unwrap();
+        let whole = TextRange::up_to(pgls_text_size::TextSize::of(text.as_str()));
+        assert!(preprocessed.shares_names_in(whole));
+        // In different statements, they are different parameters anyway.
+        let split = text.replacen(", ", "; select ", 53);
+        let preprocessed = Template::GoPrintf.read(&split).unwrap();
+        let last = split.rfind("select").unwrap();
+        let last = TextRange::new(
+            pgls_text_size::TextSize::try_from(last).unwrap(),
+            pgls_text_size::TextSize::of(split.as_str()),
+        );
+        assert!(!preprocessed.shares_names_in(last));
+    }
+
     #[test]
     fn templates_read_only_their_own_syntax() {
         let text = "select %s, {name};";
         assert_eq!(Read::of(Template::None, text), None);
         assert_eq!(
             Read::of(Template::GoPrintf, text).map(|read| read.text),
-            Some("select $s, {name};".to_string())
+            Some("select $a, {name};".to_string())
         );
         assert_eq!(
             Read::of(Template::RustFmt, text).map(|read| read.text),
-            Some("select %s, $name_;".to_string())
+            Some("select %s, $a____;".to_string())
         );
     }
 }

@@ -3,7 +3,9 @@
 use pgls_lexer::SyntaxKind;
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::{Ambiguity, Expansion, Preprocessed, Value};
+use std::collections::HashMap;
+
+use crate::{Ambiguity, Argument, Expansion, Preprocessed, SharedName, Value};
 
 impl Preprocessed {
     /// The text that the analysis reads for `text`, with placeholders for `expansions`, which
@@ -39,7 +41,7 @@ impl Preprocessed {
             let range = std::ops::Range::<usize>::from(expansion.range);
             filled.push_str(&text[end..range.start]);
             match expansion.value {
-                Value::Unknown(_) => filled.extend(std::iter::repeat_n('x', range.len())),
+                Value::Unknown { .. } => filled.extend(std::iter::repeat_n('x', range.len())),
                 Value::Known(written) => {
                     debug_assert!(written.len() <= range.len());
                     filled.push_str(written);
@@ -111,7 +113,7 @@ impl Preprocessed {
             // name.
             let has_unknown = in_token
                 .iter()
-                .any(|expansion| matches!(expansion.value, Value::Unknown(_)));
+                .any(|expansion| matches!(expansion.value, Value::Unknown { .. }));
             if let Some((before_kind, before)) = before
                 && has_unknown
                 && ambiguous_after(before_kind, &filled[before])
@@ -134,6 +136,8 @@ impl Preprocessed {
             placeholders: Vec::new(),
             unknown_values: Vec::new(),
             ambiguous,
+            shared_names: Vec::new(),
+            last_with_text: HashMap::new(),
             end: TextSize::from(0),
         };
         let mut next = 0;
@@ -147,19 +151,19 @@ impl Preprocessed {
                 substitution.outside(expansion.range, *place);
                 next += 1;
             }
-            let mut name = Parameter::default();
+            let mut parameter = Parameter::default();
             let mut written = identifier.start();
             while let Some(expansion) = expansions
                 .get(next)
                 .filter(|expansion| expansion.range.start() < identifier.end())
             {
-                name.push(&text[TextRange::new(written, expansion.range.start())]);
-                name.push(expansion.value.name());
+                parameter.push_text(&text[TextRange::new(written, expansion.range.start())]);
+                parameter.push_value(expansion.value);
                 written = expansion.range.end();
                 next += 1;
             }
-            name.push(&text[TextRange::new(written, identifier.end())]);
-            substitution.identifier(identifier, name);
+            parameter.push_text(&text[TextRange::new(written, identifier.end())]);
+            substitution.identifier(identifier, parameter);
         }
         for (expansion, place) in expansions
             .get(next..)
@@ -194,6 +198,10 @@ struct Substitution<'a> {
     placeholders: Vec<TextRange>,
     unknown_values: Vec<TextRange>,
     ambiguous: Vec<Ambiguity>,
+    shared_names: Vec<SharedName>,
+    /// The last identifier placeholder with each text, and what it is to the host, see
+    /// [`Parameter::key`].
+    last_with_text: HashMap<String, (String, TextRange)>,
     /// Where the text is written up to.
     end: TextSize,
 }
@@ -220,13 +228,25 @@ impl Substitution<'_> {
         self.placeholders.push(range);
     }
 
-    /// An identifier with expansions, which becomes the named parameter `name`.
-    fn identifier(&mut self, identifier: TextRange, name: Parameter) {
+    /// An identifier with expansions, which becomes the named parameter `parameter`. If it has
+    /// the text of the last such placeholder but another key, it is one of the
+    /// [`Preprocessed::shared_names`].
+    fn identifier(&mut self, identifier: TextRange, parameter: Parameter) {
         self.copy_to(identifier.start());
-        self.substituted
-            .push_str(&name.padded(usize::from(identifier.len())));
+        let text = parameter.padded(usize::from(identifier.len()));
+        self.substituted.push_str(&text);
         self.end = identifier.end();
         self.placeholders.push(identifier);
+        if let Some((key, earlier)) = self.last_with_text.get(&text)
+            && *key != parameter.key
+        {
+            self.shared_names.push(SharedName {
+                placeholder: identifier,
+                earlier: *earlier,
+            });
+        }
+        self.last_with_text
+            .insert(text, (parameter.key, identifier));
     }
 
     fn finish(mut self) -> Preprocessed {
@@ -237,32 +257,59 @@ impl Substitution<'_> {
             placeholders: self.placeholders,
             unknown_values: self.unknown_values,
             ambiguous: self.ambiguous,
+            shared_names: self.shared_names,
         }
     }
 }
 
-/// The name of the named parameter that replaces an identifier with expansions.
+/// The named parameter that replaces an identifier with expansions.
 #[derive(Default)]
-struct Parameter(String);
+struct Parameter {
+    name: String,
+    /// What the identifier is to the host: its text, with the argument of each expansion. Two
+    /// identifiers with the same key have the same value.
+    key: String,
+}
 
 impl Parameter {
+    /// Adds text of the identifier as written.
+    fn push_text(&mut self, text: &str) {
+        self.push_name(text);
+        self.key.push_str(text);
+    }
+
+    /// Adds an expansion of the identifier.
+    fn push_value(&mut self, value: Value) {
+        self.push_name(value.name());
+        match value {
+            // Control characters, which an identifier can't hold, set the arguments apart.
+            Value::Unknown {
+                argument: Argument::Index(index),
+                ..
+            } => self.key.push_str(&format!("\u{0}{index}\u{0}")),
+            Value::Unknown {
+                argument: Argument::Named(name),
+                ..
+            } => self.key.push_str(&format!("\u{1}{name}\u{1}")),
+            Value::Known(text) => self.key.push_str(text),
+        }
+    }
+
     /// Adds the characters of `text` that a named parameter can hold.
-    fn push(&mut self, text: &str) {
-        self.0.extend(
+    fn push_name(&mut self, text: &str) {
+        self.name.extend(
             text.chars()
                 .filter(|c| c.is_ascii_alphanumeric() || *c == '_'),
         );
     }
 
     /// The parameter, `$name`, cut or padded with `_` to `len` bytes.
-    fn padded(mut self, len: usize) -> String {
-        if !self
-            .0
-            .starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
-        {
-            self.0.insert(0, 'e');
+    fn padded(&self, len: usize) -> String {
+        let mut name = self.name.clone();
+        if !name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_') {
+            name.insert(0, 'e');
         }
-        let mut parameter = format!("${}", self.0);
+        let mut parameter = format!("${name}");
         parameter.truncate(len);
         parameter.extend(std::iter::repeat_n('_', len - parameter.len()));
         parameter

@@ -7054,6 +7054,47 @@ fn ambiguous_template_placeholders_are_reported_on_the_directive() {
 }
 
 #[test]
+fn distinct_template_arguments_are_distinct_parameters() {
+    let check = |configuration: &str, sql: &str| {
+        TemplateFile::open(configuration, "queries.sql", sql).categories()
+    };
+    let go = r#"{ "templating": { "syntax": "go-printf" } }"#;
+    // As one parameter, `lower` would make it text, and `abs` of text doesn't exist.
+    assert_eq!(check("{}", "select lower($x), abs($x);"), ["typecheck"]);
+    // Two `%v` or `{}` take two arguments.
+    assert_eq!(
+        check(go, "select lower(%v), abs(%v);"),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        check(
+            r#"{ "templating": { "syntax": "rust-fmt" } }"#,
+            "select lower({}), abs({});"
+        ),
+        Vec::<String>::new()
+    );
+    // The same argument twice is one parameter.
+    assert_eq!(check(go, "select lower(%[1]v), abs(%[1]v);"), ["typecheck"]);
+    assert_eq!(
+        check(
+            r#"{ "templating": { "syntax": "rust-fmt" } }"#,
+            "select lower({name}), abs({name});"
+        ),
+        ["typecheck"]
+    );
+    // The first and the 54th argument get the same placeholder, so the statement isn't
+    // typechecked. With `%v`, the conversion already reads a tenth parameter, `$10`, as a name,
+    // since it doesn't fit, but `%-5v` has room for it.
+    assert_eq!(
+        check(
+            go,
+            &format!("select lower(%-5v),{} abs(%-5v);", " %-5v,".repeat(52))
+        ),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
 fn templating_follows_settings_changes() {
     let file = TemplateFile::open("{}", "queries.sql", "select * from %s.%s where id = %d;\n");
     assert_eq!(file.categories(), ["syntax"]);
