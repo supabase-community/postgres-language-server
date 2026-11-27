@@ -26,6 +26,7 @@ use pgls_lsp::DebounceDurations;
 use pgls_lsp::ServerFactory;
 use pgls_lsp::testing::{Client, Server, ServerNotification};
 use pgls_workspace::DynRef;
+use pgls_workspace::workspace::server::{BackoffDurations, WorkspaceServer};
 use serde_json::Value;
 use serde_json::json;
 use sqlx::Executor;
@@ -4185,6 +4186,100 @@ async fn test_editor_features_refresh_when_the_database_becomes_reachable(
         server.replace_document(version, text).await?;
         wait_for_diagnostics_without_refresh(&mut receiver, version).await?;
     }
+
+    server.shutdown().await?;
+    reader.abort();
+    Ok(())
+}
+
+/// The diagnostics of a document checked while the database could not be reached miss the checks
+/// against it. Once a diagnostics run finds the database reachable, they are checked again without
+/// an edit of the document.
+#[pgls_test_utils::db_test]
+async fn test_diagnostics_are_checked_again_when_the_database_becomes_reachable(
+    test_db: PgPool,
+) -> Result<()> {
+    // Without a backoff, every run tries to connect, so the first one after the database comes up
+    // gets through.
+    let factory = ServerFactory::default().with_workspace(Arc::new(WorkspaceServer::with_backoff(
+        BackoffDurations {
+            initial: Duration::ZERO,
+            max: Duration::ZERO,
+        },
+    )));
+    let mut fs = MemoryFileSystem::default();
+
+    test_db
+        .execute("create table public.users (id int, name text);")
+        .await
+        .expect("Failed to setup test database");
+
+    let proxy = DatabaseProxy::start(&test_db)?;
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            host: Some("127.0.0.1".to_string()),
+            port: Some(proxy.port),
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    fs.insert(
+        Server::uri("postgres-language-server.jsonc")
+            .to_file_path()
+            .unwrap()
+            .into_owned(),
+        serde_json::to_string_pretty(&conf).unwrap(),
+    );
+
+    let (service, client) = factory
+        .create_with_fs(None, DynRef::Owned(Box::new(fs)))
+        .into_inner();
+    let (stream, sink) = client.split();
+    let mut server = Server::new(service);
+    let (sender, mut receiver) = channel(Client::CHANNEL_BUFFER_SIZE);
+    let reader = tokio::spawn(Client::run(stream, sink, sender));
+
+    server.initialize().await?;
+    server.initialized().await?;
+    server.load_configuration().await?;
+
+    let users = Server::uri("users.sql");
+    server
+        .open_named_document("select unknown from public.users;\n", users.clone(), "sql")
+        .await?;
+    let opened = server.wait_until_idle(IDLE_TIMEOUT).await?;
+    let published = receive_diagnostics(&mut receiver, opened.diagnostics_published).await?;
+    assert!(
+        !published
+            .iter()
+            .any(|params| params.diagnostics.iter().any(is_database_backed)),
+        "{published:#?}"
+    );
+
+    // Opening another document runs its diagnostics, which find the database reachable.
+    proxy.forward();
+    server
+        .open_named_document("select 1;\n", Server::uri("other.sql"), "sql")
+        .await?;
+    let reachable = server.wait_until_idle(IDLE_TIMEOUT).await?;
+    let published = receive_diagnostics(
+        &mut receiver,
+        reachable.diagnostics_published - opened.diagnostics_published,
+    )
+    .await?;
+    let checked_again = published
+        .iter()
+        .rfind(|params| params.uri == users)
+        .is_some_and(|params| params.diagnostics.iter().any(is_database_backed));
+    assert!(checked_again, "{published:#?}");
 
     server.shutdown().await?;
     reader.abort();
