@@ -17,6 +17,14 @@ pub struct Role {
     pub has_member: Vec<String>,
 }
 
+impl Role {
+    /// Whether this is one of Postgres' predefined roles, like `pg_monitor`. Postgres reserves
+    /// the `pg_` prefix for them, so no other role's name starts with it.
+    pub fn is_predefined(&self) -> bool {
+        self.name.starts_with("pg_")
+    }
+}
+
 #[cfg(feature = "db")]
 impl SnapshotItem for Role {
     type Item = Role;
