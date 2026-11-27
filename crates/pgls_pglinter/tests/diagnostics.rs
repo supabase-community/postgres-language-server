@@ -2,8 +2,8 @@
 //!
 //! These tests configure pglinter thresholds to 0% so rules fire deterministically.
 //!
-//! Note: These tests require the pglinter extension to be installed, which is only
-//! available on Linux (via Docker) and macOS. Windows CI does not have pglinter.
+//! Note: These tests require the pglinter extension, which only the Linux test database (the
+//! Docker image) has.
 
 #![allow(
     clippy::unwrap_used,
@@ -11,7 +11,7 @@
     clippy::indexing_slicing,
     reason = "a test fails on unexpected data; clippy exempts `#[test]` functions, not their helpers"
 )]
-#![cfg(not(target_os = "windows"))]
+#![cfg(target_os = "linux")]
 
 use pgls_analyse::AnalysisFilter;
 use pgls_catalog::Snapshot;
