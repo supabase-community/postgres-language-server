@@ -416,8 +416,14 @@ jobs:
       - name: Run tests
         run: cargo nextest run --workspace --profile ci
 
+      # nextest doesn't run doctests. `cargo test --doc` ignores `doctest = false`, so only the
+      # packages that keep their doctests on.
       - name: Run doctests
-        run: cargo test --workspace --doc
+        shell: bash
+        run: |
+          cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(any(.targets[]; .doctest)) | "-p", .name' \
+            | tr -d '\r' | xargs cargo test --doc
 
   test-js-bindings:
     needs: changes
