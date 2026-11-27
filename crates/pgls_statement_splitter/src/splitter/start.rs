@@ -196,12 +196,14 @@ impl Splitter<'_> {
                 // insert AS ...`, a table alias, hstore's delete() function, or in `ON COMMIT
                 // DELETE ROWS`. They start a statement only before the token that has to follow
                 // them there: `INSERT INTO`, `DELETE FROM`, `UPDATE [ONLY] name` and `ALTER
-                // <object>`.
+                // <object>`. A `SET` after `UPDATE` is either the name or the SET clause after
+                // an alias, see [`Splitter::at_set_clause`].
                 // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12239
                 // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12427
                 // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12497
                 (SyntaxKind::INSERT_KW, next) => next != SyntaxKind::INTO_KW,
                 (SyntaxKind::DELETE_KW, next) => next != SyntaxKind::FROM_KW,
+                (SyntaxKind::UPDATE_KW, SyntaxKind::SET_KW) => self.at_set_clause(),
                 (SyntaxKind::UPDATE_KW, next) => next != SyntaxKind::ONLY_KW && !is_col_id(next),
                 (SyntaxKind::ALTER_KW, next) => !ALTER_OBJECTS.contains(&next),
                 // Part of a clause, e.g. `WITH ORDINALITY`, `WITH CHECK` or `WITH TIME ZONE`.
@@ -209,6 +211,25 @@ impl Splitter<'_> {
                 _ => false,
             };
         (!vetoed).then_some(start)
+    }
+
+    /// Whether the `SET` after the `UPDATE` at the current token starts the SET clause of an
+    /// `UPDATE`, which makes `update` the alias of its table, e.g. `UPDATE t update SET a = 1`,
+    /// rather than the table `set`, e.g. `UPDATE set SET a = 1`. A SET clause goes on with `(` or
+    /// a column and `=`, `[` or `.`, neither of which can follow the table `set`. Looks at most
+    /// three tokens ahead.
+    ///
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L12520
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L13976
+    fn at_set_clause(&self) -> bool {
+        match self.nth(2) {
+            SyntaxKind::L_PAREN => true,
+            column if is_col_id(column) => matches!(
+                self.nth(3),
+                SyntaxKind::EQ | SyntaxKind::L_BRACK | SyntaxKind::DOT
+            ),
+            _ => false,
+        }
     }
 
     /// Whether the `WITH` at the current token starts common table expressions, rather than
