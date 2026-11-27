@@ -1,4 +1,4 @@
-use pgls_query_ext::utils::string_value;
+use pgls_query::Node;
 
 use super::infer_expr;
 use crate::resolver::Resolver;
@@ -19,7 +19,7 @@ pub(super) fn infer_row_expr(
                 name: n
                     .colnames
                     .get(i)
-                    .and_then(string_value)
+                    .and_then(Node::string_value)
                     .unwrap_or("")
                     .to_owned(),
                 ty: arg.node.as_ref().and_then(|x| infer_expr(r, x)),

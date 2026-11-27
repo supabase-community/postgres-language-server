@@ -471,14 +471,15 @@ impl CatalogFunctions {
     /// has a SQL body, or fails. Procedures only run with `CALL`, which taints the catalog
     /// anyway.
     fn record_function(&mut self, stmt: &AnalysableStatement) {
-        use pgls_query_ext::{function_body::Language, utils::string_value};
+        use pgls_query::Node;
+        use pgls_query_ext::function_body::Language;
         let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = &*stmt.root else {
             return;
         };
         let Some(language) = Language::of(create_fn) else {
             return;
         };
-        let Some(name) = create_fn.funcname.last().and_then(string_value) else {
+        let Some(name) = create_fn.funcname.last().and_then(Node::string_value) else {
             return;
         };
         if create_fn.is_procedure
@@ -514,7 +515,7 @@ impl CatalogFunctions {
             };
             call.funcname
                 .last()
-                .and_then(pgls_query_ext::utils::string_value)
+                .and_then(pgls_query::Node::string_value)
                 .is_some_and(|name| self.names.contains(name))
         })
     }
