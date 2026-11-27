@@ -1,0 +1,5 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/notify_stmt_payload.sql
+---
+notify my_channel, 'the payload';

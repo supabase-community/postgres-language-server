@@ -28,43 +28,32 @@ pub(crate) fn range(
 }
 
 /// Convert a TextEdit diff to a list of LSP TextEdits.
+///
+/// A position can't point between the `\r` and the `\n` of a line break, so an edit that starts
+/// or ends there takes in the half of the line break next to it, and keeps it, like
+/// [`pgls_line_index::changed_range`].
 pub(crate) fn text_edits(
     diff: &TextEdit,
     line_index: &LineIndex,
     encoding: PositionEncoding,
 ) -> Result<Vec<ls_types::TextEdit>> {
-    let mut result = Vec::new();
+    // The ranges of the old text that change and their new text, adjacent ones merged.
+    let mut edits: Vec<(TextRange, String)> = Vec::new();
     let mut offset = TextSize::from(0u32);
 
     for op in diff.iter() {
-        match op {
+        let (changed, new_text) = match op {
             CompressedOp::DiffOp(DiffOp::Equal { range }) => {
                 offset += range.len();
+                continue;
             }
             CompressedOp::DiffOp(DiffOp::Insert { range }) => {
-                let start = position(line_index, offset, encoding)?;
-                let last = result.last_mut().filter(|e: &&mut ls_types::TextEdit| {
-                    e.range.end == start && e.new_text.is_empty()
-                });
-
-                if let Some(last_edit) = last {
-                    last_edit.new_text = diff.get_text(*range).to_string();
-                } else {
-                    result.push(ls_types::TextEdit {
-                        range: ls_types::Range::new(start, start),
-                        new_text: diff.get_text(*range).to_string(),
-                    });
-                }
+                (TextRange::empty(offset), diff.get_text(*range))
             }
             CompressedOp::DiffOp(DiffOp::Delete { range }) => {
-                let start = position(line_index, offset, encoding)?;
+                let start = offset;
                 offset += range.len();
-                let end = position(line_index, offset, encoding)?;
-
-                result.push(ls_types::TextEdit {
-                    range: ls_types::Range::new(start, end),
-                    new_text: String::new(),
-                });
+                (TextRange::new(start, offset), "")
             }
             CompressedOp::EqualLines { line_count } => {
                 let mut line_col = line_index
@@ -75,7 +64,15 @@ pub(crate) fn text_edits(
                 offset = line_index
                     .offset(line_col)
                     .context("line_col out of range while processing diff")?;
+                continue;
             }
+        };
+        match edits.last_mut() {
+            Some((last, text)) if last.end() == changed.start() => {
+                *last = last.cover(changed);
+                text.push_str(new_text);
+            }
+            _ => edits.push((changed, new_text.to_string())),
         }
     }
     debug_assert_eq!(
@@ -84,7 +81,25 @@ pub(crate) fn text_edits(
         "the diff doesn't cover the whole text"
     );
 
-    Ok(result)
+    edits
+        .into_iter()
+        .map(|(changed, mut new_text)| {
+            let mut start = changed.start();
+            if line_index.splits_crlf(start) {
+                start -= TextSize::from(1);
+                new_text.insert(0, '\r');
+            }
+            let mut end = changed.end();
+            if line_index.splits_crlf(end) {
+                end += TextSize::from(1);
+                new_text.push('\n');
+            }
+            Ok(ls_types::TextEdit {
+                range: range(line_index, TextRange::new(start, end), encoding)?,
+                new_text,
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -94,7 +109,9 @@ mod tests {
     use tower_lsp_server::ls_types as lsp;
 
     use super::text_edits;
-    use pgls_line_index::PositionEncoding;
+    use crate::adapters::from_lsp;
+    use pgls_line_index::{PositionEncoding, WideEncoding};
+    use pgls_text_edit::RangeEdit;
 
     #[test]
     fn test_diff_1() {
@@ -206,5 +223,33 @@ line 7 new";
                 },
             ]
         );
+    }
+
+    /// An edit that changes one half of a `\r\n` takes in the whole line break, as no position
+    /// points between its halves.
+    #[test]
+    fn edits_keep_crlf_whole() {
+        let encoding = PositionEncoding::Wide(WideEncoding::Utf16);
+        for (old, new) in [
+            ("select 1;\r\nselect 2;", "select 1;\nselect 2;"),
+            ("select 1;\nselect 2;", "select 1;\r\nselect 2;"),
+            ("select 1;\r\n", "select 1;\r\r\n"),
+            ("select 1;\r\nselect 2;", "select 1;\r\n\r\nselect 2;"),
+            ("select\r\n  1;\r\n", "select\n  1;\n"),
+            ("select 'ä'\r\n  from t;\r\n", "select 'ä' from t;\r\n"),
+        ] {
+            let index = LineIndex::new(old);
+            let diff = TextEdit::from_unicode_words(old, new);
+            let edits: Vec<RangeEdit> = text_edits(&diff, &index, encoding)
+                .unwrap()
+                .into_iter()
+                .map(|edit| {
+                    let range = from_lsp::text_range(&index, edit.range, encoding).unwrap();
+                    RangeEdit::new(range, edit.new_text)
+                })
+                .collect();
+            let applied = RangeEdit::apply_all(old, 0u32.into(), &edits);
+            assert_eq!(applied.as_deref(), Some(new), "{edits:?}");
+        }
     }
 }

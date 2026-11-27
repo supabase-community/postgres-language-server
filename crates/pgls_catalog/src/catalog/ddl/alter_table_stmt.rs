@@ -192,6 +192,15 @@ fn apply_inheritance_changes(
         if attach && c.with_descendants(child.clone()).contains(&parent) {
             continue;
         }
+        // The table as the column changes of the statement left it.
+        if attach
+            && !relation_is_parent
+            && c.relation_in(&child.0, &child.1)
+                .found()
+                .is_some_and(|child| child.rejects_parent(&other))
+        {
+            continue;
+        }
         // The columns of a table that becomes an inheritance child stay its own. A partition's
         // columns become inherited only.
         if attach && !relation_is_parent {

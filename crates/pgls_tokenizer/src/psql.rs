@@ -45,13 +45,10 @@ impl Cursor<'_> {
         TokenKind::NamedParam { kind }
     }
 
-    /// Eats a named parameter like `@name` after its `@`, or returns an `@`.
+    /// Eats a named parameter like `@name` after its `@`.
     ///
     /// Used in sqlc: https://docs.sqlc.dev/en/latest/howto/named_parameters.html
     pub(crate) fn at_param(&mut self) -> TokenKind {
-        if !self.at_identifier() {
-            return TokenKind::At;
-        }
         self.eat_while(|c| CharClass::IdentCont.contains(c));
         TokenKind::NamedParam {
             kind: NamedParamKind::AtPrefix,
