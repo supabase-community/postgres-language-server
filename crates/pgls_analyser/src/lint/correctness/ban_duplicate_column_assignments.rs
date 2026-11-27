@@ -7,7 +7,6 @@ use pgls_query::protobuf::{
     AlterTableStmt, AlterTableType, CreateTableAsStmt, Node, RangeVar, ResTarget, Token,
 };
 use pgls_query::{NodeEnum, NodeRef};
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 use pgls_resolve::{QueryOutput, Star};
 use pgls_text_size::TextRange;
 
@@ -351,11 +350,11 @@ fn column_definitions(elements: &[Node], tokens: Option<StatementTokens>) -> Vec
 /// that an earlier command added, so only the other ones count as duplicates.
 fn added_columns(stmt: &AlterTableStmt, tokens: Option<StatementTokens>) -> Vec<Column> {
     let mut columns = Vec::new();
-    for cmd in alter_table_cmds(stmt) {
+    for cmd in stmt.commands() {
         if cmd.subtype() != AlterTableType::AtAddColumn {
             continue;
         }
-        let Some(NodeEnum::ColumnDef(column)) = cmd_def(cmd) else {
+        let Some(NodeEnum::ColumnDef(column)) = cmd.definition() else {
             continue;
         };
         let added = columns

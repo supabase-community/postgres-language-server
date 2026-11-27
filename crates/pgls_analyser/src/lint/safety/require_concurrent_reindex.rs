@@ -3,7 +3,8 @@ use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_catalog::Lookup;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query_ext::options::{find_def_elem, is_reindex_concurrent};
+use pgls_query::protobuf::DefElem;
+use pgls_query_ext::options::is_reindex_concurrent;
 
 declare_lint_rule! {
     /// `REINDEX` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock on the table.
@@ -79,7 +80,7 @@ fn add_concurrently(
 ) -> Option<RuleFix> {
     use pgls_query::protobuf::Token;
 
-    if find_def_elem(&stmt.params, "concurrently").is_some() || is_system_catalog(ctx, stmt) {
+    if DefElem::find(&stmt.params, "concurrently").is_some() || is_system_catalog(ctx, stmt) {
         return None;
     }
     fix::add_concurrently(

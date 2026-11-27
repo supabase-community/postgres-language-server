@@ -15,8 +15,6 @@ use std::borrow::Cow;
 use pgls_query::protobuf::{CreateFunctionStmt, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
-use crate::utils::find_option_value;
-
 /// A statement embedded in another one, like a statement of a SQL function body.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EmbeddedStatement {
@@ -263,7 +261,7 @@ impl Language {
     ///
     /// [`CreateFunction`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/functioncmds.c#L1100-L1111
     pub fn of(create_fn: &CreateFunctionStmt) -> Option<Self> {
-        let Some(language) = find_option_value(create_fn, "language") else {
+        let Some(language) = create_fn.option_value("language") else {
             return create_fn.sql_body.is_some().then_some(Self::Sql);
         };
         Some(match language {
@@ -348,7 +346,7 @@ fn string_body(
     tokens: &[ScanToken],
     sql: &str,
 ) -> Option<StringBody> {
-    let value = find_option_value(create_fn, "as")?;
+    let value = create_fn.option_value("as")?;
     tokens.iter().enumerate().find_map(|(i, as_token)| {
         if as_token.token() != Token::As {
             return None;

@@ -3,10 +3,12 @@
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{self, AlterSubscriptionType, DiscardMode, ReindexObjectType, TransactionStmtKind},
+    protobuf::{
+        self, AlterSubscriptionType, AlterTableCmd, DefElem, DiscardMode, ReindexObjectType,
+        TransactionStmtKind,
+    },
 };
-use pgls_query_ext::options::{def_elem_bool, find_def_elem, is_reindex_concurrent};
-use pgls_query_ext::utils::{alter_table_cmds, detaches_concurrently};
+use pgls_query_ext::options::{def_elem_bool, is_reindex_concurrent};
 
 use crate::Catalog;
 
@@ -69,7 +71,9 @@ pub fn prevents_transaction_block(
             NonTransactional::concurrently("REINDEX CONCURRENTLY")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/utility.c#L1291
-        NodeEnum::AlterTableStmt(stmt) if alter_table_cmds(stmt).any(detaches_concurrently) => {
+        NodeEnum::AlterTableStmt(stmt)
+            if stmt.commands().any(AlterTableCmd::detaches_concurrently) =>
+        {
             NonTransactional::concurrently("DETACH PARTITION CONCURRENTLY")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L523
@@ -82,7 +86,7 @@ pub fn prevents_transaction_block(
         NodeEnum::AlterSystemStmt(_) => NonTransactional::new("ALTER SYSTEM"),
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/dbcommands.c#L2439
         NodeEnum::AlterDatabaseStmt(stmt)
-            if find_def_elem(&stmt.options, "tablespace").is_some() =>
+            if DefElem::find(&stmt.options, "tablespace").is_some() =>
         {
             NonTransactional::new("ALTER DATABASE SET TABLESPACE")
         }
@@ -130,7 +134,7 @@ pub fn prevents_transaction_block(
         // value of either before it checks for a transaction block.
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L602
         NodeEnum::CreateSubscriptionStmt(stmt) => {
-            let option = |name| find_def_elem(&stmt.options, name).map(def_elem_bool);
+            let option = |name| DefElem::find(&stmt.options, name).map(def_elem_bool);
             let connect = option("connect").unwrap_or(Some(true));
             let create_slot = option("create_slot").unwrap_or(connect);
             if connect.is_none() || create_slot != Some(true) {
