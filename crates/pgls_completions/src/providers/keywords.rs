@@ -75,7 +75,6 @@ pub(crate) static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("case"),
     SqlKeyword::new("cast").require_prefix(),
     SqlKeyword::new("char"),
-    SqlKeyword::new("character"),
     SqlKeyword::new("characteristics"),
     SqlKeyword::new("check"),
     SqlKeyword::new("collate"),
@@ -1297,7 +1296,7 @@ mod tests {
             ),
             (
                 "create table t (id int) {}",
-                &["default", "inherits", "partition", "with"],
+                &["inherits", "partition", "with"],
             ),
             ("alter table t alter column a {}", &["drop", "set", "type"]),
             (
