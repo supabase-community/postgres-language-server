@@ -172,7 +172,7 @@ lint-ci-versions:
 
 lint-ci:
   cargo sqlx prepare --check --workspace
-  cargo clippy --fix
+  cargo clippy --workspace --all-targets -- -D warnings
   cargo run -p rules_check
   bun oxlint --fix packages/
 

@@ -435,7 +435,9 @@ jobs:
         with:
           tree-sitter-ref: v0.25.9
 
+      # Linux code is linted in "Lint Project".
       - name: Run clippy
+        if: runner.os != 'Linux'
         run: cargo clippy --all-targets -- -D warnings
 
       - name: Install cargo-nextest
