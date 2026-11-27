@@ -329,6 +329,15 @@ jobs:
         uses: tree-sitter/setup-action/cli@v2
         with:
           tree-sitter-ref: v0.25.9
+      - name: Build the corpus check
+        run: cargo test -p pgls_cli --release --test corpus --no-run
+      # The release binary that the corpus check runs, for "Test JS Packages".
+      - name: Upload the CLI binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-release
+          path: target/release/postgres-language-server
+          retention-days: 1
       - name: Run the corpus check
         run: cargo test -p pgls_cli --release --test corpus -- --ignored
       - name: Run the completion harness
@@ -417,9 +426,10 @@ jobs:
             | jq -r '.packages[] | select(any(.targets[]; .doctest)) | "-p", .name' \
             | tr -d '\r' | xargs cargo test --doc
 
+  # Tests the binary that "Corpus" built, also when the corpus check itself failed.
   test-js-bindings:
-    needs: changes
-    if: needs.changes.outputs.code == 'true'
+    needs: [changes, corpus]
+    if: ${{ !cancelled() && needs.changes.outputs.code == 'true' && needs.corpus.result != 'skipped' }}
     name:
       Test JS Packages
       # use the same image we use for compiling
@@ -436,29 +446,13 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
+      - name: Download the CLI binary
+        uses: actions/download-artifact@v4
         with:
-          submodules: true
-      - name: Install toolchain
-        uses: moonrepo/setup-rust@v1
-        with:
-          cache: false
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: cli-release
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/bin/tree-sitter
-            target/**/build/pgls_treesitter_grammar-*/out/generated
-          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
-      - name: Setup tree-sitter
-        uses: tree-sitter/setup-action/cli@v2
-        with:
-          tree-sitter-ref: v0.25.9
-      - name: Build main binary
-        run: cargo build -p pgls_cli --release
+          name: cli-release
+          path: target/release
+      - name: Make the CLI binary executable
+        run: chmod +x target/release/postgres-language-server
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
