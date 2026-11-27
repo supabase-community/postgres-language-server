@@ -128,7 +128,7 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: rustfmt
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # The release binary, because building taplo-cli without its lockfile picks up
@@ -207,9 +207,16 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: clippy
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # One cache per kind of build, written by the runs on main and restored by pull requests.
+      # Swatinem keys it on the lockfile and the toolchain, so it follows main.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: lint
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # we need to use the same database as we do locally for sqlx prepare to output the same hashes
       - name: Set up Docker Buildx
@@ -305,9 +312,14 @@ jobs:
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: formatter-option-matrix
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Run the option matrix
         run: cargo test -p pgls_pretty_print --release --test option_matrix -- --ignored
 
@@ -329,9 +341,18 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: clippy
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # fuzz/ has no lockfile of its own: the root one pins the dependencies they share.
+      - name: Use the root lockfile
+        run: cp Cargo.lock fuzz/Cargo.lock
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: fuzz-targets
+          workspaces: fuzz -> target
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - uses: actions/cache@v5
         with:
           path: |
@@ -342,11 +363,8 @@ jobs:
         uses: tree-sitter/setup-action/cli@v2
         with:
           tree-sitter-ref: v0.25.9
-      # fuzz/ has no lockfile of its own: the root one pins the dependencies they share.
       - name: Run clippy
-        run: |
-          cp Cargo.lock fuzz/Cargo.lock
-          cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
+        run: cargo clippy --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
 
   # Runs the CLI and the fuzzers' oracles over real-world SQL (crates/pgls_cli/tests/corpus.toml)
   # and compares a summary per source with its snapshot. In release, because `format` of GitLab's
@@ -368,9 +386,14 @@ jobs:
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: corpus
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - uses: actions/cache@v5
         with:
           path: |
@@ -410,9 +433,14 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: clippy
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: test-${{ runner.os }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
@@ -461,7 +489,12 @@ jobs:
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
-          cache-base: main
+          cache: false
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cli-release
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - uses: actions/cache@v5
         with:
           path: |
@@ -510,9 +543,6 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@main
-
       - name: Install JS dependencies
         run: nix develop --command bun install
 
@@ -552,9 +582,14 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: rustfmt
-          cache-base: main
+          cache: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: codegen
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       # The release binary, because building taplo-cli without its lockfile picks up
       # dependencies that need a newer Rust than our toolchain.
       - name: Install taplo
