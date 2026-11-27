@@ -1,0 +1,7 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/sec_label_stmt_long_provider.sql
+---
+security label for 'a provider name with spaces that is longer than the sixty-three bytes an identifier keeps, and longer than a line'
+on table t
+is 'classified';

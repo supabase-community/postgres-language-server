@@ -1,5 +1,6 @@
 mod class;
 mod cursor;
+mod keyword;
 mod number;
 mod operator;
 mod psql;
@@ -9,6 +10,7 @@ mod trivia;
 
 pub use class::CharClass;
 use cursor::Cursor;
+pub use keyword::{Keyword, KeywordCategory};
 use quoted::Quote;
 pub use token::{Base, LiteralKind, NamedParamKind, Token, TokenKind};
 
