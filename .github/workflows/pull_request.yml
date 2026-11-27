@@ -19,6 +19,7 @@ on:
       - ".github/actions/**"
       - ".sqlx/**"
       - ".cargo/**"
+      - ".config/**"
       - "clippy.toml"
       - "taplo.toml"
       - ".tree-sitter-cli-version"
@@ -83,6 +84,7 @@ jobs:
               - ".github/actions/**"
               - ".sqlx/**"
               - ".cargo/**"
+              - ".config/**"
               - "clippy.toml"
               - "taplo.toml"
               - ".tree-sitter-cli-version"
@@ -406,8 +408,16 @@ jobs:
       - name: Run clippy
         run: cargo clippy --all-targets -- -D warnings
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo nextest run --workspace --profile ci
+
+      - name: Run doctests
+        run: cargo test --workspace --doc
 
   test-js-bindings:
     needs: changes
