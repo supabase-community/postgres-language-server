@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def};
+use crate::utils::{alter_table_cmds, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -93,7 +93,7 @@ impl LinterRule for AddingNotNullField {
                     }
                 }
                 // `ADD CONSTRAINT ... NOT NULL column`, which only parses on Postgres 18.
-                pgls_query::protobuf::AlterTableType::AtAddConstraint => match cmd_def(cmd) {
+                pgls_query::protobuf::AlterTableType::AtAddConstraint => match cmd.definition() {
                     Some(pgls_query::NodeEnum::Constraint(constraint))
                         if constraint.contype()
                             == pgls_query::protobuf::ConstrType::ConstrNotnull

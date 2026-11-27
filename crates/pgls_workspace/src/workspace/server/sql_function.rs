@@ -1,4 +1,4 @@
-use pgls_query_ext::{function_body::Language, utils::find_option_value_mut};
+use pgls_query_ext::function_body::Language;
 
 /// Puts the formatted body into `CREATE FUNCTION ... AS '<body>'` for a `LANGUAGE sql` function.
 ///
@@ -26,13 +26,11 @@ fn sql_fn_body_mut(ast: &mut pgls_query::NodeEnum) -> Option<&mut String> {
         return None;
     }
 
-    find_option_value_mut(create_fn, "as")
+    create_fn.option_value_mut("as")
 }
 
 #[cfg(test)]
 mod tests {
-    use pgls_query_ext::utils::find_option_value;
-
     use super::*;
 
     #[test]
@@ -51,7 +49,7 @@ mod tests {
             _ => panic!("Expected CreateFunctionStmt"),
         };
 
-        let body = find_option_value(create_fn, "as");
+        let body = create_fn.option_value("as");
         assert_eq!(body, Some("\nselect $1 + $2;\n"));
     }
 

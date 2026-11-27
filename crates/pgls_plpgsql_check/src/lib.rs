@@ -6,7 +6,7 @@ pub use diagnostics::PlPgSqlCheckDiagnostic;
 use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameterMode, Token, TypeName};
 use pgls_query_ext::{
     function_body::{Language, OffsetMap, function_body_location},
-    utils::{QualifiedName, find_option_value},
+    utils::QualifiedName,
 };
 use pgls_text_size::TextRange;
 use pgls_tokenizer::NamePosition;
@@ -120,7 +120,7 @@ impl<'a> PlPgSqlFunction<'a> {
         let QualifiedName { schema, name, .. } = QualifiedName::of(&create_fn.funcname)?;
         // The body's value is the `AS` option; the scanner finds its constant, so that an
         // escaped body or one whose text also occurs earlier in the statement is found.
-        let value = find_option_value(create_fn, "as")?;
+        let value = create_fn.option_value("as")?;
         let (range, offsets) = function_body_location(create_fn, sql)?;
         debug_assert!(
             usize::from(range.end()) <= sql.len(),

@@ -7,10 +7,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
-use pgls_query_ext::{
-    function_body::Language,
-    utils::{QualifiedName, find_option_value},
-};
+use pgls_query_ext::{function_body::Language, utils::QualifiedName};
 
 use super::{Resolver, resolve_node_enum};
 use crate::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};
@@ -256,7 +253,7 @@ fn body_statements(n: &CreateFunctionStmt) -> Option<Vec<NodeEnum>> {
             .map(|statement| statement.node.clone())
             .collect();
     }
-    let body = find_option_value(n, "as")?;
+    let body = n.option_value("as")?;
     let parsed = pgls_query::parse(body).ok()?;
     Some(parsed.stmts().into_iter().cloned().collect())
 }

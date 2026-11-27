@@ -1,5 +1,4 @@
-use pgls_query::protobuf::CreateRangeStmt;
-use pgls_query_ext::options::find_def_elem;
+use pgls_query::protobuf::{CreateRangeStmt, DefElem};
 use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, overlay::function_info};
@@ -17,7 +16,7 @@ pub(super) fn apply_create_range_stmt(
     let Some(name) = QualifiedName::of(&n.type_name) else {
         return;
     };
-    if find_def_elem(&n.params, "multirange_type_name").is_some() {
+    if DefElem::find(&n.params, "multirange_type_name").is_some() {
         c.tainted = true;
         return;
     }

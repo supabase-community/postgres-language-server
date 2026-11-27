@@ -2,7 +2,6 @@ use pgls_query::{
     NodeEnum, NodeRef,
     protobuf::{AlterTableType, ConstrType, IndexStmt, Node, ObjectType},
 };
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 use crate::catalog::{Catalog, Entry, key};
 use crate::lookup::{IndexInfo, Lookup, Origin, RelationInfo, RelationKind};
@@ -221,16 +220,16 @@ pub(super) fn creates_implicit_indexes(stmt: &NodeEnum) -> bool {
                     _ => false,
                 })
         }
-        NodeEnum::AlterTableStmt(n) => alter_table_cmds(n).any(|command| match command.subtype() {
+        NodeEnum::AlterTableStmt(n) => n.commands().any(|command| match command.subtype() {
             AlterTableType::AtAddIndex
             | AlterTableType::AtAddIndexConstraint
             | AlterTableType::AtAttachPartition => true,
             AlterTableType::AtAddConstraint => matches!(
-                cmd_def(command),
+                command.definition(),
                 Some(NodeEnum::Constraint(constraint)) if constraint_creates_index(constraint)
             ),
             AlterTableType::AtAddColumn => matches!(
-                cmd_def(command),
+                command.definition(),
                 Some(NodeEnum::ColumnDef(column)) if column_creates_index(&column.constraints)
             ),
             _ => false,
