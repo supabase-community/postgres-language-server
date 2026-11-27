@@ -1698,6 +1698,14 @@ VALUES
             "select * from t alter join u on true;",
             "select * from t join u insert on true;",
             "delete from t delete where true;",
+            "update t1 update set f1[:5].q2 = 43;",
+            "update t update set (a, b) = (1, 2);",
+            "update t update\nset set = 1, a.b = 2;",
+            "with x as (select 1) update t update set a = 1;",
+            "create rule r as on update to t do instead update t update set a = 1;",
+            "update set set a = 1;",
+            "update set s set a = 1;",
+            "update t delete set a = 1;",
             "MERGE INTO t USING s insert ON t.a = s.a\n\nWHEN NOT MATCHED THEN INSERT VALUES (s.a);",
         ] {
             Tester::from(sql)
@@ -1705,11 +1713,13 @@ VALUES
                 .assert_no_errors();
         }
         Tester::from(
-            "select * from t\nupdate only t set a = 1;\nselect * from t\nalter type x rename to y;",
+            "select * from t\nupdate only t set a = 1;\nselect * from t\nupdate set set a = 1;\nselect * from t\nalter type x rename to y;",
         )
         .expect_statements(vec![
             "select * from t",
             "update only t set a = 1;",
+            "select * from t",
+            "update set set a = 1;",
             "select * from t",
             "alter type x rename to y;",
         ])
