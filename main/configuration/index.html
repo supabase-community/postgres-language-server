@@ -491,6 +491,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sql-templates-of-go-and-rust-programs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SQL templates of Go and Rust programs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#specifying-files-to-process" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1553,6 +1564,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sql-templates-of-go-and-rust-programs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        SQL templates of Go and Rust programs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#specifying-files-to-process" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1878,6 +1900,26 @@ individual fields. The URI takes precedence over any other connection fields.</p
 <li>When a configuration file is passed explicitly with <code>--config-path</code>, it applies to all files and nested configuration files are not looked up.</li>
 <li><code>dblint</code> uses the configuration of the working directory.</li>
 </ul>
+<h2 id="sql-templates-of-go-and-rust-programs">SQL templates of Go and Rust programs<a class="headerlink" href="#sql-templates-of-go-and-rust-programs" title="Permanent link">&para;</a></h2>
+<p>Some SQL files are format strings of a program, like the queries a Go program fills in with <code>fmt.Sprintf</code>, or a Rust program with <code>format!</code>. Set <code>templating.syntax</code> to read them as such: <code>"go-printf"</code> for Go's <code>fmt.Sprintf</code>, <code>"rust-fmt"</code> for Rust's <code>format!</code>, or <code>"none"</code>, the default. <code>templating.include</code> and <code>templating.ignore</code> select the files with globs, like <code>files.include</code> and <code>files.ignore</code>. Without <code>include</code>, every file of the configuration is a template.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"templating"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"syntax"</span><span class="p">:</span><span class="w"> </span><span class="s2">"go-printf"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"include"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"internal/queries/**/*.sql"</span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Check, lint and the editor features then read the SQL around the directives:</p>
+<ul>
+<li>A directive (<code>%s</code>, <code>%d</code>, <code>%[1]v</code>, <code>%5.2f</code> of <a href="https://pkg.go.dev/fmt#hdr-Printing">Go</a>, <code>{}</code>, <code>{0}</code>, <code>{name}</code>, <code>{name:&gt;8}</code> of <a href="https://doc.rust-lang.org/std/fmt/index.html#syntax">Rust</a>) is analysed like a psql variable, as goose's <code>ENVSUB</code> expansions are (see <a href="../guides/checking_migrations/">Checking migrations</a>): as an identifier after keywords like <code>TABLE</code>, <code>FROM</code> or <code>REFERENCES</code> and before a <code>.</code>, and as a value elsewhere. So <code>select * from %s.%s where id = %d</code> reads two identifiers and a value. A statement whose directives are all values, like <code>select * from users where id = %d</code>, is typechecked; one with a directive in an identifier isn't. An identifier with a directive, like <code>app_%s</code>, <code>tenant_{schema}</code> or <code>"%s"</code>, is one identifier. Directives that take different arguments are different values, like the two <code>%s</code> of <code>where a = %s and b = %s</code>, and the same argument twice, like <code>%[1]s</code> or <code>{name}</code>, is one value. A statement with more than 53 distinct arguments may not get a placeholder of its own for each of them, and then isn't typechecked.</li>
+<li>A directive directly after a name, a value, a <code>)</code>, a <code>]</code> or another directive, like <code>select a %s from t</code> or <code>from t {alias}</code>, is reported: it would be an alias without <code>AS</code> or a part of a clause, and a placeholder can only stand for a name or a value. Write <code>as %s</code> for an alias. Directives that are part of a name, like <code>app_%s</code>, are fine.</li>
+<li>Directives in string literals and comments stay as written. A statement with a directive in a string literal isn't typechecked, since its value is unknown.</li>
+<li><code>%%</code> writes <code>%</code> in Go, <code>{{</code> and <code>}}</code> write <code>{</code> and <code>}</code> in Rust. In string literals they stay as written. Elsewhere, Go's <code>%%</code> is read as the <code>%</code> operator, so <code>id %% 2</code> is the modulo <code>id % 2</code>.</li>
+<li>A <code>%</code> or <code>{</code> that doesn't start a directive, like the <code>%</code> of <code>7 % 2</code> or the <code>{</code> of <code>'{1,2}'</code>, is read as SQL. Go and Rust would reject or mangle it, so write <code>%%</code> and <code>{{</code> in the template.</li>
+<li>Fixes that would edit a directive are left out, and statements with a directive can't be executed from the editor.</li>
+<li>The formatter formats the statements around the directives and keeps each directive as written. Go and Rust take the arguments of <code>%s</code> and <code>{}</code> by position, so it checks that the formatted statement has its directives, also those in strings and comments, in the same order and at the same places. A statement where it can't, like one with a <code>%</code> that is no directive, is left as written, with a diagnostic.</li>
+</ul>
+<p>The setting applies per configuration file, so Go and Rust templates in different folders of one project each get a <a href="#nested-configurations-monorepos">nested configuration</a>, or one configuration selects them with <code>include</code>. <code>--template-syntax=go-printf|rust-fmt|none</code> of <code>check</code>, <code>format</code> and <code>parse</code> replaces <code>templating.syntax</code> for one run, in every configuration file; <code>none</code> switches it off. <code>parse</code> uses the configuration file of the folder of <code>--file</code>, or <code>--config-path</code>. A file that is also a goose migration with <code>ENVSUB</code> is read as a template: where the file has template directives, their placeholders take the place of the <code>ENVSUB</code> expansions, which stay as written.</p>
 <h2 id="specifying-files-to-process">Specifying files to process<a class="headerlink" href="#specifying-files-to-process" title="Permanent link">&para;</a></h2>
 <p>You can control the files/folders to process using different strategies, either CLI, configuration and VCS.</p>
 <h3 id="include-files-via-cli">Include files via CLI<a class="headerlink" href="#include-files-via-cli" title="Permanent link">&para;</a></h3>

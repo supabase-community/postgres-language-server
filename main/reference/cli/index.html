@@ -1277,6 +1277,8 @@
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: <code>-- migrate:up</code> and <code>-- migrate:down</code> of dbmate, <code>-- +goose Up</code> and <code>-- +goose Down</code> of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
+- <strong><code>--template-syntax</code></strong>=<em><code>&lt;go-printf|rust-fmt|none&gt;</code></em> &mdash; 
+  The format strings that the files are: "go-printf" for Go's <code>fmt.Sprintf</code> (<code>%s</code>, <code>%d</code>, <code>%[1]v</code>, <code>%%</code>), "rust-fmt" for Rust's <code>format!</code> (<code>{}</code>, <code>{0}</code>, <code>{name}</code>, <code>{{</code>), or "none". The analysis reads the SQL around the placeholders. Default: "none".
 - <strong><code>--line-width</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
 - <strong><code>--indent-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
@@ -1385,6 +1387,8 @@
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: <code>-- migrate:up</code> and <code>-- migrate:down</code> of dbmate, <code>-- +goose Up</code> and <code>-- +goose Down</code> of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
+- <strong><code>--template-syntax</code></strong>=<em><code>&lt;go-printf|rust-fmt|none&gt;</code></em> &mdash; 
+  The format strings that the files are: "go-printf" for Go's <code>fmt.Sprintf</code> (<code>%s</code>, <code>%d</code>, <code>%[1]v</code>, <code>%%</code>), "rust-fmt" for Rust's <code>format!</code> (<code>{}</code>, <code>{0}</code>, <code>{name}</code>, <code>{{</code>), or "none". The analysis reads the SQL around the placeholders. Default: "none".
 - <strong><code>--line-width</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
 - <strong><code>--indent-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
@@ -1514,6 +1518,8 @@
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: <code>-- migrate:up</code> and <code>-- migrate:down</code> of dbmate, <code>-- +goose Up</code> and <code>-- +goose Down</code> of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - <strong><code>--lint-down</code></strong>=<em><code>&lt;true|false&gt;</code></em> &mdash; 
   If <code>false</code>, the down sections of migration files are not linted. Default: <code>true</code>.
+- <strong><code>--template-syntax</code></strong>=<em><code>&lt;go-printf|rust-fmt|none&gt;</code></em> &mdash; 
+  The format strings that the files are: "go-printf" for Go's <code>fmt.Sprintf</code> (<code>%s</code>, <code>%d</code>, <code>%[1]v</code>, <code>%%</code>), "rust-fmt" for Rust's <code>format!</code> (<code>{}</code>, <code>{0}</code>, <code>{name}</code>, <code>{{</code>), or "none". The analysis reads the SQL around the placeholders. Default: "none".
 - <strong><code>--line-width</code></strong>=<em><code>NUMBER</code></em> &mdash; 
   Maximum line width before breaking. Default: 100.
 - <strong><code>--indent-size</code></strong>=<em><code>NUMBER</code></em> &mdash; 
@@ -1658,8 +1664,13 @@
   Prints help information</p>
 <h2 id="postgres-language-server-parse">postgres-language-server parse<a class="headerlink" href="#postgres-language-server-parse" title="Permanent link">&para;</a></h2>
 <p>Parses a SQL file (or standard input) and writes the parse tree as a protobuf <code>ParseResult</code> message.</p>
-<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>parse</code></strong> [<strong><code>--file</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>Usage</strong>: <strong><code>postgres-language-server</code></strong> <strong><code>parse</code></strong> [<strong><code>--config-path</code></strong>=<em><code>PATH</code></em>] [<strong><code>--file</code></strong>=<em><code>PATH</code></em>]</p>
+<p><strong>The configuration of SQL files that are format strings of a host language.</strong>
+- <strong><code>--template-syntax</code></strong>=<em><code>&lt;go-printf|rust-fmt|none&gt;</code></em> &mdash; 
+  The format strings that the files are: "go-printf" for Go's <code>fmt.Sprintf</code> (<code>%s</code>, <code>%d</code>, <code>%[1]v</code>, <code>%%</code>), "rust-fmt" for Rust's <code>format!</code> (<code>{}</code>, <code>{0}</code>, <code>{name}</code>, <code>{{</code>), or "none". The analysis reads the SQL around the placeholders. Default: "none".</p>
 <p><strong>Available options:</strong>
+- <strong><code>--config-path</code></strong>=<em><code>PATH</code></em> &mdash; 
+  Set the file path to the configuration file, or the directory path to find <code>postgres-language-server.jsonc</code>. By default, the configuration of the folder of the file applies, or of the working directory for standard input.
 - <strong><code>--file</code></strong>=<em><code>PATH</code></em> &mdash; 
   Path to the SQL file to parse. When omitted, the SQL is read from standard input.
 - <strong><code>--stdin-file-path</code></strong>=<em><code>PATH</code></em> &mdash; 
