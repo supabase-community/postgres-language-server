@@ -1,0 +1,8 @@
+#!/bin/sh
+# A C compiler for `just fuzz` that builds libpg_query and the tree-sitter grammar with
+# AddressSanitizer, and everything else, like the C code of proc macros, without it: rustc can't
+# load a proc macro that needs the sanitizer's runtime.
+case "$*" in
+*pgls_query/vendor/* | *pgls_treesitter_grammar*) exec clang -fsanitize=address "$@" ;;
+*) exec clang "$@" ;;
+esac
