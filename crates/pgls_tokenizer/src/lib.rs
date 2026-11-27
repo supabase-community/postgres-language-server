@@ -356,6 +356,27 @@ mod tests {
     }
 
     #[test]
+    fn long_operator_runs_are_scanned_once() {
+        // A run of `+` and `-` is put back to its first character, so each is its own token.
+        // Scanning the whole run for every token took minutes. (A run of `-` is a comment.)
+        for run in ["+", "+-", "-+"] {
+            let input = run.repeat(20_000 / run.len());
+            let kinds: Vec<_> = tokenize(&input).map(|token| token.kind).collect();
+            let expected: Vec<_> = input
+                .chars()
+                .map(|c| {
+                    if c == '+' {
+                        TokenKind::Plus
+                    } else {
+                        TokenKind::Minus
+                    }
+                })
+                .collect();
+            assert!(kinds == expected, "{run}");
+        }
+    }
+
+    #[test]
     fn line_comment() {
         let result = lex(r#"
 -- foooooooooooo bar buzz
