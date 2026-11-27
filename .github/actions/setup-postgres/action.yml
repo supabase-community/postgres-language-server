@@ -58,7 +58,7 @@ runs:
         echo "port = 5432" >> "$RUNNER_TEMP/pgdata/postgresql.conf"
         pg_ctl start --pgdata="$RUNNER_TEMP/pgdata" --log="$RUNNER_TEMP/postgres.log" --wait
 
-    # For Linux, use custom Docker image with plpgsql_check and pglinter
+    # For Linux, use custom Docker image with plpgsql_check and pglinter, for any supported major
     - name: Set up Docker Buildx
       if: runner.os == 'Linux'
       uses: docker/setup-buildx-action@v3
@@ -69,9 +69,10 @@ runs:
       with:
         context: .
         load: true
+        build-args: PG_MAJOR=${{ inputs.postgres-version }}
         tags: postgres-language-server-dev:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=postgres-${{ inputs.postgres-version }}
+        cache-to: type=gha,mode=max,scope=postgres-${{ inputs.postgres-version }}
 
     - name: Start PostgreSQL container
       if: runner.os == 'Linux'
