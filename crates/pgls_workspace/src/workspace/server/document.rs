@@ -448,6 +448,11 @@ impl Document {
             .is_some_and(|preprocessed| preprocessed.touches_placeholder(range))
     }
 
+    /// What the host replaces in the content, if anything, see [`Document::text`].
+    pub(crate) fn preprocessed(&self) -> Option<&Preprocessed> {
+        self.migration_script.preprocessed.as_ref()
+    }
+
     /// The first template placeholder in `range` that can't be read where it is, see
     /// [`pgls_templating::Ambiguity`].
     fn ambiguity_in(&self, range: TextRange) -> Option<&pgls_templating::Ambiguity> {

@@ -9,12 +9,15 @@
 mod go;
 mod rust;
 mod substitute;
+mod tagged;
 
 use std::str::FromStr;
 
 use pgls_lexer::SyntaxKind;
 use pgls_text_size::TextRange;
 use serde::{Deserialize, Serialize};
+
+pub use tagged::Tagged;
 
 // The value of `templating.syntax`: the doc comments are the documentation of the setting.
 /// The format strings of a host language that the SQL files are.

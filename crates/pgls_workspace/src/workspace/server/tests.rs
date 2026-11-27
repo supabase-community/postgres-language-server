@@ -6643,7 +6643,7 @@ fn test_goose_envsub_expansions_stay_as_written() {
         "-- +goose up\n-- +goose envsub on\ncreate table if not exists ${schema}.events (id bigint, at timestamptz);\ncreate table if not exists logs (at timestamptz);\n"
     );
 
-    // The formatter leaves the statement alone.
+    // The formatter formats the statement around the expansion, which stays as written.
     let formatted = workspace
         .pull_file_formatting(PullFileFormattingParams {
             project_key,
@@ -6651,12 +6651,14 @@ fn test_goose_envsub_expansions_stay_as_written() {
             range: None,
         })
         .expect("Unable to format file");
+    assert_eq!(
+        formatted.formatted,
+        "-- +goose Up\n-- +goose ENVSUB ON\ncreate table ${SCHEMA}.events (\n  id bigint,\n  at timestamp\n);\ncreate table logs (at timestamp);\n"
+    );
     assert!(
-        formatted
-            .formatted
-            .contains("create table ${SCHEMA}.events (id bigint, at timestamp);"),
-        "{}",
-        formatted.formatted
+        formatted.diagnostics.is_empty(),
+        "{:?}",
+        formatted.diagnostics
     );
 }
 
@@ -6835,6 +6837,26 @@ impl TemplateFile {
         diagnostics
     }
 
+    /// The formatted file, and the descriptions of the diagnostics of the formatter.
+    fn formatted(&self) -> (String, Vec<String>) {
+        let result = self
+            .workspace
+            .pull_file_formatting(PullFileFormattingParams {
+                project_key: self.project_key,
+                path: self.path.clone(),
+                range: None,
+            })
+            .expect("Unable to format file");
+        (
+            result.formatted,
+            result
+                .diagnostics
+                .iter()
+                .map(|diagnostic| diagnostic.description_text().to_string())
+                .collect(),
+        )
+    }
+
     /// The categories of the diagnostics, sorted.
     fn categories(&self) -> Vec<String> {
         self.diagnostics()
@@ -6888,7 +6910,7 @@ fn rust_fmt_templates_are_analysed_around_their_directives() {
 }
 
 #[test]
-fn template_directives_are_neither_fixed_nor_formatted() {
+fn template_directives_are_not_fixed_but_formatted_around() {
     let file = TemplateFile::open(
         r#"{ "templating": { "syntax": "go-printf" }, "format": { "enabled": true } }"#,
         "queries.sql",
@@ -6910,21 +6932,93 @@ fn template_directives_are_neither_fixed_nor_formatted() {
         fixed,
         "update users set name = 'b';\nupdate users set name = %s, name = %s;\nselect   %s   from   t;\nselect   1;\n"
     );
-    // The formatter leaves the statements with directives as written.
-    let formatted = file
-        .workspace
-        .pull_file_formatting(PullFileFormattingParams {
-            project_key: file.project_key,
-            path: file.path.clone(),
-            range: None,
-        })
-        .expect("Unable to format file")
-        .formatted;
-    assert!(
-        formatted
-            .contains("update users set name = %s, name = %s;\nselect   %s   from   t;\nselect 1;"),
-        "{formatted}"
+    // The formatter formats around the directives.
+    let (formatted, diagnostics) = file.formatted();
+    assert_eq!(
+        formatted,
+        "update users set name = 'a', name = 'b';\nupdate users set name = %s, name = %s;\nselect %s from t;\nselect 1;\n"
     );
+    assert_eq!(diagnostics, Vec::<String>::new());
+}
+
+#[test]
+fn templates_and_envsub_are_formatted_around_their_placeholders() {
+    let format = |configuration: &str, content: &str| {
+        let file = TemplateFile::open(configuration, "queries.sql", content);
+        let (formatted, diagnostics) = file.formatted();
+        // Formatting the output again changes nothing.
+        let again = TemplateFile::open(configuration, "queries.sql", &formatted).formatted();
+        assert_eq!(
+            again,
+            (formatted.clone(), diagnostics.clone()),
+            "{formatted}"
+        );
+        (formatted, diagnostics)
+    };
+    let go = r#"{ "templating": { "syntax": "go-printf" }, "format": { "enabled": true } }"#;
+    assert_eq!(
+        format(
+            go,
+            "select   *   from %s.users   where id = %d and note = '%s'   and n %% 2 = 0;\nselect a, /* %v */ b   from app_%s;\n"
+        ),
+        (
+            "select * from %s.users where id = %d and note = '%s' and n %% 2 = 0;\nselect a, /* %v */ b from app_%s;\n".to_string(),
+            vec![]
+        )
+    );
+    // A `%` that is no directive, which Go would mangle, is kept as written.
+    assert_eq!(
+        format(go, "select 7 %% 2,  8 % 3, %d;\n"),
+        (
+            "select 7 %% 2,  8 % 3, %d;\n".to_string(),
+            vec!["Format error: Placeholders could not be restored after formatting, the statement was left untouched".to_string()]
+        )
+    );
+    assert_eq!(
+        format(
+            r#"{ "templating": { "syntax": "rust-fmt" }, "format": { "enabled": true } }"#,
+            "select {}  ,  {name}   from {schema}.t where tags = '{{a}}' and n = {0:>4};\n"
+        ),
+        (
+            "select {}, {name} from {schema}.t where tags = '{{a}}' and n = {0:>4};\n".to_string(),
+            vec![]
+        )
+    );
+    assert_eq!(
+        format(
+            r#"{ "migrations": { "tool": "goose" }, "format": { "enabled": true } }"#,
+            "-- +goose Up\n-- +goose ENVSUB ON\ninsert into   ${SCHEMA}.audit_log (message) values ('${MESSAGE}');\n"
+        ),
+        (
+            "-- +goose Up\n-- +goose ENVSUB ON\ninsert into ${SCHEMA}.audit_log (message) values ('${MESSAGE}');\n".to_string(),
+            vec![]
+        )
+    );
+}
+
+#[test]
+fn templates_are_formatted_at_every_line_width() {
+    let content = "select id, name, email, created_at, updated_at from %s.users where tenant_id = %d and status = %s;\n";
+    for width in [80, 100] {
+        let file = TemplateFile::open(
+            &format!(
+                r#"{{ "templating": {{ "syntax": "go-printf" }}, "format": {{ "enabled": true, "lineWidth": {width} }} }}"#
+            ),
+            "queries.sql",
+            content,
+        );
+        let (formatted, diagnostics) = file.formatted();
+        assert_eq!(diagnostics, Vec::<String>::new(), "{width}");
+        assert!(
+            formatted.lines().all(|line| line.len() <= width),
+            "{width}: {formatted}"
+        );
+        assert_eq!(
+            formatted.split_whitespace().collect::<Vec<_>>(),
+            content.split_whitespace().collect::<Vec<_>>(),
+            "{width}"
+        );
+    }
 }
 
 #[test]
