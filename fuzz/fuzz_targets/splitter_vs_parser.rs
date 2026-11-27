@@ -72,7 +72,7 @@ impl Split<'_> {
                 .next()
                 .unwrap_or_default();
             !before.ends_with(';')
-                && pgls_lexer::keyword_category(word).is_some()
+                && pgls_lexer::KeywordCategory::of(&word.to_ascii_lowercase()).is_some()
                 && pgls_query::parse(before).is_ok()
         })
     }
