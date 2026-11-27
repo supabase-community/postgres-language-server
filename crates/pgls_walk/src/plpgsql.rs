@@ -2,22 +2,14 @@
 
 use pgls_query::{
     Identifier, NodeEnum,
-    protobuf::{Token, a_const},
+    protobuf::{PLpgSqlExpr, Token, a_const},
 };
-use serde_json::Value;
 
 use crate::is_plain_query;
 
-/// How many JSON values of a function's parse tree [`may_change_catalog`] visits. A statement of
-/// the body takes about ten; a hundred thousand only stops generated input, and visiting them
-/// takes a few milliseconds.
-const PLPGSQL_VALUES_MAX: usize = 100_000;
-
-/// The `parseMode` of an expression that is a whole SQL statement, [`RAW_PARSE_DEFAULT`]. The
-/// others are expressions and assignments, like `x > 0` and `x := f(y)`.
-///
-/// [`RAW_PARSE_DEFAULT`]: https://github.com/postgres/postgres/blob/REL_18_6/src/include/parser/parser.h#L41
-const RAW_PARSE_DEFAULT: i64 = 0;
+/// How many statements and expressions of a function's body [`may_change_catalog`] looks at. A
+/// hundred thousand only stops generated input, and looking at them takes a few milliseconds.
+const PLPGSQL_NODES_MAX: usize = 100_000;
 
 /// Whether running the PL/pgSQL function that `create_function`, the text of its
 /// `CREATE FUNCTION` statement, creates may change the catalog. It may if its body has
@@ -33,7 +25,8 @@ const RAW_PARSE_DEFAULT: i64 = 0;
 ///   body are parsed and passed to it; in expressions, like `x := f(y)`, any name followed by
 ///   `(` counts as a call to the function `is_catalog_function` tells about.
 ///
-/// It may also when the body doesn't parse, or has more than [`PLPGSQL_VALUES_MAX`] values.
+/// It may also when the body doesn't parse, or has more than [`PLPGSQL_NODES_MAX`] statements
+/// and expressions.
 ///
 /// Cost: parsing the body with libpg_query's PL/pgSQL parser, and each of its SQL statements
 /// with the SQL parser. Expressions are only scanned when the file created a function that may
@@ -44,81 +37,64 @@ pub(crate) fn may_change_catalog(
     is_catalog_function: impl Fn(&str) -> bool,
     any_catalog_function: bool,
 ) -> bool {
-    let Ok(json) = pgls_query::parse_plpgsql_json(create_function) else {
+    let Ok(parsed) = pgls_query::parse_plpgsql(create_function) else {
         return true;
     };
-    // serde_json stops at a nesting depth of 128 and returns an error.
-    let Ok(tree) = serde_json::from_str::<Value>(&json) else {
+    let Some(function) = parsed.function() else {
         return true;
     };
-    let mut stack = vec![&tree];
     let mut visited = 0;
-    while let Some(value) = stack.pop() {
+    let mut too_many = || {
         visited += 1;
-        if visited > PLPGSQL_VALUES_MAX {
+        let too_many = visited > PLPGSQL_NODES_MAX;
+        if too_many {
             tracing::warn!(
-                "stopped looking at a PL/pgSQL function body after {PLPGSQL_VALUES_MAX} values"
+                "stopped looking at a PL/pgSQL function body after {PLPGSQL_NODES_MAX} statements and expressions"
             );
+        }
+        too_many
+    };
+    for stmt in function.statements() {
+        if too_many() {
             return true;
         }
-        match value {
-            Value::Array(values) => stack.extend(values),
-            Value::Object(fields) => {
-                for (key, value) in fields {
-                    let dynamic = match key.as_str() {
-                        "PLpgSQL_stmt_dynexecute" | "PLpgSQL_stmt_dynfors" => value.get("query"),
-                        "dynquery" => Some(value),
-                        _ => None,
-                    };
-                    if let Some(dynamic) = dynamic {
-                        let constant = dynamic
-                            .get("PLpgSQL_expr")
-                            .and_then(|expr| expr.get("query"))
-                            .and_then(Value::as_str)
-                            .and_then(string_constant);
-                        let Some(sql) = constant else {
-                            return true;
-                        };
-                        if statement_may_change_catalog(&sql, &calls_catalog_function) {
-                            return true;
-                        }
-                    }
-                    match key.as_str() {
-                        "PLpgSQL_expr" => {
-                            if expression_may_change_catalog(
-                                value,
-                                &calls_catalog_function,
-                                &is_catalog_function,
-                                any_catalog_function,
-                            ) {
-                                return true;
-                            }
-                        }
-                        _ => stack.push(value),
-                    }
-                }
+        if let Some(dynamic) = stmt.dynamic_query() {
+            let Some(sql) = string_constant(&dynamic.query) else {
+                return true;
+            };
+            if statement_may_change_catalog(&sql, &calls_catalog_function) {
+                return true;
             }
-            _ => {}
+        }
+    }
+    for expr in function.expressions() {
+        if too_many() {
+            return true;
+        }
+        if expression_may_change_catalog(
+            expr,
+            &calls_catalog_function,
+            &is_catalog_function,
+            any_catalog_function,
+        ) {
+            return true;
         }
     }
     false
 }
 
-/// Whether running `expr`, a `PLpgSQL_expr` of the parse tree, may change the catalog, see
+/// Whether running `expr`, an expression of the body, may change the catalog, see
 /// [`may_change_catalog`].
 fn expression_may_change_catalog(
-    expr: &Value,
+    expr: &PLpgSqlExpr,
     calls_catalog_function: &impl Fn(&NodeEnum) -> bool,
     is_catalog_function: &impl Fn(&str) -> bool,
     any_catalog_function: bool,
 ) -> bool {
-    let Some(query) = expr.get("query").and_then(Value::as_str) else {
-        return false;
-    };
-    if expr.get("parseMode").and_then(Value::as_i64) == Some(RAW_PARSE_DEFAULT) {
-        return statement_may_change_catalog(query, calls_catalog_function);
+    if expr.is_statement() {
+        return statement_may_change_catalog(&expr.query, calls_catalog_function);
     }
-    any_catalog_function && calls_by_name(query, is_catalog_function)
+    any_catalog_function && calls_by_name(&expr.query, is_catalog_function)
 }
 
 /// Whether running the SQL statement `sql` may change the catalog: if it isn't a plain query or

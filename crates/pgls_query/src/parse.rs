@@ -45,7 +45,7 @@ pub fn parse(statement: &str) -> Result<ParseResult> {
 /// prost reports a tree deeper than its recursion limit of 100 messages like a malformed message,
 /// "failed to decode Protobuf message: ...: recursion limit reached". prost has no other way to
 /// tell, so this looks at the message.
-fn decode_error(err: prost::DecodeError) -> Error {
+pub(crate) fn decode_error(err: prost::DecodeError) -> Error {
     if err.to_string().ends_with("recursion limit reached") {
         Error::TooDeep
     } else {

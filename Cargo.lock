@@ -2928,7 +2928,6 @@ dependencies = [
  "pgls_resolve",
  "pgls_statement_splitter",
  "pgls_text_size",
- "serde_json",
  "tracing",
 ]
 
