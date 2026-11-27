@@ -121,9 +121,6 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
 
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
-
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -201,8 +198,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -307,8 +302,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -335,8 +328,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -381,8 +372,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -427,8 +416,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -484,8 +471,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
@@ -537,9 +522,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
-
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
@@ -576,8 +558,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Free Disk Space
-        uses: ./.github/actions/free-disk-space
       - name: Install toolchain
         uses: moonrepo/setup-rust@v1
         with:
