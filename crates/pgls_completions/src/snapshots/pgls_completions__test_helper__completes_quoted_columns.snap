@@ -33,7 +33,7 @@ email - private.users.email (Column)
 id - private.users.id (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-pg_catalog."RI_FKey_cascade_del"() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -44,7 +44,7 @@ email" - private.users.email (Column)
 id" - private.users.id (Column)
 name" - private.users.name (Column)
 quoted_column" - private.users.quoted_column (Column)
-abbrev" - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum" - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -55,7 +55,7 @@ email - private.users.email (Column)
 id - private.users.id (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -65,8 +65,8 @@ Results:
 email - private.users.email (Column)
 name - private.users.name (Column)
 quoted_column - private.users.quoted_column (Column)
-elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
-elem_count_histogram - pg_catalog.pg_stats_ext_exprs.elem_count_histogram (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -130,7 +130,6 @@ private - private (Schema)
 public - public (Schema)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
-information_schema"."parameters - information_schema.parameters (Table)
 
 --------------
 

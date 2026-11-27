@@ -382,7 +382,8 @@ pub async fn check(
     Ok(Some(diagnostics))
 }
 
-#[cfg(all(test, not(target_os = "windows")))]
+// Only the Linux test database (the Docker image) has the plpgsql_check extension.
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use sqlx::{Executor, PgPool};
 

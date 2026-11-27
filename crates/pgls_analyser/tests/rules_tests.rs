@@ -54,7 +54,7 @@ fn typecheck_catalog() -> Arc<pgls_catalog::CatalogBase> {
 }
 
 fn builtin_snapshot(mut snapshot: pgls_catalog::Snapshot) -> pgls_catalog::Snapshot {
-    let is_builtin = |schema: &str| matches!(schema, "pg_catalog" | "information_schema");
+    let is_builtin = pgls_catalog::Schema::is_builtin;
 
     snapshot.schemas.retain(|schema| is_builtin(&schema.name));
     snapshot.schemas.push(pgls_catalog::Schema {

@@ -4,6 +4,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use parking_lot::RwLock;
+use pgls_catalog::Snapshot;
 use sqlx::{PgPool, Postgres, pool::PoolOptions, postgres::PgConnectOptions};
 
 use crate::{
@@ -277,7 +278,11 @@ impl ConnectionManager {
                 .idle_timeout(POOL_IDLE_TIMEOUT)
         };
         let database_pools = DatabasePools {
-            pool: pool_options().connect_lazy_with(config.clone()),
+            // The acquire timeout also bounds the wait for a free connection, so the snapshot load
+            // gets a connection for each of its queries.
+            pool: pool_options()
+                .max_connections(Snapshot::QUERIES)
+                .connect_lazy_with(config.clone()),
             // Without cached prepared statements, `discard all` can reset the whole session after
             // a statement.
             statement_pool: pool_options().connect_lazy_with(config.statement_cache_capacity(0)),
@@ -555,6 +560,30 @@ mod tests {
         );
         assert!(idle_pools.pool.is_closed());
         assert!(idle_pools.statement_pool.is_closed());
+    }
+
+    /// The queries of a snapshot load that take longer than the connection timeout don't wait
+    /// for each other's connections until they time out.
+    #[pgls_test_utils::db_test]
+    async fn snapshot_queries_do_not_wait_for_a_connection(test_db: PgPool) {
+        let manager = ConnectionManager::new(BackoffDurations::default());
+        let pool = manager
+            .get_pool(&DatabaseSettings {
+                database: test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+                conn_timeout_secs: Duration::from_secs(1),
+                ..settings()
+            })
+            .unwrap();
+
+        futures::future::try_join_all(
+            (0..Snapshot::QUERIES).map(|_| sqlx::query("select pg_sleep(1.5)").execute(&pool)),
+        )
+        .await
+        .unwrap();
     }
 
     fn authentication_failed() -> DatabaseConnectionError {

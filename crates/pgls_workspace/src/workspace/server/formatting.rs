@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use pgls_analyser::STOP_CHECK_INTERVAL;
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
-use pgls_pretty_print::{FormatConfig, FormatStatementParams, Terminator};
+use pgls_pretty_print::{FormatConfig, FormatStatementParams};
 use pgls_text_size::TextRange;
 
 use pgls_query_ext::diagnostics::SyntaxDiagnostic;
@@ -191,6 +191,12 @@ pub(super) fn format_document(
 
         match &**ast_result {
             Ok(ast) => {
+                // A statement that the splitter ended at the next one stays as written, see
+                // `Document::terminator`.
+                let Some(terminator) = doc.terminator(stmt_range) else {
+                    formatted_output.push_str(written);
+                    continue;
+                };
                 // A statement with placeholders of the host, like a goose `ENVSUB` expansion or
                 // a template directive, is printed with a tag for each placeholder, see
                 // [`pgls_templating::Tagged`].
@@ -225,12 +231,6 @@ pub(super) fn format_document(
                     );
                 }
 
-                // A meta-command like `\gexec` ends the statement in place of the `;`.
-                let terminator = if doc.ends_at_meta_command(stmt_range) {
-                    Terminator::Omitted
-                } else {
-                    Terminator::Semicolon
-                };
                 match pgls_pretty_print::format_statement(FormatStatementParams {
                     terminator,
                     ..FormatStatementParams::new(&ast, text, &config)
@@ -348,8 +348,9 @@ fn collapse_blank_lines(text: &str) -> String {
 /// The parser only ever sees placeholders, so the printed statement carries `$1`, `':fname'` or a
 /// bare identifier instead of `:id`, `:'fname'` or `:raw_data`. Substitution happens on the token
 /// stream so that a `$1` inside a string literal is left alone, and the result is proven by
-/// converting it back and comparing the normalized ASTs and the string placeholders: a statement
-/// that does not survive that round trip is reported as unrestorable and kept as it was written.
+/// converting it back and comparing the normalized ASTs and the string placeholders, and the ASTs
+/// of the text as written when that parses too: a statement that does not survive that round
+/// trip is reported as unrestorable and kept as it was written.
 fn restore_named_parameters(
     original: &str,
     formatted: &str,
@@ -412,10 +413,24 @@ fn restore_named_parameters(
     let mut expected_ast = original_ast.clone();
     pgls_pretty_print::normalize_ast(&mut restored_ast);
     pgls_pretty_print::normalize_ast(&mut expected_ast);
-
     if restored_ast != expected_ast {
         return None;
     }
+
+    // Postgres may also read the statement as written, with an `@name` as the prefix operator
+    // `@` applied to `name`: `@a::int` is `@(a::int)`, so `cast(@a as int)` would mean something
+    // else. The restored statement has to parse the same under that reading as well.
+    if let Some(mut written_ast) = pgls_query::parse(original).ok().and_then(|p| p.into_root()) {
+        let mut restored_ast = pgls_query::parse(&restored).ok()?.into_root()?;
+        pgls_pretty_print::normalize_ast(&mut written_ast);
+        pgls_pretty_print::normalize_ast(&mut restored_ast);
+        if restored_ast != written_ast {
+            return None;
+        }
+    }
+
+    // The text of the file in place of the placeholders of a host, after the checks above, which
+    // compare the statement with its tags.
     match tagged {
         Some(tagged) => tagged.restore(&restored),
         None => Some(restored),

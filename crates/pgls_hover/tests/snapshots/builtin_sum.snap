@@ -1,0 +1,96 @@
+---
+source: crates/pgls_hover/tests/hover_integration_tests.rs
+expression: snapshot
+---
+# Input
+```sql
+select sum(id) from users
+        ↑ hovered here
+```
+
+# Hover Results
+### `pg_catalog.sum(bigint) → numeric`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(integer) → bigint`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(smallint) → bigint`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(real) → real`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(double precision) → double precision`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(money) → money`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(interval) → interval`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```
+
+---
+
+### `pg_catalog.sum(numeric) → numeric`  
+```plain  
+Aggregate - Immutable - Security INVOKER  
+```  
+---    
+```sql  
+  
+```

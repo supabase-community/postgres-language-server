@@ -38,7 +38,7 @@ check:
   lint/runningStatementWhileHoldingAccessExclusive: 56
   lint/transactionNesting: 12
 format:
-  format: 622
+  format: 620
 reformatted files: 89
   docker/volumes/db/_supabase.sql
   docker/volumes/db/jwt.sql

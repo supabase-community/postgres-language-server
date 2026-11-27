@@ -70,11 +70,7 @@ name - private.users.name (Column)
 select "p|"
 
 Results:
-pad_attribute - information_schema.collations.pad_attribute (Column)
-page - pg_catalog.pg_locks.page (Column)
-pageno - pg_catalog.pg_largeobject.pageno (Column)
-paracl - pg_catalog.pg_parameter_acl.paracl (Column)
-parameter_default - information_schema.parameters.parameter_default (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -120,7 +116,6 @@ private - private (Schema)
 public - public (Schema)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
-information_schema.parameters - information_schema.parameters (Table)
 
 --------------
 
@@ -216,7 +211,7 @@ pr"."email - private.users.email (Column)
 pr"."name - private.users.name (Column)
 pr"."quoted_column - private.users.quoted_column (Column)
 name - public.names.name (Column)
-elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -252,7 +247,7 @@ pr.email - private.users.email (Column)
 pr.id - private.users.id (Column)
 pr.name - private.users.name (Column)
 pr.quoted_column - private.users.quoted_column (Column)
-pad_attribute - information_schema.collations.pad_attribute (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -349,7 +344,7 @@ pr"."email - private.users.email (Column)
 pr"."id - private.users.id (Column)
 pr"."name - private.users.name (Column)
 pr"."quoted_column - private.users.quoted_column (Column)
-pad_attribute - information_schema.collations.pad_attribute (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -424,7 +419,7 @@ pr.email - private.users.email (Column)
 pr.id - private.users.id (Column)
 pr.name - private.users.name (Column)
 pr.quoted_column - private.users.quoted_column (Column)
-pad_attribute - information_schema.collations.pad_attribute (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -502,7 +497,7 @@ pr"."email - private.users.email (Column)
 pr"."id - private.users.id (Column)
 pr"."name - private.users.name (Column)
 pr"."quoted_column - private.users.quoted_column (Column)
-pad_attribute - information_schema.collations.pad_attribute (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 

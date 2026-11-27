@@ -6,6 +6,7 @@ use std::sync::{
 
 use pgls_diagnostics::{Diagnostic, DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_lexer::SyntaxKind;
+use pgls_pretty_print::Terminator;
 use pgls_query_ext::{diagnostics::SyntaxDiagnostic, function_body::OffsetMap};
 use pgls_statement_splitter::{SplitResult, TextChange};
 use pgls_suppressions::Suppressions;
@@ -464,32 +465,45 @@ impl Document {
             .filter(|ambiguity| ambiguity.placeholder.end() <= range.end())
     }
 
-    /// Whether a psql meta-command such as `\gexec` or `\gset` ends the statement in `range`
-    /// instead of a `;`. psql sends the query buffer at a `;` and again at a `\g` command, so a
-    /// `;` added before one runs the statement twice.
+    /// What the formatter writes after the statement in `range`, or `None` if it must keep the
+    /// statement as written.
+    ///
+    /// A psql meta-command such as `\gexec` or `\gset` ends a statement instead of a `;`. psql
+    /// sends the query buffer at a `;` and again at a `\g` command, so a `;` added before one runs
+    /// the statement twice.
+    ///
+    /// `None` for a statement without a `;` that the splitter ended at the next one, its recovery
+    /// from a missing `;`: Postgres reads the next statement as part of it, e.g. a `SET` after a
+    /// `CREATE FUNCTION` as an option of the function, so a `;` would change what runs. The
+    /// statement is kept as written, since its printed text could read differently in front of
+    /// the next one.
     ///
     /// Cost: lexes the text between the statement and the next one.
-    pub(crate) fn ends_at_meta_command(&self, range: TextRange) -> bool {
+    pub(crate) fn terminator(&self, range: TextRange) -> Option<Terminator> {
         let content = self.content.as_str();
         if content[range].trim_end().ends_with(';') {
-            return false;
+            return Some(Terminator::Semicolon);
         }
-        let next = self
-            .split
-            .ranges
-            .partition_point(|other| other.start() < range.end());
-        let gap_end = self
-            .split
-            .ranges
-            .get(next)
-            .map_or(content.len(), |other| usize::from(other.start()));
+        let next = self.split.ranges.get(
+            self.split
+                .ranges
+                .partition_point(|other| other.start() < range.end()),
+        );
+        let gap_end = next.map_or(content.len(), |other| usize::from(other.start()));
         let Some(gap) = content.get(usize::from(range.end())..gap_end) else {
-            return false;
+            return Some(Terminator::Semicolon);
         };
-        pgls_lexer::lex(gap)
+        let ends_at_meta_command = pgls_lexer::lex(gap)
             .tokens()
             .find(|kind| !kind.is_trivia())
-            .is_some_and(|kind| kind == SyntaxKind::META_COMMAND)
+            .is_some_and(|kind| kind == SyntaxKind::META_COMMAND);
+        if ends_at_meta_command {
+            Some(Terminator::Omitted)
+        } else if next.is_some() {
+            None
+        } else {
+            Some(Terminator::Semicolon)
+        }
     }
 
     /// Whether `range` overlaps a value that the migration tool replaces, but that the text

@@ -92,7 +92,7 @@ fn semantic_tokens(
         Ok(result) => result,
         Err(e) => match e {
             WorkspaceError::DatabaseConnectionError(_) => {
-                session.editor_features_without_database();
+                session.checked_without_database();
                 return Ok(None);
             }
             _ => return Err(e.into()),

@@ -17,7 +17,7 @@ use pgls_configuration::{
 };
 
 use pgls_configuration::ConfigurationPathHint;
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "linux")]
 use pgls_configuration::plpgsql_check::PartialPlPgSqlCheckConfiguration;
 use pgls_diagnostics::{Diagnostic, Severity};
 use pgls_fs::{ConfigName, FileSystem, FindFiles, MemoryFileSystem, PgLSPath};
@@ -980,6 +980,21 @@ async fn format_restores_psql_string_variables_and_defined_tests() {
     );
 }
 
+/// Postgres reads `@a::int` as the prefix operator `@` applied to `a::int`, so formatting the
+/// `@name` parameter's cast as `cast(@a as int)` would change what it runs.
+#[test]
+fn format_keeps_the_meaning_of_an_at_read_as_an_operator() {
+    let content = "select json_populate_record(@ull::record, 'x');\nselect @a::int;\nSELECT * FROM\n  json_populate_record(@ull::record, '{\"x\": 776}') AS (x int, y int);\nselect  *  from t where id = @id;\n";
+
+    let formatted = format_content(content);
+
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+    assert!(
+        formatted.ends_with("select * from t where id = @id;\n"),
+        "{formatted}"
+    );
+}
+
 #[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
@@ -1034,7 +1049,7 @@ async fn correctly_ignores_files() {
     assert!(execute_statement_result.is_ok_and(|res| res == ExecuteStatementResult::default()));
 }
 
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_dedupe_diagnostics(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1110,7 +1125,7 @@ async fn test_dedupe_diagnostics(test_db: PgPool) {
 
 /// Without a trigger, plpgsql_check cannot check a trigger function, so the syntax error of
 /// libpg_query remains.
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1175,7 +1190,7 @@ async fn test_plpgsql_syntax_error_without_plpgsql_check(test_db: PgPool) {
 
 /// With several functions and broken statements, each syntax error is matched with the function
 /// that plpgsql_check checked around it, and the others stay.
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_plpgsql_syntax_errors_of_several_functions(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -1368,7 +1383,7 @@ select * from users where id = :'four';"#;
 /// A pull with `DatabaseChecks::Reuse` doesn't query the database. It reports what the last run
 /// found for the statements whose text is unchanged, where they are now, and nothing for an
 /// edited statement until the next run.
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_database_checks_reuse_the_results_of_unchanged_statements(test_db: PgPool) {
     test_db
@@ -1578,7 +1593,7 @@ async fn test_reuse_defers_unused_database_suppressions(test_db: PgPool) {
 
 /// With `lintDown: false`, the Down section isn't checked against the database. The same
 /// invalid function in the Up section is still reported, also when the Down section repeats it.
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_database_checks_report_up_when_down_repeats_the_statement(test_db: PgPool) {
     test_db
@@ -1646,7 +1661,7 @@ async fn test_database_checks_report_up_when_down_repeats_the_statement(test_db:
 
 /// A statement that an edit moved into a Down section without `lintDown` isn't reported from the
 /// last run, and its syntax error is reported again, as in a run.
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_reuse_applies_the_current_migration_sections(test_db: PgPool) {
     test_db
@@ -1720,7 +1735,7 @@ async fn test_reuse_applies_the_current_migration_sections(test_db: PgPool) {
     assert_eq!(reused, ["syntax"]);
 }
 
-#[cfg(all(test, not(target_os = "windows")))]
+#[cfg(all(test, target_os = "linux"))]
 #[pgls_test_utils::db_test]
 async fn test_disable_plpgsql_check(test_db: PgPool) {
     let mut conf = PartialConfiguration::init();
@@ -2474,6 +2489,30 @@ async fn test_format_adds_no_semicolon_before_a_meta_command() {
             "SELECT   1 /* one */ \\gset\n",
             "select 1 /* one */ \\gset\n",
         ),
+    ] {
+        assert_eq!(format_content(content), expected, "{content}");
+    }
+}
+
+/// A statement without a `;` that the splitter ends at the next one, its recovery from a missing
+/// `;`, is kept as written: Postgres reads the next statement as part of it, here the `SET` as an
+/// option of the function, and a `;` would make it a `SET` of the session.
+#[tokio::test]
+async fn test_format_adds_no_semicolon_where_the_splitter_recovered_from_a_missing_one() {
+    let content = "create function f() returns int language sql as 'select 1' -- comment;\n\nset work_mem = '64kB';\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        formatted,
+        "create function f() returns int language sql as 'select 1' -- comment;\n\nset work_mem = '64kB';\n"
+    );
+    assert_eq!(parsed_statements(&formatted).len(), 1, "{formatted}");
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+
+    for (content, expected) in [
+        ("select   1\n\nselect   2;\n", "select   1\n\nselect 2;\n"),
+        // The last statement has nothing to run into, so it gets its `;`.
+        ("select   1;\nselect   2\n", "select 1;\nselect 2;\n"),
     ] {
         assert_eq!(format_content(content), expected, "{content}");
     }
@@ -8589,9 +8628,9 @@ impl WorkspaceServer {
     }
 }
 
-/// With `pglinter.enabled`, the database linting reports pglinter's violations. The test database
-/// server has the extension, except on Windows.
-#[cfg(not(target_os = "windows"))]
+/// With `pglinter.enabled`, the database linting reports pglinter's violations. Only the Linux
+/// test database has the extension.
+#[cfg(target_os = "linux")]
 #[pgls_test_utils::db_test]
 async fn test_pull_db_diagnostics_runs_pglinter(test_db: PgPool) {
     test_db

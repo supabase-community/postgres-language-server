@@ -172,10 +172,10 @@ pub(crate) struct Session {
     /// fires at the end of a rapid-fire burst rather than one per keystroke.
     diagnostic_debounce: Arc<Mutex<FxHashMap<ls_types::Uri, PendingDiagnostics>>>,
 
-    /// Set when inlay hints or semantic tokens were requested while the database was
-    /// unreachable. The next diagnostics run that finds it reachable asks the client to request
-    /// them again.
-    editor_features_without_database: AtomicBool,
+    /// Set when diagnostics, inlay hints or semantic tokens were computed while the database was
+    /// unreachable, so without it. The next diagnostics run that finds it reachable checks every
+    /// document again and asks the client to request inlay hints and semantic tokens again.
+    checked_without_database: AtomicBool,
 
     /// How long the debounces wait.
     debounce: DebounceDurations,
@@ -302,7 +302,7 @@ impl Session {
             #[cfg(test)]
             max_running_transitions: std::sync::atomic::AtomicUsize::new(0),
             diagnostic_debounce: Arc::new(Mutex::new(FxHashMap::default())),
-            editor_features_without_database: AtomicBool::new(false),
+            checked_without_database: AtomicBool::new(false),
             debounce,
             publishing: tokio::sync::Mutex::new(()),
             activity: Activity::default(),
@@ -641,22 +641,23 @@ impl Session {
             .await;
         drop(publishing);
 
-        if self
-            .editor_features_without_database
-            .load(Ordering::Relaxed)
-        {
-            let connection = self.workspace.check_database_connection(
-                features::diagnostics::CheckDatabaseConnectionParams {
-                    project_key: self.project_key(&pgls_path),
-                },
-            );
-            if connection.is_ok_and(|connection| connection.errors.is_empty())
-                && self
-                    .editor_features_without_database
-                    .swap(false, Ordering::Relaxed)
-            {
-                self.refresh_editor_features();
-            }
+        // A run skips the checks against a database it can't reach, and only an edit, a save or
+        // a configuration change would run them again. A failed connection is backed off, so the
+        // check finds the database unreachable whenever the run did.
+        let workspace = Arc::clone(&self.workspace);
+        let params = features::diagnostics::CheckDatabaseConnectionParams {
+            project_key: self.project_key(&pgls_path),
+        };
+        let reachable = self
+            .spawn_blocking(move || workspace.check_database_connection(params))
+            .await
+            .is_ok_and(|connection| {
+                connection.is_ok_and(|connection| connection.errors.is_empty())
+            });
+        if !reachable {
+            self.checked_without_database.store(true, Ordering::Relaxed);
+        } else if self.checked_without_database.swap(false, Ordering::Relaxed) {
+            Box::pin(self.update_all_diagnostics()).await;
         }
 
         Ok(())
@@ -698,9 +699,8 @@ impl Session {
 
     /// Records that inlay hints or semantic tokens were requested while the database was
     /// unreachable, so that the client is asked to request them again once it is reachable.
-    pub(crate) fn editor_features_without_database(&self) {
-        self.editor_features_without_database
-            .store(true, Ordering::Relaxed);
+    pub(crate) fn checked_without_database(&self) {
+        self.checked_without_database.store(true, Ordering::Relaxed);
     }
 
     /// Asks the client to request inlay hints and semantic tokens again, if it supports that.
@@ -803,6 +803,10 @@ impl Session {
     /// Updates diagnostics for every [`Document`] in this [`Session`], and asks the client to
     /// request inlay hints and semantic tokens again.
     pub(crate) async fn update_all_diagnostics(&self) {
+        // Everything is computed again. A run that still finds the database unreachable records
+        // that again.
+        self.checked_without_database
+            .store(false, Ordering::Relaxed);
         let mut futures: FuturesUnordered<_> = self
             .documents
             .read()

@@ -36,9 +36,9 @@ select email from users where |
 Results:
 email - public.users.email (Column)
 id - public.users.id (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
-action_condition - information_schema.triggers.action_condition (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -47,9 +47,9 @@ select email from users where i|
 Results:
 id - public.users.id (Column)
 email - public.users.email (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+interval - interval (Keyword)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -69,9 +69,9 @@ select email from users where id = |
 Results:
 email - public.users.email (Column)
 id - public.users.id (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
-action_condition - information_schema.triggers.action_condition (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 

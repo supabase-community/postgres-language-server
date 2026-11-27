@@ -7,7 +7,7 @@
 //! match no object or several, and constructs the resolver doesn't model, get no token and keep
 //! the highlighting of the editor's grammar.
 
-use pgls_catalog::Catalog;
+use pgls_catalog::{Catalog, Schema};
 use pgls_line_index::{LineBreak, Lines};
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_query::{Identifier, NodeEnum};
@@ -89,7 +89,7 @@ pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec
                 tokens.push(SemanticToken {
                     range: *span,
                     kind: SemanticTokenKind::EnumMember,
-                    default_library: is_builtin_schema(&type_info.schema),
+                    default_library: Schema::is_builtin(&type_info.schema),
                 });
             }
             continue;
@@ -102,7 +102,7 @@ pub fn semantic_tokens_of_references(references: &[Reference], sql: &str) -> Vec
                 tokens.push(SemanticToken {
                     range: *range,
                     kind,
-                    default_library: schema.is_some_and(is_builtin_schema),
+                    default_library: schema.is_some_and(Schema::is_builtin),
                 });
             }
         };
@@ -243,10 +243,6 @@ fn split_lines(sql: &str, token: SemanticToken) -> Vec<SemanticToken> {
         }
     }
     parts
-}
-
-fn is_builtin_schema(schema: &str) -> bool {
-    matches!(schema, "pg_catalog" | "information_schema")
 }
 
 /// The tokens of the statement, without comments.

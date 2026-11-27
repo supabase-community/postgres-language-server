@@ -20,6 +20,14 @@ pub struct Schema {
     pub comment: Option<String>,
 }
 
+impl Schema {
+    /// Whether `name` is one of the schemas Postgres creates with every database, whose objects
+    /// are built in.
+    pub fn is_builtin(name: &str) -> bool {
+        matches!(name, "pg_catalog" | "information_schema")
+    }
+}
+
 #[cfg(feature = "db")]
 impl SnapshotItem for Schema {
     type Item = Schema;
