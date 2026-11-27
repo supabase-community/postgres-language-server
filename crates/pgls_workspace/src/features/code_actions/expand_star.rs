@@ -268,7 +268,7 @@ mod tests {
         assert_eq!(
             column_list(&columns).as_deref(),
             Some(
-                r#"between, "select", "left", t.select, "left".id, "Name", "my col", "a""b", "größe", "Café""#
+                r#"between, "select", "left", t.select, "left".id, "Name", "my col", "a""b", größe, "Café""#
             )
         );
     }

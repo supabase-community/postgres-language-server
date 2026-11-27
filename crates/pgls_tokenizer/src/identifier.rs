@@ -39,24 +39,24 @@ impl NamePosition {
         }
     }
 
-    /// Whether `name` must be quoted here. Unquoted, it must start with a lowercase ASCII letter
-    /// or `_`, go on with those or digits, and not be a keyword that can't be used here.
+    /// Whether `name` must be quoted here. Unquoted, it must start with a lowercase ASCII
+    /// letter, `_` or a character that isn't ASCII, go on with those or digits, and not be a
+    /// keyword that can't be used here.
     ///
-    /// The characters are those of Postgres' [`quote_identifier`], which is stricter than the
-    /// scanner: in a single-byte server encoding, the scanner also downcases non-ASCII letters
-    /// ([`downcase_identifier`]), so an unquoted `Äbc` would be read as `äbc` there. Postgres
-    /// quotes `$` too, though the scanner reads it as part of an identifier.
+    /// Names that aren't ASCII stay unquoted, unlike in Postgres' [`quote_identifier`]: in a
+    /// multibyte server encoding such as UTF8, the scanner downcases only ASCII letters
+    /// ([`downcase_identifier`]), so `größe` and `Ölstand` read back as written. Like Postgres,
+    /// `$` is quoted, though the scanner reads it as part of an identifier.
     ///
     /// [`quote_identifier`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/utils/adt/ruleutils.c#L13079
     /// [`downcase_identifier`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scansup.c#L70
     pub fn needs_quotes(self, name: &str) -> bool {
-        let mut bytes = name.bytes();
-        let Some(first) = bytes.next() else {
+        let mut chars = name.chars();
+        let Some(first) = chars.next() else {
             return true;
         };
-        if !matches!(first, b'a'..=b'z' | b'_')
-            || !bytes.all(|b| matches!(b, b'a'..=b'z' | b'0'..=b'9' | b'_'))
-        {
+        let is_letter = |c: char| c.is_ascii_lowercase() || c == '_' || !c.is_ascii();
+        if !is_letter(first) || !chars.all(|c| is_letter(c) || c.is_ascii_digit()) {
             return true;
         }
         if self == NamePosition::TypeFunctionName && name == "operator" {
@@ -83,14 +83,16 @@ mod tests {
         assert_eq!(quoted("_t1"), "_t1");
         assert_eq!(quoted("_"), "_");
         assert_eq!(quoted("t$1"), r#""t$1""#);
-        assert_eq!(quoted("Äbc"), r#""Äbc""#);
-        assert_eq!(quoted("äbc"), r#""äbc""#);
+        assert_eq!(quoted("Äbc"), "Äbc");
+        assert_eq!(quoted("äbc"), "äbc");
         assert_eq!(quoted("MyTable"), r#""MyTable""#);
         assert_eq!(quoted("my table"), r#""my table""#);
         assert_eq!(quoted("1st"), r#""1st""#);
         assert_eq!(quoted(r#"a"b"#), r#""a""b""#);
         assert_eq!(quoted(""), r#""""#);
-        for name in ["users", "t$1", "äbc", "MyTable", "my table", r#"a"b"#] {
+        for name in [
+            "users", "t$1", "Äbc", "äbc", "MyTable", "my table", r#"a"b"#,
+        ] {
             assert_eq!(pgls_query::Identifier::new(&quoted(name)).name(), name);
         }
     }
