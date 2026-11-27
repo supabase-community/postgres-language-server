@@ -216,33 +216,8 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # we need to use the same database as we do locally for sqlx prepare to output the same hashes
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build PostgreSQL image with cache
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          load: true
-          tags: postgres-language-server-dev:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Start PostgreSQL
-        run: |
-          docker run -d --name postgres \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=postgres \
-            -p 5432:5432 \
-            postgres-language-server-dev:latest
-          # Wait for postgres to be ready
-          for _ in {1..30}; do
-            if docker exec postgres pg_isready -U postgres; then
-              break
-            fi
-            sleep 1
-          done
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
 
       - uses: actions/cache@v5
         with:
@@ -400,18 +375,30 @@ jobs:
       - name: Run the completion harness
         run: cargo test -p pgls_completions --release --test harness -- --ignored
 
+  # Linux runs the tests against every supported major of Postgres; the other platforms against 15.
   test:
-    name: Test
+    name: Test (${{ matrix.os }}${{ matrix.postgres != 15 && format(', Postgres {0}', matrix.postgres) || '' }})
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
+      # A failure on one platform or major doesn't cancel the others, so it shows where it fails.
+      fail-fast: false
       matrix:
         include:
           # use the same images we use for compiling
           - os: windows-2022
+            postgres: 15
           - os: ubuntu-22.04
+            postgres: 15
+          - os: ubuntu-22.04
+            postgres: 16
+          - os: ubuntu-22.04
+            postgres: 17
+          - os: ubuntu-22.04
+            postgres: 18
           - os: macos-15
+            postgres: 15
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -429,10 +416,12 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: test-${{ runner.os }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          save-if: ${{ github.ref == 'refs/heads/main' && matrix.postgres == 15 }}
 
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
+        with:
+          postgres-version: ${{ matrix.postgres }}
 
       - uses: actions/cache@v5
         with:
@@ -460,6 +449,7 @@ jobs:
       # nextest doesn't run doctests. `cargo test --doc` ignores `doctest = false`, so only the
       # packages that keep their doctests on.
       - name: Run doctests
+        if: matrix.postgres == 15
         shell: bash
         run: |
           cargo metadata --no-deps --format-version 1 \
