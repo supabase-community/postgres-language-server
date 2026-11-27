@@ -67,6 +67,10 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
+    /// How many queries [`Snapshot::load`] runs at once.
+    #[cfg(feature = "db")]
+    pub const QUERIES: u32 = 14;
+
     #[cfg(feature = "db")]
     pub async fn load(pool: &PgPool) -> Result<Snapshot, sqlx::Error> {
         let (
