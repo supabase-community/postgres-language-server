@@ -7,13 +7,16 @@ use pgls_text_size::TextRange;
 use crate::Preprocessed;
 
 /// A statement of a [`Preprocessed`] text in which each placeholder that is a named parameter
-/// has a tag of its own, `$pgls_t0`, `$pgls_t1`, …, in text order.
+/// has a tag of its own, `$pgls_t0`, `$pgls_t1`, …, and each string with placeholders too,
+/// `'pgls_k0'`, `'pgls_k1'`, …, in text order.
 ///
 /// Go's `%s` and Rust's `{}` take their arguments by position, and two `%s` have the same
-/// placeholder, so a printer that moved one of them would go unnoticed. With the tags, the
-/// tree of the statement shows where each placeholder is: a tree of the printed statement that
-/// is the same as the tree of [`Tagged::text`] has each placeholder at its place, and
-/// [`Tagged::restore`] checks that the printed statement has the placeholders in the same order.
+/// placeholder, so a printer that moved one of them would go unnoticed, like the printer that
+/// writes `limit '%d' offset '%d'` for `offset '%d' limit '%d'`. With the tags, the tree of the
+/// statement shows where each placeholder is: a tree of the printed statement that is the same
+/// as the tree of [`Tagged::text`] has each placeholder at its place, and [`Tagged::restore`]
+/// checks that the printed statement has the placeholders in the same order, also those in
+/// comments, which the tree doesn't have.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tagged {
     /// The statement as the analysis reads it, with the tags.
@@ -23,7 +26,7 @@ pub struct Tagged {
     /// The placeholders that the statement holds as the host writes them, like Go's `%%` as
     /// `%`: what is printed for them, and their text in the file.
     written: Vec<(String, String)>,
-    /// The strings and comments with placeholders as written.
+    /// The strings and comments with placeholders, as written.
     kept: Vec<String>,
     /// The placeholders in text order, with one [`Slot::Kept`] for each string or comment.
     order: Vec<Slot>,
@@ -38,8 +41,11 @@ enum Slot {
 }
 
 impl Tagged {
-    /// The start of a tag.
+    /// The start of the tag of a named parameter.
     const TAG: &'static str = "$pgls_t";
+
+    /// The start of the tag of a string, between its quotes.
+    const STRING_TAG: &'static str = "pgls_k";
 
     /// Puts the text of the file back in place of the placeholders of `printed`, the statement
     /// as a printer printed [`Tagged::text`] with the tags kept, or `None` if the printed
@@ -60,8 +66,11 @@ impl Tagged {
                 && let Some(tag) = text.strip_prefix(Self::TAG)
             {
                 Some(Slot::Named(tag.parse().ok()?))
-            } else if Self::is_kept(kind) {
-                // Strings and comments without placeholders aren't in the order.
+            } else if Self::is_string(kind) {
+                // Strings without placeholders aren't in the order.
+                Self::string_tag(text).map(Slot::Kept)
+            } else if kind == SyntaxKind::COMMENT {
+                // Comments without placeholders aren't in the order.
                 match self.order.get(next) {
                     Some(Slot::Kept(kept)) if self.kept.get(*kept).is_some_and(|t| t == text) => {
                         Some(Slot::Kept(*kept))
@@ -89,7 +98,7 @@ impl Tagged {
             match slot {
                 Slot::Named(tag) => restored.push_str(self.named.get(tag)?),
                 Slot::Written(written) => restored.push_str(&self.written.get(written)?.1),
-                Slot::Kept(_) => restored.push_str(text),
+                Slot::Kept(kept) => restored.push_str(self.kept.get(kept)?),
             }
         }
         (next == self.order.len()).then_some(restored)
@@ -97,6 +106,10 @@ impl Tagged {
 
     /// Whether a token of `kind` holds placeholders as written.
     fn is_kept(kind: SyntaxKind) -> bool {
+        Self::is_string(kind) || kind == SyntaxKind::COMMENT
+    }
+
+    fn is_string(kind: SyntaxKind) -> bool {
         matches!(
             kind,
             SyntaxKind::STRING
@@ -104,8 +117,19 @@ impl Tagged {
                 | SyntaxKind::BYTE_STRING
                 | SyntaxKind::BIT_STRING
                 | SyntaxKind::DOLLAR_QUOTED_STRING
-                | SyntaxKind::COMMENT
         )
+    }
+
+    /// The tag of a printed string, `'pgls_k0'` as written or requoted as `$$pgls_k0$$`.
+    fn string_tag(text: &str) -> Option<usize> {
+        let inner = text
+            .strip_prefix('\'')
+            .and_then(|text| text.strip_suffix('\''))
+            .or_else(|| {
+                text.strip_prefix("$$")
+                    .and_then(|text| text.strip_suffix("$$"))
+            })?;
+        inner.trim().strip_prefix(Self::STRING_TAG)?.parse().ok()
     }
 }
 
@@ -117,7 +141,7 @@ impl Preprocessed {
     /// Cost: one lex of the statement.
     pub fn tag(&self, source: &str, range: TextRange) -> Option<Tagged> {
         let analysed = self.text.get(std::ops::Range::<usize>::from(range))?;
-        if analysed.contains(Tagged::TAG) {
+        if analysed.contains(Tagged::TAG) || analysed.contains(Tagged::STRING_TAG) {
             return None;
         }
         let first = self
@@ -155,11 +179,18 @@ impl Preprocessed {
                 placeholder.checked_add(range.start())?,
             ))?;
             if Tagged::is_kept(kind) {
-                // A string or a comment keeps all of its placeholders as written.
+                // A string or a comment keeps all of its placeholders as written. A string gets
+                // a tag of its own, a comment, which isn't in the tree, stays.
                 in_token.for_each(drop);
+                if Tagged::is_string(kind) {
+                    tagged
+                        .text
+                        .push_str(&format!("'{}{}'", Tagged::STRING_TAG, tagged.kept.len()));
+                } else {
+                    tagged.text.push_str(text);
+                }
                 tagged.order.push(Slot::Kept(tagged.kept.len()));
                 tagged.kept.push(text.to_string());
-                tagged.text.push_str(text);
             } else if kind == SyntaxKind::NAMED_PARAM && placeholder == token {
                 tagged.order.push(Slot::Named(tagged.named.len()));
                 tagged
@@ -209,29 +240,29 @@ mod tests {
         let tagged = tagged(Template::GoPrintf, text).unwrap();
         assert_eq!(
             tagged.text,
-            "select   $pgls_t0, $pgls_t1  from $pgls_t2 where x = '%d' and y %  2 = 0 -- %v\n"
+            "select   $pgls_t0, $pgls_t1  from $pgls_t2 where x = 'pgls_k0' and y %  2 = 0 -- %v\n"
         );
         // A printer that only changes the layout gets the directives back.
         assert_eq!(
             tagged
                 .restore(
-                    "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = '%d' AND y % 2 = 0 -- %v\n"
+                    "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 = 0 -- %v\n"
                 )
                 .as_deref(),
             Some("SELECT %s, %s FROM app_%s WHERE x = '%d' AND y %% 2 = 0 -- %v\n")
         );
         for printed in [
             // Swapped, missing or repeated placeholders.
-            "SELECT $pgls_t1, $pgls_t0 FROM $pgls_t2 WHERE x = '%d' AND y % 2 = 0 -- %v\n",
-            "SELECT $pgls_t0 FROM $pgls_t2 WHERE x = '%d' AND y % 2 = 0 -- %v\n",
-            "SELECT $pgls_t0, $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = '%d' AND y % 2 = 0 -- %v\n",
+            "SELECT $pgls_t1, $pgls_t0 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 = 0 -- %v\n",
+            "SELECT $pgls_t0 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 = 0 -- %v\n",
+            "SELECT $pgls_t0, $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 = 0 -- %v\n",
             // A string or a comment with directives that changed, or a lost comment.
-            "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = E'%d' AND y % 2 = 0 -- %v\n",
-            "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = '%d' AND y % 2 = 0\n",
+            "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = E'pgls_k0' AND y % 2 = 0 -- %v\n",
+            "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 = 0\n",
             // A `%` more than the statement had.
-            "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = '%d' AND y % 2 % 1 = 0 -- %v\n",
+            "SELECT $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 % 1 = 0 -- %v\n",
             // A comment that moved before a directive.
-            "SELECT -- %v\n $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = '%d' AND y % 2 = 0\n",
+            "SELECT -- %v\n $pgls_t0, $pgls_t1 FROM $pgls_t2 WHERE x = 'pgls_k0' AND y % 2 = 0\n",
         ] {
             assert_eq!(tagged.restore(printed), None, "{printed}");
         }
@@ -273,7 +304,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             tagged.text,
-            "create table $pgls_t0.events (id int, note text default '${NOTE}');"
+            "create table $pgls_t0.events (id int, note text default 'pgls_k0');"
         );
     }
 

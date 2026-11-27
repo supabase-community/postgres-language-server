@@ -13,10 +13,8 @@ language sql
 as $$
 select 1;
 $$;
--- the printer would requote this body, which would change the string with the directive:
--- the statement stays as written
-create function h()   returns text language sql as 'select ''%s''';
-
----
-diagnostics:
-  `create function h()   returns text language sql as 'select ''%s''';`: Format error: Placeholders could not be restored after formatting, the statement was left untouched
+-- a quoted body with a directive is formatted around, and stays as written
+create function h()
+returns text
+language sql
+as 'select ''%s''';

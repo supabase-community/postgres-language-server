@@ -1,0 +1,12 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- the printer writes `limit` before `offset`, which would swap the arguments `{}`: the
+-- statement stays as written
+select * from t offset {} limit {};
+-- in the printer's order, it is formatted
+select * from t limit {} offset {};
+
+---
+diagnostics:
+  `select * from t offset {} limit {};`: Format error: Placeholders could not be restored after formatting, the statement was left untouched

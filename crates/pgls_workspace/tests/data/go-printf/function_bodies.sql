@@ -2,6 +2,5 @@
 create function   f(n int) returns int language sql as $$ select n + %d $$;
 -- a body without one is formatted
 create function g()   returns int language sql as $$ select   1 $$;
--- the printer would requote this body, which would change the string with the directive:
--- the statement stays as written
+-- a quoted body with a directive is formatted around, and stays as written
 create function h()   returns text language sql as 'select ''%s''';
