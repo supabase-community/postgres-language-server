@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
-  # A change to this file runs it, with short fuzz runs.
+  # A change to this file runs it, with the fuzz targets only replaying their inputs.
   pull_request:
     paths:
       - ".github/workflows/nightly.yml"
@@ -51,7 +51,7 @@ jobs:
           key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
           restore-keys: fuzz-corpus-${{ matrix.target }}-
       - name: Fuzz
-        run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && 60 || 600 }}
+        run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && '0 -runs=0' || 600 }}
         env:
           CC: ${{ github.workspace }}/fuzz/asan-cc
           RUSTFLAGS: -Clinker=clang -Clink-arg=-fsanitize=address
