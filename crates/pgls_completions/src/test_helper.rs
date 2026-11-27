@@ -1,5 +1,5 @@
 use insta::assert_snapshot;
-use pgls_catalog::Snapshot;
+use pgls_catalog::{Schema, Snapshot};
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextRange;
 use regex::Regex;
@@ -622,10 +622,11 @@ impl<'a> TestCompletionsSuite<'a> {
             .await
             .expect("Problem loading Snapshot");
         // The built-in objects change with the Postgres major, the snapshots must not.
-        let is_builtin = |schema: &str| matches!(schema, "pg_catalog" | "information_schema");
-        cache.tables.retain(|t| !is_builtin(&t.schema));
-        cache.columns.retain(|c| !is_builtin(&c.schema_name));
-        cache.functions.retain(|f| !is_builtin(&f.schema));
+        cache.tables.retain(|t| !Schema::is_builtin(&t.schema));
+        cache
+            .columns
+            .retain(|c| !Schema::is_builtin(&c.schema_name));
+        cache.functions.retain(|f| !Schema::is_builtin(&f.schema));
 
         let mut parser = tree_sitter::Parser::new();
         parser
