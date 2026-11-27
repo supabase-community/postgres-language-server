@@ -1,0 +1,11 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select '{}', $body$ select {x} $body$; -- {0}
+  2 | /* {name} */ select 1;
+
+placeholders:
+      8..10 `{}` -> `{}` unknown value
+     27..30 `{x}` -> `{x}` unknown value
+     42..45 `{0}` -> `{0}` in a comment
+     49..55 `{name}` -> `{name}` in a comment

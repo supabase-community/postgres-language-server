@@ -1,0 +1,18 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- `{}` takes the next positional argument, `{0}` the first, `{name}` the same one each time
+  2 | select {}, {}, {0}, {name}, {name:>4}, {:.*}, {};
+    | select $c, $d, $a_, $b____, $b_______, $e___, $f;
+
+placeholders:
+       4..6 `{}` -> `{}` in a comment
+     45..48 `{0}` -> `{0}` in a comment
+     62..68 `{name}` -> `{name}` in a comment
+   100..102 `{}` -> `$c` value
+   104..106 `{}` -> `$d` value
+   108..111 `{0}` -> `$a_` value
+   113..119 `{name}` -> `$b____` value
+   121..130 `{name:>4}` -> `$b_______` value
+   132..137 `{:.*}` -> `$e___` value
+   139..141 `{}` -> `$f` value

@@ -1,0 +1,20 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select %v, %+d, %-8s, %#x, % d, %05.2f, %.3g, %*d, %[1]s, %[3]*.[2]*[1]f, %T, %q, %U from t;
+    | select $a, $b_, $c__, $d_, $e_, $f____, $g__, $h_, $a___, $a____________, $b, $c, $d from t;
+
+placeholders:
+       7..9 `%v` -> `$a` value
+     11..14 `%+d` -> `$b_` value
+     16..20 `%-8s` -> `$c__` value
+     22..25 `%#x` -> `$d_` value
+     27..30 `% d` -> `$e_` value
+     32..38 `%05.2f` -> `$f____` value
+     40..44 `%.3g` -> `$g__` value
+     46..49 `%*d` -> `$h_` value
+     51..56 `%[1]s` -> `$a___` value
+     58..72 `%[3]*.[2]*[1]f` -> `$a____________` value
+     74..76 `%T` -> `$b` identifier
+     78..80 `%q` -> `$c` identifier
+     82..84 `%U` -> `$d` identifier

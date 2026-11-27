@@ -1,0 +1,40 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select a %s from t;
+    | select a $a from t;
+  2 | select "a" %s from t;
+    | select "a" $b from t;
+  3 | select 1 %s;
+    | select 1 $c;
+  4 | select 'a' %s;
+    | select 'a' $d;
+  5 | select f(x) %s;
+    | select f(x) $e;
+  6 | select a[1] %s;
+    | select a[1] $f;
+  7 | select %s %s from t;
+    | select $g $h from t;
+  8 | select * from t app_%s;
+    | select * from t $app_i;
+
+placeholders:
+      9..11 `%s` -> `$a` value
+     31..33 `%s` -> `$b` value
+     51..53 `%s` -> `$c` value
+     66..68 `%s` -> `$d` value
+     82..84 `%s` -> `$e` value
+    98..100 `%s` -> `$f` value
+   109..111 `%s` -> `$g` value
+   112..114 `%s` -> `$h` value
+   139..145 `app_%s` -> `$app_i` value
+
+diagnostics:
+  9..11 `%s`: A template placeholder directly after `a` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  31..33 `%s`: A template placeholder directly after `"a"` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  51..53 `%s`: A template placeholder directly after `1` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  66..68 `%s`: A template placeholder directly after `'a'` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  82..84 `%s`: A template placeholder directly after `)` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  98..100 `%s`: A template placeholder directly after `]` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  112..114 `%s`: A template placeholder directly after `%s` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  139..145 `app_%s`: A template placeholder directly after `t` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.

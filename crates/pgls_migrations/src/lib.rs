@@ -37,6 +37,7 @@ use serde::{Deserialize, Serialize};
 
 pub use detect::{Detected, LocalDatabase, Root};
 pub use markers::{Direction, SectionMarkerDiagnostic, Unit};
+pub use pgls_templating::Preprocessed;
 pub use psql::PsqlSyntaxDiagnostic;
 
 // The value of `migrations.tool`: the doc comments are the documentation of the setting.
@@ -158,6 +159,18 @@ impl MigrationTool {
         }
     }
 
+    /// `text` as the tool would run it, with a sample value for each part that it replaces, like
+    /// an expansion of goose's `ENVSUB`, see [`pgls_templating::Expansion::render`].
+    #[cfg(feature = "testing")]
+    pub fn render(self, text: &str) -> String {
+        match self {
+            Self::Goose => {
+                pgls_templating::Expansion::render(text, &goose::envsub_expansions(text))
+            }
+            Self::Plain | Self::Supabase | Self::Dbmate => text.to_string(),
+        }
+    }
+
     /// The psql meta-commands and variables in the text of a migration, if the tool runs it
     /// without psql. Postgres receives them as written and rejects them.
     pub fn psql_diagnostics(self, text: &str) -> Vec<PsqlSyntaxDiagnostic> {
@@ -254,46 +267,6 @@ impl Script {
         }
         diagnostics.sort_by_key(|diagnostic| diagnostic.span.start());
         diagnostics
-    }
-}
-
-/// The text that the analysis reads instead of the file as written, with placeholders where the
-/// migration tool replaces parts of it, like goose's `ENVSUB`. It has the length of the file, so
-/// that the offsets of diagnostics, fixes and editor positions are the same in both.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Preprocessed {
-    pub text: String,
-    /// The ranges that the tool replaces when it runs the file, in file order. The text holds a
-    /// placeholder there, or the file as written where a placeholder wouldn't parse, like in a
-    /// string literal.
-    pub placeholders: Vec<TextRange>,
-    /// The placeholders that stay as written in a value, like in a string literal, in file
-    /// order. The text holds what is written there, not the value that the tool puts there.
-    pub unknown_values: Vec<TextRange>,
-}
-
-impl Preprocessed {
-    /// Whether `range` overlaps a placeholder. An empty range touches it if it's inside it.
-    pub fn touches_placeholder(&self, range: TextRange) -> bool {
-        self.placeholders
-            .iter()
-            .any(|placeholder| overlaps(*placeholder, range))
-    }
-
-    /// Whether `range` overlaps a placeholder that stays as written in a value.
-    pub fn touches_unknown_value(&self, range: TextRange) -> bool {
-        self.unknown_values
-            .iter()
-            .any(|placeholder| overlaps(*placeholder, range))
-    }
-}
-
-/// Whether `range` overlaps `placeholder`. An empty range overlaps it if it's inside it.
-fn overlaps(placeholder: TextRange, range: TextRange) -> bool {
-    if range.is_empty() {
-        placeholder.start() < range.start() && range.start() < placeholder.end()
-    } else {
-        placeholder.start() < range.end() && range.start() < placeholder.end()
     }
 }
 

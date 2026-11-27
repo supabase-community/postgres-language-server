@@ -1,0 +1,18 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+select
+  id,
+  name,
+  email,
+  created_at,
+  updated_at,
+  deleted_at
+from
+  %s.users
+where
+  tenant_id = %d and status = %s and created_at > %s
+order by created_at desc
+limit %d;
+insert into %s.audit_log (actor, action, target, details, created_at)
+values (%d, %q, %q, %s, now());

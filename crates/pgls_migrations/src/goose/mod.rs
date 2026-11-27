@@ -5,16 +5,16 @@
 //! in the folder of `-dir` or `GOOSE_MIGRATION_DIR`, `.` by default. So its projects aren't
 //! detected.
 
-mod envsub;
 mod interpolate;
 
 use pgls_text_size::{TextRange, TextSize};
 
+use pgls_templating::{Expansion, Preprocessed, Value};
+
 use crate::{
-    Direction, Preprocessed, Script,
+    Direction, Script,
     markers::{UnitsBuilder, lines, look_alikes},
 };
-use envsub::{Expansion, substitute};
 
 pub(crate) fn read(text: &str) -> Script {
     let mut sections = UnitsBuilder::new(text);
@@ -82,20 +82,20 @@ pub(crate) fn read(text: &str) -> Script {
 /// variables before it runs the SQL, see
 /// https://github.com/pressly/goose/blob/v3.29.0/internal/sqlparser/parser.go#L211
 ///
-/// We don't know their values, so an identifier with expansions, like `${SCHEMA}`,
-/// `${PREFIX}_events` or `"${SCHEMA}"`, becomes the named parameter `$SCHEMA`,
-/// `$PREFIX_events` or `$SCHEMA`, padded with `_` to the same length, so that the whole
-/// identifier is one token with room for the index of a parameter. Named parameters are
-/// analysed like psql variables: as values, or as identifiers that aren't typechecked.
-/// Expansions in string literals and comments stay as written, and those outside comments
-/// are [`Preprocessed::unknown_values`].
+/// We don't know their values, so they get placeholders, see [`Preprocessed::substitute`].
 ///
 /// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
 fn envsub(text: &str) -> Option<Preprocessed> {
-    if !text.contains("+goose") {
-        return None;
-    }
+    let expansions = envsub_expansions(text);
+    (!expansions.is_empty()).then(|| Preprocessed::substitute(text, &expansions))
+}
+
+/// The expansions that goose's `ENVSUB` replaces in `text`, see [`envsub`].
+pub(crate) fn envsub_expansions(text: &str) -> Vec<Expansion<'_>> {
     let mut expansions = Vec::new();
+    if !text.contains("+goose") {
+        return expansions;
+    }
     let mut envsub = false;
     for (range, line) in lines(text) {
         let annotation = annotation(line);
@@ -118,11 +118,11 @@ fn envsub(text: &str) -> Option<Preprocessed> {
             };
             expansions.push(Expansion {
                 range: TextRange::new(range.start() + start, range.start() + end),
-                name: expansion.name,
+                value: Value::variable(expansion.name),
             });
         }
     }
-    (!expansions.is_empty()).then(|| substitute(text, &expansions))
+    expansions
 }
 
 /// The annotation of a `-- +goose <annotation>` line. See

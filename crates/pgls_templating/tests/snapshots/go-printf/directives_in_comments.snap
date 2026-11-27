@@ -1,0 +1,11 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- a percent sign in a comment is a directive to Go: `% t` takes an argument
+  2 | select %d; -- % t
+    | select $b; -- % t
+
+placeholders:
+     54..57 `% t` -> `% t` in a comment
+     84..86 `%d` -> `$b` value
+     91..94 `% t` -> `% t` in a comment

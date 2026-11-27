@@ -111,6 +111,7 @@ pgls_semantic_tokens        = { path = "./crates/pgls_semantic_tokens", version 
 pgls_splinter               = { path = "./crates/pgls_splinter", version = "0.0.0" }
 pgls_statement_splitter     = { path = "./crates/pgls_statement_splitter", version = "0.0.0" }
 pgls_suppressions           = { path = "./crates/pgls_suppressions", version = "0.0.0" }
+pgls_templating             = { path = "./crates/pgls_templating", version = "0.0.0" }
 pgls_text_edit              = { path = "./crates/pgls_text_edit", version = "0.0.0" }
 pgls_text_size              = { path = "./crates/pgls_text_size", version = "0.0.0" }
 pgls_tokenizer              = { path = "./crates/pgls_tokenizer", version = "0.0.0" }
