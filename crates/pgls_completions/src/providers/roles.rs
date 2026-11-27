@@ -3,7 +3,8 @@ use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgls_catalog::{NamePosition, Snapshot};
+use pgls_catalog::Snapshot;
+use pgls_tokenizer::NamePosition;
 use pgls_treesitter::TreesitterContext;
 
 use super::helper::{get_range_to_replace, with_schema_or_alias};

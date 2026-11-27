@@ -1,7 +1,7 @@
 use std::ops::Range;
 
-use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_text_size::{TextRange, TextSize};
+use pgls_tokenizer::NamePosition;
 use pgls_treesitter::TreesitterContext;
 
 use crate::{is_unterminated_quote, remove_sanitized_token};
@@ -138,8 +138,8 @@ pub(crate) fn with_schema_or_alias(
             } else {
                 format!(
                     "{}.{}",
-                    quote_identifier(prefix, NamePosition::ColId),
-                    quote_identifier(item_name, NamePosition::ColLabel)
+                    NamePosition::ColId.quote(prefix),
+                    NamePosition::ColLabel.quote(item_name)
                 )
             }
         }
@@ -149,9 +149,9 @@ pub(crate) fn with_schema_or_alias(
             } else if with_quotes {
                 format!("{}{closing_quote}", escaped(item_name))
             } else if is_already_prefixed_with_schema_name {
-                quote_identifier(item_name, NamePosition::ColLabel).into_owned()
+                NamePosition::ColLabel.quote(item_name).into_owned()
             } else {
-                quote_identifier(item_name, position).into_owned()
+                position.quote(item_name).into_owned()
             }
         }
     }

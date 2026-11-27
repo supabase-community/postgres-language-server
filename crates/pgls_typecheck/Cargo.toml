@@ -13,12 +13,12 @@ version              = "0.0.0"
 
 [dependencies]
 itertools                         = { version = "0.14.0" }
-pgls_catalog                      = { workspace = true, features = ["db"] }
 pgls_console.workspace            = true
 pgls_diagnostics.workspace        = true
 pgls_line_index.workspace         = true
 pgls_query.workspace              = true
 pgls_text_size.workspace          = true
+pgls_tokenizer                    = { workspace = true }
 pgls_treesitter_grammar.workspace = true
 sqlx.workspace                    = true
 tree-sitter.workspace             = true

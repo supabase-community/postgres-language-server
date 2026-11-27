@@ -1,7 +1,7 @@
 //! Keywords, identifiers and literals: when a name needs quotes, and how a string is quoted.
 
 use pgls_query::{Identifier, protobuf::String as PgString};
-use pgls_tokenizer::KeywordCategory;
+use pgls_tokenizer::NamePosition;
 
 use crate::{TokenKind, emitter::EventEmitter};
 
@@ -37,7 +37,7 @@ pub(crate) fn emit_identifier_maybe_quoted(e: &mut EventEmitter, value: &str) {
     }
 
     let value = e.source_identifier(value).to_string();
-    if needs_quoting_as_column_name(&value) {
+    if NamePosition::ColId.needs_quotes(&value) {
         emit_identifier(e, &value);
     } else {
         e.token(TokenKind::IDENT(value));
@@ -54,7 +54,7 @@ pub(crate) fn emit_label_maybe_quoted(e: &mut EventEmitter, value: &str) {
     }
 
     let value = e.source_identifier(value).to_string();
-    if needs_quoting_as_label(&value) {
+    if NamePosition::ColLabel.needs_quotes(&value) {
         emit_identifier(e, &value);
     } else {
         e.token(TokenKind::IDENT(value));
@@ -68,7 +68,8 @@ pub(crate) fn emit_label_maybe_quoted(e: &mut EventEmitter, value: &str) {
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L1092
 pub(crate) fn emit_word_or_string(e: &mut EventEmitter, value: &str) {
     let word = e.source_identifier(value).to_string();
-    if value.len() > Identifier::NAME_BYTES_MAX || needs_quoting(&word) {
+    if value.len() > Identifier::NAME_BYTES_MAX || NamePosition::NonReservedWord.needs_quotes(&word)
+    {
         emit_single_quoted_str(e, value);
     } else {
         e.token(TokenKind::IDENT(word));
@@ -85,7 +86,7 @@ pub(crate) fn emit_type_identifier_maybe_quoted(e: &mut EventEmitter, value: &st
     }
 
     let value = e.source_identifier(value).to_string();
-    if needs_quoting(&value) {
+    if NamePosition::NonReservedWord.needs_quotes(&value) {
         emit_identifier(e, &value);
     } else {
         e.token(TokenKind::TYPE_IDENT(value));
@@ -151,7 +152,7 @@ fn can_dollar_quote(value: &str, tag: &str) -> bool {
 }
 
 /// Emits the name of a setting (`var_name`), which the parser joins from its parts with `.`, quoting
-/// the parts that need it. One quoted name would be cut to 63 bytes as a whole.
+/// the parts that need it as a `ColId`. One quoted name would be cut to 63 bytes as a whole.
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1807
 pub(crate) fn emit_variable_name(e: &mut EventEmitter, name: &str) {
     // A dot that would leave a part empty was written inside a quoted part, as in `"a."` or
@@ -171,62 +172,12 @@ pub(crate) fn emit_variable_name(e: &mut EventEmitter, name: &str) {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
-        if needs_quoting(part) {
+        if NamePosition::ColId.needs_quotes(part) {
             emit_identifier(e, part);
         } else {
             e.token(TokenKind::IDENT(part.to_string()));
         }
     }
-}
-
-pub(crate) fn needs_quoting(value: &str) -> bool {
-    if value.is_empty() {
-        return true;
-    }
-
-    let mut chars = value.chars();
-    if let Some(first) = chars.next() {
-        if first.is_ascii_digit() {
-            return true;
-        }
-        if first == '_' && value.len() == 1 {
-            return false;
-        }
-    }
-
-    if value.chars().any(|c| c.is_ascii_uppercase()) {
-        return true;
-    }
-
-    if value
-        .chars()
-        .any(|c| !c.is_ascii_alphanumeric() && c != '_')
-    {
-        return true;
-    }
-
-    KeywordCategory::of(value) == Some(KeywordCategory::Reserved)
-}
-
-/// Whether a schema, table or column name must be quoted. The grammar spells it as `ColId`, which
-/// excludes the keywords that may name a function or type.
-pub(crate) fn needs_quoting_as_column_name(value: &str) -> bool {
-    needs_quoting(value) || KeywordCategory::of(value) == Some(KeywordCategory::TypeFuncName)
-}
-
-/// Whether a name that may be any word, keywords included, must be quoted. The grammar spells it
-/// as `ColLabel`, the trailing part of a qualified function name for instance.
-pub(crate) fn needs_quoting_as_label(value: &str) -> bool {
-    needs_quoting(value) && KeywordCategory::of(value).is_none()
-}
-
-/// Whether an unqualified function or type name must be quoted.
-///
-/// The grammar spells such a name as `type_function_name`, which excludes column name keywords as
-/// well as reserved ones: unquoted, `coalesce(a)` or `interval` would parse as the SQL construct of
-/// the same name rather than as a reference to the named object.
-pub(crate) fn needs_quoting_as_function_or_type_name(value: &str) -> bool {
-    needs_quoting(value) || KeywordCategory::of(value) == Some(KeywordCategory::ColName)
 }
 
 #[cfg(test)]

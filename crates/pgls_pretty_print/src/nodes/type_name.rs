@@ -100,7 +100,7 @@ fn emit_pct_type(e: &mut EventEmitter, name_parts: &[String]) {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
-        if index == 0 && needs_quoting_as_function_or_type_name(part) {
+        if index == 0 && NamePosition::TypeFunctionName.needs_quotes(part) {
             emit_identifier(e, part);
         } else {
             emit_identifier_maybe_quoted(e, part);
@@ -168,7 +168,7 @@ fn emit_dot_separated_type_name(e: &mut EventEmitter, name_parts: &[String]) {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
-        if index == 0 && needs_quoting_as_function_or_type_name(part) {
+        if index == 0 && NamePosition::TypeFunctionName.needs_quotes(part) {
             emit_identifier(e, part);
         } else {
             emit_type_identifier_maybe_quoted(e, part);
