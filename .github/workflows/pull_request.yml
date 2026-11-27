@@ -492,11 +492,21 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
+      # The toolchain is the dev shell's, so the cache asks it for cargo and rustc.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: wasm
+          cmd-format: nix develop --command {0}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
       - name: Install JS dependencies
         run: nix develop --command bun install
 
+      # Without regenerating the schema types first, as `bun run build` does: "Check Codegen"
+      # checks that the committed ones are current.
       - name: Build WASM package
-        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run build"
+        run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun run build:wasm && bun run build:ts:release-assets"
 
       - name: Run WASM unit tests
         run: nix develop --command bash -c "cd packages/@postgres-language-server/wasm && bun test"
