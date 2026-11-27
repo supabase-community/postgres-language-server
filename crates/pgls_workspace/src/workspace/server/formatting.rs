@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use pgls_analyser::STOP_CHECK_INTERVAL;
 use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
-use pgls_pretty_print::{FormatConfig, FormatStatementParams, Terminator};
+use pgls_pretty_print::{FormatConfig, FormatStatementParams};
 use pgls_text_size::TextRange;
 
 use super::{StatementId, document::Document, sql_function};
@@ -160,6 +160,10 @@ pub(super) fn format_document(
 
         match &**ast_result {
             Ok(ast) => {
+                let Some(terminator) = doc.terminator(stmt_range) else {
+                    formatted_output.push_str(text);
+                    continue;
+                };
                 let mut ast = Arc::clone(ast);
                 if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(stmt.id()) {
                     // Copies the tree only for the functions whose body is replaced.
@@ -169,12 +173,6 @@ pub(super) fn format_document(
                     );
                 }
 
-                // A meta-command like `\gexec` ends the statement in place of the `;`.
-                let terminator = if doc.ends_at_meta_command(stmt_range) {
-                    Terminator::Omitted
-                } else {
-                    Terminator::Semicolon
-                };
                 match pgls_pretty_print::format_statement(FormatStatementParams {
                     terminator,
                     ..FormatStatementParams::new(&ast, text, &config)
