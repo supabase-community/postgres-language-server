@@ -5067,7 +5067,10 @@ async fn test_code_actions_expand_star(test_db: PgPool) {
     // single-byte server encoding, Postgres would lower-case `Ölstand` written without quotes.
     let actions = expand_actions("* from größen;");
     assert_eq!(actions.len(), 1, "{actions:?}");
-    assert_eq!(actions[0].1.edits[0].new_text, r#""größe", "Ölstand", "Café""#);
+    assert_eq!(
+        actions[0].1.edits[0].new_text,
+        r#""größe", "Ölstand", "Café""#
+    );
 
     // Nothing to expand elsewhere.
     assert!(expand_actions("where id").is_empty());
