@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::{FunctionSignature, Generated, Identity};
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::{QualifiedName, string_values};
+use pgls_query_ext::utils::QualifiedName;
 use rustc_hash::FxHashSet;
 
 use super::{Catalog, Entry, Key, explicit_schemas, key};
@@ -912,7 +912,7 @@ pub fn rename<T>(
         return columns;
     }
     let mut columns = columns?;
-    let names = string_values(names)?;
+    let names = Node::string_values(names)?;
     if names.len() > columns.len() {
         return None;
     }

@@ -81,10 +81,8 @@ fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
 fn collect_name_parts(n: &TypeName) -> Vec<String> {
     n.names
         .iter()
-        .filter_map(|node| match &node.node {
-            Some(pgls_query::NodeEnum::String(s)) => Some(s.sval.clone()),
-            _ => None,
-        })
+        .filter_map(Node::string_value)
+        .map(str::to_owned)
         .collect()
 }
 
@@ -102,7 +100,7 @@ fn emit_pct_type(e: &mut EventEmitter, name_parts: &[String]) {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
-        if index == 0 && needs_quoting_as_function_or_type_name(part) {
+        if index == 0 && NamePosition::TypeFunctionName.needs_quotes(part) {
             emit_identifier(e, part);
         } else {
             emit_identifier_maybe_quoted(e, part);
@@ -170,7 +168,7 @@ fn emit_dot_separated_type_name(e: &mut EventEmitter, name_parts: &[String]) {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
-        if index == 0 && needs_quoting_as_function_or_type_name(part) {
+        if index == 0 && NamePosition::TypeFunctionName.needs_quotes(part) {
             emit_identifier(e, part);
         } else {
             emit_type_identifier_maybe_quoted(e, part);

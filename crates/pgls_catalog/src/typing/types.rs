@@ -131,7 +131,7 @@ pub fn serial_type(type_name: &protobuf::TypeName) -> Option<SerialType> {
     if type_name.pct_type || !type_name.array_bounds.is_empty() {
         return None;
     }
-    match pgls_query_ext::utils::string_value(name)? {
+    match name.string_value()? {
         "smallserial" | "serial2" => Some(SerialType::SmallSerial),
         "serial" | "serial4" => Some(SerialType::Serial),
         "bigserial" | "serial8" => Some(SerialType::BigSerial),

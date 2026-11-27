@@ -1,4 +1,3 @@
-mod keywords;
 mod node_location;
 mod proto_analyser;
 mod token_kind;
