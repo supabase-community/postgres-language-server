@@ -293,13 +293,11 @@ jobs:
       - name: Run the option matrix
         run: cargo test -p pgls_pretty_print --release --test option_matrix -- --ignored
 
-  # Runs the CLI and the fuzzers' oracles over real-world SQL (crates/pgls_cli/tests/corpus.toml)
-  # and compares a summary per source with its snapshot. In release, because `format` of GitLab's
-  # schema takes minutes in debug.
-  # Also runs the completion harness over the Postgres regression SQL
-  # (crates/pgls_completions/tests/harness.rs), which takes minutes in debug too.
-  corpus:
-    name: Corpus
+  # Builds the release binary and the release tests of the corpus check and the completion harness
+  # once, for "Corpus" and "Test JS Packages". In release, because `format` of GitLab's schema takes
+  # minutes in debug.
+  build-release:
+    name: Build Release
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-22.04
@@ -317,7 +315,7 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: corpus
+          shared-key: release
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - uses: actions/cache@v5
         with:
@@ -329,19 +327,54 @@ jobs:
         uses: tree-sitter/setup-action/cli@v2
         with:
           tree-sitter-ref: v0.25.9
-      - name: Build the corpus check
-        run: cargo test -p pgls_cli --release --test corpus --no-run
-      # The release binary that the corpus check runs, for "Test JS Packages".
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      # The archive holds the test binaries and the CLI binary that the corpus check runs.
+      - name: Build
+        run: |
+          cargo nextest archive --cargo-profile release -p pgls_cli -p pgls_completions \
+            --test corpus --test harness --archive-file release-tests.tar.zst
+      - name: Upload the tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-tests
+          path: release-tests.tar.zst
+          retention-days: 1
       - name: Upload the CLI binary
         uses: actions/upload-artifact@v4
         with:
           name: cli-release
           path: target/release/postgres-language-server
           retention-days: 1
-      - name: Run the corpus check
-        run: cargo test -p pgls_cli --release --test corpus -- --ignored
-      - name: Run the completion harness
-        run: cargo test -p pgls_completions --release --test harness -- --ignored
+
+  # Runs the CLI and the fuzzers' oracles over real-world SQL (crates/pgls_cli/tests/corpus.toml)
+  # and compares a summary per source with its snapshot.
+  # Also runs the completion harness over the Postgres regression SQL
+  # (crates/pgls_completions/tests/harness.rs), which takes minutes in debug too.
+  corpus:
+    name: Corpus
+    needs: [changes, build-release]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+      - name: Download the tests
+        uses: actions/download-artifact@v4
+        with:
+          name: release-tests
+      - name: Run the corpus check and the completion harness
+        run: |
+          cargo-nextest nextest run --archive-file release-tests.tar.zst --workspace-remap . \
+            --profile ci --run-ignored only
 
   # Linux runs the tests against every supported major of Postgres; the other platforms against 15.
   test:
@@ -426,10 +459,10 @@ jobs:
             | jq -r '.packages[] | select(any(.targets[]; .doctest)) | "-p", .name' \
             | tr -d '\r' | xargs cargo test --doc
 
-  # Tests the binary that "Corpus" built, also when the corpus check itself failed.
+  # Tests the binary that "Build Release" built.
   test-js-bindings:
-    needs: [changes, corpus]
-    if: ${{ !cancelled() && needs.changes.outputs.code == 'true' && needs.corpus.result != 'skipped' }}
+    needs: [changes, build-release]
+    if: needs.changes.outputs.code == 'true'
     name:
       Test JS Packages
       # use the same image we use for compiling
