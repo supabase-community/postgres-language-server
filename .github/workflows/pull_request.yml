@@ -364,6 +364,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
