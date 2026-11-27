@@ -1,0 +1,35 @@
+name: CI Telemetry
+
+# Exports each finished run of the PR checks as a trace (the run, its jobs and their steps), to
+# follow the critical path and the slowest steps over time. Needs the repository variable
+# `OTLP_TRACES_ENDPOINT` and the secret `OTLP_HEADERS` (e.g. `signoz-ingestion-key=...`); without
+# them, the job is skipped.
+on:
+  # Reads the run's metadata through the API only; never checks out or runs code of the run.
+  workflow_run:
+    workflows: [Pull Request]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  export:
+    name: Export run as a trace
+    if: vars.OTLP_TRACES_ENDPOINT != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Export jobs and steps as a trace
+        uses: dash0hq/otel-cicd-action@v4.2.0
+        with:
+          otlpEndpoint: ${{ vars.OTLP_TRACES_ENDPOINT }}
+          otlpHeaders: ${{ secrets.OTLP_HEADERS }}
+          otelServiceName: github-actions
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          runId: ${{ github.event.workflow_run.id }}
+          extraAttributes: deployment.environment=ci,cicd.pipeline.name=${{ github.event.workflow_run.name }},github.event.name=${{ github.event.workflow_run.event }}
