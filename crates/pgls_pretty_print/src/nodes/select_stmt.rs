@@ -267,7 +267,7 @@ pub(super) fn emit_select_stmt(e: &mut EventEmitter, n: &SelectStmt) {
             }
             e.space();
             e.indent_start();
-            emit_comma_separated_list(e, &n.group_clause, emit_node);
+            emit_comma_separated_list(e, &n.group_clause, emit_group_by_item);
             e.indent_end();
         }
 

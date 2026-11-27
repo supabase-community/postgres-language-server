@@ -1,0 +1,10 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/group_by_nested_grouping_sets.sql
+---
+select
+  sum(c)
+from
+  t
+group by grouping sets (f(c), grouping sets ((cube(c))))
+order by 1 desc;
