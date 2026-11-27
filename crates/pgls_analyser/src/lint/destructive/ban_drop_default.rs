@@ -3,8 +3,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableType, Token};
-use pgls_query_ext::utils::string_value;
+use pgls_query::protobuf::{AlterTableType, Node, Token};
 
 declare_lint_rule! {
     /// Dropping a column or domain default may break existing clients.
@@ -55,7 +54,7 @@ impl LinterRule for BanDropDefault {
             pgls_query::NodeEnum::AlterDomainStmt(stmt)
                 if AlterDomainKind::of(stmt) == Some(AlterDomainKind::DropDefault) =>
             {
-                let name = stmt.type_name.last().and_then(string_value);
+                let name = stmt.type_name.last().and_then(Node::string_value);
                 vec![("domain", name.unwrap_or_default())]
             }
             _ => return vec![],

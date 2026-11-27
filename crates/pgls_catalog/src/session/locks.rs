@@ -7,10 +7,7 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, VariableSetKind},
 };
-use pgls_query_ext::{
-    options::{is_reindex_concurrent, is_vacuum_full},
-    utils::{alter_table_cmds, cmd_def},
-};
+use pgls_query_ext::options::{is_reindex_concurrent, is_vacuum_full};
 
 use super::lock_level::{LockMode, TableLock, relation_locks};
 use crate::Catalog;
@@ -221,9 +218,9 @@ impl Locks {
         schema: &str,
         table: &str,
     ) {
-        for cmd in alter_table_cmds(stmt) {
+        for cmd in stmt.commands() {
             if cmd.subtype() == protobuf::AlterTableType::AtAddConstraint
-                && let Some(NodeEnum::Constraint(c)) = cmd_def(cmd)
+                && let Some(NodeEnum::Constraint(c)) = cmd.definition()
                 && c.skip_validation
                 // A NOT ENFORCED constraint (Postgres 18) is NOT VALID too, but can't be validated.
                 // Only CHECK and FOREIGN KEY constraints can be NOT ENFORCED; the parser leaves

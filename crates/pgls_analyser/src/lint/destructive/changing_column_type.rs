@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name, cmd_def};
+use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{
@@ -7,7 +7,6 @@ use pgls_catalog::{
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{ColumnDef, RangeVar};
-use pgls_query_ext::utils::string_value;
 
 declare_lint_rule! {
     /// Changing a column type may require a table rewrite and break existing clients.
@@ -72,7 +71,7 @@ impl LinterRule for ChangingColumnType {
 
         for cmd in alter_table_cmds(ctx.stmt()) {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType {
-                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
+                if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition()
                     && !rewrites(ctx, relation, &cmd.name, col_def)
                 {
                     continue;
@@ -142,7 +141,7 @@ fn rewrites(
 fn is_column(expr: &pgls_query::NodeEnum, column: &str) -> bool {
     match expr {
         pgls_query::NodeEnum::ColumnRef(column_ref) => {
-            matches!(column_ref.fields.as_slice(), [field] if string_value(field) == Some(column))
+            matches!(column_ref.fields.as_slice(), [field] if field.string_value() == Some(column))
         }
         _ => false,
     }

@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
+use crate::utils::{alter_table_cmds, altered_relation, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -54,7 +54,7 @@ impl LinterRule for AddSerialColumn {
 
         for cmd in alter_table_cmds(ctx.stmt()) {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
-                && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd)
+                && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition()
             {
                 // Check for SERIAL types
                 if let Some(type_name) = &col_def.type_name

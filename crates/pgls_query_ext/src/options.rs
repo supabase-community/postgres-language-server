@@ -8,28 +8,6 @@ use pgls_query::{
     protobuf::{DefElem, Node, ReindexStmt, TypeName, VacuumStmt},
 };
 
-use crate::utils::string_value;
-
-/// The option named `name`, the last one if there are several.
-///
-/// Postgres compares option names with `strcmp`, like `strcmp(opt->defname, "full")` in
-/// [`ExecVacuum`]. The parser lowercases unquoted names, so `VACUUM (FULL)` has the option `full`,
-/// while `VACUUM ("FULL")` has `FULL`, which Postgres rejects as unknown. `VACUUM` and `REINDEX`
-/// accept an option more than once, and the last one wins; most other statements reject it with
-/// [`errorConflictingDefElem`].
-///
-/// [`ExecVacuum`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L243
-/// [`errorConflictingDefElem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/define.c#L371
-pub fn find_def_elem<'a>(options: &'a [Node], name: &str) -> Option<&'a DefElem> {
-    options
-        .iter()
-        .rev()
-        .find_map(|option| match option.node.as_ref()? {
-            NodeEnum::DefElem(def) if def.defname == name => Some(def.as_ref()),
-            _ => None,
-        })
-}
-
 /// The value of a boolean option, like [`defGetBoolean`]: on without a value, the integers `0`
 /// and `1`, and `true`, `false`, `on` and `off` in any case. `None` for any other value, which
 /// Postgres rejects, like `full 2` or `full '0'`.
@@ -87,7 +65,7 @@ fn type_name_to_string(type_name: &TypeName) -> Option<String> {
     let mut value = type_name
         .names
         .iter()
-        .map(string_value)
+        .map(Node::string_value)
         .collect::<Option<Vec<_>>>()?
         .join(".");
     if type_name.pct_type {
@@ -121,7 +99,7 @@ fn name_list_to_string(names: &[Node]) -> Option<String> {
 ///
 /// [`ExecVacuum`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L243
 pub fn is_vacuum_full(stmt: &VacuumStmt) -> bool {
-    find_def_elem(&stmt.options, "full").and_then(def_elem_bool) == Some(true)
+    DefElem::find(&stmt.options, "full").and_then(def_elem_bool) == Some(true)
 }
 
 /// Whether the statement is `REINDEX CONCURRENTLY`, like the `concurrently` option of
@@ -129,14 +107,16 @@ pub fn is_vacuum_full(stmt: &VacuumStmt) -> bool {
 ///
 /// [`ExecReindex`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L2857
 pub fn is_reindex_concurrent(stmt: &ReindexStmt) -> bool {
-    find_def_elem(&stmt.params, "concurrently").and_then(def_elem_bool) == Some(true)
+    DefElem::find(&stmt.params, "concurrently").and_then(def_elem_bool) == Some(true)
 }
 
 #[cfg(test)]
 mod tests {
     use pgls_query::NodeEnum;
 
-    use super::{def_elem_bool, find_def_elem, is_reindex_concurrent, is_vacuum_full};
+    use pgls_query::protobuf::DefElem;
+
+    use super::{def_elem_bool, is_reindex_concurrent, is_vacuum_full};
 
     fn parse(sql: &str) -> NodeEnum {
         pgls_query::parse(sql).unwrap().into_root().unwrap()
@@ -162,7 +142,7 @@ mod tests {
         let NodeEnum::CreateSubscriptionStmt(stmt) = parse(&sql) else {
             panic!("Expected CreateSubscriptionStmt");
         };
-        find_def_elem(&stmt.options, name).map(def_elem_bool)
+        DefElem::find(&stmt.options, name).map(def_elem_bool)
     }
 
     #[test]

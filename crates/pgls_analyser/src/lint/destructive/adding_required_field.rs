@@ -1,10 +1,9 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
+use crate::utils::{alter_table_cmds, altered_relation, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType};
-use pgls_query_ext::utils::string_value;
+use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType, Node};
 
 declare_lint_rule! {
     /// Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.
@@ -46,7 +45,7 @@ impl LinterRule for AddingRequiredField {
         let not_null_columns: Vec<&str> = commands
             .iter()
             .filter(|command| command.subtype() == AlterTableType::AtAddConstraint)
-            .filter_map(|command| match cmd_def(command)? {
+            .filter_map(|command| match command.definition()? {
                 pgls_query::NodeEnum::Constraint(constraint)
                     if constraint.contype() == ConstrType::ConstrNotnull =>
                 {
@@ -55,13 +54,13 @@ impl LinterRule for AddingRequiredField {
                 _ => None,
             })
             .flat_map(|constraint| &constraint.keys)
-            .filter_map(string_value)
+            .filter_map(Node::string_value)
             .collect();
 
         commands
             .iter()
             .filter(|command| command.subtype() == AlterTableType::AtAddColumn)
-            .filter_map(|command| match cmd_def(command)? {
+            .filter_map(|command| match command.definition()? {
                 pgls_query::NodeEnum::ColumnDef(column) => Some(column),
                 _ => None,
             })

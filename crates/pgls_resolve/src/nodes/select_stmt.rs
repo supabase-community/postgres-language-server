@@ -4,7 +4,6 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{CoercionForm, SelectStmt, SetOperation},
 };
-use pgls_query_ext::utils::string_value;
 
 use super::{
     Resolver,
@@ -291,7 +290,7 @@ fn resolve_clause_items(
         };
         let is_bare_name = matches!(
             item.node.as_ref(),
-            Some(NodeEnum::ColumnRef(column)) if matches!(column.fields.as_slice(), [field] if string_value(field).is_some())
+            Some(NodeEnum::ColumnRef(column)) if matches!(column.fields.as_slice(), [field] if field.string_value().is_some())
         );
         if is_bare_name {
             r.set_output_names_visible(output_names);
@@ -308,7 +307,8 @@ fn resolve_clause_items(
 fn is_output_reference(expr: &NodeEnum, output_names: &[String]) -> bool {
     match expr {
         NodeEnum::ColumnRef(column) => match column.fields.as_slice() {
-            [field] => string_value(field)
+            [field] => field
+                .string_value()
                 .is_some_and(|name| output_names.iter().any(|output| output == name)),
             _ => false,
         },

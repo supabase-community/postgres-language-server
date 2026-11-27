@@ -4,7 +4,6 @@ use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, ConstrType, RangeVar},
 };
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def};
 
 /// A table lock mode, from the weakest to the strongest, like [`lockdefs.h`]. Each mode
 /// conflicts with the modes listed in the [docs].
@@ -56,7 +55,7 @@ impl LockMode {
 ///
 /// [`AlterTableGetLockLevel`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/tablecmds.c#L4617
 pub fn alter_table_lock(stmt: &AlterTableStmt) -> LockMode {
-    alter_table_cmds(stmt)
+    stmt.commands()
         .map(alter_table_cmd_lock)
         .fold(LockMode::ShareUpdateExclusive, LockMode::max)
 }
@@ -75,7 +74,7 @@ pub fn alter_table_cmd_lock(cmd: &AlterTableCmd) -> LockMode {
         | At::AtDisableTrigAll
         | At::AtDisableTrigUser => LockMode::ShareRowExclusive,
         At::AtAddConstraint | At::AtReAddConstraint | At::AtReAddDomainConstraint => {
-            match cmd_def(cmd) {
+            match cmd.definition() {
                 // A foreign key adds triggers to both tables, like `CREATE TRIGGER`.
                 Some(NodeEnum::Constraint(constraint))
                     if constraint.contype() == ConstrType::ConstrForeign =>
@@ -96,12 +95,8 @@ pub fn alter_table_cmd_lock(cmd: &AlterTableCmd) -> LockMode {
         | At::AtAttachPartition
         | At::AtDetachPartitionFinalize => LockMode::ShareUpdateExclusive,
         At::AtSetRelOptions | At::AtResetRelOptions => rel_options_lock(cmd),
-        At::AtDetachPartition => match cmd_def(cmd) {
-            Some(NodeEnum::PartitionCmd(partition)) if partition.concurrent => {
-                LockMode::ShareUpdateExclusive
-            }
-            _ => LockMode::AccessExclusive,
-        },
+        At::AtDetachPartition if cmd.detaches_concurrently() => LockMode::ShareUpdateExclusive,
+        At::AtDetachPartition => LockMode::AccessExclusive,
         // Everything else may rewrite the table or change what reads see. The subcommands that
         // only Postgres itself creates, like `AT_ReAddIndex`, aren't in the switch of
         // `AlterTableGetLockLevel` and never come from the parser.
@@ -163,7 +158,7 @@ pub fn alter_table_cmd_lock(cmd: &AlterTableCmd) -> LockMode {
 /// [`AlterTableGetRelOptionsLockLevel`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/reloptions.c#L2144
 /// [`reloptions.c`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/access/common/reloptions.c#L94
 fn rel_options_lock(cmd: &AlterTableCmd) -> LockMode {
-    let Some(NodeEnum::List(options)) = cmd_def(cmd) else {
+    let Some(NodeEnum::List(options)) = cmd.definition() else {
         return LockMode::AccessExclusive;
     };
     if options.items.is_empty() {
@@ -259,7 +254,7 @@ pub struct TableLock {
 pub fn relation_locks(stmt: &NodeEnum) -> Vec<(LockMode, &RangeVar)> {
     match stmt {
         NodeEnum::AlterTableStmt(stmt) => {
-            let others = alter_table_cmds(stmt).filter_map(|cmd| match cmd_def(cmd)? {
+            let others = stmt.commands().filter_map(|cmd| match cmd.definition()? {
                 NodeEnum::PartitionCmd(partition) => {
                     let mode = match cmd.subtype() {
                         AlterTableType::AtAttachPartition => LockMode::AccessExclusive,
