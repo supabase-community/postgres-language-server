@@ -86,10 +86,16 @@ pub(crate) fn read(text: &str) -> Script {
 ///
 /// [interpolate]: https://github.com/mfridman/interpolate/blob/v0.0.2/parser.go
 fn envsub(text: &str) -> Option<Preprocessed> {
-    if !text.contains("+goose") {
-        return None;
-    }
+    let expansions = envsub_expansions(text);
+    (!expansions.is_empty()).then(|| Preprocessed::substitute(text, &expansions))
+}
+
+/// The expansions that goose's `ENVSUB` replaces in `text`, see [`envsub`].
+pub(crate) fn envsub_expansions(text: &str) -> Vec<Expansion<'_>> {
     let mut expansions = Vec::new();
+    if !text.contains("+goose") {
+        return expansions;
+    }
     let mut envsub = false;
     for (range, line) in lines(text) {
         let annotation = annotation(line);
@@ -116,7 +122,7 @@ fn envsub(text: &str) -> Option<Preprocessed> {
             });
         }
     }
-    (!expansions.is_empty()).then(|| Preprocessed::substitute(text, &expansions))
+    expansions
 }
 
 /// The annotation of a `-- +goose <annotation>` line. See

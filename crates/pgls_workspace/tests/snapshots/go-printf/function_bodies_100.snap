@@ -1,0 +1,15 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- a body with a directive is kept as written, so that the string with it stays the same
+create function f(n int)
+returns int
+language sql
+as $$ select n + %d $$;
+-- the printer would requote this body, which would change the string with the directive:
+-- the statement stays as written
+create function g()   returns text language sql as 'select ''%s''';
+
+---
+diagnostics:
+  `create function g()   returns text language sql as 'select ''%s''';`: Format error: Placeholders could not be restored after formatting, the statement was left untouched

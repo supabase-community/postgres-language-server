@@ -159,6 +159,18 @@ impl MigrationTool {
         }
     }
 
+    /// `text` as the tool would run it, with a sample value for each part that it replaces, like
+    /// an expansion of goose's `ENVSUB`, see [`pgls_templating::Expansion::render`].
+    #[cfg(feature = "testing")]
+    pub fn render(self, text: &str) -> String {
+        match self {
+            Self::Goose => {
+                pgls_templating::Expansion::render(text, &goose::envsub_expansions(text))
+            }
+            Self::Plain | Self::Supabase | Self::Dbmate => text.to_string(),
+        }
+    }
+
     /// The psql meta-commands and variables in the text of a migration, if the tool runs it
     /// without psql. Postgres receives them as written and rejects them.
     pub fn psql_diagnostics(self, text: &str) -> Vec<PsqlSyntaxDiagnostic> {

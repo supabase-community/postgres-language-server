@@ -89,6 +89,10 @@ schema = [
 ]
 
 [dev-dependencies]
+dir-test        = { workspace = true }
+insta           = { workspace = true }
+pgls_migrations = { workspace = true, features = ["testing"] }
+pgls_templating = { workspace = true, features = ["testing"] }
 pgls_test_utils = { workspace = true }
 proptest        = { workspace = true }
 sqlx            = { workspace = true }

@@ -30,6 +30,8 @@ doctest = false
 
 [features]
 schema = ["dep:schemars", "pgls_templating/schema"]
+# `MigrationTool::render`, the oracle of the tests of the formatter.
+testing = ["pgls_templating/testing"]
 
 [lints]
 workspace = true
