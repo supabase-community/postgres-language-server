@@ -332,6 +332,16 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/tree-sitter
+            target/**/build/pgls_treesitter_grammar-*/out/generated
+          key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
       # fuzz/ has no lockfile of its own: the root one pins the dependencies they share.
       - name: Run clippy
         run: |

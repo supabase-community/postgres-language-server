@@ -13,15 +13,16 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # Runs each target of fuzz/ for 10 minutes with debug assertions. The corpus a run finds is kept
-  # in the Actions cache for the next one; a crash fails the job and is uploaded as an artifact.
+  # Runs each target of fuzz/ for 10 minutes with debug assertions, and with AddressSanitizer in
+  # libpg_query and the tree-sitter grammar (fuzz/asan-cc). The corpus a run finds is kept in the
+  # Actions cache for the next one; a crash fails the job and is uploaded as an artifact.
   fuzz:
     name: Fuzz ${{ matrix.target }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        target: [splitter_vs_parser, formatter_roundtrip]
+        target: [splitter_vs_parser, formatter_roundtrip, lexer_vs_scan, lsp_messages]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,6 +39,10 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-fuzz
+      - name: Setup tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+        with:
+          tree-sitter-ref: v0.25.9
       - name: Setup Just
         uses: extractions/setup-just@v3
       - uses: actions/cache@v5
@@ -47,6 +52,9 @@ jobs:
           restore-keys: fuzz-corpus-${{ matrix.target }}-
       - name: Fuzz
         run: just fuzz ${{ matrix.target }} ${{ github.event_name == 'pull_request' && '0 -runs=0' || 600 }}
+        env:
+          CC: ${{ github.workspace }}/fuzz/asan-cc
+          RUSTFLAGS: -Clinker=clang -Clink-arg=-fsanitize=address
       - name: Upload the crash
         if: failure()
         uses: actions/upload-artifact@v4
