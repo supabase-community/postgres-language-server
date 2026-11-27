@@ -50,6 +50,8 @@ pub enum TokenKind {
     Colon,
     /// `::`
     DoubleColon,
+    /// `:=`
+    ColonEquals,
     /// `.`
     Dot,
     /// `..`
@@ -82,6 +84,8 @@ pub enum TokenKind {
     Star,
     /// `` ` ``
     Backtick,
+    /// An operator of several characters, e.g. `<=` or `~*`
+    Operator,
     /// `@`
     At,
     /// `]`

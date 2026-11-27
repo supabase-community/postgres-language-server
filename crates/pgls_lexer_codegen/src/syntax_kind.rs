@@ -41,6 +41,7 @@ const PUNCT: &[(&str, &str)] = &[
     ("..", "DOT_DOT"),
     (":", "COLON"),
     ("::", "DOUBLE_COLON"),
+    (":=", "COLON_EQUALS"),
     ("=", "EQ"),
     ("!", "BANG"),
     ("-", "MINUS"),
@@ -51,6 +52,7 @@ const PUNCT: &[(&str, &str)] = &[
 const EXTRA: &[(&str, &str)] = &[
     ("POSITIONAL_PARAM", "a positional parameter"),
     ("NAMED_PARAM", "a named parameter"),
+    ("OPERATOR", "an operator"),
     ("META_COMMAND", "a psql meta-command"),
     ("COPY_DATA", "COPY data"),
     ("ERROR", "an invalid token"),

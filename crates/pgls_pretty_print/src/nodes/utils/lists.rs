@@ -77,6 +77,20 @@ pub(crate) fn emit_list_comma_before(
     }
 }
 
+/// Emits the comma between two arguments of a construct that fixes their number and order, such
+/// as `nullif(a, b)` or `xmlelement(name a, b)`. It doesn't separate list items, so it is always a
+/// trailing comma, whatever `commaStyle` says, and the caller writes the break after it. A comment
+/// written before the comma, `nullif(a /* c */, b)`, stays before it, as in a list.
+pub(crate) fn emit_argument_comma(e: &mut EventEmitter, next: Option<&Node>) {
+    if let Some(location) = next
+        .and_then(|node| node.node.as_ref())
+        .and_then(|node| crate::comments::first_node_location(node.to_ref()))
+    {
+        e.take_comments_before_keyword_at(location, ",");
+    }
+    e.token(TokenKind::COMMA);
+}
+
 /// Emit a comma-separated list with configurable spacing behavior
 pub(crate) fn emit_comma_separated_list_with_spacing<F>(
     e: &mut EventEmitter,
