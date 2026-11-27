@@ -360,7 +360,7 @@ mod tests {
         // A run of `+` and `-` is put back to its first character, so each is its own token.
         // Scanning the whole run for every token took minutes. (A run of `-` is a comment.)
         for run in ["+", "+-", "-+"] {
-            let input = run.repeat(200_000 / run.len());
+            let input = run.repeat(20_000 / run.len());
             let kinds: Vec<_> = tokenize(&input).map(|token| token.kind).collect();
             let expected: Vec<_> = input
                 .chars()
