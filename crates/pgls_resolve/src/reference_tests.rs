@@ -529,8 +529,26 @@ async fn cte_and_alias_references(test_db: PgPool) {
         names("delete from users /* gone */ u where u.id = 1"),
         ["u => alias u"]
     );
+    // A `U&"..."` alias with the escape character of its UESCAPE clause.
+    assert_eq!(
+        names(r#"select 1 from users U&"!0055" /* c */ UESCAPE '!'"#),
+        [r#"U&"!0055" => alias U"#]
+    );
     // Without collecting references, nothing is recorded.
     assert_eq!(names("select 1 from users"), [""; 0]);
+}
+
+#[pgls_test_utils::db_test]
+async fn schema_references(test_db: PgPool) {
+    let (catalog, search_path) = catalog(&test_db).await;
+    assert_eq!(
+        references(
+            &catalog,
+            &search_path,
+            r#"grant usage on schema U&"!0070ublic" UESCAPE '!' to public"#
+        ),
+        [r#"U&"!0070ublic" => schema public"#]
+    );
 }
 
 #[pgls_test_utils::db_test]

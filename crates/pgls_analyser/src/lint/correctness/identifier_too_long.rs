@@ -65,16 +65,13 @@ impl LinterRule for IdentifierTooLong {
             let (identifier, replaceable) = match token.token() {
                 Token::Ident => (Identifier::new(token_text).untruncated_name(), true),
                 Token::Uident => {
-                    let uescape = match (tokens.get(i + 1), tokens.get(i + 2)) {
-                        (Some(uescape), Some(escape)) if uescape.token() == Token::Uescape => {
-                            match text(escape) {
-                                Some((_, escape)) => Some(escape),
-                                None => continue,
-                            }
-                        }
-                        _ => None,
-                    };
-                    match Identifier::new(token_text).unicode_name(uescape) {
+                    let identifier = Identifier::from_tokens(
+                        tokens
+                            .iter()
+                            .skip(i)
+                            .map_while(|token| Some((token.token(), text(token)?.1))),
+                    );
+                    match identifier.and_then(Identifier::unicode_name) {
                         // Rewriting a `U&"..."` identifier would leave its UESCAPE clause behind.
                         Some(identifier) => (identifier, false),
                         None => continue,

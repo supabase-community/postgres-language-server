@@ -12,6 +12,7 @@
 
 use std::borrow::Cow;
 
+use pgls_query::Identifier;
 use pgls_query::protobuf::{CreateFunctionStmt, ScanToken, Token};
 use pgls_text_size::{TextRange, TextSize};
 
@@ -355,34 +356,24 @@ fn string_body(
         match string.token() {
             Token::Sconst => string_constant(value, string.range()?, sql, None),
             Token::Usconst => {
-                let escape = unicode_escape_character(tokens.get(i + 2..)?, sql)?;
-                string_constant(value, string.range()?, sql, Some(escape))
+                // Postgres rejects a statement whose escape character is invalid, so it has no
+                // body to find.
+                let escape = Identifier::unicode_escape(
+                    tokens
+                        .get(i + 2..)?
+                        .iter()
+                        .map_while(|token| Some((token.token(), token.text(sql)?))),
+                )?;
+                string_constant(
+                    value,
+                    string.range()?,
+                    sql,
+                    Some(u8::try_from(escape).ok()?),
+                )
             }
             _ => None,
         }
     })
-}
-
-/// The escape character of the `U&'...'` string followed by `tokens`: the character of a
-/// `UESCAPE '...'` clause, or `\`. Postgres rejects a statement whose escape character is
-/// invalid ([`check_uescapechar`]), so it has no body to find.
-///
-/// [`check_uescapechar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L352
-fn unicode_escape_character(tokens: &[ScanToken], sql: &str) -> Option<u8> {
-    let [uescape, string, ..] = tokens else {
-        return Some(b'\\');
-    };
-    if uescape.token() != Token::Uescape {
-        return Some(b'\\');
-    }
-    let range = string.range()?;
-    match sql
-        .get(usize::from(range.start())..usize::from(range.end()))?
-        .as_bytes()
-    {
-        [b'\'', escape, b'\''] => Some(*escape),
-        _ => None,
-    }
 }
 
 /// The body in the string constant at `range` of `sql`, if its value is `value`. `unicode_escape`
