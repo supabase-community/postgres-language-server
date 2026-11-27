@@ -18,11 +18,19 @@ schemars       = { workspace = true, optional = true }
 serde          = { workspace = true, features = ["derive"] }
 tracing        = { workspace = true }
 
+[dev-dependencies]
+dir-test                = { workspace = true }
+insta                   = { workspace = true }
+pgls_migrations         = { workspace = true }
+pgls_statement_splitter = { workspace = true }
+
 [lib]
 doctest = false
 
 [features]
 schema = ["dep:schemars"]
+# `Template::render` and `Expansion::render`, the oracle of the tests of the formatter.
+testing = []
 
 [lints]
 workspace = true

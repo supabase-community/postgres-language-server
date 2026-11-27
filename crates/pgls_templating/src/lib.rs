@@ -59,8 +59,17 @@ impl Template {
     ///
     /// Cost: one pass over the text, and [`Preprocessed::substitute`] if it has directives.
     pub fn read(self, text: &str) -> Option<Preprocessed> {
+        let mut directives = self.directives(text);
+        Self::name_arguments(&mut directives);
+        (!directives.is_empty())
+            .then(|| Preprocessed::substitute_reading(text, &directives, Self::is_ambiguous_after))
+    }
+
+    /// The directives of `text`, in text order, at most [`Template::EXPANSIONS_MAX`], without
+    /// the names of their placeholders.
+    fn directives(self, text: &str) -> Vec<Expansion<'_>> {
         let mut directives: Vec<Expansion> = match self {
-            Self::None => return None,
+            Self::None => return Vec::new(),
             Self::GoPrintf => go::Directives::new(text)
                 .take(Self::EXPANSIONS_MAX + 1)
                 .collect(),
@@ -75,9 +84,14 @@ impl Template {
             );
             directives.truncate(Self::EXPANSIONS_MAX);
         }
-        Self::name_arguments(&mut directives);
-        (!directives.is_empty())
-            .then(|| Preprocessed::substitute_reading(text, &directives, Self::is_ambiguous_after))
+        directives
+    }
+
+    /// `text` as the host would write it, with a sample value for each directive, see
+    /// [`Expansion::render`].
+    #[cfg(feature = "testing")]
+    pub fn render(self, text: &str) -> String {
+        Expansion::render(text, &self.directives(text))
     }
 
     /// The characters that name the placeholder of an argument, see [`Template::name_arguments`].
@@ -137,6 +151,50 @@ impl Template {
 pub struct Expansion<'a> {
     pub range: TextRange,
     pub value: Value<'a>,
+}
+
+#[cfg(feature = "testing")]
+impl Expansion<'_> {
+    /// `text` as the host would write it with sample values for `expansions`, which are in file
+    /// order: a distinct identifier per positional argument, like `a0`, or a distinct integer
+    /// for Go's numeric verbs, like `1000`; `v_NAME` for a named argument or variable; the text
+    /// of a known value, like `%` for `%%`. Two texts that render to the same tree are the same
+    /// program to the host, which tests of the formatter check.
+    pub fn render(text: &str, expansions: &[Expansion]) -> String {
+        let mut rendered = String::with_capacity(text.len());
+        let mut end = 0;
+        for expansion in expansions {
+            let range = std::ops::Range::<usize>::from(expansion.range);
+            let (Some(before), Some(written)) =
+                (text.get(end..range.start), text.get(range.clone()))
+            else {
+                continue;
+            };
+            rendered.push_str(before);
+            match expansion.value {
+                Value::Known(text) => rendered.push_str(text),
+                Value::Unknown {
+                    argument: Argument::Index(index),
+                    ..
+                } if written.starts_with('%')
+                    && written.ends_with(|c| "bcdoOxXUeEfFgG".contains(c)) =>
+                {
+                    rendered.push_str(&(1000 + index).to_string());
+                }
+                Value::Unknown {
+                    argument: Argument::Index(index),
+                    ..
+                } => rendered.push_str(&format!("a{index}")),
+                Value::Unknown {
+                    argument: Argument::Named(name),
+                    ..
+                } => rendered.push_str(&format!("v_{name}")),
+            }
+            end = range.end;
+        }
+        rendered.push_str(text.get(end..).unwrap_or_default());
+        rendered
+    }
 }
 
 /// What the host writes in place of an [`Expansion`].
@@ -297,256 +355,16 @@ mod tests {
             })
         }
 
-        /// The placeholders that can't be read where they are, with the text they follow.
-        fn ambiguous(template: Template, text: &'a str) -> Vec<(&'a str, &'a str)> {
+        /// The shared names among the placeholders of `text`, as their text in the file.
+        fn shared_names(template: Template, text: &str) -> Vec<(&str, &str)> {
             template
                 .read(text)
-                .map(|preprocessed| preprocessed.ambiguous)
+                .map(|preprocessed| preprocessed.shared_names)
                 .unwrap_or_default()
                 .iter()
-                .map(|ambiguity| (&text[ambiguity.placeholder], &text[ambiguity.after]))
+                .map(|shared| (&text[shared.placeholder], &text[shared.earlier]))
                 .collect()
         }
-
-        fn new(text: &str, placeholders: &[&'a str], unknown_values: &[&'a str]) -> Option<Self> {
-            Some(Self {
-                text: text.to_string(),
-                placeholders: placeholders.to_vec(),
-                unknown_values: unknown_values.to_vec(),
-            })
-        }
-    }
-
-    #[test]
-    fn go_printf_reads_every_directive_form() {
-        let text =
-            "select %v, %+d, %-8s, %#x, % d, %05.2f, %.3g, %*d, %[1]s, %[3]*.[2]*[1]f, %T from t;";
-        let read = Read::of(Template::GoPrintf, text).unwrap();
-        assert_eq!(
-            read.placeholders,
-            [
-                "%v",
-                "%+d",
-                "%-8s",
-                "%#x",
-                "% d",
-                "%05.2f",
-                "%.3g",
-                "%*d",
-                "%[1]s",
-                "%[3]*.[2]*[1]f",
-                "%T"
-            ]
-        );
-        assert_eq!(
-            read.text,
-            "select $a, $b_, $c__, $d_, $e_, $f____, $g__, $h_, $a___, $a____________, $b from t;"
-        );
-    }
-
-    #[test]
-    fn go_printf_placeholders_are_values_or_identifiers_by_context() {
-        assert_eq!(
-            Read::of(
-                Template::GoPrintf,
-                "select * from %s.%s where id = %d and name = %q;"
-            ),
-            Read::new(
-                "select * from $a.$b where id = $c and name = $d;",
-                &["%s", "%s", "%d", "%q"],
-                &[]
-            )
-        );
-        // Composite names, also with Unicode, and quoted identifiers are one parameter.
-        assert_eq!(
-            Read::of(
-                Template::GoPrintf,
-                "create table app_%s (id bigint);\nselect * from 漢é_%s_x, \"%s\", %s%s;"
-            ),
-            Read::new(
-                "create table $app_a (id bigint);\nselect * from $_b_x_____, $c__, $de_;",
-                &["app_%s", "漢é_%s_x", "\"%s\"", "%s%s"],
-                &[]
-            )
-        );
-    }
-
-    #[test]
-    fn go_printf_escapes_and_the_modulo_operator() {
-        // Go writes `%` for `%%`, and the `% 2,` of `7 % 2, 8` is no directive.
-        assert_eq!(
-            Read::of(
-                Template::GoPrintf,
-                "select 7 %% 2, '100%%', 7 % 2, 8, a %d;"
-            ),
-            Read::new(
-                "select 7 %  2, '100%%', 7 % 2, 8, a $a;",
-                &["%%", "%%", "%d"],
-                &["%%"]
-            )
-        );
-        for text in [
-            "select 7 % 2;",
-            "select 7 %;",
-            "select 7 % 2.5;",
-            "select '%z', '%[x]d', '%[1d', '%Y', '%';",
-        ] {
-            assert_eq!(Read::of(Template::GoPrintf, text), None, "{text}");
-        }
-    }
-
-    #[test]
-    fn go_printf_keeps_directives_in_strings_and_comments() {
-        let text = "select '%s', E'%d', $$ select %v $$; -- %q\n/* %x */";
-        assert_eq!(
-            Read::of(Template::GoPrintf, text),
-            Read::new(text, &["%s", "%d", "%v", "%q", "%x"], &["%s", "%d", "%v"])
-        );
-    }
-
-    #[test]
-    fn rust_fmt_reads_every_directive_form() {
-        let text = "select {}, {0}, {name}, {name:>8}, { }, {value:>width$.precision$}, {:?} from tenant_{schema}, 漢é_{t};";
-        assert_eq!(
-            Read::of(Template::RustFmt, text),
-            Read::new(
-                "select $a, $a_, $b____, $b_______, $c_, $d________________________, $e__ from $tenant_f______, $_g______;",
-                &[
-                    "{}",
-                    "{0}",
-                    "{name}",
-                    "{name:>8}",
-                    "{ }",
-                    "{value:>width$.precision$}",
-                    "{:?}",
-                    "tenant_{schema}",
-                    "漢é_{t}"
-                ],
-                &[]
-            )
-        );
-    }
-
-    #[test]
-    fn rust_fmt_escapes_and_braces_that_start_no_directive() {
-        // `{{` and `}}` write `{` and `}`. `{1,2}` and `{"a"` are no directives.
-        assert_eq!(
-            Read::of(
-                Template::RustFmt,
-                "select '{{\"a\": {v}}}'::jsonb, '{1,2}'::int[], '{\"a\": 1}';"
-            ),
-            Read::new(
-                "select '{{\"a\": {v}}}'::jsonb, '{1,2}'::int[], '{\"a\": 1}';",
-                &["{{", "{v}", "}}"],
-                &["{{", "{v}", "}}"]
-            )
-        );
-        for text in [
-            "select '{1,2}';",
-            "select 1 }",
-            "select {a b};",
-            "select {a",
-        ] {
-            assert_eq!(Read::of(Template::RustFmt, text), None, "{text}");
-        }
-    }
-
-    #[test]
-    fn rust_fmt_keeps_directives_in_strings_and_comments() {
-        let text = "select '{}', $body$ select {x} $body$; -- {0}\n";
-        assert_eq!(
-            Read::of(Template::RustFmt, text),
-            Read::new(text, &["{}", "{x}", "{0}"], &["{}", "{x}"])
-        );
-    }
-
-    #[test]
-    fn directives_after_a_name_or_a_value_are_ambiguous() {
-        for (text, ambiguous) in [
-            ("select a %s from t;", ("%s", "a")),
-            ("select \"a\" %s from t;", ("%s", "\"a\"")),
-            ("select 1 %s;", ("%s", "1")),
-            ("select 'a' %s;", ("%s", "'a'")),
-            ("select f(x) %s;", ("%s", ")")),
-            ("select a[1] %s;", ("%s", "]")),
-            ("select $1 %s;", ("%s", "$1")),
-            ("select %s %s from t;", ("%s", "%s")),
-            ("select * from t app_%s;", ("app_%s", "t")),
-        ] {
-            assert_eq!(
-                Read::ambiguous(Template::GoPrintf, text),
-                [ambiguous],
-                "{text}"
-            );
-        }
-        assert_eq!(
-            Read::ambiguous(Template::RustFmt, "select * from t {alias};"),
-            [("{alias}", "t")]
-        );
-        assert_eq!(
-            Read::ambiguous(Template::RustFmt, "select * from t {}{}, t {0}_x;"),
-            [("{}{}", "t"), ("{0}_x", "t")]
-        );
-        for text in [
-            "select a as %s, %s.%s, app_%s, tenant_x from t where id = %d and x in (%s);",
-            "select * from %s join %s on %s.id = %d limit %d offset %d;",
-            "select 7 %% %d, a::%s, '%s' as x, \"%s\" from t; -- a %s",
-            "select a \"100%%\" from t;",
-        ] {
-            assert_eq!(
-                Read::ambiguous(Template::GoPrintf, text),
-                Vec::<(&str, &str)>::new(),
-                "{text}"
-            );
-        }
-        assert_eq!(
-            Read::ambiguous(
-                Template::RustFmt,
-                "select * from {schema}.{table} as {alias} where tenant_{schema}.id = {};"
-            ),
-            Vec::<(&str, &str)>::new()
-        );
-    }
-
-    /// The placeholders of the directives of `text`, and the shared names among them, as their
-    /// text in the file.
-    fn shared_names(template: Template, text: &str) -> Vec<(&str, &str)> {
-        template
-            .read(text)
-            .map(|preprocessed| preprocessed.shared_names)
-            .unwrap_or_default()
-            .iter()
-            .map(|shared| (&text[shared.placeholder], &text[shared.earlier]))
-            .collect()
-    }
-
-    #[test]
-    fn placeholders_are_named_by_the_argument_they_take() {
-        // Distinct implicit arguments get distinct placeholders, an index takes its argument,
-        // and the directives after it continue from there. `%*d` takes the width from the
-        // third argument and the value from the fourth.
-        assert_eq!(
-            Read::of(
-                Template::GoPrintf,
-                "select %v, %v, %[1]s, %s, %[1]d, %*d, %d from t;"
-            )
-            .map(|read| read.text),
-            Some("select $a, $b, $a___, $b, $a___, $c_, $d from t;".to_string())
-        );
-        // `{}` takes the next positional argument, `{0}` the first, and `{name}` the same
-        // argument every time. A precision `.*` takes an argument before the value.
-        assert_eq!(
-            Read::of(
-                Template::RustFmt,
-                "select {}, {}, {0}, {name}, {name:>4}, {:.*}, {};"
-            )
-            .map(|read| read.text),
-            Some("select $a, $b, $a_, $c____, $c_______, $d___, $e;".to_string())
-        );
-        assert_eq!(
-            shared_names(Template::GoPrintf, "select %v, %v, %[1]v;"),
-            Vec::<(&str, &str)>::new()
-        );
     }
 
     #[test]
@@ -556,7 +374,10 @@ mod tests {
         let read = Read::of(Template::GoPrintf, &text).unwrap();
         assert!(read.text.starts_with("select $a, $b,"), "{}", read.text);
         assert!(read.text.ends_with(", $_, $a;"), "{}", read.text);
-        assert_eq!(shared_names(Template::GoPrintf, &text), [("%v", "%v")]);
+        assert_eq!(
+            Read::shared_names(Template::GoPrintf, &text),
+            [("%v", "%v")]
+        );
         let preprocessed = Template::GoPrintf.read(&text).unwrap();
         let whole = TextRange::up_to(pgls_text_size::TextSize::of(text.as_str()));
         assert!(preprocessed.shares_names_in(whole));

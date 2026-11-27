@@ -1,0 +1,11 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select '{1,2}', '{"a": 1}';
+  2 | select {a b} from t;
+  3 | select 1 } from t;
+  4 | select {};
+    | select $a;
+
+placeholders:
+     75..77 `{}` -> `$a` value

@@ -1,0 +1,17 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- +goose Up
+  2 | select '${A}';
+  3 | -- +goose ENVSUB ON
+  4 | create schema ${SCHEMA};
+    | create schema $SCHEMA__;
+  5 | grant usage on schema ${SCHEMA:-${FALLBACK}} to $ROLE, \${KEPT};
+    | grant usage on schema $SCHEMA_______________ to $ROLE, \${KEPT};
+  6 | -- +goose ENVSUB OFF
+  7 | select ${B};
+
+placeholders:
+     62..71 `${SCHEMA}` -> `$SCHEMA__` identifier
+    95..117 `${SCHEMA:-${FALLBACK}}` -> `$SCHEMA_______________` identifier
+   121..126 `$ROLE` -> `$ROLE` identifier

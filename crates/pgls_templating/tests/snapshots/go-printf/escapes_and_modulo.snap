@@ -1,0 +1,14 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select 7 %% 2, '100%%', n %% %d from t;
+    | select 7 %  2, '100%%', n %  $a from t;
+  2 | -- a lone percent sign that starts no directive is SQL, which Go would mangle
+  3 | select 7 % 2, 8, 9 %;
+  4 | select '%z', '%[x]d', '%[1d', '%Y', '%[0]d', '%';
+
+placeholders:
+      9..11 `%%` -> `% ` written as `%`
+     19..21 `%%` -> `%%` unknown value
+     26..28 `%%` -> `% ` written as `%`
+     29..31 `%d` -> `$a` value

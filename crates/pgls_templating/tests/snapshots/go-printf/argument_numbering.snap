@@ -1,0 +1,22 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- implicit arguments in order, an index sets the next one, `*` takes one
+  2 | select %v, %v, %[1]s, %s, %[1]d, %*d, %d from t;
+    | select $a, $b, $a___, $b, $a___, $c_, $d from t;
+  3 | select %[2]s, %s, %[1]s, %.*f, %[3]*.[2]*[1]f;
+    | select $b___, $c, $a___, $c__, $a____________;
+
+placeholders:
+     81..83 `%v` -> `$a` value
+     85..87 `%v` -> `$b` value
+     89..94 `%[1]s` -> `$a___` value
+     96..98 `%s` -> `$b` value
+   100..105 `%[1]d` -> `$a___` value
+   107..110 `%*d` -> `$c_` value
+   112..114 `%d` -> `$d` value
+   130..135 `%[2]s` -> `$b___` value
+   137..139 `%s` -> `$c` value
+   141..146 `%[1]s` -> `$a___` value
+   148..152 `%.*f` -> `$c__` value
+   154..168 `%[3]*.[2]*[1]f` -> `$a____________` value

@@ -1,0 +1,178 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- the 54th distinct argument gets the name of the first: one statement shares it
+  2 | select %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v;
+    | select $a__, $b__, $c__, $d__, $e__, $f__, $g__, $h__, $i__, $j__, $k__, $l__, $m__, $n__, $o__, $p__, $q__, $r__, $s__, $t__, $u__, $v__, $w__, $x__, $y__, $z__, $A__, $B__, $C__, $D__, $E__, $F__, $G__, $H__, $I__, $J__, $K__, $L__, $M__, $N__, $O__, $P__, $Q__, $R__, $S__, $T__, $U__, $V__, $W__, $X__, $Y__, $Z__, $___, $a__;
+  3 | -- in other statements, the same name is another parameter anyway
+  4 | select %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v, %-5v;
+    | select $b__, $c__, $d__, $e__, $f__, $g__, $h__, $i__, $j__, $k__, $l__, $m__, $n__, $o__, $p__, $q__, $r__, $s__, $t__, $u__, $v__, $w__, $x__, $y__, $z__, $A__, $B__, $C__, $D__, $E__, $F__, $G__, $H__, $I__, $J__, $K__, $L__, $M__, $N__, $O__, $P__, $Q__, $R__, $S__, $T__, $U__, $V__, $W__, $X__, $Y__, $Z__, $___, $a__;
+  5 | select %-5v;
+    | select $b__;
+
+placeholders:
+     89..93 `%-5v` -> `$a__` value
+     95..99 `%-5v` -> `$b__` value
+   101..105 `%-5v` -> `$c__` value
+   107..111 `%-5v` -> `$d__` value
+   113..117 `%-5v` -> `$e__` value
+   119..123 `%-5v` -> `$f__` value
+   125..129 `%-5v` -> `$g__` value
+   131..135 `%-5v` -> `$h__` value
+   137..141 `%-5v` -> `$i__` value
+   143..147 `%-5v` -> `$j__` value
+   149..153 `%-5v` -> `$k__` value
+   155..159 `%-5v` -> `$l__` value
+   161..165 `%-5v` -> `$m__` value
+   167..171 `%-5v` -> `$n__` value
+   173..177 `%-5v` -> `$o__` value
+   179..183 `%-5v` -> `$p__` value
+   185..189 `%-5v` -> `$q__` value
+   191..195 `%-5v` -> `$r__` value
+   197..201 `%-5v` -> `$s__` value
+   203..207 `%-5v` -> `$t__` value
+   209..213 `%-5v` -> `$u__` value
+   215..219 `%-5v` -> `$v__` value
+   221..225 `%-5v` -> `$w__` value
+   227..231 `%-5v` -> `$x__` value
+   233..237 `%-5v` -> `$y__` value
+   239..243 `%-5v` -> `$z__` value
+   245..249 `%-5v` -> `$A__` value
+   251..255 `%-5v` -> `$B__` value
+   257..261 `%-5v` -> `$C__` value
+   263..267 `%-5v` -> `$D__` value
+   269..273 `%-5v` -> `$E__` value
+   275..279 `%-5v` -> `$F__` value
+   281..285 `%-5v` -> `$G__` value
+   287..291 `%-5v` -> `$H__` value
+   293..297 `%-5v` -> `$I__` value
+   299..303 `%-5v` -> `$J__` value
+   305..309 `%-5v` -> `$K__` value
+   311..315 `%-5v` -> `$L__` value
+   317..321 `%-5v` -> `$M__` value
+   323..327 `%-5v` -> `$N__` value
+   329..333 `%-5v` -> `$O__` value
+   335..339 `%-5v` -> `$P__` value
+   341..345 `%-5v` -> `$Q__` value
+   347..351 `%-5v` -> `$R__` value
+   353..357 `%-5v` -> `$S__` value
+   359..363 `%-5v` -> `$T__` value
+   365..369 `%-5v` -> `$U__` value
+   371..375 `%-5v` -> `$V__` value
+   377..381 `%-5v` -> `$W__` value
+   383..387 `%-5v` -> `$X__` value
+   389..393 `%-5v` -> `$Y__` value
+   395..399 `%-5v` -> `$Z__` value
+   401..405 `%-5v` -> `$___` value
+   407..411 `%-5v` -> `$a__` value
+   486..490 `%-5v` -> `$b__` value
+   492..496 `%-5v` -> `$c__` value
+   498..502 `%-5v` -> `$d__` value
+   504..508 `%-5v` -> `$e__` value
+   510..514 `%-5v` -> `$f__` value
+   516..520 `%-5v` -> `$g__` value
+   522..526 `%-5v` -> `$h__` value
+   528..532 `%-5v` -> `$i__` value
+   534..538 `%-5v` -> `$j__` value
+   540..544 `%-5v` -> `$k__` value
+   546..550 `%-5v` -> `$l__` value
+   552..556 `%-5v` -> `$m__` value
+   558..562 `%-5v` -> `$n__` value
+   564..568 `%-5v` -> `$o__` value
+   570..574 `%-5v` -> `$p__` value
+   576..580 `%-5v` -> `$q__` value
+   582..586 `%-5v` -> `$r__` value
+   588..592 `%-5v` -> `$s__` value
+   594..598 `%-5v` -> `$t__` value
+   600..604 `%-5v` -> `$u__` value
+   606..610 `%-5v` -> `$v__` value
+   612..616 `%-5v` -> `$w__` value
+   618..622 `%-5v` -> `$x__` value
+   624..628 `%-5v` -> `$y__` value
+   630..634 `%-5v` -> `$z__` value
+   636..640 `%-5v` -> `$A__` value
+   642..646 `%-5v` -> `$B__` value
+   648..652 `%-5v` -> `$C__` value
+   654..658 `%-5v` -> `$D__` value
+   660..664 `%-5v` -> `$E__` value
+   666..670 `%-5v` -> `$F__` value
+   672..676 `%-5v` -> `$G__` value
+   678..682 `%-5v` -> `$H__` value
+   684..688 `%-5v` -> `$I__` value
+   690..694 `%-5v` -> `$J__` value
+   696..700 `%-5v` -> `$K__` value
+   702..706 `%-5v` -> `$L__` value
+   708..712 `%-5v` -> `$M__` value
+   714..718 `%-5v` -> `$N__` value
+   720..724 `%-5v` -> `$O__` value
+   726..730 `%-5v` -> `$P__` value
+   732..736 `%-5v` -> `$Q__` value
+   738..742 `%-5v` -> `$R__` value
+   744..748 `%-5v` -> `$S__` value
+   750..754 `%-5v` -> `$T__` value
+   756..760 `%-5v` -> `$U__` value
+   762..766 `%-5v` -> `$V__` value
+   768..772 `%-5v` -> `$W__` value
+   774..778 `%-5v` -> `$X__` value
+   780..784 `%-5v` -> `$Y__` value
+   786..790 `%-5v` -> `$Z__` value
+   792..796 `%-5v` -> `$___` value
+   798..802 `%-5v` -> `$a__` value
+   811..815 `%-5v` -> `$b__` value
+
+diagnostics:
+  407..411 `%-5v` has the placeholder of 89..93 `%-5v`, another value: the statement with both isn't typechecked
+  486..490 `%-5v` has the placeholder of 95..99 `%-5v`, another value: the statement with both isn't typechecked
+  492..496 `%-5v` has the placeholder of 101..105 `%-5v`, another value: the statement with both isn't typechecked
+  498..502 `%-5v` has the placeholder of 107..111 `%-5v`, another value: the statement with both isn't typechecked
+  504..508 `%-5v` has the placeholder of 113..117 `%-5v`, another value: the statement with both isn't typechecked
+  510..514 `%-5v` has the placeholder of 119..123 `%-5v`, another value: the statement with both isn't typechecked
+  516..520 `%-5v` has the placeholder of 125..129 `%-5v`, another value: the statement with both isn't typechecked
+  522..526 `%-5v` has the placeholder of 131..135 `%-5v`, another value: the statement with both isn't typechecked
+  528..532 `%-5v` has the placeholder of 137..141 `%-5v`, another value: the statement with both isn't typechecked
+  534..538 `%-5v` has the placeholder of 143..147 `%-5v`, another value: the statement with both isn't typechecked
+  540..544 `%-5v` has the placeholder of 149..153 `%-5v`, another value: the statement with both isn't typechecked
+  546..550 `%-5v` has the placeholder of 155..159 `%-5v`, another value: the statement with both isn't typechecked
+  552..556 `%-5v` has the placeholder of 161..165 `%-5v`, another value: the statement with both isn't typechecked
+  558..562 `%-5v` has the placeholder of 167..171 `%-5v`, another value: the statement with both isn't typechecked
+  564..568 `%-5v` has the placeholder of 173..177 `%-5v`, another value: the statement with both isn't typechecked
+  570..574 `%-5v` has the placeholder of 179..183 `%-5v`, another value: the statement with both isn't typechecked
+  576..580 `%-5v` has the placeholder of 185..189 `%-5v`, another value: the statement with both isn't typechecked
+  582..586 `%-5v` has the placeholder of 191..195 `%-5v`, another value: the statement with both isn't typechecked
+  588..592 `%-5v` has the placeholder of 197..201 `%-5v`, another value: the statement with both isn't typechecked
+  594..598 `%-5v` has the placeholder of 203..207 `%-5v`, another value: the statement with both isn't typechecked
+  600..604 `%-5v` has the placeholder of 209..213 `%-5v`, another value: the statement with both isn't typechecked
+  606..610 `%-5v` has the placeholder of 215..219 `%-5v`, another value: the statement with both isn't typechecked
+  612..616 `%-5v` has the placeholder of 221..225 `%-5v`, another value: the statement with both isn't typechecked
+  618..622 `%-5v` has the placeholder of 227..231 `%-5v`, another value: the statement with both isn't typechecked
+  624..628 `%-5v` has the placeholder of 233..237 `%-5v`, another value: the statement with both isn't typechecked
+  630..634 `%-5v` has the placeholder of 239..243 `%-5v`, another value: the statement with both isn't typechecked
+  636..640 `%-5v` has the placeholder of 245..249 `%-5v`, another value: the statement with both isn't typechecked
+  642..646 `%-5v` has the placeholder of 251..255 `%-5v`, another value: the statement with both isn't typechecked
+  648..652 `%-5v` has the placeholder of 257..261 `%-5v`, another value: the statement with both isn't typechecked
+  654..658 `%-5v` has the placeholder of 263..267 `%-5v`, another value: the statement with both isn't typechecked
+  660..664 `%-5v` has the placeholder of 269..273 `%-5v`, another value: the statement with both isn't typechecked
+  666..670 `%-5v` has the placeholder of 275..279 `%-5v`, another value: the statement with both isn't typechecked
+  672..676 `%-5v` has the placeholder of 281..285 `%-5v`, another value: the statement with both isn't typechecked
+  678..682 `%-5v` has the placeholder of 287..291 `%-5v`, another value: the statement with both isn't typechecked
+  684..688 `%-5v` has the placeholder of 293..297 `%-5v`, another value: the statement with both isn't typechecked
+  690..694 `%-5v` has the placeholder of 299..303 `%-5v`, another value: the statement with both isn't typechecked
+  696..700 `%-5v` has the placeholder of 305..309 `%-5v`, another value: the statement with both isn't typechecked
+  702..706 `%-5v` has the placeholder of 311..315 `%-5v`, another value: the statement with both isn't typechecked
+  708..712 `%-5v` has the placeholder of 317..321 `%-5v`, another value: the statement with both isn't typechecked
+  714..718 `%-5v` has the placeholder of 323..327 `%-5v`, another value: the statement with both isn't typechecked
+  720..724 `%-5v` has the placeholder of 329..333 `%-5v`, another value: the statement with both isn't typechecked
+  726..730 `%-5v` has the placeholder of 335..339 `%-5v`, another value: the statement with both isn't typechecked
+  732..736 `%-5v` has the placeholder of 341..345 `%-5v`, another value: the statement with both isn't typechecked
+  738..742 `%-5v` has the placeholder of 347..351 `%-5v`, another value: the statement with both isn't typechecked
+  744..748 `%-5v` has the placeholder of 353..357 `%-5v`, another value: the statement with both isn't typechecked
+  750..754 `%-5v` has the placeholder of 359..363 `%-5v`, another value: the statement with both isn't typechecked
+  756..760 `%-5v` has the placeholder of 365..369 `%-5v`, another value: the statement with both isn't typechecked
+  762..766 `%-5v` has the placeholder of 371..375 `%-5v`, another value: the statement with both isn't typechecked
+  768..772 `%-5v` has the placeholder of 377..381 `%-5v`, another value: the statement with both isn't typechecked
+  774..778 `%-5v` has the placeholder of 383..387 `%-5v`, another value: the statement with both isn't typechecked
+  780..784 `%-5v` has the placeholder of 389..393 `%-5v`, another value: the statement with both isn't typechecked
+  786..790 `%-5v` has the placeholder of 395..399 `%-5v`, another value: the statement with both isn't typechecked
+  792..796 `%-5v` has the placeholder of 401..405 `%-5v`, another value: the statement with both isn't typechecked
+  798..802 `%-5v` has the placeholder of 407..411 `%-5v`, another value: the statement with both isn't typechecked
+  811..815 `%-5v` has the placeholder of 486..490 `%-5v`, another value: the statement with both isn't typechecked

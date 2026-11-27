@@ -1,0 +1,12 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- +goose Up
+  2 | -- +goose ENVSUB ON
+  3 | create schema ${SCHEMA:-app{test};
+    | create schema $SCHEMA____________;
+  4 | -- interpolate rejects this line, so goose fails on it, and it stays as written
+  5 | select ${A:?};
+
+placeholders:
+     47..66 `${SCHEMA:-app{test}` -> `$SCHEMA____________` identifier

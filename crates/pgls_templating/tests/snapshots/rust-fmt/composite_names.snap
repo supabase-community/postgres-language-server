@@ -1,0 +1,13 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select * from tenant_{schema}, 漢é_{t}, "{x}", {a}{b}, s_{}.t_{};
+    | select * from $tenant_a______, $_b______, $c___, $de___, $s_f.$t_g;
+
+placeholders:
+     14..29 `tenant_{schema}` -> `$tenant_a______` identifier
+     31..40 `漢é_{t}` -> `$_b______` identifier
+     42..47 `"{x}"` -> `$c___` identifier
+     49..55 `{a}{b}` -> `$de___` identifier
+     57..61 `s_{}` -> `$s_f` identifier
+     62..66 `t_{}` -> `$t_g` identifier

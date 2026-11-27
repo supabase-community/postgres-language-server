@@ -1,0 +1,13 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- +goose Up
+  2 | -- +goose ENVSUB ON
+  3 | -- the same variable is the same value
+  4 | select * from t where a = ${N} and b = ${N} and c = ${M};
+    | select * from t where a = $N__ and b = $N__ and c = $M__;
+
+placeholders:
+    98..102 `${N}` -> `$N__` value
+   111..115 `${N}` -> `$N__` value
+   124..128 `${M}` -> `$M__` value

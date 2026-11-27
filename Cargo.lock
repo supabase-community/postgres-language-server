@@ -2813,7 +2813,11 @@ dependencies = [
 name = "pgls_templating"
 version = "0.0.0"
 dependencies = [
+ "dir-test",
+ "insta",
  "pgls_lexer",
+ "pgls_migrations",
+ "pgls_statement_splitter",
  "pgls_text_size",
  "schemars",
  "serde",
@@ -2951,9 +2955,11 @@ dependencies = [
 name = "pgls_workspace"
 version = "0.0.0"
 dependencies = [
+ "dir-test",
  "futures",
  "globset",
  "ignore",
+ "insta",
  "json-strip-comments 3.1.0",
  "parking_lot",
  "pgls_analyse",
