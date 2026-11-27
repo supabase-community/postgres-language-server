@@ -44,7 +44,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Runs on main write the caches, so a newer one waits instead of cancelling them.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   RUST_LOG: info
@@ -57,6 +58,7 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
       docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
@@ -119,6 +121,7 @@ jobs:
     name: Format
     needs: changes
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -163,6 +166,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Download actionlint
@@ -178,6 +182,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout PR Branch
         uses: actions/checkout@v4
@@ -195,6 +200,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout PR Branch
         uses: actions/checkout@v4
@@ -223,8 +229,6 @@ jobs:
         with:
           path: |
             ~/.cargo/bin/tree-sitter
-            ~/.cargo/bin/sqlx
-            ~/.cargo/bin/cargo-sqlx
             target/**/build/pgls_treesitter_grammar-*/out/generated
           key: ${{ runner.os }}-tree-sitter-${{ hashFiles('.tree-sitter-cli-version', 'crates/pgls_treesitter_grammar/grammar.js', 'crates/pgls_treesitter_grammar/tree-sitter.json', 'rust-toolchain.toml', 'Cargo.lock') }}
 
@@ -234,7 +238,9 @@ jobs:
           tree-sitter-ref: v0.25.9
 
       - name: Setup sqlx-cli
-        run: command -v sqlx || cargo install sqlx-cli --version 0.8.6 --locked
+        uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli@0.8.6
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -274,6 +280,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.formatter == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -303,6 +310,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -349,6 +357,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       # A failure on one platform or major doesn't cancel the others, so it shows where it fails.
       fail-fast: false
@@ -434,6 +443,7 @@ jobs:
       Test JS Packages
       # use the same image we use for compiling
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:18
@@ -477,6 +487,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -515,6 +526,7 @@ jobs:
     name: Check Codegen
     needs: changes
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:18
@@ -584,6 +596,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
