@@ -38,8 +38,7 @@ Results:
 public - public (Schema)
 pg_catalog - pg_catalog (Schema)
 pg_toast - pg_toast (Schema)
-information_schema.parameters - information_schema.parameters (Table)
-pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -88,9 +87,9 @@ update public.coos set n|
 Results:
 name - public.coos.name (Column)
 information_schema - information_schema (Schema)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -128,9 +127,9 @@ update public.coos set name = 'cool' where |
 Results:
 id - public.coos.id (Column)
 name - public.coos.name (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
-action_condition - information_schema.triggers.action_condition (Column)
+current - current (Keyword)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -138,10 +137,10 @@ update public.coos set name = 'cool' where i|
 
 Results:
 id - public.coos.id (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
-identity_increment - information_schema.columns.identity_increment (Column)
+interval - interval (Keyword)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -157,9 +156,9 @@ update public.coos set name = 'cool' where id = |
 Results:
 name - public.coos.name (Column)
 id - public.coos.id (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
-action_condition - information_schema.triggers.action_condition (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 

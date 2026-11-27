@@ -32,7 +32,7 @@ address - public.users.address (Column)
 email - public.users.email (Column)
 id - public.users.id (Column)
 name - public.users.name (Column)
-pg_catalog."RI_FKey_cascade_del"() - Schema: pg_catalog.RI_FKey_cascade_del (Function)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -41,9 +41,9 @@ select n|
 Results:
 name - public.users.name (Column)
 null - null (Keyword)
-name - Schema: pg_catalog.name (Function)
-nameconcatoid - Schema: pg_catalog.nameconcatoid (Function)
-nameeq - Schema: pg_catalog.nameeq (Function)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -83,9 +83,6 @@ select name from u|
 Results:
 users - public.users (Table)
 public - public (Schema)
-information_schema.udt_privileges - information_schema.udt_privileges (Table)
-information_schema.usage_privileges - information_schema.usage_privileges (Table)
-information_schema.user_defined_types - information_schema.user_defined_types (Table)
 
 --------------
 

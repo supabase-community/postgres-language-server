@@ -60,9 +60,8 @@ alter table i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -102,8 +101,8 @@ Results:
 created_at - public.instruments.created_at (Column)
 column - column (Keyword)
 constraint - constraint (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -114,7 +113,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -122,10 +121,10 @@ alter table instruments drop column n|
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -186,9 +185,8 @@ alter table i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -228,8 +226,8 @@ Results:
 created_at - public.instruments.created_at (Column)
 column - column (Keyword)
 constraint - constraint (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -240,7 +238,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -248,10 +246,10 @@ alter table instruments drop column i|
 
 Results:
 id - public.instruments.id (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
-identity_increment - information_schema.columns.identity_increment (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -270,7 +268,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -278,10 +276,10 @@ alter table instruments drop column if exists n|
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -342,9 +340,8 @@ alter table i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -384,9 +381,9 @@ alter table instruments alter c|
 Results:
 created_at - public.instruments.created_at (Column)
 column - column (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -397,7 +394,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -405,10 +402,10 @@ alter table instruments alter column n|
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -507,9 +504,8 @@ alter table i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -549,9 +545,9 @@ alter table instruments alter n|
 Results:
 name - public.instruments.name (Column)
 column - column (Keyword)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -649,10 +645,8 @@ alter table p|
 
 Results:
 public - public (Schema)
-information_schema.parameters - information_schema.parameters (Table)
-pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
-pg_catalog.pg_am - pg_catalog.pg_am (Table)
-pg_catalog.pg_amop - pg_catalog.pg_amop (Table)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -708,9 +702,9 @@ alter table public.instruments alter c|
 Results:
 created_at - public.instruments.created_at (Column)
 column - column (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -721,7 +715,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -729,10 +723,10 @@ alter table public.instruments alter column n|
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -794,9 +788,8 @@ alter table i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -836,9 +829,9 @@ alter table instruments alter n|
 Results:
 name - public.instruments.name (Column)
 column - column (Keyword)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -900,9 +893,8 @@ alter table i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -943,9 +935,9 @@ alter table instruments rename n|
 Results:
 name - public.instruments.name (Column)
 column - column (Keyword)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -1014,10 +1006,8 @@ alter table p|
 
 Results:
 public - public (Schema)
-information_schema.parameters - information_schema.parameters (Table)
-pg_catalog.pg_aggregate - pg_catalog.pg_aggregate (Table)
-pg_catalog.pg_am - pg_catalog.pg_am (Table)
-pg_catalog.pg_amop - pg_catalog.pg_amop (Table)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
 
 --------------
 
@@ -1074,9 +1064,9 @@ alter table public.instruments rename c|
 Results:
 created_at - public.instruments.created_at (Column)
 column - column (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -1087,7 +1077,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -1095,10 +1085,10 @@ alter table public.instruments rename column n|
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 

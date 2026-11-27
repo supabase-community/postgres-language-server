@@ -55,7 +55,7 @@ name - public.users.name (Column)
 narrator - public.audio_books.narrator (Column)
 narrator_id - private.audio_books.narrator_id (Column)
 null - null (Keyword)
-name - Schema: pg_catalog.name (Function)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 

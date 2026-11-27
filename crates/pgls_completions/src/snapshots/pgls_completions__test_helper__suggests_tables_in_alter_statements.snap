@@ -65,10 +65,8 @@ alter table i|
 
 Results:
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
-pg_catalog.pg_index - pg_catalog.pg_index (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -95,10 +93,10 @@ alter table if exists a|
 
 Results:
 auth - auth (Schema)
-information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
-information_schema.applicable_roles - information_schema.applicable_roles (Table)
-information_schema.attributes - information_schema.attributes (Table)
-information_schema.collation_character_set_applicability - information_schema.collation_character_set_applicability (Table)
+information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 

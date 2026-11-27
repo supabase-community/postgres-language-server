@@ -618,9 +618,14 @@ impl<'a> TestCompletionsSuite<'a> {
             writeln!(final_snapshot).unwrap();
         }
 
-        let cache = Snapshot::load(self.pool)
+        let mut cache = Snapshot::load(self.pool)
             .await
             .expect("Problem loading Snapshot");
+        // The built-in objects change with the Postgres major, the snapshots must not.
+        let is_builtin = |schema: &str| matches!(schema, "pg_catalog" | "information_schema");
+        cache.tables.retain(|t| !is_builtin(&t.schema));
+        cache.columns.retain(|c| !is_builtin(&c.schema_name));
+        cache.functions.retain(|f| !is_builtin(&f.schema));
 
         let mut parser = tree_sitter::Parser::new();
         parser

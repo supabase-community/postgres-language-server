@@ -24,7 +24,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -33,9 +33,9 @@ create policy "my_pol" on public.instruments for select using (i|)
 Results:
 id - public.instruments.id (Column)
 interval - interval (Keyword)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -47,7 +47,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -66,7 +66,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -75,9 +75,9 @@ create policy "my_pol" on public.instruments for select using (id = 1 and c|)
 Results:
 created_at - public.instruments.created_at (Column)
 cast - cast (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -89,7 +89,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -108,7 +108,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -117,9 +117,9 @@ create policy "my_pol" on public.instruments for insert with check (i|)
 Results:
 id - public.instruments.id (Column)
 interval - interval (Keyword)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -131,7 +131,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -150,7 +150,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 
@@ -159,9 +159,9 @@ create policy "my_pol" on public.instruments for insert with check (id = 1 and c
 Results:
 created_at - public.instruments.created_at (Column)
 cast - cast (Keyword)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -173,7 +173,7 @@ created_at - public.instruments.created_at (Column)
 id - public.instruments.id (Column)
 name - public.instruments.name (Column)
 z - public.instruments.z (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
+checksum - public._sqlx_migrations.checksum (Column)
 
 --------------
 

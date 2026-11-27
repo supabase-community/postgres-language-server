@@ -76,10 +76,10 @@ select o.id, a| from public.one o join public.two on o.id = t.id;
 
 Results:
 o.a - public.one.a (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
-action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
+array - array (Keyword)
+installed_on - public._sqlx_migrations.installed_on (Column)
+auth - auth (Schema)
+information_schema - information_schema (Schema)
 
 --------------
 
@@ -99,10 +99,7 @@ select o.id, a, b| from public.one o join public.two on o.id = t.id;
 
 Results:
 o.b - public.one.b (Column)
-backend_start - pg_catalog.pg_stat_activity.backend_start (Column)
-backend_start - pg_catalog.pg_stat_replication.backend_start (Column)
-backend_type - pg_catalog.pg_stat_activity.backend_type (Column)
-backend_xid - pg_catalog.pg_stat_activity.backend_xid (Column)
+public - public (Schema)
 
 --------------
 
@@ -121,10 +118,10 @@ select o.id, a, b, c| from public.one o join public.two on o.id = t.id;
 
 Results:
 c - public.two.c (Column)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 cast - cast (Keyword)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -145,8 +142,8 @@ Results:
 d - public.two.d (Column)
 id - public.two.id (Column)
 o.id - public.one.id (Column)
-data - pg_catalog.pg_largeobject.data (Column)
-data_type - information_schema.attributes.data_type (Column)
+description - public._sqlx_migrations.description (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -165,10 +162,10 @@ select o.id, a, b, c, d, e| from public.one o join public.two on o.id = t.id;
 
 Results:
 e - public.two.e (Column)
-elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
-elem_count_histogram - pg_catalog.pg_stats_ext_exprs.elem_count_histogram (Column)
-encoding - pg_catalog.pg_database.encoding (Column)
-encrypted - pg_catalog.pg_stat_gssapi.encrypted (Column)
+exists - exists (Keyword)
+execution_time - public._sqlx_migrations.execution_time (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -214,9 +211,9 @@ select i| from public.one o join public.two on o.id = t.id;
 Results:
 id - public.two.id (Column)
 o.id - public.one.id (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+interval - interval (Keyword)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
@@ -235,10 +232,10 @@ select id, a| from public.one o join public.two on o.id = t.id;
 
 Results:
 o.a - public.one.a (Column)
-abbrev - pg_catalog.pg_timezone_abbrevs.abbrev (Column)
-abbrev - pg_catalog.pg_timezone_names.abbrev (Column)
-action_condition - information_schema.triggers.action_condition (Column)
-action_order - information_schema.triggers.action_order (Column)
+array - array (Keyword)
+installed_on - public._sqlx_migrations.installed_on (Column)
+auth - auth (Schema)
+information_schema - information_schema (Schema)
 
 --------------
 
@@ -257,10 +254,7 @@ select id, a, b| from public.one o join public.two on o.id = t.id;
 
 Results:
 o.b - public.one.b (Column)
-backend_start - pg_catalog.pg_stat_activity.backend_start (Column)
-backend_start - pg_catalog.pg_stat_replication.backend_start (Column)
-backend_type - pg_catalog.pg_stat_activity.backend_type (Column)
-backend_xid - pg_catalog.pg_stat_activity.backend_xid (Column)
+public - public (Schema)
 
 --------------
 
@@ -279,10 +273,10 @@ select id, a, b, c| from public.one o join public.two on o.id = t.id;
 
 Results:
 c - public.two.c (Column)
-cache_size - pg_catalog.pg_sequences.cache_size (Column)
-calls - pg_catalog.pg_stat_user_functions.calls (Column)
-calls - pg_catalog.pg_stat_xact_user_functions.calls (Column)
 cast - cast (Keyword)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -303,8 +297,8 @@ Results:
 d - public.two.d (Column)
 id - public.two.id (Column)
 o.id - public.one.id (Column)
-data - pg_catalog.pg_largeobject.data (Column)
-data_type - information_schema.attributes.data_type (Column)
+description - public._sqlx_migrations.description (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
 
 --------------
 
@@ -323,10 +317,10 @@ select id, a, b, c, d, e| from public.one o join public.two on o.id = t.id;
 
 Results:
 e - public.two.e (Column)
-elem_count_histogram - pg_catalog.pg_stats.elem_count_histogram (Column)
-elem_count_histogram - pg_catalog.pg_stats_ext_exprs.elem_count_histogram (Column)
-encoding - pg_catalog.pg_database.encoding (Column)
-encrypted - pg_catalog.pg_stat_gssapi.encrypted (Column)
+exists - exists (Keyword)
+execution_time - public._sqlx_migrations.execution_time (Column)
+checksum - public._sqlx_migrations.checksum (Column)
+description - public._sqlx_migrations.description (Column)
 
 --------------
 
