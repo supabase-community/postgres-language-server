@@ -1,11 +1,13 @@
 //! Postgres Statement Splitter
 //!
 //! This crate provides a function to split a SQL source string into individual statements.
+mod change;
 pub mod diagnostics;
 mod splitter;
 #[cfg(feature = "testing")]
 mod testing;
 
+pub use change::TextChange;
 use diagnostics::SplitDiagnostic;
 use pgls_lexer::{Lexed, Lexer, SyntaxKind, convert_to_positional_params};
 use pgls_text_size::{TextRange, TextSize};
@@ -193,52 +195,6 @@ pub fn split_edited(old: &str, previous: &SplitResult, new: &str) -> SplitResult
     split_region(old, previous, new).unwrap_or_else(|| split(new))
 }
 
-/// Compared in blocks first, which is much faster than byte by byte.
-const COMPARE_BLOCK_BYTES: usize = 64;
-
-/// The length of the longest common prefix of `a` and `b`.
-fn common_prefix(a: &[u8], b: &[u8]) -> usize {
-    let equal = a
-        .as_chunks::<COMPARE_BLOCK_BYTES>()
-        .0
-        .iter()
-        .zip(b.as_chunks::<COMPARE_BLOCK_BYTES>().0)
-        .take_while(|(a, b)| a == b)
-        .count()
-        * COMPARE_BLOCK_BYTES;
-    equal
-        + a.iter()
-            .zip(b)
-            .skip(equal)
-            .take_while(|(a, b)| a == b)
-            .count()
-}
-
-/// The length of the longest common suffix of `a` and `b`, which have the same length.
-fn common_suffix(a: &[u8], b: &[u8]) -> usize {
-    // `as_rchunks` puts the remainder at the start; its chunks run to the end.
-    let equal = a
-        .as_rchunks::<COMPARE_BLOCK_BYTES>()
-        .1
-        .iter()
-        .rev()
-        .zip(b.as_rchunks::<COMPARE_BLOCK_BYTES>().1.iter().rev())
-        .take_while(|(a, b)| a == b)
-        .count()
-        * COMPARE_BLOCK_BYTES;
-    // Compare the rest on the bytes before the equal blocks: `skip(equal)` on the reversed,
-    // zipped bytes would step through every byte of the blocks.
-    let (Some(a), Some(b)) = (a.get(..a.len() - equal), b.get(..b.len() - equal)) else {
-        return equal;
-    };
-    equal
-        + a.iter()
-            .rev()
-            .zip(b.iter().rev())
-            .take_while(|(a, b)| a == b)
-            .count()
-}
-
 /// The work of [`split_edited`]. `None` means that the region can't be split on its own, and the
 /// caller splits all of `new`.
 ///
@@ -252,28 +208,17 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
 /// 4. Put the result together: `previous` before the region, the region, and `previous` after
 ///    the region, shifted by the change in length. The errors are combined the same way.
 fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitResult> {
-    // Step 1: the change is `prefix..old_end` in `old` and `prefix..new_end` in `new`. Both ends
-    // are moved back to a char boundary, so the slices below never cut a character.
-    let (old_bytes, new_bytes) = (old.as_bytes(), new.as_bytes());
-    let mut prefix = common_prefix(old_bytes, new_bytes);
-    while !old.is_char_boundary(prefix) || !new.is_char_boundary(prefix) {
-        prefix -= 1;
-    }
-    // The suffix is searched only after the prefix, so the two don't overlap: in `aa` → `aaa`
-    // both would otherwise cover the whole of `old`.
-    let max_suffix = old.len().min(new.len()) - prefix;
-    let mut suffix = common_suffix(
-        old_bytes.get(old.len() - max_suffix..)?,
-        new_bytes.get(new.len() - max_suffix..)?,
-    );
-    while !old.is_char_boundary(old.len() - suffix) || !new.is_char_boundary(new.len() - suffix) {
-        suffix -= 1;
-    }
-    let (old_end, new_end) = (old.len() - suffix, new.len() - suffix);
-    // Nothing changed.
-    if old_end == prefix && new_end == prefix {
+    // Step 1: the change is `prefix..old_end` in `old` and `prefix..new_end` in `new`.
+    let change = TextChange::between(old, new);
+    if change.is_empty() {
         return Some(previous.clone());
     }
+    let TextChange {
+        start: prefix,
+        old_end,
+        new_end,
+    } = change;
+    let (old_bytes, new_bytes) = (old.as_bytes(), new.as_bytes());
 
     // The change, with a byte of context on each side, because two bytes can form a token like
     // `/*` or `--` together.
@@ -1732,6 +1677,43 @@ VALUES
                 .expect_statements(vec![sql])
                 .assert_no_errors();
         }
+    }
+
+    /// An unreserved statement keyword is a name unless the token after it is the one its
+    /// statement needs, e.g. `INSERT INTO`. Found by the `splitter_vs_parser` fuzz target.
+    #[test]
+    fn statement_keywords_as_names() {
+        for sql in [
+            "create type insert",
+            "create type insert as (a int);",
+            "create type update as enum ('a');",
+            "create domain insert as int;",
+            "create sequence insert;",
+            "create index insert on t (a);",
+            "create function f() returns insert language sql as 'select 1';",
+            "comment on type insert is 'x';",
+            "truncate insert;",
+            "create type alter as (a int);",
+            "select * from t update where true;",
+            "select * from t alter join u on true;",
+            "select * from t join u insert on true;",
+            "delete from t delete where true;",
+            "MERGE INTO t USING s insert ON t.a = s.a\n\nWHEN NOT MATCHED THEN INSERT VALUES (s.a);",
+        ] {
+            Tester::from(sql)
+                .expect_statements(vec![sql])
+                .assert_no_errors();
+        }
+        Tester::from(
+            "select * from t\nupdate only t set a = 1;\nselect * from t\nalter type x rename to y;",
+        )
+        .expect_statements(vec![
+            "select * from t",
+            "update only t set a = 1;",
+            "select * from t",
+            "alter type x rename to y;",
+        ])
+        .assert_no_errors();
     }
 
     /// `*` at the end of an operator like `~*` needs an operand too. A `*` on its own can end a

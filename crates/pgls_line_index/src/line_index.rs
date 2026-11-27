@@ -142,7 +142,7 @@ impl LineIndex {
             self.len
         );
         let offset = offset.min(self.len);
-        let offset = if self.crlf_newlines.binary_search(&offset).is_ok() {
+        let offset = if self.splits_crlf(offset) {
             offset - TextSize::from(1)
         } else {
             offset
@@ -155,6 +155,12 @@ impl LineIndex {
             line: u32::try_from(line).ok()?,
             col: col.into(),
         })
+    }
+
+    /// Whether `offset` is between the `\r` and the `\n` of a line break, where no position can
+    /// point.
+    pub fn splits_crlf(&self, offset: TextSize) -> bool {
+        self.crlf_newlines.binary_search(&offset).is_ok()
     }
 
     pub fn offset(&self, line_col: LineCol) -> Option<TextSize> {

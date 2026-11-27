@@ -1053,6 +1053,38 @@ fn circular_inheritance_is_ignored() {
     }
 }
 
+#[test]
+fn rejected_inherit_is_ignored() {
+    let search_path = path(&["public"]);
+    // Postgres rejects all `INHERIT` statements but the last two, so only `accepted` and
+    // `accepted_after_add` follow the column added to `p`. The base catalog has no column types,
+    // so the spec `unknownColumn/rejected_inherit.sql` covers a column of another type.
+    let catalog = catalog_after(
+        "create table p (x int);
+         create table missing_column (y int);
+         alter table missing_column inherit p;
+         create table parted (x int) partition by range (x);
+         create table of_parted (x int);
+         alter table of_parted inherit parted;
+         create view v as select 1 as x;
+         create table of_view (x int);
+         alter table of_view inherit v;
+         create table accepted (x int, z int);
+         alter table accepted inherit p;
+         create table accepted_after_add (z int);
+         alter table accepted_after_add add column x int, inherit p;
+         alter table p add column w int;
+         alter table parted add column w int;",
+        &search_path,
+    );
+    let columns = |table| column_names(&catalog, None, table, &search_path).unwrap();
+    assert_eq!(columns("missing_column"), ["y"]);
+    assert_eq!(columns("of_parted"), ["x"]);
+    assert_eq!(columns("of_view"), ["x"]);
+    assert_eq!(columns("accepted"), ["x", "z", "w"]);
+    assert_eq!(columns("accepted_after_add"), ["z", "x", "w"]);
+}
+
 fn table_columns(snapshot: &Snapshot, schema: &str, table: &str) -> Vec<String> {
     let mut columns: Vec<_> = snapshot
         .columns

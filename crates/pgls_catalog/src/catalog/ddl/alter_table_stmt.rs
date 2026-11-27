@@ -3,7 +3,7 @@ use pgls_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType},
 };
 use pgls_query_ext::options::find_def_elem;
-use pgls_query_ext::utils::{alter_table_cmds, cmd_def, range_var_name, type_name};
+use pgls_query_ext::utils::{QualifiedName, alter_table_cmds, cmd_def};
 
 use crate::catalog::{Catalog, Key, key, overlay::column_info};
 use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
@@ -25,13 +25,23 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
 
     if n.objtype() == ObjectType::ObjectType {
-        c.change_type(range_var_name(range_var), search_path, |c, type_info| {
-            if let Some(attributes) = type_info.attributes.as_mut() {
-                for command in &commands {
-                    apply_column_change(c, attributes, command, search_path, IdentityChange::Apply);
+        c.change_type(
+            QualifiedName::of_range_var(range_var),
+            search_path,
+            |c, type_info| {
+                if let Some(attributes) = type_info.attributes.as_mut() {
+                    for command in &commands {
+                        apply_column_change(
+                            c,
+                            attributes,
+                            command,
+                            search_path,
+                            IdentityChange::Apply,
+                        );
+                    }
                 }
-            }
-        });
+            },
+        );
         return;
     }
 
@@ -181,6 +191,15 @@ fn apply_inheritance_changes(
         };
         // Postgres rejects circular inheritance.
         if attach && c.with_descendants(child.clone()).contains(&parent) {
+            continue;
+        }
+        // The table as the column changes of the statement left it.
+        if attach
+            && !relation_is_parent
+            && c.relation_in(&child.0, &child.1)
+                .found()
+                .is_some_and(|child| child.rejects_parent(&other))
+        {
             continue;
         }
         // The columns of a table that becomes an inheritance child stay its own. A partition's
@@ -441,7 +460,7 @@ fn apply_column_change(
                 column.type_name = definition
                     .type_name
                     .as_ref()
-                    .and_then(type_name)
+                    .and_then(QualifiedName::of_type_name)
                     .map(|name| name.name.to_owned());
                 column.ty = definition
                     .type_name

@@ -234,19 +234,20 @@ fn emit_function_name(e: &mut EventEmitter, funcname: &[Node]) {
             emit_label_maybe_quoted(e, part);
             continue;
         }
+        let part = e.source_identifier(part).to_string();
         let needs_quoting = if is_unqualified {
             // `overlay(a, b)` and `substring(a, b)` have a plain-call form in the grammar that
             // keeps the name unqualified.
-            NamePosition::TypeFunctionName.needs_quotes(part)
-                && !matches!(*part, "overlay" | "substring")
+            NamePosition::TypeFunctionName.needs_quotes(&part)
+                && !matches!(part.as_str(), "overlay" | "substring")
         } else {
-            NamePosition::ColId.needs_quotes(part)
+            NamePosition::ColId.needs_quotes(&part)
         };
 
         if needs_quoting {
-            emit_identifier(e, part);
+            emit_identifier(e, &part);
         } else {
-            e.token(TokenKind::IDENT((*part).to_string()));
+            e.token(TokenKind::IDENT(part));
         }
     }
 }

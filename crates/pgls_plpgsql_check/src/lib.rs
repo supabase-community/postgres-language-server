@@ -6,7 +6,7 @@ pub use diagnostics::PlPgSqlCheckDiagnostic;
 use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameterMode, Token, TypeName};
 use pgls_query_ext::{
     function_body::{Language, OffsetMap, function_body_location},
-    utils::{QualifiedName, find_option_value, qualified_name},
+    utils::{QualifiedName, find_option_value},
 };
 use pgls_text_size::TextRange;
 use pgls_tokenizer::NamePosition;
@@ -117,7 +117,7 @@ impl<'a> PlPgSqlFunction<'a> {
         let extension = snapshot
             .extension("plpgsql_check")
             .filter(|extension| extension.is_installed())?;
-        let QualifiedName { schema, name, .. } = qualified_name(&create_fn.funcname)?;
+        let QualifiedName { schema, name, .. } = QualifiedName::of(&create_fn.funcname)?;
         // The body's value is the `AS` option; the scanner finds its constant, so that an
         // escaped body or one whose text also occurs earlier in the statement is found.
         let value = find_option_value(create_fn, "as")?;
@@ -154,7 +154,7 @@ impl<'a> PlPgSqlFunction<'a> {
     fn is_trigger(&self) -> bool {
         self.create_fn.return_type.as_ref().is_some_and(|n| {
             matches!(
-                qualified_name(&n.names),
+                QualifiedName::of(&n.names),
                 Some(QualifiedName {
                     schema: None,
                     name: "trigger",
