@@ -16,6 +16,7 @@ pgls_catalog              = { workspace = true }
 pgls_migrations           = { workspace = true }
 pgls_query                = { workspace = true }
 pgls_text_size            = { workspace = true, features = ["serde"] }
+pgls_tokenizer            = { workspace = true }
 pgls_treesitter.workspace = true
 
 fuzzy-matcher                     = "0.3.7"

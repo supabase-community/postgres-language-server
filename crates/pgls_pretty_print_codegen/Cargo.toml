@@ -11,12 +11,12 @@ repository.workspace = true
 version              = "0.0.0"
 
 [dependencies]
-anyhow                = { workspace = true }
-convert_case          = { workspace = true }
-proc-macro2.workspace = true
-prost-reflect         = { workspace = true }
-protox                = { workspace = true }
-quote.workspace       = true
+convert_case             = { workspace = true }
+pgls_tokenizer.workspace = true
+proc-macro2.workspace    = true
+prost-reflect            = { workspace = true }
+protox                   = { workspace = true }
+quote.workspace          = true
 
 [lib]
 proc-macro = true

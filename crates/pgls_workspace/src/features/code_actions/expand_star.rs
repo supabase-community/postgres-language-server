@@ -1,11 +1,11 @@
 //! The refactor that replaces a `*` in a select list with the columns it expands to.
 
 use pgls_analyse::Applicability;
-use pgls_catalog::{NamePosition, quote_identifier};
 use pgls_line_index::Lines;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token};
 use pgls_resolve::{Reference, StarColumn};
 use pgls_text_size::TextSize;
+use pgls_tokenizer::NamePosition;
 
 use crate::features::code_actions::{
     ActionCategory, CodeAction, CodeActionKind, EditAction, RangeEdit, RefactorKind,
@@ -157,7 +157,7 @@ fn column_list(columns: &[StarColumn]) -> Option<String> {
                         } else {
                             NamePosition::ColLabel
                         };
-                        quote_identifier(name, position)
+                        position.quote(name)
                     })
                     .collect::<Vec<_>>()
                     .join("."),
