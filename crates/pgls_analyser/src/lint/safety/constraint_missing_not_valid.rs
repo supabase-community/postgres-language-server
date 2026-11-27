@@ -1,9 +1,9 @@
 use crate::fix::StatementTokens;
-use crate::utils::{ConstraintSite, added_constraints, altered_relation, skips_validation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::ConstraintSite;
 
 declare_lint_rule! {
     /// Adding constraints without NOT VALID blocks all reads and writes.
@@ -46,10 +46,15 @@ impl LinterRule for ConstraintMissingNotValid {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // Other transactions can't see a table created earlier in the transaction, so
         // validating its rows blocks no one.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
-        added_constraints(ctx.stmt())
+        ctx.stmt()
+            .added_constraints()
             .filter(|(_, site)| *site == ConstraintSite::Table)
             .filter_map(|(constraint, _)| {
                 let diagnostic = check_constraint_needs_not_valid(constraint)?;
@@ -63,7 +68,7 @@ fn check_constraint_needs_not_valid(
     constraint: &pgls_query::protobuf::Constraint,
 ) -> Option<LinterDiagnostic> {
     // Skip if the constraint has NOT VALID
-    if skips_validation(constraint) {
+    if constraint.skip_validation {
         return None;
     }
 

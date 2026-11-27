@@ -1,9 +1,9 @@
 use crate::fix::{StatementTokens, in_case_of};
-use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Using CHAR(n) or CHARACTER(n) types is discouraged.
@@ -48,7 +48,8 @@ impl LinterRule for BanCharField {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        column_defs(ctx.stmt())
+        ctx.stmt()
+            .column_defs()
             .filter_map(|col_def| check_column_for_char_type(col_def, ctx.tokens()))
             .collect()
     }
@@ -61,7 +62,7 @@ fn check_column_for_char_type(
     let type_name = col_def.type_name.as_ref()?;
     // `char(n)` and `character(n)` are `bpchar`. The quoted `"char"` is a single-byte internal
     // type.
-    if builtin_type_name(type_name)? != "bpchar" {
+    if QualifiedName::of_type_name(type_name).and_then(QualifiedName::builtin)? != "bpchar" {
         return None;
     }
     Some(

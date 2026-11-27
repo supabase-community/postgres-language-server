@@ -1,4 +1,3 @@
-use crate::utils::{added_constraints, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -49,13 +48,17 @@ impl LinterRule for DisallowUniqueConstraint {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // A table created earlier in the transaction is not visible to other sessions yet.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
 
         // Inline constraints of `ADD COLUMN` can't name an index (`USING INDEX`) or be temporal
         // (`WITHOUT OVERLAPS`).
-        added_constraints(ctx.stmt())
+        ctx.stmt().added_constraints()
             .filter(|(constraint, _)| {
                 constraint.contype() == pgls_query::protobuf::ConstrType::ConstrUnique
                     && constraint.indexname.is_empty()

@@ -1,4 +1,3 @@
-use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -77,7 +76,7 @@ impl LinterRule for PreferBigInt {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-        for col_def in column_defs(ctx.stmt()) {
+        for col_def in ctx.stmt().column_defs() {
             check_column_def(&mut diagnostics, col_def, ctx.options());
         }
         diagnostics
@@ -101,7 +100,7 @@ fn check_column_def(
                 .unwrap_or_default(),
             serial.integer_type(),
         ),
-        None => match builtin_type_name(type_name) {
+        None => match QualifiedName::of_type_name(type_name).and_then(QualifiedName::builtin) {
             Some(name) => (name.to_owned(), name),
             None => return,
         },

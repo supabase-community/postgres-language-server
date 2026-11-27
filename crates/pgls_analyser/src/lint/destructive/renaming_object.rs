@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -49,7 +49,7 @@ impl LinterRule for RenamingObject {
                         | ObjectType::ObjectAttribute
                 ) =>
             {
-                object_type_noun(stmt.rename_type())
+                stmt.rename_type().noun()
             }
             pgls_query::NodeEnum::AlterEnumStmt(stmt) if !stmt.old_val.is_empty() => {
                 "an enum value"

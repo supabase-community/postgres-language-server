@@ -1,0 +1,53 @@
+use crate::protobuf::ObjectType;
+
+impl ObjectType {
+    /// The object type as a noun with its article, e.g. "a view", for diagnostic messages.
+    pub fn noun(self) -> &'static str {
+        match self {
+            ObjectType::ObjectAccessMethod => "an access method",
+            ObjectType::ObjectAggregate => "an aggregate",
+            ObjectType::ObjectAttribute => "an attribute",
+            ObjectType::ObjectCast => "a cast",
+            ObjectType::ObjectCollation => "a collation",
+            ObjectType::ObjectColumn => "a column",
+            ObjectType::ObjectConversion => "a conversion",
+            ObjectType::ObjectDatabase => "a database",
+            ObjectType::ObjectDomain => "a domain",
+            ObjectType::ObjectDomconstraint | ObjectType::ObjectTabconstraint => "a constraint",
+            ObjectType::ObjectEventTrigger => "an event trigger",
+            ObjectType::ObjectExtension => "an extension",
+            ObjectType::ObjectFdw => "a foreign-data wrapper",
+            ObjectType::ObjectForeignServer => "a foreign server",
+            ObjectType::ObjectForeignTable => "a foreign table",
+            ObjectType::ObjectFunction => "a function",
+            ObjectType::ObjectIndex => "an index",
+            ObjectType::ObjectLanguage => "a language",
+            ObjectType::ObjectMatview => "a materialized view",
+            ObjectType::ObjectOpclass => "an operator class",
+            ObjectType::ObjectOperator => "an operator",
+            ObjectType::ObjectOpfamily => "an operator family",
+            ObjectType::ObjectPolicy => "a policy",
+            ObjectType::ObjectProcedure => "a procedure",
+            ObjectType::ObjectPublication => "a publication",
+            ObjectType::ObjectRole => "a role",
+            ObjectType::ObjectRoutine => "a routine",
+            ObjectType::ObjectRule => "a rule",
+            ObjectType::ObjectSchema => "a schema",
+            ObjectType::ObjectSequence => "a sequence",
+            ObjectType::ObjectStatisticExt => "a statistics object",
+            ObjectType::ObjectSubscription => "a subscription",
+            ObjectType::ObjectTable => "a table",
+            ObjectType::ObjectTablespace => "a tablespace",
+            ObjectType::ObjectTransform => "a transform",
+            ObjectType::ObjectTrigger => "a trigger",
+            ObjectType::ObjectTsconfiguration => "a text search configuration",
+            ObjectType::ObjectTsdictionary => "a text search dictionary",
+            ObjectType::ObjectTsparser => "a text search parser",
+            ObjectType::ObjectTstemplate => "a text search template",
+            ObjectType::ObjectType => "a type",
+            ObjectType::ObjectUserMapping => "a user mapping",
+            ObjectType::ObjectView => "a view",
+            _ => "an object",
+        }
+    }
+}

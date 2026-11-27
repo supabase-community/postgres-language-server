@@ -1,4 +1,3 @@
-use crate::utils::{alter_table_cmds, altered_relation, builtin_type_name};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::{
@@ -7,6 +6,7 @@ use pgls_catalog::{
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::{ColumnDef, RangeVar};
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Changing a column type may require a table rewrite and break existing clients.
@@ -60,7 +60,11 @@ impl LinterRule for ChangingColumnType {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // Other transactions can't see a table created earlier in the transaction, so its
         // rewrite blocks no one.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
         let mut diagnostics = Vec::new();
@@ -69,7 +73,7 @@ impl LinterRule for ChangingColumnType {
             _ => None,
         };
 
-        for cmd in alter_table_cmds(ctx.stmt()) {
+        for cmd in ctx.stmt().alter_table_commands() {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAlterColumnType {
                 if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition()
                     && !rewrites(ctx, relation, &cmd.name, col_def)
@@ -214,8 +218,9 @@ fn is_safe_type_widening(col_def: &ColumnDef) -> bool {
     };
 
     // An array of the type is a different type.
-    let Some(target_type) =
-        builtin_type_name(type_name).filter(|_| type_name.array_bounds.is_empty())
+    let Some(target_type) = QualifiedName::of_type_name(type_name)
+        .and_then(QualifiedName::builtin)
+        .filter(|_| type_name.array_bounds.is_empty())
     else {
         return false;
     };

@@ -1,4 +1,3 @@
-use crate::utils::{added_constraints, altered_relation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -44,11 +43,16 @@ impl LinterRule for AvoidAddingExclusionConstraint {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // Other transactions can't see a table created earlier in the transaction, so its
         // lock blocks no one.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
         // An exclusion constraint is always a table constraint, never inline on a column.
-        added_constraints(ctx.stmt())
+        ctx.stmt()
+            .added_constraints()
             .filter(|(constraint, _)| {
                 constraint.contype() == pgls_query::protobuf::ConstrType::ConstrExclusion
             })

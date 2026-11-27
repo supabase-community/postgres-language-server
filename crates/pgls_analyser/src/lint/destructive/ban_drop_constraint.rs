@@ -1,8 +1,8 @@
-use crate::utils::{AlterDomainKind, alter_table_cmds};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::AlterDomainKind;
 use pgls_query::protobuf::{AlterTableType, Token};
 
 declare_lint_rule! {
@@ -41,12 +41,13 @@ impl LinterRule for BanDropConstraint {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let constraints: Vec<&str> = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(_) => alter_table_cmds(ctx.stmt())
+            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt
+                .commands()
                 .filter(|cmd| cmd.subtype() == AlterTableType::AtDropConstraint)
                 .map(|cmd| cmd.name.as_str())
                 .collect(),
             pgls_query::NodeEnum::AlterDomainStmt(stmt)
-                if AlterDomainKind::of(stmt) == Some(AlterDomainKind::DropConstraint) =>
+                if stmt.kind() == Some(AlterDomainKind::DropConstraint) =>
             {
                 vec![stmt.name.as_str()]
             }
