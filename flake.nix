@@ -103,6 +103,9 @@
 
           # Database tools
           sqlx-cli
+
+          # Fuzzing (`just fuzz`)
+          cargo-fuzz
         ];
 
         # Environment variables
