@@ -614,21 +614,26 @@ impl TestDatabase {
         }
     }
 
-    /// The database section of the configuration file. A refused connection is retried until
-    /// the connection timeout, so it is as short as it gets.
+    /// The database section of the configuration file.
     fn configuration(&self) -> PartialDatabaseConfiguration {
         PartialDatabaseConfiguration {
             connection_string: Some(self.url.clone()),
-            conn_timeout_secs: Some(1),
             ..Default::default()
         }
     }
 
-    /// The database section of the overrides for `fault`.
+    /// The database section of the overrides for `fault`. A refused connection is retried until
+    /// the connection timeout, so it is as short as it gets. The test database keeps the default:
+    /// the timeout bounds the wait for a connection of the pool, and the snapshot of a server
+    /// that has none yet connects and queues its queries for more than a second on a busy
+    /// machine. The fresh server of [`Simulation::finish`] would then check without the database.
     fn overrides(&self, fault: DatabaseFault) -> Option<Value> {
         match fault {
             DatabaseFault::None => None,
-            DatabaseFault::Refused => Some(json!({ "port": self.closed_port })),
+            DatabaseFault::Refused => Some(json!({
+                "port": self.closed_port,
+                "connTimeoutSecs": 1,
+            })),
             DatabaseFault::PermissionDenied => Some(json!({
                 "connectionString": format!("{}?options[role]=test_login", self.url),
             })),
