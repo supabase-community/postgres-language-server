@@ -206,35 +206,30 @@ impl<'a> Splitter<'a> {
     }
 
     /// Whether the token at `idx` needs an operand after it, see [`NEEDS_OPERAND`] and
-    /// [`OPERATOR_CHARS`]. A `*` only if it ends an operator of several characters, e.g. `~*`, or
-    /// multiplies, e.g. `2*`: on its own it can end a statement, e.g. `select *` or `select t.*`.
+    /// [`OPERATOR_CHARS`]. A `*` only if it multiplies, e.g. `2*`: on its own it can end a
+    /// statement, e.g. `select *` or `select t.*`. In an operator of several characters, e.g. `~*`,
+    /// it is part of an `OPERATOR` token.
     /// A `*` after an operand is `a_expr '*' a_expr`:
     /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L14988
     fn needs_operand(&self, idx: usize) -> bool {
         match self.kind(idx) {
-            SyntaxKind::STAR => {
-                let multiplies = self.prev_non_trivia(idx).is_some_and(|before| {
-                    matches!(
-                        self.kind(before),
-                        SyntaxKind::INT_NUMBER
-                            | SyntaxKind::FLOAT_NUMBER
-                            | SyntaxKind::IDENT
-                            | SyntaxKind::STRING
-                            | SyntaxKind::ESC_STRING
-                            | SyntaxKind::BIT_STRING
-                            | SyntaxKind::BYTE_STRING
-                            | SyntaxKind::DOLLAR_QUOTED_STRING
-                            | SyntaxKind::POSITIONAL_PARAM
-                            | SyntaxKind::NAMED_PARAM
-                            | SyntaxKind::R_PAREN
-                            | SyntaxKind::R_BRACK
-                    )
-                });
-                multiplies
-                    || idx
-                        .checked_sub(1)
-                        .is_some_and(|before| OPERATOR_CHARS.contains(&self.kind(before)))
-            }
+            SyntaxKind::STAR => self.prev_non_trivia(idx).is_some_and(|before| {
+                matches!(
+                    self.kind(before),
+                    SyntaxKind::INT_NUMBER
+                        | SyntaxKind::FLOAT_NUMBER
+                        | SyntaxKind::IDENT
+                        | SyntaxKind::STRING
+                        | SyntaxKind::ESC_STRING
+                        | SyntaxKind::BIT_STRING
+                        | SyntaxKind::BYTE_STRING
+                        | SyntaxKind::DOLLAR_QUOTED_STRING
+                        | SyntaxKind::POSITIONAL_PARAM
+                        | SyntaxKind::NAMED_PARAM
+                        | SyntaxKind::R_PAREN
+                        | SyntaxKind::R_BRACK
+                )
+            }),
             kind => NEEDS_OPERAND.contains(&kind) || OPERATOR_CHARS.contains(&kind),
         }
     }
