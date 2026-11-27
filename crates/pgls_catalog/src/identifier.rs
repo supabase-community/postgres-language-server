@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-use pgls_lexer::{KeywordCategory, keyword_category};
+use pgls_lexer::KeywordCategory;
 
 /// Where a name is written, which decides the keywords it can be without quotes. See the name
 /// classification hierarchy in [`gram.y`].
@@ -51,7 +51,7 @@ fn needs_quotes(name: &str, position: NamePosition) -> bool {
     if position == NamePosition::TypeFunctionName && name == "operator" {
         return true;
     }
-    match keyword_category(name) {
+    match KeywordCategory::of(name) {
         None | Some(KeywordCategory::Unreserved) => false,
         Some(KeywordCategory::Reserved) => position != NamePosition::ColLabel,
         Some(KeywordCategory::ColName) => position == NamePosition::TypeFunctionName,

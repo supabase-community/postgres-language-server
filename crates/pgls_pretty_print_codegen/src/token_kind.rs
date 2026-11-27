@@ -2,7 +2,7 @@ use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use crate::keywords::{KeywordKinds, keyword_kinds};
+use pgls_tokenizer::Keyword;
 
 const STRUCTURAL_PUNCT: &[(&str, &str)] = &[
     (";", "SEMICOLON"), // Statement terminator - structural
@@ -57,36 +57,6 @@ const VARIANT_DATA: &[(&str, &str)] = &[
 ];
 
 pub(crate) fn token_kind_mod() -> proc_macro2::TokenStream {
-    let keywords = match keyword_kinds() {
-        Ok(keywords) => keywords,
-        Err(error) => {
-            let message = format!("failed to read the keywords of kwlist.h: {error}");
-            return quote! { compile_error!(#message); };
-        }
-    };
-
-    let KeywordKinds {
-        all_keywords,
-        categories,
-    } = keywords;
-
-    let category_match_arms: Vec<TokenStream> = categories
-        .iter()
-        .map(|(name, category)| {
-            let variant = format_ident!(
-                "{}",
-                match category.as_str() {
-                    "UNRESERVED_KEYWORD" => "Unreserved",
-                    "COL_NAME_KEYWORD" => "ColName",
-                    "TYPE_FUNC_NAME_KEYWORD" => "TypeFuncName",
-                    "RESERVED_KEYWORD" => "Reserved",
-                    other => panic!("unknown keyword category {other}"),
-                }
-            );
-            quote! { #name => Some(KeywordCategory::#variant) }
-        })
-        .collect();
-
     let mut enum_variants: Vec<TokenStream> = Vec::new();
     let mut from_kw_match_arms: Vec<TokenStream> = Vec::new();
     let mut render_kw_match_arms: Vec<TokenStream> = Vec::new();
@@ -105,11 +75,8 @@ pub(crate) fn token_kind_mod() -> proc_macro2::TokenStream {
     };
 
     // collect keywords
-    for kw in &all_keywords {
-        if kw.to_uppercase().contains("WHITESPACE") {
-            continue; // Skip whitespace as it is handled separately
-        }
-
+    for keyword in Keyword::ALL {
+        let kw = keyword.name;
         let kind_ident = format_ident!("{}_KW", kw.to_case(Case::UpperSnake));
 
         enum_variants.push(quote! { #kind_ident });
@@ -150,28 +117,6 @@ pub(crate) fn token_kind_mod() -> proc_macro2::TokenStream {
         #[derive(Clone, PartialEq, Debug)]
         pub enum TokenKind {
             #(#enum_variants),*,
-        }
-
-        /// The grammar category of a keyword, which decides where it can be used as a name.
-        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-        pub enum KeywordCategory {
-            /// Usable as any name.
-            Unreserved,
-            /// Usable as a column or table name, but not as a function or type name.
-            ColName,
-            /// Usable as a function or type name, but not as a column or table name.
-            TypeFuncName,
-            /// Only usable as a column label (after `AS`) or when quoted.
-            Reserved,
-        }
-
-        /// Returns the category of `ident` when it is a keyword. `ident` must be lowercase, the
-        /// way the parser stores an unquoted name.
-        pub fn keyword_category(ident: &str) -> Option<KeywordCategory> {
-            match ident {
-                #(#category_match_arms),*,
-                _ => None
-            }
         }
 
         impl TokenKind {
