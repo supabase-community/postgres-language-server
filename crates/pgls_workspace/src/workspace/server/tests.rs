@@ -2479,6 +2479,30 @@ async fn test_format_adds_no_semicolon_before_a_meta_command() {
     }
 }
 
+/// A statement without a `;` that the splitter ends at the next one, its recovery from a missing
+/// `;`, is kept as written: Postgres reads the next statement as part of it, here the `SET` as an
+/// option of the function, and a `;` would make it a `SET` of the session.
+#[tokio::test]
+async fn test_format_adds_no_semicolon_where_the_splitter_recovered_from_a_missing_one() {
+    let content = "create function f() returns int language sql as 'select 1' -- comment;\n\nset work_mem = '64kB';\n";
+    let formatted = format_content(content);
+
+    assert_eq!(
+        formatted,
+        "create function f() returns int language sql as 'select 1' -- comment;\n\nset work_mem = '64kB';\n"
+    );
+    assert_eq!(parsed_statements(&formatted).len(), 1, "{formatted}");
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+
+    for (content, expected) in [
+        ("select   1\n\nselect   2;\n", "select   1\n\nselect 2;\n"),
+        // The last statement has nothing to run into, so it gets its `;`.
+        ("select   1;\nselect   2\n", "select 1;\nselect 2;\n"),
+    ] {
+        assert_eq!(format_content(content), expected, "{content}");
+    }
+}
+
 /// The `END` of a `CASE` in a `BEGIN ATOMIC` body was taken as the end of the body, and the real
 /// `END` was formatted as `COMMIT`, see #1142.
 #[tokio::test]
