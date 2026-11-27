@@ -8,6 +8,8 @@ use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::{FormatConfig, FormatStatementParams, Terminator};
 use pgls_text_size::TextRange;
 
+use pgls_templating::Template;
+
 use super::{StatementId, document::Document, sql_function};
 use crate::{
     WorkspaceError,
@@ -218,12 +220,17 @@ pub(super) fn format_document(
                     terminator,
                     ..FormatStatementParams::new(&ast, text, &config)
                 }) {
+                    // The printer may write the directive of a template, like the `% c` of
+                    // `timest % cast(...)` for `timest%amptz '...'`, also in a statement without
+                    // one, which would change what the host writes.
                     Ok(result) => match restore_named_parameters(
                         text,
                         &result.formatted,
                         &ast,
                         tagged.as_ref().map(|(tagged, _)| tagged),
-                    ) {
+                    )
+                    .filter(|formatted| doc.template().keeps_directives(written, formatted))
+                    {
                         Some(formatted) => {
                             if written != formatted {
                                 statements.push(StatementFormatResult {
@@ -235,11 +242,13 @@ pub(super) fn format_document(
                             formatted_output.push_str(&formatted);
                         }
                         None => {
-                            diagnostics.push(unrestorable(if tagged.is_some() {
-                                "Placeholders"
-                            } else {
-                                "Named parameters"
-                            }));
+                            diagnostics.push(unrestorable(
+                                if tagged.is_some() || doc.template() != Template::None {
+                                    "Placeholders"
+                                } else {
+                                    "Named parameters"
+                                },
+                            ));
                             formatted_output.push_str(written);
                         }
                     },

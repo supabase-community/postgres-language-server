@@ -87,6 +87,24 @@ impl Template {
         directives
     }
 
+    /// Whether `after` has the directives of `before`, with the same text and in the same order,
+    /// like a statement after formatting. A printer that writes `x % c` for `x%c` writes a
+    /// directive.
+    ///
+    /// Cost: one pass over each text.
+    pub fn keeps_directives(self, before: &str, after: &str) -> bool {
+        let texts = |text: &str| -> Vec<String> {
+            self.directives(text)
+                .iter()
+                .filter_map(|directive| {
+                    text.get(std::ops::Range::<usize>::from(directive.range))
+                        .map(str::to_string)
+                })
+                .collect()
+        };
+        self == Self::None || texts(before) == texts(after)
+    }
+
     /// `text` as the host would write it, with a sample value for each directive, see
     /// [`Expansion::render`].
     #[cfg(feature = "testing")]

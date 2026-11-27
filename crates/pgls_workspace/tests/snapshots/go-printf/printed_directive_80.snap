@@ -1,0 +1,11 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- found by the fuzzer: `%a` is no directive, but formatted, `timest%amptz '...'` is
+-- `timest % cast('...' as amptz)`, whose `% c` is one: the statement stays as written
+select timest%amptz '1972-10-10 03:00' from t where x = '%s';
+select 1;
+
+---
+diagnostics:
+  `select timest%amptz '1972-10-10 03:00' from t where x = '%s';`: Format error: Placeholders could not be restored after formatting, the statement was left untouched
