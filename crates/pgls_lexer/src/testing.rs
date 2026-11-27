@@ -10,30 +10,31 @@ impl Lexed<'_> {
     /// Where the tokens first differ from those of Postgres' scanner (`pgls_query::scan`), or
     /// `None` if they agree, the scanner rejects the text, or the text has psql meta-commands,
     /// psql variables (`:name`, `:'name'`, ...) or COPY data, which the scanner reads as SQL.
-    /// Whitespace and operators, with `:` of `::` and `:=`, aren't compared, and the other named
-    /// parameters (`@name`, `$name`) are compared without their prefix, which the scanner reads as
-    /// a token of its own.
+    /// Whitespace isn't compared. The other named parameters (`@name`, `$name`) are compared as
+    /// their prefix and their name, which the scanner reads as two tokens. A text with an `@name`
+    /// right after an operator isn't compared either: the scanner reads the `@` into the
+    /// operator.
     pub fn scanner_difference(&self) -> Option<TextSize> {
         let sql = self.text;
+        let at_param_after_operator = |index| {
+            self.text(index).starts_with('@')
+                && sql
+                    .get(..usize::from(self.range(index).start()))
+                    .is_some_and(|before| before.ends_with(|c| CharClass::OpChar.contains(c)))
+        };
         // The scanner reads a C string, which ends at the first NUL.
         if sql.contains('\0')
             || self.kind.contains(&SyntaxKind::META_COMMAND)
             || !self.copy_data.is_empty()
             || (0..self.len()).any(|index| {
-                self.kind(index) == SyntaxKind::NAMED_PARAM && self.text(index).starts_with(':')
+                self.kind(index) == SyntaxKind::NAMED_PARAM
+                    && (self.text(index).starts_with(':') || at_param_after_operator(index))
             })
         {
             return None;
         }
         let scanned = pgls_query::scan(sql).ok()?;
-        let compared = |range: &TextRange| {
-            let text = &sql[*range];
-            !text.trim().is_empty()
-                && text != "$"
-                && !text
-                    .chars()
-                    .all(|c| CharClass::OpChar.contains(c) || c == ':')
-        };
+        let compared = |range: &TextRange| !sql[*range].trim().is_empty();
         let scanner = scanned
             .tokens
             .iter()
@@ -45,14 +46,19 @@ impl Lexed<'_> {
             })
             .filter(compared);
         let mut lexer = (0..self.len())
-            .map(|index| {
+            .flat_map(|index| {
                 let range = self.range(index);
                 if self.kind(index) == SyntaxKind::NAMED_PARAM {
-                    TextRange::new(range.start() + TextSize::of('@'), range.end())
+                    let name = range.start() + TextSize::of('@');
+                    [
+                        Some(TextRange::new(range.start(), name)),
+                        Some(TextRange::new(name, range.end())),
+                    ]
                 } else {
-                    range
+                    [Some(range), None]
                 }
             })
+            .flatten()
             .filter(compared);
         for scanner in scanner {
             match lexer.next() {
