@@ -422,6 +422,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-tests
+      # The tests run the CLI at the path they were built with.
+      - name: Download the CLI binary
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-release
+          path: target/release
+      - name: Make the CLI binary executable
+        run: chmod +x target/release/postgres-language-server
       - name: Run the corpus check and the completion harness
         run: |
           cargo-nextest nextest run --archive-file release-tests.tar.zst --workspace-remap . \
