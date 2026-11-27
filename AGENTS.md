@@ -163,6 +163,9 @@ The type rules in `pgls_catalog::typing` and `pgls_resolve` port Postgres' parse
 ### Database Tests
 Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(test_db: PgPool)`, not `#[sqlx::test]`. sqlx still creates a database per test from `template1` and runs the migrations of `pgls_test_utils`, but `db_test` fails fast when the database isn't running, and gives each test a pool of at most 2 connections that waits up to 2 minutes for one (see `pgls_test_utils::db`), so tests don't time out when several worktrees share the database.
 
+### Fuzzing
+`fuzz/` holds the libFuzzer targets, as a workspace of its own: `splitter_vs_parser`, `formatter_roundtrip`, `lexer_vs_scan` and `lsp_messages`. `just fuzz <target> [seconds]` runs one, seeded from the regression SQL and, once `cargo test -p pgls_cli --test corpus -- --ignored --exact corpus_sources` has fetched them, the corpus test's sources; with `CC=$PWD/fuzz/asan-cc RUSTFLAGS="-Clinker=clang -Clink-arg=-fsanitize=address"`, libpg_query and the tree-sitter grammar run under AddressSanitizer. The `Nightly` workflow runs each for 10 minutes that way and uploads a crash as an artifact. Turn a crash into a test of the crate it's in before fixing it.
+
 ### Snapshot Testing
 The project uses `insta` for snapshot testing. Update snapshots with:
 ```bash
