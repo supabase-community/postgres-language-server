@@ -61,13 +61,7 @@ fn locations(root: &NodeEnum) -> [Vec<usize>; 8] {
     for node in root.iter() {
         let (kind, location) = match node {
             NodeRef::TypeName(n) => (Kind::Type, n.location),
-            NodeRef::ColumnRef(n)
-                if n.fields
-                    .last()
-                    .is_some_and(|field| matches!(field.node, Some(NodeEnum::AStar(_)))) =>
-            {
-                (Kind::Star, n.location)
-            }
+            NodeRef::ColumnRef(n) if n.star_qualifier().is_some() => (Kind::Star, n.location),
             NodeRef::AExpr(n) => (Kind::Operator, n.location),
             NodeRef::TypeCast(n) => (Kind::Cast, n.location),
             NodeRef::AConst(n) => (Kind::Literal, n.location),

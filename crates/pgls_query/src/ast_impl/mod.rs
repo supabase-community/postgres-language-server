@@ -2,3 +2,4 @@
 
 mod node;
 mod select_stmt;
+mod star;

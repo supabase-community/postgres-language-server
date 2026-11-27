@@ -1,5 +1,5 @@
 use pgls_query::protobuf::ColumnRef;
-use pgls_query_ext::utils::{NameParts, star_qualifier};
+use pgls_query_ext::utils::NameParts;
 
 use super::Resolver;
 use crate::{
@@ -25,7 +25,7 @@ use pgls_catalog::Lookup;
 /// [`errorMissingRTE`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L3732
 pub(super) fn resolve_column_ref(r: &mut Resolver, n: &ColumnRef) {
     // `*` and `t.*`
-    if star_qualifier(n).is_some() {
+    if n.star_qualifier().is_some() {
         return;
     }
     let Some(names) = NameParts::of(&n.fields) else {
