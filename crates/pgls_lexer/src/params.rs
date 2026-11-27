@@ -93,24 +93,46 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
     let mut string_replacements: HashMap<String, String> = HashMap::new();
     let mut psql_variables = Vec::new();
     let mut restorable = true;
+    let mut from_lists = FromLists::default();
 
     for (token_idx, kind) in lexed.tokens().enumerate() {
         if kind == SyntaxKind::EOF {
             break;
         }
+        let in_from_list = from_lists.is_open();
+        from_lists.advance(kind);
 
         let token_text = lexed.text(token_idx);
 
         if matches!(kind, SyntaxKind::NAMED_PARAM) {
             let flavor = NamedParamFlavor::from_text(token_text);
-            if flavor == Some(NamedParamFlavor::ColonRaw) && bracket_depth > 0 {
+            let previous = previous_non_trivia_kind(&lexed, token_idx);
+            // An `@` after an operand is an operator, like in `a @b` or `jsonb_@path`.
+            let is_operator = flavor == Some(NamedParamFlavor::AtPrefix)
+                && previous.is_some_and(|kind| {
+                    matches!(
+                        kind,
+                        SyntaxKind::IDENT
+                            | SyntaxKind::INT_NUMBER
+                            | SyntaxKind::FLOAT_NUMBER
+                            | SyntaxKind::STRING
+                            | SyntaxKind::ESC_STRING
+                            | SyntaxKind::BYTE_STRING
+                            | SyntaxKind::BIT_STRING
+                            | SyntaxKind::DOLLAR_QUOTED_STRING
+                            | SyntaxKind::POSITIONAL_PARAM
+                            | SyntaxKind::NAMED_PARAM
+                            | SyntaxKind::R_PAREN
+                            | SyntaxKind::R_BRACK
+                    )
+                });
+            if is_operator || flavor == Some(NamedParamFlavor::ColonRaw) && bracket_depth > 0 {
                 result.push_str(token_text);
                 continue;
             }
             if flavor.is_some_and(NamedParamFlavor::is_psql) {
                 psql_variables.push(lexed.range(token_idx));
             }
-            let previous = previous_non_trivia_kind(&lexed, token_idx);
             let next = next_non_trivia_kind(&lexed, token_idx);
             let is_identifier = match flavor {
                 // psql replaces `:'name'` with a string constant, which also goes where `$n`
@@ -126,6 +148,8 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
                 Some(NamedParamFlavor::ColonIdentifier) => true,
                 Some(NamedParamFlavor::ColonDefined) => false,
                 _ if next == Some(SyntaxKind::DOT) => true,
+                // A relation of a FROM list, like `$b` in `from a, $b`.
+                _ if previous == Some(SyntaxKind::COMMA) && in_from_list => true,
                 _ if previous == Some(SyntaxKind::ON_KW) => {
                     !on_introduces_condition(&lexed, token_idx)
                 }
@@ -188,6 +212,57 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
         string_replacements,
         psql_variables,
         restorable,
+    }
+}
+
+/// The FROM lists that a token is in, by the depth of the parentheses they are at. A comma at the
+/// depth of the innermost one separates its relations.
+#[derive(Default)]
+struct FromLists {
+    /// The depths of the open FROM lists, innermost last.
+    depths: Vec<usize>,
+    /// The depth of the parentheses of the token.
+    depth: usize,
+}
+
+impl FromLists {
+    /// Whether a comma here separates the relations of a FROM list.
+    fn is_open(&self) -> bool {
+        self.depths.last() == Some(&self.depth)
+    }
+
+    /// Moves past a token of `kind`. A FROM list ends with its parentheses, or at a clause after
+    /// it, like `WHERE`.
+    fn advance(&mut self, kind: SyntaxKind) {
+        match kind {
+            SyntaxKind::L_PAREN => self.depth += 1,
+            SyntaxKind::R_PAREN => {
+                self.depth = self.depth.saturating_sub(1);
+                while self.depths.last().is_some_and(|depth| *depth > self.depth) {
+                    self.depths.pop();
+                }
+            }
+            SyntaxKind::FROM_KW if !self.is_open() => self.depths.push(self.depth),
+            SyntaxKind::WHERE_KW
+            | SyntaxKind::GROUP_KW
+            | SyntaxKind::HAVING_KW
+            | SyntaxKind::WINDOW_KW
+            | SyntaxKind::ORDER_KW
+            | SyntaxKind::LIMIT_KW
+            | SyntaxKind::OFFSET_KW
+            | SyntaxKind::FETCH_KW
+            | SyntaxKind::FOR_KW
+            | SyntaxKind::UNION_KW
+            | SyntaxKind::INTERSECT_KW
+            | SyntaxKind::EXCEPT_KW
+            | SyntaxKind::RETURNING_KW
+            | SyntaxKind::SEMICOLON
+                if self.is_open() =>
+            {
+                self.depths.pop();
+            }
+            _ => {}
+        }
     }
 }
 
@@ -373,12 +448,47 @@ mod tests {
             "drop view if exists $report",
             "select * from orders join :customers using (id)",
             "update :items set id = 1",
+            "select * from orders, :items",
+            "select * from orders o join items i on o.id = i.id, $more where o.id = 1",
+            "select * from (select * from a, b) s, $more",
         ] {
             let conversion = convert_to_positional_params_with_metadata(input);
             assert!(conversion.has_identifier_parameters, "{input}");
             assert!(!conversion.sql.contains('$'), "{}", conversion.sql);
             assert_eq!(conversion.sql.len(), input.len());
         }
+    }
+
+    #[test]
+    fn parameters_after_commas_outside_of_from_lists_are_values() {
+        for input in [
+            "select :a, :b from t",
+            "select f(a, :x) from t",
+            "select * from t where a in (1, :x)",
+            "select * from t group by a, :x",
+            "select * from (select 1, :x) s",
+            "select * from t, u where a in (select b from v, w where c = 1, :x)",
+            "select * from a, b; select 1, :x",
+        ] {
+            let conversion = convert_to_positional_params_with_metadata(input);
+            assert!(!conversion.has_identifier_parameters, "{input}");
+        }
+    }
+
+    #[test]
+    fn an_at_sign_after_an_operand_is_an_operator() {
+        for input in [
+            "select jsonb_@path_matci('{}', '$')",
+            "select a @b from t",
+            "select 1 @b, (a) @b, a[1] @b, 'x' @b",
+        ] {
+            let conversion = convert_to_positional_params_with_metadata(input);
+            assert_eq!(conversion.sql, input);
+        }
+        assert_eq!(
+            convert_to_positional_params_with_metadata("select @a, f(@b), x = @c").sql,
+            "select $1, f($2), x = $3"
+        );
     }
 
     #[test]
