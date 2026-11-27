@@ -48,11 +48,13 @@ new-lintrule group rulename severity="error":
 # Format Rust, JS and TOML files
 format:
 	cargo fmt
+	cargo fmt --manifest-path fuzz/Cargo.toml
 	taplo format
 	bun oxfmt packages/
 
 format-ci:
 	cargo fmt --all --check
+	cargo fmt --manifest-path fuzz/Cargo.toml --check
 	taplo format --check
 	bun oxfmt --check packages/
 
@@ -97,6 +99,17 @@ test-doc:
 # Runs the CLI and the fuzzers' oracles over the real-world SQL in crates/pgls_cli/tests/corpus.toml and compares a summary per source with its snapshot. Fetches the sources on the first run.
 corpus:
 	cargo test -p pgls_cli --release --test corpus -- --ignored
+
+# Fuzzes a target of fuzz/ (splitter_vs_parser, formatter_roundtrip, lexer_vs_scan, lsp_messages) for the given seconds, with debug assertions, e.g. just fuzz splitter_vs_parser 600.
+# With CC=$PWD/fuzz/asan-cc RUSTFLAGS="-Clinker=clang -Clink-arg=-fsanitize=address", libpg_query and the tree-sitter grammar run under AddressSanitizer.
+# Seeded from the regression SQL and the corpus test's sources if fetched (target/tmp/corpus), with Postgres' keywords as the dictionary; extra arguments go to libFuzzer. A crash is saved in fuzz/artifacts/<target>/ and reruns with
+# cargo fuzz run --fuzz-dir fuzz -s none -a <target> <file>. The target is the host's: a prebuilt cargo-fuzz builds for its own (musl) otherwise.
+fuzz target seconds="300" *args:
+	cp Cargo.lock fuzz/Cargo.lock
+	env -u CC -u RUSTFLAGS cargo run --manifest-path fuzz/Cargo.toml --example seeds -- target/tmp/corpus
+	grep -o '"[a-z_]*"' crates/pgls_query/vendor/libpg_query/src/postgres/include/parser/kwlist.h > fuzz/seeds/keywords.dict
+	mkdir -p fuzz/corpus/{{target}}
+	cargo fuzz run --fuzz-dir fuzz -s none -a --target "$(rustc -vV | sed -n 's/^host: //p')" {{target}} fuzz/corpus/{{target}} fuzz/seeds/inputs crates/pgls_statement_splitter/tests/data -- -dict=fuzz/seeds/keywords.dict -max_len=4096 -timeout=30 -max_total_time={{seconds}} {{args}}
 
 # Alias for `cargo clippy`, it runs clippy on the whole codebase
 lint:

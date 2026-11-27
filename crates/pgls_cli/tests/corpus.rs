@@ -38,6 +38,7 @@ use std::io::{Read, Seek, Write};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 /// Every rule, so a change to any of them shows.
@@ -143,10 +144,7 @@ fn corpus() {
              cargo test -p pgls_cli --release --test corpus -- --ignored"
         );
     }
-    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus.toml");
-    let corpus: Corpus = toml::from_str(&fs::read_to_string(manifest).unwrap()).unwrap();
-    let cache = Path::new(env!("CARGO_TARGET_TMPDIR")).join("corpus");
-    fs::create_dir_all(&cache).unwrap();
+    let (corpus, cache) = Corpus::load();
     let config = cache.join("postgres-language-server.jsonc");
     fs::write(&config, CONFIGURATION).unwrap();
 
@@ -171,6 +169,28 @@ fn corpus() {
     assert!(changed.is_empty(), "the summaries of {changed:?} changed");
 }
 
+/// Only fetches the sources, which the nightly fuzz runs use as seeds. Unlike `corpus`, it runs in
+/// debug.
+#[test]
+#[ignore = "fetches the sources; the nightly fuzz runs use them"]
+fn corpus_sources() {
+    let (corpus, cache) = Corpus::load();
+    for source in &corpus.source {
+        source.checkout(&cache);
+    }
+}
+
+impl Corpus {
+    /// The sources of `tests/corpus.toml`, and the directory they are checked out into.
+    fn load() -> (Self, PathBuf) {
+        let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus.toml");
+        let corpus = toml::from_str(&fs::read_to_string(manifest).unwrap()).unwrap();
+        let cache = Path::new(env!("CARGO_TARGET_TMPDIR")).join("corpus");
+        fs::create_dir_all(&cache).unwrap();
+        (corpus, cache)
+    }
+}
+
 impl Source {
     /// Checks out the `.sql` and `.pg` files under `paths` at `rev` into the cache, unless an
     /// earlier run did, and returns the directory.
@@ -180,6 +200,9 @@ impl Source {
             "{}: `rev` must be a full commit SHA",
             self.name
         );
+        // `corpus` and `corpus_sources` run in parallel and check out the same sources.
+        static CHECKOUT: Mutex<()> = Mutex::new(());
+        let _checkout = CHECKOUT.lock().unwrap_or_else(PoisonError::into_inner);
         let dir = cache.join(format!("{}-{}", self.name, self.rev));
         if dir.exists() {
             return dir;
