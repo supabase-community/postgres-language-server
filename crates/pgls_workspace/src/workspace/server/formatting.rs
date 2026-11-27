@@ -282,8 +282,9 @@ fn collapse_blank_lines(text: &str) -> String {
 /// The parser only ever sees placeholders, so the printed statement carries `$1`, `':fname'` or a
 /// bare identifier instead of `:id`, `:'fname'` or `:raw_data`. Substitution happens on the token
 /// stream so that a `$1` inside a string literal is left alone, and the result is proven by
-/// converting it back and comparing the normalized ASTs and the string placeholders: a statement
-/// that does not survive that round trip is reported as unrestorable and kept as it was written.
+/// converting it back and comparing the normalized ASTs and the string placeholders, and the ASTs
+/// of the text as written when that parses too: a statement that does not survive that round
+/// trip is reported as unrestorable and kept as it was written.
 fn restore_named_parameters(
     original: &str,
     formatted: &str,
@@ -342,10 +343,21 @@ fn restore_named_parameters(
     let mut expected_ast = original_ast.clone();
     pgls_pretty_print::normalize_ast(&mut restored_ast);
     pgls_pretty_print::normalize_ast(&mut expected_ast);
-
-    if restored_ast == expected_ast {
-        Some(restored)
-    } else {
-        None
+    if restored_ast != expected_ast {
+        return None;
     }
+
+    // Postgres may also read the statement as written, with an `@name` as the prefix operator
+    // `@` applied to `name`: `@a::int` is `@(a::int)`, so `cast(@a as int)` would mean something
+    // else. The restored statement has to parse the same under that reading as well.
+    if let Some(mut written_ast) = pgls_query::parse(original).ok().and_then(|p| p.into_root()) {
+        let mut restored_ast = pgls_query::parse(&restored).ok()?.into_root()?;
+        pgls_pretty_print::normalize_ast(&mut written_ast);
+        pgls_pretty_print::normalize_ast(&mut restored_ast);
+        if restored_ast != written_ast {
+            return None;
+        }
+    }
+
+    Some(restored)
 }
