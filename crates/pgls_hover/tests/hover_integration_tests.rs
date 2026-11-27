@@ -143,13 +143,13 @@ async fn test_function_hover_builtin_now(test_db: PgPool) {
 }
 
 #[pgls_test_utils::db_test]
-async fn test_function_hover_builtin_max(test_db: PgPool) {
+async fn test_function_hover_builtin_sum(test_db: PgPool) {
     let query = format!(
-        "select m{}ax(id) from users",
+        "select s{}um(id) from users",
         QueryWithCursorPosition::cursor_marker()
     );
 
-    test_hover_at_cursor("builtin_max", query, None, &test_db).await;
+    test_hover_at_cursor("builtin_sum", query, None, &test_db).await;
 }
 
 #[pgls_test_utils::db_test]

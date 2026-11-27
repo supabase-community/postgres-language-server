@@ -59,9 +59,8 @@ insert into i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -101,9 +100,9 @@ insert into instruments (i|)
 Results:
 id - public.instruments.id (Column)
 id - public.others.id (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -122,10 +121,10 @@ insert into instruments (id, n|)
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -226,9 +225,8 @@ insert into i|
 Results:
 instruments - public.instruments (Table)
 information_schema - information_schema (Schema)
-information_schema.information_schema_catalog_name - information_schema.information_schema_catalog_name (Table)
 public - public (Schema)
-pg_catalog.pg_ident_file_mappings - pg_catalog.pg_ident_file_mappings (Table)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -268,9 +266,9 @@ insert into instruments (i|)
 Results:
 id - public.instruments.id (Column)
 id - public.others.id (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 
@@ -311,10 +309,10 @@ insert into instruments ("id", "n|")
 
 Results:
 name - public.instruments.name (Column)
-n_dead_tup - pg_catalog.pg_stat_all_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_sys_tables.n_dead_tup (Column)
-n_dead_tup - pg_catalog.pg_stat_user_tables.n_dead_tup (Column)
-n_distinct - pg_catalog.pg_stats.n_distinct (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+version - public._sqlx_migrations.version (Column)
 
 --------------
 
@@ -393,9 +391,9 @@ insert into instruments (i|, name) values ('my_bass');
 Results:
 id - public.instruments.id (Column)
 id - public.others.id (Column)
-ident - pg_catalog.pg_backend_memory_contexts.ident (Column)
-identity_cycle - information_schema.columns.identity_cycle (Column)
-identity_generation - information_schema.columns.identity_generation (Column)
+installed_on - public._sqlx_migrations.installed_on (Column)
+description - public._sqlx_migrations.description (Column)
+execution_time - public._sqlx_migrations.execution_time (Column)
 
 --------------
 

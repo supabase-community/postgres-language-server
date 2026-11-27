@@ -97,10 +97,10 @@ select u.uid, p.content from a|
 
 Results:
 auth - auth (Schema)
-information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
-information_schema.applicable_roles - information_schema.applicable_roles (Table)
-information_schema.attributes - information_schema.attributes (Table)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
@@ -165,10 +165,10 @@ select u.uid, p.content from auth.users u join a|
 
 Results:
 auth - auth (Schema)
-information_schema.administrable_role_authorizations - information_schema.administrable_role_authorizations (Table)
-information_schema.applicable_roles - information_schema.applicable_roles (Table)
-information_schema.attributes - information_schema.attributes (Table)
 information_schema - information_schema (Schema)
+pg_catalog - pg_catalog (Schema)
+pg_toast - pg_toast (Schema)
+_sqlx_migrations - public._sqlx_migrations (Table)
 
 --------------
 
