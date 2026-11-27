@@ -106,14 +106,33 @@ pub fn convert_to_positional_params_with_metadata(text: &str) -> NamedParameterC
 
         if matches!(kind, SyntaxKind::NAMED_PARAM) {
             let flavor = NamedParamFlavor::from_text(token_text);
-            if flavor == Some(NamedParamFlavor::ColonRaw) && bracket_depth > 0 {
+            let previous = previous_non_trivia_kind(&lexed, token_idx);
+            // An `@` after an operand is an operator, like in `a @b` or `jsonb_@path`.
+            let is_operator = flavor == Some(NamedParamFlavor::AtPrefix)
+                && previous.is_some_and(|kind| {
+                    matches!(
+                        kind,
+                        SyntaxKind::IDENT
+                            | SyntaxKind::INT_NUMBER
+                            | SyntaxKind::FLOAT_NUMBER
+                            | SyntaxKind::STRING
+                            | SyntaxKind::ESC_STRING
+                            | SyntaxKind::BYTE_STRING
+                            | SyntaxKind::BIT_STRING
+                            | SyntaxKind::DOLLAR_QUOTED_STRING
+                            | SyntaxKind::POSITIONAL_PARAM
+                            | SyntaxKind::NAMED_PARAM
+                            | SyntaxKind::R_PAREN
+                            | SyntaxKind::R_BRACK
+                    )
+                });
+            if is_operator || flavor == Some(NamedParamFlavor::ColonRaw) && bracket_depth > 0 {
                 result.push_str(token_text);
                 continue;
             }
             if flavor.is_some_and(NamedParamFlavor::is_psql) {
                 psql_variables.push(lexed.range(token_idx));
             }
-            let previous = previous_non_trivia_kind(&lexed, token_idx);
             let next = next_non_trivia_kind(&lexed, token_idx);
             let is_identifier = match flavor {
                 // psql replaces `:'name'` with a string constant, which also goes where `$n`
@@ -454,6 +473,22 @@ mod tests {
             let conversion = convert_to_positional_params_with_metadata(input);
             assert!(!conversion.has_identifier_parameters, "{input}");
         }
+    }
+
+    #[test]
+    fn an_at_sign_after_an_operand_is_an_operator() {
+        for input in [
+            "select jsonb_@path_matci('{}', '$')",
+            "select a @b from t",
+            "select 1 @b, (a) @b, a[1] @b, 'x' @b",
+        ] {
+            let conversion = convert_to_positional_params_with_metadata(input);
+            assert_eq!(conversion.sql, input);
+        }
+        assert_eq!(
+            convert_to_positional_params_with_metadata("select @a, f(@b), x = @c").sql,
+            "select $1, f($2), x = $3"
+        );
     }
 
     #[test]
