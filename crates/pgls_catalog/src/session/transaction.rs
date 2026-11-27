@@ -8,7 +8,6 @@ use pgls_query::{
         TransactionStmtKind,
     },
 };
-use pgls_query_ext::options::{def_elem_bool, is_reindex_concurrent};
 
 use crate::Catalog;
 
@@ -67,7 +66,7 @@ pub fn prevents_transaction_block(
             NonTransactional::concurrently("DROP INDEX CONCURRENTLY")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/indexcmds.c#L2870
-        NodeEnum::ReindexStmt(stmt) if is_reindex_concurrent(stmt) => {
+        NodeEnum::ReindexStmt(stmt) if stmt.is_concurrent() => {
             NonTransactional::concurrently("REINDEX CONCURRENTLY")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/utility.c#L1291
@@ -134,7 +133,7 @@ pub fn prevents_transaction_block(
         // value of either before it checks for a transaction block.
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/subscriptioncmds.c#L602
         NodeEnum::CreateSubscriptionStmt(stmt) => {
-            let option = |name| DefElem::find(&stmt.options, name).map(def_elem_bool);
+            let option = |name| DefElem::find(&stmt.options, name).map(DefElem::bool_value);
             let connect = option("connect").unwrap_or(Some(true));
             let create_slot = option("create_slot").unwrap_or(connect);
             if connect.is_none() || create_slot != Some(true) {
