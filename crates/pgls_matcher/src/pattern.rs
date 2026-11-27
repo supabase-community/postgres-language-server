@@ -68,6 +68,8 @@ pub struct Pattern {
     original: String,
     tokens: Vec<PatternToken>,
     is_recursive: bool,
+    /// Whether the glob is relative: [Pattern::parse] put the `**` in front of its tokens.
+    is_relative: bool,
     /// Did this pattern come from an `.editorconfig` file?
     ///
     /// TODO: Remove this flag and support `{a,b}` globs in Biome 2.0
@@ -136,28 +138,28 @@ impl Pattern {
         let mut is_recursive = false;
         let mut i = 0;
 
-        // A pattern is relative if it starts with "." followed by a separator,
-        // eg. "./test" or ".\test"
-        let is_relative = matches!(chars.get(..2), Some(['.', sep]) if path::is_separator(*sep));
-        if is_relative {
-            // If a pattern starts with a relative prefix, strip it from the
-            // pattern and replace it with a "**" sequence
+        // A pattern that starts with "." followed by a separator, eg. "./test" or ".\test", is
+        // the same as the pattern without it.
+        let has_current_folder_prefix =
+            matches!(chars.get(..2), Some(['.', sep]) if path::is_separator(*sep));
+        // A pattern is absolute if it starts with a path separator, eg. "/home" or "\\?\C:\Users"
+        let mut is_absolute =
+            !has_current_folder_prefix && chars.first().is_some_and(|c| path::is_separator(*c));
+
+        // On windows a pattern may also be absolute if it starts with a
+        // drive letter, a colon and a separator, eg. "c:/Users" or "G:\Users"
+        if cfg!(windows) && !has_current_folder_prefix && !is_absolute {
+            is_absolute = matches!(chars.get(..3), Some(['a'..='z' | 'A'..='Z', ':', sep]) if path::is_separator(*sep));
+        }
+
+        if has_current_folder_prefix {
             i += 2;
+        }
+        // If a pattern is not absolute, insert a "**" sequence in front, so that it matches at
+        // any depth. [Pattern::matches_relative_path_with] matches it without.
+        let is_relative = !is_absolute;
+        if is_relative {
             tokens.push(AnyRecursiveSequence);
-        } else {
-            // A pattern is absolute if it starts with a path separator, eg. "/home" or "\\?\C:\Users"
-            let mut is_absolute = chars.first().is_some_and(|c| path::is_separator(*c));
-
-            // On windows a pattern may also be absolute if it starts with a
-            // drive letter, a colon and a separator, eg. "c:/Users" or "G:\Users"
-            if cfg!(windows) && !is_absolute {
-                is_absolute = matches!(chars.get(..3), Some(['a'..='z' | 'A'..='Z', ':', sep]) if path::is_separator(*sep));
-            }
-
-            // If a pattern is not absolute, insert a "**" sequence in front
-            if !is_absolute {
-                tokens.push(AnyRecursiveSequence);
-            }
         }
 
         while let Some(&c) = chars.get(i) {
@@ -313,6 +315,7 @@ impl Pattern {
             tokens,
             original: pattern.to_string(),
             is_recursive,
+            is_relative,
             is_editorconfig,
         })
     }
@@ -322,6 +325,7 @@ impl Pattern {
             tokens,
             original,
             is_recursive,
+            is_relative: false,
             is_editorconfig: false,
         }
     }
@@ -384,9 +388,26 @@ impl Pattern {
         path.to_str().is_some_and(|s| self.matches_with(s, options))
     }
 
+    /// Return if `path`, relative to the folder that this `Pattern` is relative to, matches it
+    /// using the specified match options. A relative glob matches without the `**` that
+    /// [Pattern::parse] puts in front of it, so `sql/*.sql` matches `sql/a.sql` but not
+    /// `app/sql/a.sql`.
+    pub fn matches_relative_path_with(&self, path: &Path, options: MatchOptions) -> bool {
+        let start = usize::from(self.is_relative);
+        // FIXME (#9639): This needs to handle non-utf8 paths
+        path.to_str()
+            .is_some_and(|s| self.matches_from(true, s.chars(), start, options) == Match)
+    }
+
     /// Access the original glob pattern.
     pub fn as_str(&self) -> &str {
         &self.original
+    }
+
+    /// Whether the glob is relative: it doesn't start with a path separator, or on Windows with a
+    /// drive letter.
+    pub fn is_relative(&self) -> bool {
+        self.is_relative
     }
 
     fn matches_from(

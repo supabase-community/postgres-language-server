@@ -364,7 +364,8 @@ impl WorkspaceServer {
         };
 
         // Apply top-level `include`/`ignore`
-        settings.files.is_ignored(path) || is_ignored_by_migration_settings(settings, path)
+        settings.files.is_ignored(settings.path())
+            || is_ignored_by_migration_settings(&settings, path)
     }
 
     /// The migration tool and `files.maxSize` of the settings that apply to the file, and the
@@ -378,7 +379,9 @@ impl WorkspaceServer {
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
         let workspaces = self.workspaces();
-        let settings = workspaces.settings_for(project_key, path);
+        let settings = workspaces
+            .settings_for(project_key, path)
+            .map(|settings| settings.settings());
         let tool = settings
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
@@ -1005,13 +1008,13 @@ impl Workspace for WorkspaceServer {
         let settings = self.workspaces();
         let settings = settings.settings_for(params.project_key, params.path.as_path());
 
-        let disabled_reason = match settings {
+        let disabled_reason = match settings.as_deref() {
             Some(settings) => settings.db.statement_execution_disabled_reason(),
             None => Some("Statement execution not allowed against database.".into()),
         };
 
         let mut actions = Vec::new();
-        if let Some(settings) = settings {
+        if let Some(settings) = &settings {
             // Editors request code actions whenever the cursor moves. Without a rule selection,
             // this is the analysis that the diagnostics of the last edit cached.
             let should_stop = self.should_stop(&params.path, doc);
@@ -1043,7 +1046,7 @@ impl Workspace for WorkspaceServer {
         actions.extend(self.refactor_code_actions(
             params.project_key,
             &params.path,
-            settings,
+            settings.as_deref(),
             doc,
             params.cursor_position,
         ));
@@ -1102,7 +1105,7 @@ impl Workspace for WorkspaceServer {
             |doc| {
                 self.lint_diagnostics(
                     params.project_key,
-                    settings,
+                    &settings,
                     &params.path,
                     doc,
                     &params.only,
@@ -1318,7 +1321,7 @@ impl Workspace for WorkspaceServer {
                 .into_iter()
                 .map(|diagnostic| SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))),
         );
-        if self.file_kind(settings, &params.path) == FileKind::Migration {
+        if self.file_kind(&settings, &params.path) == FileKind::Migration {
             diagnostics.extend(
                 doc.psql_diagnostics().into_iter().map(|diagnostic| {
                     SDiagnostic::new(Error::from(diagnostic).with_file_path(&path))
@@ -1329,7 +1332,7 @@ impl Workspace for WorkspaceServer {
         let should_stop = self.should_stop(&params.path, doc);
         let Some(analysis) = self.analyse_document(
             params.project_key,
-            settings,
+            &settings,
             &params.path,
             doc,
             AnalysisRequest {
@@ -1369,7 +1372,7 @@ impl Workspace for WorkspaceServer {
         // The checks against the database wait for it, seconds on long files, so they don't hold
         // the settings, see `DatabaseCheckSettings`.
         #[cfg(feature = "db")]
-        let database_settings = DatabaseCheckSettings::new(settings);
+        let database_settings = DatabaseCheckSettings::new(&settings);
         drop(workspaces);
 
         /*
@@ -1595,7 +1598,7 @@ impl Workspace for WorkspaceServer {
             }
         };
 
-        if !settings.formatter.is_formatted(params.path.as_path()) {
+        if !settings.formatter.is_formatted(settings.path()) {
             return Ok(PullFormattingResult::default());
         }
 
@@ -1731,7 +1734,9 @@ impl Workspace for WorkspaceServer {
         let doc = &*document;
 
         let settings = self.workspaces();
-        let settings = settings.settings_for(params.project_key, params.path.as_path());
+        let settings = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.settings());
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
@@ -1786,7 +1791,9 @@ impl Workspace for WorkspaceServer {
         let doc = &*document;
 
         let settings = self.workspaces();
-        let settings = settings.settings_for(params.project_key, params.path.as_path());
+        let settings = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.settings());
 
         #[cfg(feature = "db")]
         let Some(snapshot) = settings
@@ -1846,7 +1853,9 @@ impl Workspace for WorkspaceServer {
         let doc = &*document;
 
         let settings = self.workspaces();
-        let settings = settings.settings_for(params.project_key, params.path.as_path());
+        let settings = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.settings());
         let parameter_names = match settings.map_or(Some(ParameterNameHints::All), |settings| {
             settings
                 .inlay_hints
@@ -1925,7 +1934,9 @@ impl Workspace for WorkspaceServer {
         let doc = &*document;
 
         let settings = self.workspaces();
-        let settings = settings.settings_for(params.project_key, params.path.as_path());
+        let settings = settings
+            .settings_for(params.project_key, params.path.as_path())
+            .map(|settings| settings.settings());
         if !settings.is_none_or(|settings| settings.semantic_tokens.enabled) {
             return Ok(PullSemanticTokensResult::default());
         }
