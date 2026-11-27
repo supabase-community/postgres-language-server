@@ -4,7 +4,10 @@ use crate::execute::StdinPayload;
 use crate::reporter::Report;
 use crate::{CliDiagnostic, LoggingLevel, VERSION};
 use bpaf::Bpaf;
-use pgls_configuration::{PartialConfiguration, RuleSelector, partial_configuration};
+use pgls_configuration::{
+    PartialConfiguration, RuleSelector, partial_configuration,
+    templating::{PartialTemplatingConfiguration, partial_templating_configuration},
+};
 use pgls_console::{Console, ConsoleExt, markup};
 use pgls_diagnostics::{Category, Error, PrintDiagnostic};
 use pgls_fs::FileSystem;
@@ -190,6 +193,15 @@ pub enum PgLSCommand {
     /// Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
     #[bpaf(command)]
     Parse {
+        #[bpaf(external(partial_templating_configuration), hide_usage, optional)]
+        templating: Option<PartialTemplatingConfiguration>,
+
+        /// Set the file path to the configuration file, or the directory path to find
+        /// `postgres-language-server.jsonc`. By default, the configuration of the folder of the
+        /// file applies, or of the working directory for standard input.
+        #[bpaf(long("config-path"), argument("PATH"), optional)]
+        config_path: Option<PathBuf>,
+
         /// Path to the SQL file to parse. When omitted, the SQL is read from standard input.
         #[bpaf(long("file"), argument("PATH"), optional)]
         file: Option<PathBuf>,

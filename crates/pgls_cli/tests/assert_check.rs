@@ -770,6 +770,43 @@ fn check_reads_the_sql_around_template_directives() {
     assert!(output.contains("syntax"), "{output}");
 }
 
+#[test]
+fn template_syntax_argument_replaces_the_configured_syntax() {
+    let query = "select * from %s.users where id = %d;\n";
+    let root = write_tree(&[
+        (
+            "postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true }, "templating": { "syntax": "go-printf" } }"#,
+        ),
+        ("users.sql", query),
+        (
+            "plain/postgres-language-server.jsonc",
+            r#"{ "db": { "disableConnection": true } }"#,
+        ),
+        ("plain/users.sql", query),
+    ]);
+
+    let (success, output) = check_in(root.path(), &["users.sql"], &[]);
+    assert!(success, "{output}");
+    // `none` switches it off.
+    let (success, output) = check_in(
+        root.path(),
+        &["--template-syntax", "none", "users.sql"],
+        &[],
+    );
+    assert!(!success, "{output}");
+    assert!(output.contains("syntax"), "{output}");
+    // The argument also applies to the nested configuration files.
+    let (success, output) = check_in(root.path(), &["plain/users.sql"], &[]);
+    assert!(!success, "{output}");
+    let (success, output) = check_in(
+        root.path(),
+        &["--template-syntax=go-printf", "plain/users.sql"],
+        &[],
+    );
+    assert!(success, "{output}");
+}
+
 /// Writes `files` below a new temporary directory.
 fn write_tree(files: &[(&str, &str)]) -> tempfile::TempDir {
     let root = tempfile::tempdir().unwrap();

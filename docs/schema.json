@@ -3410,7 +3410,7 @@
       ]
     },
     "TemplatingConfiguration": {
-      "description": "The configuration of SQL files that are format strings of a host language, like the queries of a Go program that fills them in with `fmt.Sprintf`.",
+      "description": "The configuration of SQL files that are format strings of a host language.",
       "type": "object",
       "properties": {
         "ignore": {

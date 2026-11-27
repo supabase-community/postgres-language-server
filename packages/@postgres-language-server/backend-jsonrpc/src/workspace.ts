@@ -966,7 +966,7 @@ export interface PartialSplinterConfiguration {
   rules?: SplinterRules;
 }
 /**
- * The configuration of SQL files that are format strings of a host language, like the queries of a Go program that fills them in with `fmt.Sprintf`.
+ * The configuration of SQL files that are format strings of a host language.
  */
 export interface PartialTemplatingConfiguration {
   /**

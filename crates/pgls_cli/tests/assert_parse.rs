@@ -47,3 +47,77 @@ fn parse_keeps_named_parameter_locations_aligned() {
     // tree locations stay aligned with the original bytes.
     assert_eq!(sql.as_bytes()[raw.stmt_len as usize], b';');
 }
+
+/// The outcome of `parse` with `args` in `cwd` on `stdin`: whether it succeeded, and its stderr.
+struct ParseRun {
+    success: bool,
+    stderr: String,
+}
+
+impl ParseRun {
+    fn new(cwd: &std::path::Path, args: &[&str], stdin: &str) -> Self {
+        let output = cargo_bin_cmd!("postgres-language-server")
+            .current_dir(cwd)
+            .arg("parse")
+            .args(args)
+            .write_stdin(stdin)
+            .output()
+            .expect("run postgres-language-server parse");
+        Self {
+            success: output.status.success(),
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+        }
+    }
+}
+
+#[test]
+fn parse_reads_templates_like_check() {
+    let root = tempfile::tempdir().unwrap();
+    let queries = root.path().join("queries");
+    std::fs::create_dir_all(&queries).unwrap();
+    std::fs::write(
+        queries.join("postgres-language-server.jsonc"),
+        r#"{ "templating": { "syntax": "go-printf" } }"#,
+    )
+    .unwrap();
+    let template = "select * from %s.users where id = %d;\n";
+    std::fs::write(queries.join("users.sql"), template).unwrap();
+    let file = queries.join("users.sql");
+    let file = file.to_str().unwrap();
+
+    // The configuration of the folder of the file applies.
+    let run = ParseRun::new(root.path(), &["--file", file], "");
+    assert!(run.success, "{}", run.stderr);
+    // `--template-syntax none` switches it off.
+    let run = ParseRun::new(
+        root.path(),
+        &["--template-syntax", "none", "--file", file],
+        "",
+    );
+    assert!(!run.success);
+    // Standard input uses the configuration of the working directory, or the argument.
+    assert!(!ParseRun::new(root.path(), &[], template).success);
+    let run = ParseRun::new(root.path(), &["--template-syntax", "go-printf"], template);
+    assert!(run.success, "{}", run.stderr);
+    let config = queries.join("postgres-language-server.jsonc");
+    let run = ParseRun::new(
+        root.path(),
+        &["--config-path", config.to_str().unwrap()],
+        template,
+    );
+    assert!(run.success, "{}", run.stderr);
+
+    // A directive that can't be read says why.
+    let run = ParseRun::new(
+        root.path(),
+        &["--template-syntax", "rust-fmt"],
+        "select * from t {alias};\n",
+    );
+    assert!(!run.success);
+    assert!(
+        run.stderr
+            .contains("A template placeholder directly after `t` can't be read"),
+        "{}",
+        run.stderr
+    );
+}

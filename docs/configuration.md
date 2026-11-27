@@ -273,7 +273,7 @@ Check, lint and the editor features then read the SQL around the directives:
 - A `%` or `{` that doesn't start a directive, like the `%` of `7 % 2` or the `{` of `'{1,2}'`, is read as SQL. Go and Rust would reject or mangle it, so write `%%` and `{{` in the template.
 - Fixes that would edit a directive are left out, statements with a directive can't be executed from the editor, and the formatter leaves them as they are.
 
-The setting applies per configuration file, so Go and Rust templates in different folders of one project each get a [nested configuration](#nested-configurations--monorepos), or one configuration selects them with `include`. A file that is also a goose migration with `ENVSUB` is read as a template: where the file has template directives, their placeholders take the place of the `ENVSUB` expansions, which stay as written.
+The setting applies per configuration file, so Go and Rust templates in different folders of one project each get a [nested configuration](#nested-configurations--monorepos), or one configuration selects them with `include`. `--template-syntax=go-printf|rust-fmt|none` of `check`, `format` and `parse` replaces `templating.syntax` for one run, in every configuration file; `none` switches it off. `parse` uses the configuration file of the folder of `--file`, or `--config-path`. A file that is also a goose migration with `ENVSUB` is read as a template: where the file has template directives, their placeholders take the place of the `ENVSUB` expansions, which stay as written.
 
 ## Specifying files to process
 
