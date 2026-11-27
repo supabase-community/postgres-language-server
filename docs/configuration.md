@@ -266,7 +266,7 @@ postgres-language-server check file1.js src/
 
 The configuration file can be used to refine which files are processed. You can explicitly list the files to be processed using the `files.include` field. `files.include` accepts glob patterns such as sql/**/*.sql. Negated patterns starting with `!` can be used to exclude files.
 
-Paths and globs inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another. The [user configuration](#where-the-configuration-is-loaded-from) is resolved relative to the project directory.
+Paths inside the configuration file are resolved relative to the folder the configuration file is in. An exception to this is when a configuration file is extended by another. Globs in `include` and `ignore` that don't start with `/` match at any depth: `sql/**/*.sql` also matches `app/sql/users.sql`, and `test` matches every folder named `test`. The [user configuration](#where-the-configuration-is-loaded-from) is resolved relative to the project directory.
 
 #### Include files via configuration
 Let’s take the following configuration, where we want to include only SQL files (`.sql`) that are inside the `sql/` folder:
