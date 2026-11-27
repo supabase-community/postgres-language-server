@@ -5,18 +5,14 @@ mod params;
 #[cfg(feature = "testing")]
 mod testing;
 
-pub use crate::codegen::syntax_kind::{KeywordCategory, SyntaxKind};
+pub use crate::codegen::syntax_kind::SyntaxKind;
 pub use crate::lexed::{LexDiagnostic, Lexed};
 pub use crate::lexer::Lexer;
 pub use crate::params::{
     NamedParameterConversion, convert_to_positional_params,
     convert_to_positional_params_with_metadata,
 };
-
-/// The category of the keyword `word`, compared case-insensitively. `None` if it's no keyword.
-pub fn keyword_category(word: &str) -> Option<KeywordCategory> {
-    SyntaxKind::from_keyword(word)?.keyword_category()
-}
+pub use pgls_tokenizer::KeywordCategory;
 
 /// Lex the input string into tokens and diagnostics
 pub fn lex(input: &str) -> Lexed<'_> {

@@ -32,7 +32,7 @@ pub(super) fn emit_function_parameter(e: &mut EventEmitter, fp: &FunctionParamet
 
     // Parameter name, which the grammar spells as a function or type name
     if !fp.name.is_empty() {
-        if needs_quoting_as_function_or_type_name(&fp.name) {
+        if NamePosition::TypeFunctionName.needs_quotes(&fp.name) {
             emit_identifier(e, &fp.name);
         } else {
             e.token(TokenKind::IDENT(fp.name.clone()));

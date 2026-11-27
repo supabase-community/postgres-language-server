@@ -2,7 +2,7 @@ use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use crate::keywords::{KeywordKinds, keyword_kinds};
+use pgls_tokenizer::Keyword;
 
 /// The whitespace kinds and how a message names them.
 const WHITESPACE: &[(&str, &str)] = &[
@@ -74,16 +74,6 @@ const LITERALS: &[(&str, &str)] = &[
 ];
 
 pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
-    let keywords = match keyword_kinds() {
-        Ok(keywords) => keywords,
-        Err(error) => {
-            let message = format!("failed to read the keywords of kwlist.h: {error}");
-            return quote! { compile_error!(#message); };
-        }
-    };
-
-    let KeywordKinds { all_keywords, .. } = keywords;
-
     let mut enum_variants: Vec<TokenStream> = Vec::new();
     let mut from_kw_match_arms: Vec<TokenStream> = Vec::new();
     let mut is_kw_match_arms: Vec<TokenStream> = Vec::new();
@@ -93,20 +83,10 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
     let mut description_match_arms: Vec<TokenStream> = Vec::new();
 
     // collect keywords
-    for kw in &all_keywords {
-        let name = &kw.name;
-        if name.to_uppercase().contains("WHITESPACE") {
-            continue; // Skip whitespace as it is handled separately
-        }
-
+    for keyword in Keyword::ALL {
+        let name = keyword.name;
         let kind_ident = format_ident!("{}_KW", name.to_case(Case::UpperSnake));
-        let category = match kw.category.as_str() {
-            "UNRESERVED_KEYWORD" => format_ident!("Unreserved"),
-            "COL_NAME_KEYWORD" => format_ident!("ColName"),
-            "TYPE_FUNC_NAME_KEYWORD" => format_ident!("TypeFuncName"),
-            "RESERVED_KEYWORD" => format_ident!("Reserved"),
-            other => panic!("Unknown keyword category {other} for keyword {name}"),
-        };
+        let category = format_ident!("{}", format!("{:?}", keyword.category));
 
         enum_variants.push(quote! { #kind_ident });
         from_kw_match_arms.push(quote! {
@@ -116,7 +96,7 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
             SyntaxKind::#kind_ident => true
         });
         keyword_category_match_arms.push(quote! {
-            SyntaxKind::#kind_ident => Some(KeywordCategory::#category)
+            SyntaxKind::#kind_ident => Some(pgls_tokenizer::KeywordCategory::#category)
         });
         let description = format!("\"{}\"", name.to_uppercase());
         description_match_arms.push(quote! {
@@ -177,22 +157,6 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
             #(#enum_variants),*,
         }
 
-        /// How reserved a keyword is, i.e. where Postgres accepts it as a name.
-        ///
-        /// See the categories in https://github.com/postgres/postgres/blob/REL_18_6/src/include/parser/kwlist.h
-        /// and the name classification hierarchy in https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L17619
-        #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-        pub enum KeywordCategory {
-            /// Available for use as any kind of name.
-            Unreserved,
-            /// Can be a column or table name, but not a function or type name.
-            ColName,
-            /// Can be a function or type name, but not a column or table name.
-            TypeFuncName,
-            /// Can only be a column label after `AS`.
-            Reserved,
-        }
-
         impl SyntaxKind {
             pub(crate) fn from_keyword(ident: &str) -> Option<SyntaxKind> {
                 let lower_ident = ident.to_ascii_lowercase();
@@ -210,7 +174,7 @@ pub(crate) fn syntax_kind_mod() -> proc_macro2::TokenStream {
             }
 
             /// The category of a keyword, `None` for any other token.
-            pub fn keyword_category(&self) -> Option<KeywordCategory> {
+            pub fn keyword_category(&self) -> Option<pgls_tokenizer::KeywordCategory> {
                 match self {
                     #(#keyword_category_match_arms),*,
                     _ => None

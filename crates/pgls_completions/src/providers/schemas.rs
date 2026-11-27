@@ -4,7 +4,8 @@ use crate::{
     builder::{CompletionBuilder, PossibleCompletionItem},
     relevance::{CompletionRelevanceData, filtering::CompletionFilter, scoring::CompletionScore},
 };
-use pgls_catalog::{NamePosition, Snapshot};
+use pgls_catalog::Snapshot;
+use pgls_tokenizer::NamePosition;
 use pgls_treesitter::TreesitterContext;
 
 pub(crate) fn complete_schemas<'a>(
