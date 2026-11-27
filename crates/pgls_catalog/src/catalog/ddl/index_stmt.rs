@@ -105,11 +105,7 @@ fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
                         let Some(NodeEnum::ColumnRef(column)) = arg.node.as_ref() else {
                             continue;
                         };
-                        let is_star = matches!(
-                            column.fields.last().and_then(|field| field.node.as_ref()),
-                            Some(NodeEnum::AStar(_))
-                        );
-                        if is_star && is_whole_row(arg, table) {
+                        if column.star_qualifier().is_some() && is_whole_row(arg, table) {
                             let all = table.columns.as_ref()?;
                             columns.extend(all.iter().map(|column| column.name.clone()));
                         }
@@ -145,13 +141,7 @@ fn index_columns(n: &IndexStmt, table: &RelationInfo) -> Option<Vec<String>> {
                         && call.over.is_none()
                         && !call.func_variadic
                         && matches!(call.args.as_slice(), [arg] if is_whole_row(arg, table));
-                    let name = call
-                        .funcname
-                        .first()
-                        .and_then(|name| match name.node.as_ref() {
-                            Some(NodeEnum::String(name)) => Some(name.sval.as_str()),
-                            _ => None,
-                        });
+                    let name = call.funcname.first().and_then(Node::string_value);
                     let is_column = |name: &str| {
                         table
                             .columns

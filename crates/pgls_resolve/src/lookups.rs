@@ -16,7 +16,6 @@ use pgls_query::{
         RangeVar, SortBy, SubLink, SubLinkType, Token, TypeName,
     },
 };
-use pgls_query_ext::utils::string_value;
 use pgls_text_size::TextRange;
 use rustc_hash::FxHashSet;
 
@@ -356,7 +355,7 @@ fn serial_column_types<'a>(
 /// The name of a name list without schema, like the name of an unqualified function.
 fn unqualified(names: &[Node]) -> Option<&str> {
     match names {
-        [name] => string_value(name),
+        [name] => name.string_value(),
         _ => None,
     }
 }

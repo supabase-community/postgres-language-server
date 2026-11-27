@@ -10,8 +10,6 @@
 //!   lock and timeout state that the safety rules check.
 //! - `lookup.rs`: what the lookups of [`Catalog`] return.
 //! - [`typing`] (`typing/`): Postgres' type rules, which the resolver of `pgls_resolve` asks.
-//! - [`quote_identifier`] (`identifier.rs`): the identifier to write for a name.
-//!   [`pgls_query::Identifier`] reads the name an identifier stands for.
 //!
 //! The analyser walks a file statement by statement. For each statement it resolves its names
 //! (`pgls_resolve`) once against the current [`Catalog`] with the [`Session`]'s search path, runs the rules on
@@ -21,14 +19,12 @@
 //! up the names of the statement in the catalog.
 
 mod catalog;
-mod identifier;
 mod lookup;
 mod session;
 pub mod snapshot;
 pub mod typing;
 
 pub use catalog::{Catalog, CatalogBase, rename};
-pub use identifier::{NamePosition, quote_identifier};
 pub use lookup::{
     Candidates, CastInfo, CastMethod, ColumnInfo, FunctionArgument, FunctionArgumentMode,
     FunctionInfo, FunctionKind, FunctionSignature, IndexInfo, Lookup, OperatorInfo, OperatorKind,

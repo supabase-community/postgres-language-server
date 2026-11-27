@@ -86,11 +86,8 @@ fn emit_objarg_or_none(e: &mut EventEmitter, node: &pgls_query::Node) {
 fn needs_space_before_paren(n: &ObjectWithArgs) -> bool {
     n.objname
         .last()
-        .and_then(|node| match node.node.as_ref() {
-            Some(NodeEnum::String(s)) => Some(&s.sval),
-            _ => None,
-        })
-        .map(|name| is_operator_symbol(name))
+        .and_then(Node::string_value)
+        .map(is_operator_symbol)
         .unwrap_or(false)
 }
 

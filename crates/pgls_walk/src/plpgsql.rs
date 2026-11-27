@@ -219,7 +219,7 @@ mod tests {
                     };
                     call.funcname
                         .last()
-                        .and_then(pgls_query_ext::utils::string_value)
+                        .and_then(pgls_query::Node::string_value)
                         .is_some_and(is_catalog_function)
                 })
             },

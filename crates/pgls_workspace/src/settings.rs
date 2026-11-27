@@ -6,6 +6,7 @@ use std::str::FromStr;
 use std::{
     borrow::Cow,
     num::NonZeroU64,
+    ops::Deref,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -84,12 +85,43 @@ impl ProjectData {
 
     /// The settings that apply to `path`, see [ProjectData::resolve]: those of the deepest nested
     /// configuration file that contains it, or else the root settings.
-    fn settings_for(&self, path: &Path) -> &Settings {
+    fn settings_for(&self, path: &Path) -> PathSettings<'_> {
         let path = self.resolve(path);
-        self.nested
+        let settings = self
+            .nested
             .iter()
             .find(|(directory, _)| path.starts_with(directory))
-            .map_or(&self.settings, |(_, settings)| settings)
+            .map_or(&self.settings, |(_, settings)| settings);
+        PathSettings { settings, path }
+    }
+}
+
+/// The settings that apply to a file, with its path as [ProjectData::resolve] resolves it: the
+/// path that their `include` and `ignore` globs match, since a relative glob only matches below
+/// the folder of its configuration file.
+#[derive(Debug)]
+pub struct PathSettings<'a> {
+    settings: &'a Settings,
+    path: PathBuf,
+}
+
+impl<'a> PathSettings<'a> {
+    /// The settings, borrowed for as long as the settings are rather than as long as this value.
+    pub fn settings(&self) -> &'a Settings {
+        self.settings
+    }
+
+    /// The path of the file, below the root of the project if it is in the project.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl Deref for PathSettings<'_> {
+    type Target = Settings;
+
+    fn deref(&self) -> &Settings {
+        self.settings
     }
 }
 
@@ -164,7 +196,7 @@ impl WorkspaceSettings {
 
     /// The settings of a project that apply to `path`, so that a file uses the nearest
     /// configuration file.
-    pub fn get_settings_for_path(&self, key: ProjectKey, path: &Path) -> Option<&Settings> {
+    pub fn get_settings_for_path(&self, key: ProjectKey, path: &Path) -> Option<PathSettings<'_>> {
         self.data.get(key).map(|project| project.settings_for(path))
     }
 
@@ -221,7 +253,7 @@ impl<'a> WorkspaceSettingsHandle<'a> {
     }
 
     /// The settings of a project that apply to the file at `path`.
-    pub(crate) fn settings_for(&self, key: ProjectKey, path: &Path) -> Option<&Settings> {
+    pub(crate) fn settings_for(&self, key: ProjectKey, path: &Path) -> Option<PathSettings<'_>> {
         self.inner.get_settings_for_path(key, path)
     }
 }
@@ -560,7 +592,7 @@ pub fn to_matcher(
 ) -> Result<Matcher, WorkspaceError> {
     let mut matcher = Matcher::empty();
     if let Some(working_directory) = working_directory {
-        matcher.set_root(working_directory)
+        matcher.set_root(normalize_path(&working_directory))
     }
     if let Some(string_set) = string_set {
         for pattern in string_set.iter() {

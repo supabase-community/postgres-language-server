@@ -3,10 +3,9 @@
 //! references, and never reported: the catalog doesn't follow the roles a file creates or drops.
 
 use pgls_query::{
-    NodeEnum, NodeRef,
+    Node, NodeEnum, NodeRef,
     protobuf::{AConst, GrantTargetType, ObjectType, RoleSpecType, Token, a_const},
 };
-use pgls_query_ext::utils::{string_value, string_values};
 
 use super::{Reference, resolver::Resolver};
 use pgls_catalog::Lookup;
@@ -123,21 +122,21 @@ fn record_schema_names(r: &mut Resolver, stmt: &NodeEnum) {
 
 /// The schemas that a statement names on their own.
 fn schema_names(stmt: &NodeEnum) -> Vec<String> {
-    let string = |node: Option<&pgls_query::Node>| {
-        node.and_then(string_value)
+    let string = |node: Option<&Node>| {
+        node.and_then(Node::string_value)
             .map(|name| vec![name.to_owned()])
             .unwrap_or_default()
     };
     match stmt {
         NodeEnum::CreateSchemaStmt(n) if !n.schemaname.is_empty() => vec![n.schemaname.clone()],
         NodeEnum::DropStmt(n) if n.remove_type() == ObjectType::ObjectSchema => {
-            string_values(&n.objects).unwrap_or_default()
+            Node::string_values(&n.objects).unwrap_or_default()
         }
         NodeEnum::GrantStmt(n)
             if n.objtype() == ObjectType::ObjectSchema
                 || n.targtype() == GrantTargetType::AclTargetAllInSchema =>
         {
-            string_values(&n.objects).unwrap_or_default()
+            Node::string_values(&n.objects).unwrap_or_default()
         }
         NodeEnum::AlterDefaultPrivilegesStmt(n) => n
             .options
@@ -145,7 +144,7 @@ fn schema_names(stmt: &NodeEnum) -> Vec<String> {
             .filter_map(|option| match option.node.as_ref()? {
                 NodeEnum::DefElem(option) if option.defname == "schemas" => {
                     match option.arg.as_deref()?.node.as_ref()? {
-                        NodeEnum::List(list) => string_values(&list.items),
+                        NodeEnum::List(list) => Node::string_values(&list.items),
                         _ => None,
                     }
                 }

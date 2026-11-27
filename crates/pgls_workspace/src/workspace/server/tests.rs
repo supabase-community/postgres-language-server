@@ -5542,6 +5542,35 @@ fn files_use_the_nearest_configuration_file() {
     assert!(project.is_ignored("/repo/legacy/a.sql"));
 }
 
+/// The relative globs of `include` and `ignore` match from the folder of their configuration file,
+/// not at any depth, for relative paths too.
+#[test]
+fn relative_globs_match_from_the_folder_of_their_configuration_file() {
+    let fs = file_system_with_configurations(&[
+        ("/repo", r#"{ "files": { "ignore": ["legacy"] } }"#),
+        (
+            "/repo/db",
+            r#"{ "files": { "ignore": ["old/*.sql"] }, "linter": { "ignore": ["**/generated"] } }"#,
+        ),
+    ]);
+    let fs: DynRef<'_, dyn FileSystem> = DynRef::Owned(Box::new(fs));
+    let (project, _) = TestProject::new(&fs, Path::new("/repo"));
+
+    assert!(project.is_ignored("/repo/legacy/a.sql"));
+    assert!(project.is_ignored("legacy/a.sql"));
+    assert!(!project.is_ignored("/repo/app/legacy/a.sql"));
+
+    assert!(project.is_ignored("/repo/db/old/a.sql"));
+    assert!(project.is_ignored("db/old/a.sql"));
+    assert!(project.is_ignored("db/x/../old/a.sql"));
+    assert!(!project.is_ignored("db/x/old/a.sql"));
+    assert!(!project.is_ignored("old/a.sql"));
+
+    assert_eq!(project.severities("db/generated"), []);
+    assert_eq!(project.severities("db/x/generated"), []);
+    assert_eq!(project.severities("generated"), [Severity::Warning]);
+}
+
 /// Updating the root settings with `replace` resets what the configuration doesn't set, while a
 /// merge keeps it, which the wasm `format` call relies on.
 #[test]
@@ -7275,7 +7304,9 @@ async fn test_editor_requests_use_document_snapshots(test_db: PgPool) {
         .expect("Unable to open test file");
 
     let settings = workspace.workspaces();
-    let settings = settings.settings_for(project_key, path.as_path());
+    let settings = settings
+        .settings_for(project_key, path.as_path())
+        .map(|settings| settings.settings());
     let snapshot = workspace
         .database_snapshot(settings.unwrap())
         .expect("a database snapshot");

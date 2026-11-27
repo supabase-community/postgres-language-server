@@ -209,13 +209,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
 /// Emits a function name as written. A name the grammar would read as something else unquoted, such
 /// as `coalesce` or a reserved word, is quoted.
 fn emit_function_name(e: &mut EventEmitter, funcname: &[Node]) {
-    let parts: Vec<&str> = funcname
-        .iter()
-        .filter_map(|node| match &node.node {
-            Some(NodeEnum::String(s)) => Some(s.sval.as_str()),
-            _ => None,
-        })
-        .collect();
+    let parts: Vec<&str> = funcname.iter().filter_map(Node::string_value).collect();
 
     // The grammar qualifies the plain-call form of `json_object(...)` itself.
     if let ["pg_catalog", "json_object"] = parts.as_slice() {
@@ -238,10 +232,10 @@ fn emit_function_name(e: &mut EventEmitter, funcname: &[Node]) {
         let needs_quoting = if is_unqualified {
             // `overlay(a, b)` and `substring(a, b)` have a plain-call form in the grammar that
             // keeps the name unqualified.
-            needs_quoting_as_function_or_type_name(&part)
+            NamePosition::TypeFunctionName.needs_quotes(&part)
                 && !matches!(part.as_str(), "overlay" | "substring")
         } else {
-            needs_quoting_as_column_name(&part)
+            NamePosition::ColId.needs_quotes(&part)
         };
 
         if needs_quoting {
@@ -497,7 +491,7 @@ fn normalization_form(node: &Node) -> Option<TokenKind> {
 fn emit_extract_field(e: &mut EventEmitter, node: &Node) {
     if let Some(NodeEnum::AConst(a_const)) = &node.node
         && let Some(Val::Sval(field)) = &a_const.val
-        && !needs_quoting(&field.sval)
+        && !NamePosition::NonReservedWord.needs_quotes(&field.sval)
     {
         emit_keyword(e, &field.sval);
         return;
