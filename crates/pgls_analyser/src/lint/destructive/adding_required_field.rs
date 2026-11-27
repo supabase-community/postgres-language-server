@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, altered_relation, cmd_def, column_constraints};
+use crate::utils::{alter_table_cmds, altered_relation, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -45,7 +45,7 @@ impl LinterRule for AddingRequiredField {
         let not_null_columns: Vec<&str> = commands
             .iter()
             .filter(|command| command.subtype() == AlterTableType::AtAddConstraint)
-            .filter_map(|command| match cmd_def(command)? {
+            .filter_map(|command| match command.definition()? {
                 pgls_query::NodeEnum::Constraint(constraint)
                     if constraint.contype() == ConstrType::ConstrNotnull =>
                 {
@@ -60,7 +60,7 @@ impl LinterRule for AddingRequiredField {
         commands
             .iter()
             .filter(|command| command.subtype() == AlterTableType::AtAddColumn)
-            .filter_map(|command| match cmd_def(command)? {
+            .filter_map(|command| match command.definition()? {
                 pgls_query::NodeEnum::ColumnDef(column) => Some(column),
                 _ => None,
             })

@@ -2,10 +2,10 @@
 
 use pgls_query::NodeEnum;
 use pgls_query::protobuf::{
-    AlterDomainStmt, AlterTableCmd, AlterTableType, ColumnDef, Constraint, Node, RangeVar, TypeName,
+    AlterDomainStmt, AlterTableCmd, AlterTableStmt, AlterTableType, ColumnDef, Constraint, Node,
+    RangeVar, TypeName,
 };
 use pgls_query_ext::utils::QualifiedName;
-pub(crate) use pgls_query_ext::utils::{cmd_def, detaches_concurrently};
 
 /// The subcommands of an `ALTER TABLE` statement. Other statements have none.
 pub(crate) fn alter_table_cmds(stmt: &NodeEnum) -> impl Iterator<Item = &AlterTableCmd> {
@@ -13,8 +13,7 @@ pub(crate) fn alter_table_cmds(stmt: &NodeEnum) -> impl Iterator<Item = &AlterTa
         NodeEnum::AlterTableStmt(stmt) => Some(stmt),
         _ => None,
     };
-    stmt.into_iter()
-        .flat_map(pgls_query_ext::utils::alter_table_cmds)
+    stmt.into_iter().flat_map(AlterTableStmt::commands)
 }
 
 /// The table that an `ALTER TABLE` changes. Other statements change none.
@@ -43,7 +42,7 @@ pub(crate) fn column_defs(stmt: &NodeEnum) -> impl Iterator<Item = &ColumnDef> {
                 AlterTableType::AtAddColumn | AlterTableType::AtAlterColumnType
             )
         })
-        .filter_map(|cmd| match cmd_def(cmd) {
+        .filter_map(|cmd| match cmd.definition() {
             Some(NodeEnum::ColumnDef(col_def)) => Some(col_def.as_ref()),
             _ => None,
         });
@@ -89,7 +88,7 @@ pub(crate) fn added_constraints(
     stmt: &NodeEnum,
 ) -> impl Iterator<Item = (&Constraint, ConstraintSite)> {
     alter_table_cmds(stmt).flat_map(|cmd| {
-        let (table, column) = match (cmd.subtype(), cmd_def(cmd)) {
+        let (table, column) = match (cmd.subtype(), cmd.definition()) {
             (AlterTableType::AtAddConstraint, Some(NodeEnum::Constraint(constraint))) => {
                 (Some(constraint.as_ref()), None)
             }

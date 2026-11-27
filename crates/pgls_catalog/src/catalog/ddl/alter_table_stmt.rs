@@ -3,7 +3,7 @@ use pgls_query::{
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, DropBehavior, ObjectType},
 };
 use pgls_query_ext::options::find_def_elem;
-use pgls_query_ext::utils::{QualifiedName, alter_table_cmds, cmd_def};
+use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, Key, key, overlay::column_info};
 use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};
@@ -22,7 +22,7 @@ pub(super) fn apply_alter_table_stmt(c: &mut Catalog, n: &AlterTableStmt, search
     let Some(range_var) = &n.relation else {
         return;
     };
-    let commands: Vec<&AlterTableCmd> = alter_table_cmds(n).collect();
+    let commands: Vec<&AlterTableCmd> = n.commands().collect();
 
     if n.objtype() == ObjectType::ObjectType {
         c.change_type(
@@ -163,7 +163,7 @@ fn apply_inheritance_changes(
 ) {
     let relation_key = key(&relation.schema, &relation.name);
     for command in commands {
-        let def = command.def.as_deref().and_then(|def| def.node.as_ref());
+        let def = command.definition();
         let (other, relation_is_parent, attach) = match (command.subtype(), def) {
             (AlterTableType::AtAttachPartition, Some(NodeEnum::PartitionCmd(partition))) => {
                 (partition.name.as_ref(), true, true)
@@ -332,9 +332,7 @@ fn apply_index_changes(
     for command in commands {
         match command.subtype() {
             AlterTableType::AtAddConstraint => {
-                let Some(NodeEnum::Constraint(constraint)) =
-                    command.def.as_deref().and_then(|def| def.node.as_ref())
-                else {
+                let Some(NodeEnum::Constraint(constraint)) = command.definition() else {
                     continue;
                 };
                 if constraint.indexname.is_empty() || constraint.conname.is_empty() {
@@ -406,7 +404,7 @@ fn apply_column_change(
     };
     match command.subtype() {
         AlterTableType::AtAddColumn => {
-            if let Some(NodeEnum::ColumnDef(column)) = cmd_def(command)
+            if let Some(NodeEnum::ColumnDef(column)) = command.definition()
                 && !columns.iter().any(|c| c.name == column.colname)
             {
                 let mut column = column_info(c, column, search_path);
@@ -418,15 +416,13 @@ fn apply_column_change(
         }
         AlterTableType::AtDropColumn => columns.retain(|column| column.name != command.name),
         AlterTableType::AtAddIdentity => {
-            if let Some(NodeEnum::Constraint(constraint)) =
-                command.def.as_deref().and_then(|def| def.node.as_ref())
-            {
+            if let Some(NodeEnum::Constraint(constraint)) = command.definition() {
                 set_identity(columns, Identity::from_code(&constraint.generated_when));
             }
         }
         // `SET GENERATED { ALWAYS | BY DEFAULT }` among the sequence options.
         AlterTableType::AtSetIdentity => {
-            let generated = match command.def.as_deref().and_then(|def| def.node.as_ref()) {
+            let generated = match command.definition() {
                 Some(NodeEnum::List(options)) => find_def_elem(&options.items, "generated")
                     .and_then(|option| match option.arg.as_deref()?.node.as_ref()? {
                         NodeEnum::Integer(value) => u8::try_from(value.ival).ok(),
@@ -452,7 +448,7 @@ fn apply_column_change(
         }
         AlterTableType::AtAlterColumnType => {
             if let (Some(NodeEnum::ColumnDef(definition)), Some(column)) = (
-                cmd_def(command),
+                command.definition(),
                 columns
                     .iter_mut()
                     .find(|column| column.name == command.name),

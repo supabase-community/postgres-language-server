@@ -3,10 +3,12 @@
 
 use pgls_query::{
     NodeEnum,
-    protobuf::{self, AlterSubscriptionType, DiscardMode, ReindexObjectType, TransactionStmtKind},
+    protobuf::{
+        self, AlterSubscriptionType, AlterTableCmd, DiscardMode, ReindexObjectType,
+        TransactionStmtKind,
+    },
 };
 use pgls_query_ext::options::{def_elem_bool, find_def_elem, is_reindex_concurrent};
-use pgls_query_ext::utils::{alter_table_cmds, detaches_concurrently};
 
 use crate::Catalog;
 
@@ -69,7 +71,9 @@ pub fn prevents_transaction_block(
             NonTransactional::concurrently("REINDEX CONCURRENTLY")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/tcop/utility.c#L1291
-        NodeEnum::AlterTableStmt(stmt) if alter_table_cmds(stmt).any(detaches_concurrently) => {
+        NodeEnum::AlterTableStmt(stmt)
+            if stmt.commands().any(AlterTableCmd::detaches_concurrently) =>
+        {
             NonTransactional::concurrently("DETACH PARTITION CONCURRENTLY")
         }
         // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/commands/vacuum.c#L523

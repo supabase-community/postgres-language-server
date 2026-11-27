@@ -1,4 +1,4 @@
-use crate::utils::{alter_table_cmds, cmd_def};
+use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -74,7 +74,7 @@ impl LinterRule for BanAlterIdentity {
 fn breaking_change(cmd: &AlterTableCmd) -> Option<(&str, &'static str)> {
     let always = "Inserts that provide an explicit value fail once the column is GENERATED ALWAYS.";
     match cmd.subtype() {
-        AlterTableType::AtAddIdentity => match cmd_def(cmd)? {
+        AlterTableType::AtAddIdentity => match cmd.definition()? {
             pgls_query::NodeEnum::Constraint(constraint)
                 if constraint.generated_when.as_bytes() == [IDENTITY_ALWAYS] =>
             {
@@ -87,7 +87,7 @@ fn breaking_change(cmd: &AlterTableCmd) -> Option<(&str, &'static str)> {
             "Inserts that omit the column fail once it no longer generates values.",
         )),
         AlterTableType::AtSetIdentity => {
-            let pgls_query::NodeEnum::List(options) = cmd_def(cmd)? else {
+            let pgls_query::NodeEnum::List(options) = cmd.definition()? else {
                 return None;
             };
             let generated = find_def_elem(&options.items, "generated")?;

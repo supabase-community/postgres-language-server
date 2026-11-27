@@ -1,6 +1,4 @@
-use crate::utils::{
-    alter_table_cmds, altered_relation, cmd_def, column_constraints, skips_validation,
-};
+use crate::utils::{alter_table_cmds, altered_relation, column_constraints, skips_validation};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -70,14 +68,14 @@ impl LinterRule for AddingForeignKeyConstraint {
         for cmd in alter_table_cmds(ctx.stmt()) {
             match cmd.subtype() {
                 pgls_query::protobuf::AlterTableType::AtAddConstraint => {
-                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd_def(cmd)
+                    if let Some(pgls_query::NodeEnum::Constraint(constraint)) = cmd.definition()
                         && let Some(diagnostic) = check_foreign_key_constraint(constraint, false)
                     {
                         diagnostics.push(diagnostic);
                     }
                 }
                 pgls_query::protobuf::AlterTableType::AtAddColumn => {
-                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd_def(cmd) {
+                    if let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition() {
                         // check constraints on the column
                         let constraints: Vec<_> = column_constraints(col_def).collect();
                         for (index, constr) in constraints.iter().enumerate() {
@@ -91,7 +89,7 @@ impl LinterRule for AddingForeignKeyConstraint {
                     }
                 }
                 pgls_query::protobuf::AlterTableType::AtAlterConstraint => {
-                    if let Some(pgls_query::NodeEnum::AtalterConstraint(alter)) = cmd_def(cmd)
+                    if let Some(pgls_query::NodeEnum::AtalterConstraint(alter)) = cmd.definition()
                         && alter.alter_enforceability
                         && alter.is_enforced
                     {
