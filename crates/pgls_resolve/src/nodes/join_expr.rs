@@ -1,5 +1,4 @@
-use pgls_query::protobuf::JoinExpr;
-use pgls_query_ext::utils::string_values;
+use pgls_query::{Node, protobuf::JoinExpr};
 
 use super::{Resolver, alias::apply_alias, from_clause::resolve_from_item};
 use crate::{
@@ -31,7 +30,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
     preceding_right.extend(left.clone());
     let right = resolve_from_item(r, right, &preceding_right);
 
-    let using_columns = string_values(&n.using_clause).unwrap_or_default();
+    let using_columns = Node::string_values(&n.using_clause).unwrap_or_default();
     let merge = (n.is_natural || !using_columns.is_empty())
         .then(|| merge_columns(&left, &right, n.is_natural, &using_columns));
     // `NATURAL` merges the columns that both sides have, like `USING` with them. They are only

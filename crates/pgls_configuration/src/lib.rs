@@ -264,8 +264,9 @@ pub enum ConfigurationPathHint {
     None,
 
     /// Very similar to [ConfigurationPathHint::None]. However, the path provided by this variant
-    /// will be used as **working directory**, which means that all globs defined in the configuration
-    /// will use **this path** as base path.
+    /// will be used as **working directory**: the configuration file is searched from it upwards,
+    /// and the globs of the user configuration use **this path** as base path. The globs of a
+    /// configuration file use its folder.
     FromWorkspace(PathBuf),
 
     /// The configuration path provided by the LSP, not having a configuration file is not an error.

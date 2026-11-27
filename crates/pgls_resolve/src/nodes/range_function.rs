@@ -2,7 +2,7 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{FuncCall, RangeFunction},
 };
-use pgls_query_ext::utils::{NameParts, QualifiedName, string_value};
+use pgls_query_ext::utils::{NameParts, QualifiedName};
 
 use super::{
     Resolver, alias::apply_alias, func_call::resolve_func_call, record_unresolved_node,
@@ -60,7 +60,7 @@ pub(super) fn resolve_range_function(
                         function_name = call
                             .funcname
                             .last()
-                            .and_then(string_value)
+                            .and_then(Node::string_value)
                             .map(str::to_owned);
                     }
                 }

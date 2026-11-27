@@ -209,13 +209,7 @@ fn emit_standard_function(e: &mut EventEmitter, n: &FuncCall) {
 /// Emits a function name as written. A name the grammar would read as something else unquoted, such
 /// as `coalesce` or a reserved word, is quoted.
 fn emit_function_name(e: &mut EventEmitter, funcname: &[Node]) {
-    let parts: Vec<&str> = funcname
-        .iter()
-        .filter_map(|node| match &node.node {
-            Some(NodeEnum::String(s)) => Some(s.sval.as_str()),
-            _ => None,
-        })
-        .collect();
+    let parts: Vec<&str> = funcname.iter().filter_map(Node::string_value).collect();
 
     // The grammar qualifies the plain-call form of `json_object(...)` itself.
     if let ["pg_catalog", "json_object"] = parts.as_slice() {

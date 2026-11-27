@@ -21,7 +21,7 @@ pub(super) fn emit_grouping_set(e: &mut EventEmitter, n: &GroupingSet) {
             e.space();
             e.token(TokenKind::SETS_KW);
             e.space();
-            emit_parenthesized_list(e, &n.content, emit_node);
+            emit_parenthesized_list(e, &n.content, emit_group_by_item);
         }
         kind if kind == GroupingSetKind::GroupingSetSimple as i32 => {
             // Simple grouping set: just emit the content without wrapper

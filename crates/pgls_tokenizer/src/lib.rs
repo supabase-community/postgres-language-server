@@ -3,6 +3,7 @@ mod cursor;
 mod identifier;
 mod keyword;
 mod number;
+mod operator;
 mod psql;
 mod quoted;
 mod token;
@@ -23,15 +24,9 @@ impl Cursor<'_> {
             return Token::new(TokenKind::Eof, 0);
         };
         let token_kind = match first_char {
-            // Slash, comment or block comment.
-            '/' => match self.first() {
-                '*' => self.block_comment(),
-                _ => TokenKind::Slash,
-            },
-            '-' => match self.first() {
-                '-' => self.line_comment(),
-                _ => TokenKind::Minus,
-            },
+            // Comments, before the operators that start with `/` or `-`.
+            '/' if self.first() == '*' => self.block_comment(),
+            '-' if self.first() == '-' => self.line_comment(),
 
             // Whitespace, a token per kind of character:
             // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L208-L210
@@ -80,9 +75,16 @@ impl Cursor<'_> {
                     self.bump();
                     TokenKind::DoubleColon
                 }
+                // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l#L340
+                // colon_equals	":="
+                '=' => {
+                    self.bump();
+                    TokenKind::ColonEquals
+                }
                 _ => self.psql_variable(),
             },
-            '@' => self.at_param(),
+            '@' if self.at_identifier() => self.at_param(),
+            c if CharClass::OpChar.contains(c) => self.operator(c),
             '$' => self.dollar(),
             '\\' => self.backslash(),
 
@@ -93,20 +95,6 @@ impl Cursor<'_> {
             ')' => TokenKind::CloseParen,
             '[' => TokenKind::OpenBracket,
             ']' => TokenKind::CloseBracket,
-            '#' => TokenKind::Pound,
-            '~' => TokenKind::Tilde,
-            '?' => TokenKind::Question,
-            '`' => TokenKind::Backtick,
-            '=' => TokenKind::Eq,
-            '!' => TokenKind::Bang,
-            '<' => TokenKind::Lt,
-            '>' => TokenKind::Gt,
-            '&' => TokenKind::And,
-            '|' => TokenKind::Or,
-            '+' => TokenKind::Plus,
-            '*' => TokenKind::Star,
-            '^' => TokenKind::Caret,
-            '%' => TokenKind::Percent,
             _ => TokenKind::Unknown,
         };
         let res = Token::new(token_kind, self.pos_within_token());
@@ -326,6 +314,45 @@ mod tests {
  /*
 */"#);
         assert_debug_snapshot!(result);
+    }
+
+    /// A run of operator characters is one operator. It stops at a comment and before `@name`,
+    /// and puts back a trailing `+` or `-` unless it has a character no SQL operator has.
+    #[test]
+    fn operator_runs() {
+        assert_debug_snapshot!(lex("a<=b ~* 1=-1 ?- a+/*c*/b <->c=@p @@x a<--c"), @r#"
+        [
+            "a" @ Ident,
+            "<=" @ Operator,
+            "b" @ Ident,
+            " " @ Space,
+            "~*" @ Operator,
+            " " @ Space,
+            "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+            "=" @ Eq,
+            "-" @ Minus,
+            "1" @ Literal { kind: Int { base: Decimal, empty_int: false } },
+            " " @ Space,
+            "?-" @ Operator,
+            " " @ Space,
+            "a" @ Ident,
+            "+" @ Plus,
+            "/*c*/" @ BlockComment { terminated: true },
+            "b" @ Ident,
+            " " @ Space,
+            "<->" @ Operator,
+            "c" @ Ident,
+            "=" @ Eq,
+            "@p" @ NamedParam { kind: AtPrefix },
+            " " @ Space,
+            "@" @ At,
+            "@x" @ NamedParam { kind: AtPrefix },
+            " " @ Space,
+            "a" @ Ident,
+            "<" @ Lt,
+            "--c" @ LineComment,
+        ]
+        "#);
     }
 
     #[test]

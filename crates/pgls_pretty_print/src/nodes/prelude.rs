@@ -19,6 +19,7 @@ pub(super) use super::clauses::cast::*;
 pub(super) use super::clauses::filter::*;
 pub(super) use super::clauses::function_options::*;
 pub(super) use super::clauses::grant::*;
+pub(super) use super::clauses::group_by::*;
 pub(super) use super::clauses::json::*;
 pub(super) use super::clauses::modifiers::*;
 pub(super) use super::clauses::object_type::*;

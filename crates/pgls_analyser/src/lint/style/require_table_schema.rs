@@ -179,10 +179,8 @@ fn dropped_tables(objects: &[Node], tokens: Option<StatementTokens>) -> Vec<Tabl
                 Some(NodeEnum::List(list)) => list
                     .items
                     .iter()
-                    .filter_map(|item| match &item.node {
-                        Some(NodeEnum::String(name)) => Some(name.sval.clone()),
-                        _ => None,
-                    })
+                    .filter_map(Node::string_value)
+                    .map(str::to_owned)
                     .collect(),
                 _ => vec![],
             };

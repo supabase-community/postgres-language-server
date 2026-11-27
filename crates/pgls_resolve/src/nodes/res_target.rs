@@ -4,7 +4,7 @@ use pgls_query::{
     Node, NodeEnum,
     protobuf::{ReturningClause, ReturningOptionKind},
 };
-use pgls_query_ext::utils::{star_qualifier, string_values};
+use pgls_query_ext::utils::star_qualifier;
 
 use super::{Resolver, resolve_list};
 use crate::{
@@ -49,7 +49,7 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
     };
     let value = target.val.as_deref().and_then(|value| value.node.as_ref());
     if let Some(NodeEnum::ColumnRef(column)) = value
-        && let Some(qualifier) = star_qualifier(column).and_then(string_values)
+        && let Some(qualifier) = star_qualifier(column).and_then(Node::string_values)
     {
         let columns = expand_column_ref_star(r, &qualifier);
         return TargetOutput {

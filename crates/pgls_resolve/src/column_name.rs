@@ -1,7 +1,7 @@
 //! The names Postgres gives to unnamed select list entries.
 
-use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{is_star, string_value};
+use pgls_query::{Node, NodeEnum, protobuf};
+use pgls_query_ext::utils::is_star;
 
 const UNNAMED: &str = "?column?";
 
@@ -43,7 +43,7 @@ pub(super) type SubqueryColumn<'a> = &'a dyn Fn(&protobuf::SubLink) -> Option<St
 
 /// The last field name of a column reference or indirection, ignoring `*` and subscripts.
 fn last_field_name(fields: &[pgls_query::protobuf::Node]) -> Option<&str> {
-    fields.iter().rev().find_map(string_value)
+    fields.iter().rev().find_map(Node::string_value)
 }
 
 /// How deeply [`figure_column_name_with`] follows casts, `COLLATE`, the `ELSE` of `CASE`, field
@@ -113,7 +113,7 @@ impl Wrapper<'_> {
             Wrapper::Cast(_) | Wrapper::Case if inner.1 > 1 => Some(inner),
             Wrapper::Cast(cast) => {
                 let type_name = cast.type_name.as_ref()?;
-                Some((string_value(type_name.names.last()?)?.to_owned(), 1))
+                Some((type_name.names.last()?.string_value()?.to_owned(), 1))
             }
             Wrapper::Case => Some(("case".into(), 1)),
             Wrapper::Subquery => Some((inner.0, 2)),
@@ -139,7 +139,7 @@ fn step<'a>(value: &'a NodeEnum, subquery_column: SubqueryColumn<'_>) -> Step<'a
             Some(name) => named(name),
             None => into(indirection.arg.as_deref(), Wrapper::Same),
         },
-        NodeEnum::FuncCall(call) => match call.funcname.last().and_then(string_value) {
+        NodeEnum::FuncCall(call) => match call.funcname.last().and_then(Node::string_value) {
             Some(name) => named(name),
             None => Step::Named(None),
         },

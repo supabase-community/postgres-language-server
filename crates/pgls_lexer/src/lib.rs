@@ -184,6 +184,12 @@ mod tests {
             "b''''",
             "x'ab'''",
             "'it''s'",
+            // operator runs
+            "SELECT a<=b, a<>b, a!=b, f(x=>1, y:=2), a||b, a->>'k', a#>>'{k}', a!~~*b, a<->b",
+            "SELECT 1=-1, 1*-1, a?-b, a@-b, 2+-+-3, -+1, @ -1, @@ x, a</**/>b, a*/*c*/b",
+            "SELECT a=--c\nb, a+/*c*/b, 2**/*c*/3",
+            // nested block comments
+            "/* /* */ */ SELECT /**/ 1 /*/**/*/ /* a /*/ b */ */",
         ] {
             assert_eq!(lex(sql).scanner_difference(), None, "{sql:?}");
         }
