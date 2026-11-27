@@ -18,7 +18,11 @@ use super::{
     analyser::AnalyserVisitorBuilder,
     document::{Document, StatementWalkInput},
 };
-use crate::{configuration::to_analyser_rules, settings::Settings, workspace::ProjectKey};
+use crate::{
+    configuration::to_analyser_rules,
+    settings::{PathSettings, Settings},
+    workspace::ProjectKey,
+};
 
 /// What the analyser found in a document, with what the diagnostics need to be reported.
 pub(crate) struct DocumentAnalysis {
@@ -109,7 +113,7 @@ impl WorkspaceServer {
     pub(super) fn analyse_document(
         &self,
         project_key: ProjectKey,
-        settings: &Settings,
+        settings: &PathSettings<'_>,
         path: &PgLSPath,
         doc: &Document,
         request: AnalysisRequest,
@@ -131,7 +135,7 @@ impl WorkspaceServer {
 
     fn analyse(
         &self,
-        settings: &Settings,
+        settings: &PathSettings<'_>,
         path: &PgLSPath,
         doc: &Document,
         snapshot: Option<Arc<pgls_catalog::Snapshot>>,
@@ -158,7 +162,7 @@ impl WorkspaceServer {
             .map(|snapshot| self.catalog_base(snapshot));
 
         let (enabled_rules, disabled_rules) = AnalyserVisitorBuilder::new(settings)
-            .with_linter_rules(path.as_path(), only, skip)
+            .with_linter_rules(settings.path(), only, skip)
             .finish();
 
         let options = LinterOptions {
@@ -274,7 +278,7 @@ impl WorkspaceServer {
     pub(super) fn lint_diagnostics(
         &self,
         project_key: ProjectKey,
-        settings: &Settings,
+        settings: &PathSettings<'_>,
         path: &PgLSPath,
         doc: &Document,
         only: &[RuleSelector],

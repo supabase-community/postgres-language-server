@@ -14,28 +14,11 @@ use pgls_query::{
 
 use crate::options::find_def_elem;
 
-/// The value of a `String` node.
-pub fn string_value(node: &Node) -> Option<&str> {
-    match node.node.as_ref()? {
-        NodeEnum::String(value) => Some(&value.sval),
-        _ => None,
-    }
-}
-
-/// The values of a list of `String` nodes, e.g. `["public", "users"]`. `None` if a node is not
-/// a string.
-pub fn string_values(nodes: &[Node]) -> Option<Vec<String>> {
-    nodes
-        .iter()
-        .map(|node| string_value(node).map(str::to_owned))
-        .collect()
-}
-
 /// The most parts a name has: `catalog.schema.table.column`.
 const NAME_PARTS_MAX: usize = 4;
 
 /// The parts of a name list, like `["public", "users"]`, borrowed from the parse tree. Unlike
-/// [`string_values`], reading them doesn't allocate.
+/// [`Node::string_values`], reading them doesn't allocate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NameParts<'a> {
     parts: [&'a str; NAME_PARTS_MAX],
@@ -51,7 +34,7 @@ impl<'a> NameParts<'a> {
         }
         let mut parts = [""; NAME_PARTS_MAX];
         for (part, node) in parts.iter_mut().zip(nodes) {
-            *part = string_value(node)?;
+            *part = node.string_value()?;
         }
         Some(Self {
             parts,
@@ -64,7 +47,7 @@ impl<'a> NameParts<'a> {
     pub fn last(nodes: &'a [Node]) -> Option<&'a str> {
         nodes
             .iter()
-            .try_fold(None, |_, node| string_value(node).map(Some))?
+            .try_fold(None, |_, node| node.string_value().map(Some))?
     }
 
     pub fn as_slice(&self) -> &[&'a str] {
@@ -187,7 +170,7 @@ pub fn find_option_value<'a>(
     match option.arg.as_deref()?.node.as_ref()? {
         NodeEnum::String(value) => Some(value.sval.as_str()),
         NodeEnum::List(list) => match list.items.as_slice() {
-            [item] => string_value(item),
+            [item] => item.string_value(),
             _ => None,
         },
         _ => None,
@@ -226,9 +209,7 @@ pub fn find_option_value_mut<'a>(
 mod tests {
     use pgls_query::NodeEnum;
 
-    use crate::utils::{
-        NameParts, QualifiedName, find_option_value, is_star, star_qualifier, string_value,
-    };
+    use crate::utils::{NameParts, QualifiedName, find_option_value, is_star, star_qualifier};
 
     fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
         match pgls_query::parse(sql).unwrap().into_root().unwrap() {
@@ -365,7 +346,7 @@ mod tests {
                 NodeEnum::ColumnRef(column) => star_qualifier(column).map(|qualifier| {
                     qualifier
                         .iter()
-                        .map(|field| string_value(field).unwrap())
+                        .map(|field| field.string_value().unwrap())
                         .collect::<Vec<_>>()
                 }),
                 _ => None,

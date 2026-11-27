@@ -38,12 +38,7 @@ impl Lexed<'_> {
         let scanner = scanned
             .tokens
             .iter()
-            .filter_map(|token| {
-                Some(TextRange::new(
-                    TextSize::from(u32::try_from(token.start).ok()?),
-                    TextSize::from(u32::try_from(token.end).ok()?),
-                ))
-            })
+            .filter_map(|token| token.range())
             .filter(compared);
         let mut lexer = (0..self.len())
             .flat_map(|index| {

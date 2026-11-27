@@ -1,4 +1,3 @@
-mod keywords;
 mod syntax_kind;
 
 use syntax_kind::syntax_kind_mod;

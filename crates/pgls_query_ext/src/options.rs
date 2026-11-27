@@ -8,8 +8,6 @@ use pgls_query::{
     protobuf::{DefElem, Node, ReindexStmt, TypeName, VacuumStmt},
 };
 
-use crate::utils::string_value;
-
 /// The option named `name`, the last one if there are several.
 ///
 /// Postgres compares option names with `strcmp`, like `strcmp(opt->defname, "full")` in
@@ -87,7 +85,7 @@ fn type_name_to_string(type_name: &TypeName) -> Option<String> {
     let mut value = type_name
         .names
         .iter()
-        .map(string_value)
+        .map(Node::string_value)
         .collect::<Option<Vec<_>>>()?
         .join(".");
     if type_name.pct_type {

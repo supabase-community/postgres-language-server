@@ -81,10 +81,8 @@ fn emit_type_name_tokens(e: &mut EventEmitter, n: &TypeName) {
 fn collect_name_parts(n: &TypeName) -> Vec<String> {
     n.names
         .iter()
-        .filter_map(|node| match &node.node {
-            Some(pgls_query::NodeEnum::String(s)) => Some(s.sval.clone()),
-            _ => None,
-        })
+        .filter_map(Node::string_value)
+        .map(str::to_owned)
         .collect()
 }
 
