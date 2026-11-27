@@ -3,8 +3,8 @@ pub mod diagnostics;
 pub use diagnostics::TypecheckDiagnostic;
 use diagnostics::create_type_error;
 use itertools::Itertools;
-use pgls_catalog::NamePosition;
 use pgls_text_size::TextSize;
+use pgls_tokenizer::NamePosition;
 use sqlx::pool::PoolConnection;
 pub use sqlx::postgres::PgSeverity;
 use sqlx::postgres::{PgDatabaseError, Postgres};
@@ -64,7 +64,7 @@ pub async fn check_sql(
             let schemas = params
                 .search_path
                 .iter()
-                .map(|schema| pgls_catalog::quote_identifier(schema, NamePosition::ColId))
+                .map(|schema| NamePosition::ColId.quote(schema))
                 .join(", ");
             conn.execute(&*format!("SET search_path TO {schemas};"))
                 .await?;

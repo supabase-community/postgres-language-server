@@ -14,7 +14,8 @@ version              = "0.0.0"
 [dependencies]
 
 [dev-dependencies]
-insta.workspace = true
+insta.workspace      = true
+pgls_query.workspace = true
 
 [lib]
 
