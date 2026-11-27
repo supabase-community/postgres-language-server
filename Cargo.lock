@@ -2887,7 +2887,6 @@ version = "0.0.0"
 dependencies = [
  "insta",
  "itertools 0.14.0",
- "pgls_catalog",
  "pgls_console",
  "pgls_diagnostics",
  "pgls_line_index",
