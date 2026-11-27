@@ -980,6 +980,21 @@ async fn format_restores_psql_string_variables_and_defined_tests() {
     );
 }
 
+/// Postgres reads `@a::int` as the prefix operator `@` applied to `a::int`, so formatting the
+/// `@name` parameter's cast as `cast(@a as int)` would change what it runs.
+#[test]
+fn format_keeps_the_meaning_of_an_at_read_as_an_operator() {
+    let content = "select json_populate_record(@ull::record, 'x');\nselect @a::int;\nSELECT * FROM\n  json_populate_record(@ull::record, '{\"x\": 776}') AS (x int, y int);\nselect  *  from t where id = @id;\n";
+
+    let formatted = format_content(content);
+
+    assert_eq!(parsed_statements(&formatted), parsed_statements(content));
+    assert!(
+        formatted.ends_with("select * from t where id = @id;\n"),
+        "{formatted}"
+    );
+}
+
 #[tokio::test]
 async fn correctly_ignores_files() {
     let mut conf = PartialConfiguration::init();
