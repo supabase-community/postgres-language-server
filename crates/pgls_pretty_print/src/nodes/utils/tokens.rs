@@ -157,7 +157,20 @@ fn can_dollar_quote(value: &str, tag: &str) -> bool {
 /// the parts that need it. One quoted name would be cut to 63 bytes as a whole.
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L1807
 pub(crate) fn emit_variable_name(e: &mut EventEmitter, name: &str) {
-    for (index, part) in name.split('.').enumerate() {
+    // A dot that would leave a part empty was written inside a quoted part, as in `"a."` or
+    // `"a.".b`: an empty part would print as `""`, which doesn't parse.
+    let mut parts = Vec::new();
+    let mut part = String::new();
+    let mut segments = name.split('.').peekable();
+    while let Some(segment) = segments.next() {
+        part.push_str(segment);
+        match segments.peek() {
+            Some(next) if part.is_empty() || next.is_empty() => part.push('.'),
+            _ => parts.push(std::mem::take(&mut part)),
+        }
+    }
+
+    for (index, part) in parts.iter().enumerate() {
         if index > 0 {
             e.token(TokenKind::DOT);
         }
