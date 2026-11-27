@@ -1,0 +1,1 @@
+SHOW spal."weird name.";
