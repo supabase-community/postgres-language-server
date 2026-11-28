@@ -207,6 +207,13 @@ fn unfinished_option_lists() {
 }
 
 #[test]
+fn call_statement() {
+    valid_snapshot("call_procedure", "call app.my_proc(1, 'a');");
+    // While the arguments aren't typed yet.
+    valid_snapshot("unfinished_call", "call app.my_proc");
+}
+
+#[test]
 fn delete_target_alias_and_using() {
     valid_snapshot(
         "delete_alias_and_using",

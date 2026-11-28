@@ -111,6 +111,7 @@ impl CompletionFilter<'_> {
                 .or_else(|| self.check_clause(ctx))?;
 
             self.check_invocation(ctx)?;
+            self.check_call_target(ctx)?;
             self.check_mentioned_schema_or_alias(ctx)?;
             self.check_merge_visibility(ctx)?;
 
@@ -510,6 +511,21 @@ impl CompletionFilter<'_> {
             _ => false,
         };
         (!hidden).then_some(())
+    }
+
+    /// `CALL` takes a procedure, and its arguments take functions: Postgres rejects `CALL` of a
+    /// function and a procedure in an expression.
+    fn check_call_target(&self, ctx: &TreesitterContext) -> Option<()> {
+        let CompletionRelevanceData::Function(f) = self.data else {
+            return Some(());
+        };
+
+        if ctx.wrapping_clause_type != Some(WrappingClause::Call) {
+            return Some(());
+        }
+
+        let is_target = !ctx.node_under_cursor_is_within_field(&["parameter"]);
+        (is_target == matches!(f.kind, ProcKind::Procedure)).then_some(())
     }
 
     fn check_invocation(&self, ctx: &TreesitterContext) -> Option<()> {

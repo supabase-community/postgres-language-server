@@ -28,9 +28,9 @@ a|
 Results:
 alter - alter (Keyword)
 analyze - analyze (Keyword)
+call - call (Keyword)
 create - create (Keyword)
 truncate - truncate (Keyword)
-update - update (Keyword)
 
 --------------
 

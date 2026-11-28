@@ -1,0 +1,23 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+call app.my_proc(1, 'a');
+-----------------------
+program [0..25] 'call app.my_proc(1, 'a');'
+  statement [0..24] 'call app.my_proc(1, 'a')'
+    call_statement [0..24] 'call app.my_proc(1, 'a')'
+      keyword_call [0..4] 'call'
+      invocation [5..24] 'app.my_proc(1, 'a')' (@end)
+        function_reference [5..16] 'app.my_proc'
+          schema_identifier [5..8] 'app' (@function_reference_1of2)
+          . [8..9] '.'
+          function_identifier [9..16] 'my_proc' (@function_reference_2of2)
+        ( [16..17] '('
+        term [17..18] '1' (@parameter)
+          literal [17..18] '1' (@end)
+        , [18..19] ','
+        term [20..23] ''a'' (@parameter)
+          literal [20..23] ''a'' (@end)
+        ) [23..24] ')'
+  ; [24..25] ';'

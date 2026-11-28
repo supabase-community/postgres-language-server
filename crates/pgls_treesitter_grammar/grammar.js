@@ -351,6 +351,7 @@ module.exports = grammar({
     keyword_unsafe: (_) => make_keyword("unsafe"),
     keyword_restricted: (_) => make_keyword("restricted"),
     keyword_called: (_) => make_keyword("called"),
+    keyword_call: (_) => make_keyword("call"),
     keyword_input: (_) => make_keyword("input"),
     keyword_strict: (_) => make_keyword("strict"),
     keyword_cost: (_) => make_keyword("cost"),
@@ -682,6 +683,7 @@ module.exports = grammar({
         optional_parenthesis($._dml_read),
         $._explain_statement,
         $.analyze_statement,
+        $.call_statement,
       ),
 
     _explain_statement: ($) =>
@@ -802,6 +804,13 @@ module.exports = grammar({
       ),
 
     table_statement: ($) => partialSeq($.keyword_table, $._relation_expr),
+
+    // `CALL p(...)`. The procedure without its arguments is there while they aren't typed yet.
+    call_statement: ($) =>
+      partialSeq(
+        $.keyword_call,
+        choice(field("end", $.invocation), $.function_reference),
+      ),
 
     // A table with or without its descendants: `ONLY t`, or `t` and `t *`, not both
     // (`relation_expr` in Postgres).

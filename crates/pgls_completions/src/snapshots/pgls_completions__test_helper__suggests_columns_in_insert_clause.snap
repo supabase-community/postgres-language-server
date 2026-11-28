@@ -174,10 +174,10 @@ insert into instruments (id, name) values (1, 'my_bass'); |
 
 Results:
 alter - alter (Keyword)
+call - call (Keyword)
 copy - copy (Keyword)
 create - create (Keyword)
 delete - delete (Keyword)
-drop - drop (Keyword)
 
 --------------
 
@@ -362,10 +362,10 @@ insert into instruments ("id", "name") values (1, 'my_bass'); |
 
 Results:
 alter - alter (Keyword)
+call - call (Keyword)
 copy - copy (Keyword)
 create - create (Keyword)
 delete - delete (Keyword)
-drop - drop (Keyword)
 
 --------------
 

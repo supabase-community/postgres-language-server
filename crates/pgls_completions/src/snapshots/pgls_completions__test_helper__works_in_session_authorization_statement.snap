@@ -92,9 +92,9 @@ set session authorization authenticated; |
 
 Results:
 alter - alter (Keyword)
+call - call (Keyword)
 copy - copy (Keyword)
 create - create (Keyword)
 delete - delete (Keyword)
-drop - drop (Keyword)
 
 --------------

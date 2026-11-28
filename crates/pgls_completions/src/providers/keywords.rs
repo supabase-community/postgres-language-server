@@ -69,6 +69,7 @@ pub(crate) static ALL_KEYWORDS: &[SqlKeyword] = &[
     SqlKeyword::new("by"),
     SqlKeyword::new("bytea"),
     SqlKeyword::new("cache"),
+    SqlKeyword::new("call").starts_statement(),
     SqlKeyword::new("called"),
     SqlKeyword::new("cascade"),
     SqlKeyword::new("cascaded"),
@@ -538,6 +539,10 @@ mod tests {
             vec![
                 CompletionAssertion::LabelAndKind(
                     "alter".into(),
+                    crate::CompletionItemKind::Keyword,
+                ),
+                CompletionAssertion::LabelAndKind(
+                    "call".into(),
                     crate::CompletionItemKind::Keyword,
                 ),
                 CompletionAssertion::LabelAndKind(
