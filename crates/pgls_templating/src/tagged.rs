@@ -199,6 +199,9 @@ impl Preprocessed {
                 tagged.named.push(written.to_string());
             } else if placeholder.start() == token.start()
                 && text != written
+                // Not a placeholder that the text holds as written, like the `%c` of the
+                // parameter `@mpo%ca`, whose `%` would read as the `%` of `%%`.
+                && analysed.get(std::ops::Range::<usize>::from(placeholder)) != Some(written)
                 && placeholder.end() >= token.end()
                 && in_token.peek().is_none()
             {
