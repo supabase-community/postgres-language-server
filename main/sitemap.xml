@@ -238,6 +238,9 @@
         <loc>https://pg-language-server.com/main/reference/rules/ban-drop-not-null/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-drop-policy/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-drop-schema/</loc>
       </url>
       <url>
