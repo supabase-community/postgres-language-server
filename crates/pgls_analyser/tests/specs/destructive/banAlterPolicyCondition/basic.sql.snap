@@ -1,0 +1,30 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterPolicyCondition
+-- expect_lint/banAlterPolicyCondition
+alter policy p on t using (true) with check (false);
+
+```
+
+# Diagnostics
+lint/banAlterPolicyCondition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the USING condition of policy p may change access for existing clients.
+  
+  i Existing clients may no longer see or write rows they could before, or see and write rows they couldn't.
+  
+  i Check which rows existing clients need before changing the condition.
+  
+
+
+lint/banAlterPolicyCondition ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the WITH CHECK condition of policy p may change access for existing clients.
+  
+  i Existing clients may no longer see or write rows they could before, or see and write rows they couldn't.
+  
+  i Check which rows existing clients need before changing the condition.

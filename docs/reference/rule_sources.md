@@ -52,6 +52,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [ban-alter-domain-with-add-constraint](https://squawkhq.com/docs/ban-alter-domain-with-add-constraint) |[banAlterDomainWithAddConstraint](./rules/ban-alter-domain-with-add-constraint.md) |
 | [ban-alter-generated-expression](https://squawkhq.com/docs/ban-alter-generated-expression) |[banAlterGeneratedExpression](./rules/ban-alter-generated-expression.md) |
 | [ban-alter-identity](https://squawkhq.com/docs/ban-alter-identity) |[banAlterIdentity](./rules/ban-alter-identity.md) |
+| [ban-alter-policy-condition](https://squawkhq.com/docs/ban-alter-policy-condition) |[banAlterPolicyCondition](./rules/ban-alter-policy-condition.md) |
 | [ban-char-field](https://squawkhq.com/docs/ban-char-field) |[banCharField](./rules/ban-char-field.md) |
 | [ban-concurrent-index-creation-in-transaction](https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction) |[banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) |
 | [ban-create-domain-with-constraint](https://squawkhq.com/docs/ban-create-domain-with-constraint) |[banCreateDomainWithConstraint](./rules/ban-create-domain-with-constraint.md) |
