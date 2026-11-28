@@ -1,0 +1,67 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banReplicaIdentity
+drop publication p;
+-- expect_lint/banReplicaIdentity
+alter publication p drop table t;
+-- expect_lint/banReplicaIdentity
+alter publication p set table t;
+-- expect_lint/banReplicaIdentity
+alter publication p set (publish = 'insert');
+-- expect_lint/banReplicaIdentity
+alter publication p set tables in schema public;
+
+```
+
+# Diagnostics
+lint/banReplicaIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a publication stops replication for its consumers.
+  
+  i Consumers may miss changes or receive changes they don't expect.
+  
+  i Update the replication consumers before the change.
+  
+
+
+lint/banReplicaIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the objects or options of a publication changes what its consumers receive.
+  
+  i Consumers may miss changes or receive changes they don't expect.
+  
+  i Update the replication consumers before the change.
+  
+
+
+lint/banReplicaIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the objects or options of a publication changes what its consumers receive.
+  
+  i Consumers may miss changes or receive changes they don't expect.
+  
+  i Update the replication consumers before the change.
+  
+
+
+lint/banReplicaIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the objects or options of a publication changes what its consumers receive.
+  
+  i Consumers may miss changes or receive changes they don't expect.
+  
+  i Update the replication consumers before the change.
+  
+
+
+lint/banReplicaIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the objects or options of a publication changes what its consumers receive.
+  
+  i Consumers may miss changes or receive changes they don't expect.
+  
+  i Update the replication consumers before the change.

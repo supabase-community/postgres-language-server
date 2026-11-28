@@ -52,6 +52,7 @@ define_categories! {
     "lint/banDuplicateColumnAssignments": "https://pg-language-server.com/latest/reference/rules/ban-duplicate-column-assignments/",
     "lint/banNonTransactionalStatementInTransaction": "https://pg-language-server.com/latest/reference/rules/ban-non-transactional-statement-in-transaction/",
     "lint/banReplaceViewFunction": "https://pg-language-server.com/latest/reference/rules/ban-replace-view-function/",
+    "lint/banReplicaIdentity": "https://pg-language-server.com/latest/reference/rules/ban-replica-identity/",
     "lint/banSetSchema": "https://pg-language-server.com/latest/reference/rules/ban-set-schema/",
     "lint/banTruncate": "https://pg-language-server.com/latest/reference/rules/ban-truncate/",
     "lint/banTruncateCascade": "https://pg-language-server.com/latest/reference/rules/ban-truncate-cascade/",

@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banReplicaIdentity
+alter table t replica identity full;
+
+```
+
+# Diagnostics
+lint/banReplicaIdentity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the replica identity of a table may break logical replication consumers.
+  
+  i Consumers receive different old values of the rows that are updated or deleted.
+  
+  i Update the replication consumers before the change.
