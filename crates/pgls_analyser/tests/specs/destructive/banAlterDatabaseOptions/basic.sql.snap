@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterDatabaseOptions
+alter database d set search_path to public;
+
+```
+
+# Diagnostics
+lint/banAlterDatabaseOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the settings of a database may change behaviour for existing clients.
+  
+  i The settings apply to every new session in the database, e.g. which schemas its queries find.
+  
+  i Check that the clients of the database work with the change before making it.

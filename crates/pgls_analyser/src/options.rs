@@ -22,6 +22,7 @@ pub type AvoidCreateTrigger =
 pub type AvoidEnableDisableTrigger = < lint :: safety :: avoid_enable_disable_trigger :: AvoidEnableDisableTrigger as crate :: LinterRule > :: Options ;
 pub type AvoidWideLockWindow =
     <lint::safety::avoid_wide_lock_window::AvoidWideLockWindow as crate::LinterRule>::Options;
+pub type BanAlterDatabaseOptions = < lint :: destructive :: ban_alter_database_options :: BanAlterDatabaseOptions as crate :: LinterRule > :: Options ;
 pub type BanAlterDomainWithAddConstraint = < lint :: safety :: ban_alter_domain_with_add_constraint :: BanAlterDomainWithAddConstraint as crate :: LinterRule > :: Options ;
 pub type BanAlterIdentity =
     <lint::destructive::ban_alter_identity::BanAlterIdentity as crate::LinterRule>::Options;

@@ -526,6 +526,10 @@ export interface LinterRules {
    */
   avoidWideLockWindow?: RuleConfiguration_for_Null;
   /**
+   * Changing the options or settings of a database may change behaviour for existing clients.
+   */
+  banAlterDatabaseOptions?: RuleConfiguration_for_Null;
+  /**
    * Adding a constraint to a domain has poor support for online migrations.
    */
   banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;

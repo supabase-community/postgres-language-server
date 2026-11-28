@@ -31,6 +31,7 @@ Code that loses data or breaks existing clients.
 | Rule | Description |
 | --- | --- |
 | [addingRequiredField](./rules/adding-required-field.md) 🛠 | Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required. |
+| [banAlterDatabaseOptions](./rules/ban-alter-database-options.md) 🛠 | Changing the options or settings of a database may change behaviour for existing clients. |
 | [banAlterIdentity](./rules/ban-alter-identity.md) 🛠 | Changing the identity of a column may break inserts from existing clients. |
 | [banDeleteWithoutWhere](./rules/ban-delete-without-where.md) ✅ | A `DELETE` statement without a `WHERE` clause will remove all rows from the table. |
 | [banDropColumn](./rules/ban-drop-column.md) ✅ 🛠 | Dropping a column may break existing clients. |
