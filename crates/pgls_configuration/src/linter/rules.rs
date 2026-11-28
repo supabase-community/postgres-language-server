@@ -103,6 +103,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterDatabaseOptions",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "banAlterDomainWithAddConstraint",
         recommended: false,
@@ -656,6 +662,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_wide_lock_window:
         Option<RuleConfiguration<pgls_analyser::options::AvoidWideLockWindow>>,
+    #[doc = "Changing the options or settings of a database may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_database_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterDatabaseOptions>>,
     #[doc = "Adding a constraint to a domain has poor support for online migrations."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_domain_with_add_constraint:
@@ -996,6 +1006,10 @@ impl Rules {
                 .avoid_wide_lock_window
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterDatabaseOptions" => self
+                .ban_alter_database_options
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banAlterDomainWithAddConstraint" => self
                 .ban_alter_domain_with_add_constraint
                 .as_ref()
@@ -1298,6 +1312,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "avoidWideLockWindow" => self
                 .avoid_wide_lock_window
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterDatabaseOptions" => self
+                .ban_alter_database_options
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banAlterDomainWithAddConstraint" => self

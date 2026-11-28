@@ -1073,6 +1073,17 @@
             }
           ]
         },
+        "banAlterDatabaseOptions": {
+          "description": "Changing the options or settings of a database may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banAlterDomainWithAddConstraint": {
           "description": "Adding a constraint to a domain has poor support for online migrations.",
           "anyOf": [

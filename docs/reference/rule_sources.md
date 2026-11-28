@@ -49,6 +49,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [adding-not-null-field](https://squawkhq.com/docs/adding-not-null-field) |[addingNotNullField](./rules/adding-not-null-field.md) |
 | [adding-required-field](https://squawkhq.com/docs/adding-required-field) |[addingRequiredField](./rules/adding-required-field.md) |
 | [adding-serial-primary-key-field](https://squawkhq.com/docs/adding-serial-primary-key-field) |[addingPrimaryKeyConstraint](./rules/adding-primary-key-constraint.md) |
+| [ban-alter-database-options](https://squawkhq.com/docs/ban-alter-database-options) |[banAlterDatabaseOptions](./rules/ban-alter-database-options.md) |
 | [ban-alter-domain-with-add-constraint](https://squawkhq.com/docs/ban-alter-domain-with-add-constraint) |[banAlterDomainWithAddConstraint](./rules/ban-alter-domain-with-add-constraint.md) |
 | [ban-alter-generated-expression](https://squawkhq.com/docs/ban-alter-generated-expression) |[banAlterGeneratedExpression](./rules/ban-alter-generated-expression.md) |
 | [ban-alter-identity](https://squawkhq.com/docs/ban-alter-identity) |[banAlterIdentity](./rules/ban-alter-identity.md) |

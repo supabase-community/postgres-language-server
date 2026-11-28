@@ -1,0 +1,5 @@
+-- expect_no_diagnostics
+alter database d rename to e;
+alter database d owner to app;
+alter database d set tablespace fast;
+alter database d refresh collation version;

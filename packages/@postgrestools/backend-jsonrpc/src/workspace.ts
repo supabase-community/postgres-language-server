@@ -85,6 +85,7 @@ export type Category =
   | "lint/avoidCreateTrigger"
   | "lint/avoidEnableDisableTrigger"
   | "lint/avoidWideLockWindow"
+  | "lint/banAlterDatabaseOptions"
   | "lint/banAlterDomainWithAddConstraint"
   | "lint/banAlterGeneratedExpression"
   | "lint/banAlterIdentity"
@@ -1147,6 +1148,10 @@ export interface LinterRules {
    * Acquiring ACCESS EXCLUSIVE locks on multiple tables widens the lock window.
    */
   avoidWideLockWindow?: RuleConfiguration_for_Null;
+  /**
+   * Changing the options or settings of a database may change behaviour for existing clients.
+   */
+  banAlterDatabaseOptions?: RuleConfiguration_for_Null;
   /**
    * Adding a constraint to a domain has poor support for online migrations.
    */
