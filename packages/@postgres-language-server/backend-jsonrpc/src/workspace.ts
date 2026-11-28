@@ -86,6 +86,7 @@ export type Category =
   | "lint/avoidEnableDisableTrigger"
   | "lint/avoidWideLockWindow"
   | "lint/banAlterDomainWithAddConstraint"
+  | "lint/banAlterFunctionOptions"
   | "lint/banAlterIdentity"
   | "lint/banCharField"
   | "lint/banConcurrentIndexCreationInTransaction"
@@ -1148,6 +1149,10 @@ export interface LinterRules {
    * Adding a constraint to a domain has poor support for online migrations.
    */
   banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
+  /**
+   * Changing the options of a function, procedure or routine may change behaviour for existing clients.
+   */
+  banAlterFunctionOptions?: RuleConfiguration_for_Null;
   /**
    * Changing the identity of a column may break inserts from existing clients.
    */

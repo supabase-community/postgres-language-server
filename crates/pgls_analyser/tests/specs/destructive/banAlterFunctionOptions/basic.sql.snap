@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterFunctionOptions
+alter function f() security definer;
+
+```
+
+# Diagnostics
+lint/banAlterFunctionOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the options of a function may change behaviour for existing clients.
+  
+  i The options decide with which privileges and settings it runs, and how Postgres calls it.
+  
+  i Check that existing clients work with the new options before changing them.

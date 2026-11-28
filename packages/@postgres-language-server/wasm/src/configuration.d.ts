@@ -530,6 +530,10 @@ export interface LinterRules {
    */
   banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
   /**
+   * Changing the options of a function, procedure or routine may change behaviour for existing clients.
+   */
+  banAlterFunctionOptions?: RuleConfiguration_for_Null;
+  /**
    * Changing the identity of a column may break inserts from existing clients.
    */
   banAlterIdentity?: RuleConfiguration_for_Null;

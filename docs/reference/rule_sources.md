@@ -50,6 +50,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [adding-required-field](https://squawkhq.com/docs/adding-required-field) |[addingRequiredField](./rules/adding-required-field.md) |
 | [adding-serial-primary-key-field](https://squawkhq.com/docs/adding-serial-primary-key-field) |[addingPrimaryKeyConstraint](./rules/adding-primary-key-constraint.md) |
 | [ban-alter-domain-with-add-constraint](https://squawkhq.com/docs/ban-alter-domain-with-add-constraint) |[banAlterDomainWithAddConstraint](./rules/ban-alter-domain-with-add-constraint.md) |
+| [ban-alter-function-options](https://squawkhq.com/docs/ban-alter-function-options) |[banAlterFunctionOptions](./rules/ban-alter-function-options.md) |
 | [ban-alter-identity](https://squawkhq.com/docs/ban-alter-identity) |[banAlterIdentity](./rules/ban-alter-identity.md) |
 | [ban-char-field](https://squawkhq.com/docs/ban-char-field) |[banCharField](./rules/ban-char-field.md) |
 | [ban-concurrent-index-creation-in-transaction](https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction) |[banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) |
