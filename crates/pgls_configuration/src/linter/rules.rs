@@ -254,6 +254,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banDropPolicy",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banDropSchema",
         recommended: true,
         severity: Severity::Error,
@@ -799,6 +805,9 @@ pub struct Rules {
     #[doc = "Dropping a NOT NULL constraint may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_not_null: Option<RuleConfiguration<pgls_analyser::options::BanDropNotNull>>,
+    #[doc = "Dropping a policy or rule may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_drop_policy: Option<RuleConfiguration<pgls_analyser::options::BanDropPolicy>>,
     #[doc = "Dropping a schema will remove all objects within it and may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_drop_schema: Option<RuleConfiguration<pgls_analyser::options::BanDropSchema>>,
@@ -1172,6 +1181,7 @@ impl Rules {
                 .ban_drop_not_null
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banDropPolicy" => self.ban_drop_policy.as_ref().map(RuleConfiguration::level),
             "banDropSchema" => self.ban_drop_schema.as_ref().map(RuleConfiguration::level),
             "banDropSequence" => self
                 .ban_drop_sequence
@@ -1522,6 +1532,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banDropNotNull" => self
                 .ban_drop_not_null
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banDropPolicy" => self
+                .ban_drop_policy
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banDropSchema" => self

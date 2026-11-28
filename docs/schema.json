@@ -1348,6 +1348,17 @@
             }
           ]
         },
+        "banDropPolicy": {
+          "description": "Dropping a policy or rule may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banDropSchema": {
           "description": "Dropping a schema will remove all objects within it and may break existing clients.",
           "anyOf": [

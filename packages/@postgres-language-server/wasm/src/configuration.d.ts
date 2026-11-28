@@ -626,6 +626,10 @@ export interface LinterRules {
    */
   banDropNotNull?: RuleConfiguration_for_Null;
   /**
+   * Dropping a policy or rule may change behaviour for existing clients.
+   */
+  banDropPolicy?: RuleConfiguration_for_Null;
+  /**
    * Dropping a schema will remove all objects within it and may break existing clients.
    */
   banDropSchema?: RuleConfiguration_for_Null;

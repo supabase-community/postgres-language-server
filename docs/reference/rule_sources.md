@@ -73,6 +73,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [ban-drop-function](https://squawkhq.com/docs/ban-drop-function) |[banDropFunction](./rules/ban-drop-function.md) |
 | [ban-drop-generated-expression](https://squawkhq.com/docs/ban-drop-generated-expression) |[banDropGeneratedExpression](./rules/ban-drop-generated-expression.md) |
 | [ban-drop-not-null](https://squawkhq.com/docs/ban-drop-not-null) |[banDropNotNull](./rules/ban-drop-not-null.md) |
+| [ban-drop-policy](https://squawkhq.com/docs/ban-drop-policy) |[banDropPolicy](./rules/ban-drop-policy.md) |
 | [ban-drop-sequence](https://squawkhq.com/docs/ban-drop-sequence) |[banDropSequence](./rules/ban-drop-sequence.md) |
 | [ban-drop-table](https://squawkhq.com/docs/ban-drop-table) |[banDropTable](./rules/ban-drop-table.md) |
 | [ban-drop-type](https://squawkhq.com/docs/ban-drop-type) |[banDropType](./rules/ban-drop-type.md) |

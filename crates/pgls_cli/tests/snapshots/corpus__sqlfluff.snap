@@ -36,6 +36,7 @@ check:
   lint/banDropExtension: 2
   lint/banDropFunction: 20
   lint/banDropNotNull: 1
+  lint/banDropPolicy: 9
   lint/banDropSequence: 5
   lint/banDropTrigger: 5
   lint/banDropType: 18
