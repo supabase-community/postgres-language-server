@@ -33,7 +33,8 @@ const RAW_PARSE_DEFAULT: i64 = 0;
 ///   body are parsed and passed to it; in expressions, like `x := f(y)`, any name followed by
 ///   `(` counts as a call to the function `is_catalog_function` tells about.
 ///
-/// It may also when the body doesn't parse, or has more than [`PLPGSQL_VALUES_MAX`] values.
+/// It may also when the body has more than [`PLPGSQL_VALUES_MAX`] values. When libpg_query's
+/// PL/pgSQL parser can't parse the body, returns its error.
 ///
 /// Cost: parsing the body with libpg_query's PL/pgSQL parser, and each of its SQL statements
 /// with the SQL parser. Expressions are only scanned when the file created a function that may
@@ -43,13 +44,11 @@ pub(crate) fn may_change_catalog(
     calls_catalog_function: impl Fn(&NodeEnum) -> bool,
     is_catalog_function: impl Fn(&str) -> bool,
     any_catalog_function: bool,
-) -> bool {
-    let Ok(json) = pgls_query::parse_plpgsql_json(create_function) else {
-        return true;
-    };
+) -> pgls_query::Result<bool> {
+    let json = pgls_query::parse_plpgsql_json(create_function)?;
     // serde_json stops at a nesting depth of 128 and returns an error.
     let Ok(tree) = serde_json::from_str::<Value>(&json) else {
-        return true;
+        return Ok(true);
     };
     let mut stack = vec![&tree];
     let mut visited = 0;
@@ -59,7 +58,7 @@ pub(crate) fn may_change_catalog(
             tracing::warn!(
                 "stopped looking at a PL/pgSQL function body after {PLPGSQL_VALUES_MAX} values"
             );
-            return true;
+            return Ok(true);
         }
         match value {
             Value::Array(values) => stack.extend(values),
@@ -77,10 +76,10 @@ pub(crate) fn may_change_catalog(
                             .and_then(Value::as_str)
                             .and_then(string_constant);
                         let Some(sql) = constant else {
-                            return true;
+                            return Ok(true);
                         };
                         if statement_may_change_catalog(&sql, &calls_catalog_function) {
-                            return true;
+                            return Ok(true);
                         }
                     }
                     match key.as_str() {
@@ -91,7 +90,7 @@ pub(crate) fn may_change_catalog(
                                 &is_catalog_function,
                                 any_catalog_function,
                             ) {
-                                return true;
+                                return Ok(true);
                             }
                         }
                         _ => stack.push(value),
@@ -101,7 +100,7 @@ pub(crate) fn may_change_catalog(
             _ => {}
         }
     }
-    false
+    Ok(false)
 }
 
 /// Whether running `expr`, a `PLpgSQL_expr` of the parse tree, may change the catalog, see
@@ -226,6 +225,7 @@ mod tests {
             is_catalog_function,
             true,
         )
+        .unwrap()
     }
 
     #[test]
@@ -287,14 +287,16 @@ mod tests {
 
     #[test]
     fn bodies_that_dont_parse() {
-        // libpg_query leaves SQL statements to the SQL parser.
-        assert!(changes("create tabel t (a int);"));
-        assert!(changes("if a > 0 then return;"));
-        assert!(may_change_catalog(
-            "create function f() returns void language plpgsql as $$begin$$;",
-            |_| false,
-            |_| false,
-            false,
-        ));
+        // Like Postgres, libpg_query parses the SQL statements of the body too.
+        for create_function in [
+            plpgsql("create tabel t (a int);"),
+            plpgsql("if a > 0 then return;"),
+            "create function f() returns void language plpgsql as $$begin$$;".to_string(),
+        ] {
+            assert!(
+                may_change_catalog(&create_function, |_| false, |_| false, false).is_err(),
+                "{create_function}"
+            );
+        }
     }
 }

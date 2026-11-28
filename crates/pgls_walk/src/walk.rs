@@ -318,7 +318,8 @@ pub fn walk_statements(
                 if catalog_functions.called_by(&stmt.root) {
                     file_context.taint_catalog();
                 } else {
-                    catalog_functions.record_function(stmt);
+                    catalog_functions
+                        .record_function(stmt, file_context.session().check_function_bodies());
                 }
             }
         }
@@ -374,7 +375,8 @@ fn skip_unparsable<'a>(
 /// - SQL functions may if a statement of their body may, unless Postgres rejects their body, see
 ///   [`Self::record_body_statement`].
 /// - PL/pgSQL functions may if their body has a statement that may, or dynamic SQL, see
-///   [`crate::plpgsql::may_change_catalog`].
+///   [`crate::plpgsql::may_change_catalog`], unless Postgres rejects their body, see
+///   [`Self::record_function`].
 /// - Functions in other languages, like PL/Python or C, always may, except `internal` ones: they
 ///   are built-in functions under another name, and calls to database functions don't taint the
 ///   catalog.
@@ -470,7 +472,13 @@ impl CatalogFunctions {
     /// statements [`Self::record_body_statement`] gets. A `CREATE FUNCTION` without a language
     /// has a SQL body, or fails. Procedures only run with `CALL`, which taints the catalog
     /// anyway.
-    fn record_function(&mut self, stmt: &AnalysableStatement) {
+    ///
+    /// Postgres rejects a PL/pgSQL function whose body libpg_query's PL/pgSQL parser rejects,
+    /// unless only because it parses without a catalog: it compiles the body with the same
+    /// parser while `check_function_bodies` is on ([`plpgsql_validator`]).
+    ///
+    /// [`plpgsql_validator`]: https://github.com/postgres/postgres/blob/REL_18_6/src/pl/plpgsql/src/pl_handler.c#L442
+    fn record_function(&mut self, stmt: &AnalysableStatement, check_function_bodies: bool) {
         use pgls_query::Node;
         use pgls_query_ext::function_body::Language;
         let pgls_query::NodeEnum::CreateFunctionStmt(create_fn) = &*stmt.root else {
@@ -496,6 +504,9 @@ impl CatalogFunctions {
                     |name| self.names.contains(name),
                     !self.names.is_empty(),
                 )
+                .unwrap_or_else(|error| {
+                    !check_function_bodies || error.is_false_positive_without_catalog()
+                })
             });
         if may_change_catalog {
             Arc::make_mut(&mut self.names).insert(name.to_owned());
@@ -893,6 +904,30 @@ mod tests {
         assert_eq!(
             plpgsql("insert into t values (1);"),
             [false, false, false, false]
+        );
+        // Postgres rejects the body, so the function doesn't exist (42804), unless it doesn't
+        // compile bodies.
+        assert_eq!(
+            plpgsql("create table t (a int); return 1;"),
+            [false, false, false, false]
+        );
+        assert_eq!(
+            tainted(
+                "set check_function_bodies = off;
+                create function f() returns void language plpgsql as $$begin
+                  create table t (a int); return 1;
+                end$$"
+            )[1..],
+            [false, false, false, true]
+        );
+        // libpg_query can't compile the body without the catalog, but Postgres can.
+        assert_eq!(
+            tainted(
+                "create function f() returns void language plpgsql as $$
+                declare x my_type[];
+                begin create table t (a int); end$$"
+            ),
+            [false, false, false, true]
         );
         assert_eq!(
             tainted("create function f() returns void language plpython3u as 'pass'"),
