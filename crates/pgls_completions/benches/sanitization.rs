@@ -35,6 +35,8 @@ fn to_params<'a>(
     CompletionParams {
         position: TextSize::new(pos),
         schema: cache,
+        catalog: None,
+        search_path: &[],
         text,
         tree,
         function: None,

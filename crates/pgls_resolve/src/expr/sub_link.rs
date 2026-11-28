@@ -25,7 +25,7 @@ pub(super) fn infer_sub_link(
                         r.catalog,
                         output.as_ref().and_then(QueryOutput::columns),
                     )?,
-                    None => crate::query_columns(query, r.catalog, r.search_path)?,
+                    None => crate::query_columns(query, r.catalog, r.search_path, None)?,
                 };
                 match columns.as_slice() {
                     [column] => column.ty.clone(),

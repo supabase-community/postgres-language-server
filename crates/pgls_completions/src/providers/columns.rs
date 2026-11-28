@@ -1,7 +1,8 @@
-use pgls_catalog::{Column, Snapshot};
-use pgls_query::Identifier;
+use pgls_catalog::{Catalog, Column, ColumnClassKind, Snapshot, typing::Type};
+use pgls_query::{Identifier, protobuf};
+use pgls_resolve::FunctionContext;
 use pgls_tokenizer::NamePosition;
-use pgls_treesitter::TreesitterContext;
+use pgls_treesitter::{DerivedRelationMatch, TreeSitterQueriesExecutor, TreesitterContext};
 
 use crate::{
     CompletionItemKind, CompletionText,
@@ -12,27 +13,117 @@ use crate::{
 
 use super::helper::{Qualifier, with_schema_or_alias};
 
+/// The most CTEs and subqueries of a statement whose columns are offered. Each is parsed and
+/// resolved on its own, after the CTEs before it.
+const DERIVED_RELATIONS_MAX: usize = 32;
+
 pub(crate) fn complete_columns<'a>(
     ctx: &TreesitterContext<'a>,
     snapshot: &'a Snapshot,
+    derived: &'a DerivedColumns,
     builder: &mut CompletionBuilder<'a>,
 ) {
-    let available_columns = &snapshot.columns;
-
-    for col in available_columns {
+    for col in snapshot.columns.iter().chain(&derived.columns) {
         let relevance = CompletionRelevanceData::Column(col);
 
         let item = PossibleCompletionItem {
             label: col.name.clone(),
             score: CompletionScore::from(relevance.clone()),
             filter: CompletionFilter::from(relevance),
-            description: format!("{}.{}", col.schema_name, col.table_name),
+            description: if col.schema_name.is_empty() {
+                col.table_name.clone()
+            } else {
+                format!("{}.{}", col.schema_name, col.table_name)
+            },
             kind: CompletionItemKind::Column,
             completion_text: Some(get_completion_text(ctx, col)),
             detail: col.type_name.as_ref().map(|t| t.to_string()),
         };
 
         builder.add_item(item);
+    }
+}
+
+/// The columns of the CTEs and of the subqueries in FROM of the statement, which aren't in the
+/// snapshot. Each is a column of a relation without a schema, named like the CTE or the alias of
+/// the subquery, so that it is filtered and ranked like the columns of the snapshot.
+pub(crate) struct DerivedColumns {
+    columns: Vec<Column>,
+}
+
+impl DerivedColumns {
+    /// Resolves the query of each CTE and subquery against `catalog`, like hover does, with the
+    /// parameters of `function` in scope in a SQL function body. Without a catalog, there are
+    /// none.
+    ///
+    /// Cost: a parse and a resolution of each CTE and subquery of the statement, up to
+    /// [`DERIVED_RELATIONS_MAX`], with the CTEs before it.
+    pub(crate) fn new(
+        ctx: &TreesitterContext,
+        catalog: Option<&Catalog>,
+        search_path: &[String],
+        function: Option<&FunctionContext>,
+    ) -> Self {
+        let mut columns = Vec::new();
+        let Some(catalog) = catalog else {
+            return Self { columns };
+        };
+
+        let mut executor = TreeSitterQueriesExecutor::new(ctx.tree.root_node(), ctx.text);
+        executor.add_query_results::<DerivedRelationMatch>();
+        let relations: Vec<&DerivedRelationMatch> = executor
+            .get_iter(ctx.wrapping_statement_range.as_ref())
+            .filter_map(|result| result.try_into().ok())
+            .collect();
+        if relations.len() > DERIVED_RELATIONS_MAX {
+            tracing::debug!(
+                count = relations.len(),
+                "Offering the columns of the first {DERIVED_RELATIONS_MAX} CTEs and subqueries."
+            );
+        }
+
+        for relation in relations.into_iter().take(DERIVED_RELATIONS_MAX) {
+            let Some(root) = relation
+                .columns_query(ctx.text, ctx.position)
+                .and_then(|sql| pgls_query::parse(&sql).ok())
+                .and_then(|parsed| parsed.into_root())
+            else {
+                continue;
+            };
+            let query = protobuf::Node { node: Some(root) };
+            let Some(output) = pgls_resolve::query_columns(&query, catalog, search_path, function)
+            else {
+                continue;
+            };
+            let table_name = relation.get_name(ctx.text);
+            columns.extend(output.into_iter().zip(1..).map(|(column, number)| {
+                let type_name = match &column.ty {
+                    Some(Type::Named(id)) => catalog.type_by_id(id).found().map(|info| info.name),
+                    _ => None,
+                };
+                // Completions read the names, the type name and whether it is a primary key.
+                Column {
+                    name: column.name,
+                    table_name: table_name.clone(),
+                    table_oid: 0,
+                    class_kind: ColumnClassKind::Unknown,
+                    number,
+                    schema_name: String::new(),
+                    type_id: 0,
+                    type_name,
+                    is_nullable: true,
+                    is_primary_key: false,
+                    is_unique: false,
+                    default_expr: None,
+                    generated: Default::default(),
+                    identity: Default::default(),
+                    varchar_length: None,
+                    comment: None,
+                }
+            }));
+        }
+
+        Self { columns }
     }
 }
 
@@ -1121,5 +1212,120 @@ mod tests {
             assert_eq!(first.label, "name", "{query}");
             assert_eq!(first.kind, CompletionItemKind::Column, "{query}");
         }
+    }
+
+    /// The columns of CTEs and subqueries in FROM, with their inferred types, by the name of the
+    /// CTE or the alias of the subquery. Unqualified, they rank with the columns of the tables
+    /// of the statement.
+    #[pgls_test_utils::db_test]
+    async fn completes_the_columns_of_ctes_and_subqueries(pool: PgPool) {
+        pool.execute("create table public.users (id int primary key, name text);")
+            .await
+            .unwrap();
+
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        for (query, expected) in [
+            (
+                format!(
+                    "with c as (select id, name as user_name from users) select c.{cursor} from c"
+                ),
+                vec![("id", "c", "int4"), ("user_name", "c", "text")],
+            ),
+            (
+                format!("with c as (select id from users) select x.{cursor} from c x"),
+                vec![("id", "c", "int4")],
+            ),
+            (
+                format!(
+                    "with a as (select id from users), b(twice) as (select id * 2 from a) select b.{cursor} from b"
+                ),
+                vec![("twice", "b", "int4")],
+            ),
+            (
+                format!("select s.{cursor} from (select id, name from users) as s(user_id)"),
+                vec![("name", "s", "text"), ("user_id", "s", "int4")],
+            ),
+            (
+                format!(
+                    "with c as (select 'x' as label) select s.{cursor} from (select label from c) s"
+                ),
+                vec![("label", "s", "text")],
+            ),
+            (
+                format!(
+                    "with c as (select id as user_id from users) select * from c where {cursor}"
+                ),
+                vec![
+                    ("id", "public.users", "int4"),
+                    ("name", "public.users", "text"),
+                    ("user_id", "c", "int4"),
+                ],
+            ),
+        ] {
+            let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+            let catalog = pgls_catalog::Catalog::from_snapshot(snapshot.clone());
+            let items = complete(crate::CompletionParams {
+                catalog: Some(&catalog),
+                search_path: &["public".to_owned()],
+                ..get_test_params(&tree, &snapshot, query.as_str().into())
+            });
+
+            let mut found: Vec<(&str, &str, &str)> = items
+                .iter()
+                .take(expected.len())
+                .map(|item| {
+                    (
+                        item.label.as_str(),
+                        item.description.as_str(),
+                        item.detail.as_deref().unwrap_or_default(),
+                    )
+                })
+                .collect();
+            found.sort();
+            assert_eq!(found, expected, "{query}");
+        }
+    }
+
+    /// In the body of a SQL function, the queries of CTEs see the function's parameters.
+    #[pgls_test_utils::db_test]
+    async fn completes_cte_columns_over_function_parameters(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let query = format!(
+            "with c as (select user_id * 2 as twice, names[1] as first_name) select c.{cursor} from c"
+        );
+        let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+        let catalog = pgls_catalog::Catalog::from_snapshot(snapshot.clone());
+        let param = |name: &str, type_name: &str, is_array| pgls_resolve::FunctionParam {
+            name: Some(name.to_owned()),
+            type_schema: Some("pg_catalog".to_owned()),
+            type_name: type_name.to_owned(),
+            is_array,
+        };
+        let function = pgls_resolve::FunctionContext {
+            function_name: "fn".to_owned(),
+            params: vec![
+                param("user_id", "int4", false),
+                param("names", "text", true),
+            ],
+        };
+        let items = complete(crate::CompletionParams {
+            catalog: Some(&catalog),
+            search_path: &["public".to_owned()],
+            function: Some(&function),
+            ..get_test_params(&tree, &snapshot, query.as_str().into())
+        });
+
+        let mut found: Vec<(&str, &str)> = items
+            .iter()
+            .filter(|item| item.kind == CompletionItemKind::Column)
+            .map(|item| {
+                (
+                    item.label.as_str(),
+                    item.detail.as_deref().unwrap_or_default(),
+                )
+            })
+            .collect();
+        found.sort();
+        assert_eq!(found, [("first_name", "text"), ("twice", "int4")]);
     }
 }
