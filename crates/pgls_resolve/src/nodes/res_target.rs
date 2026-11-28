@@ -7,13 +7,11 @@ use pgls_query::{
 
 use super::{Resolver, resolve_list};
 use crate::{
-    FindingKind, Reference, StarColumn,
-    expr::{check_assignment, infer_expr, infer_indirection},
+    FindingKind,
+    expr::{check_assignment, infer_expr},
     output::{QueryOutput, Star, TargetOutput},
-    scope::{
-        DefaultOnly, Item, Level, StarEntry, find_item, find_qualified_item, has_opaque_items,
-    },
-    utils::{node_location, row_columns},
+    scope::{DefaultOnly, Item, Level, find_item},
+    utils::node_location,
 };
 use pgls_catalog::typing::TypedColumn;
 
@@ -50,7 +48,7 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
     if let Some(NodeEnum::ColumnRef(column)) = value
         && let Some(qualifier) = column.star_qualifier().and_then(Node::string_values)
     {
-        let columns = expand_column_ref_star(r, &qualifier);
+        let columns = r.expand_column_ref_star(&qualifier);
         return TargetOutput {
             location: column.location,
             entry_location: target.location,
@@ -67,7 +65,7 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
             entry_location: target.location,
             span: None,
             star: Some(Star::Fields),
-            columns: expand_indirection_star(r, indirection.arg.as_deref(), fields),
+            columns: r.expand_indirection_star(indirection.arg.as_deref(), fields),
         };
     }
     let name = value.and_then(|_| r.target_name(target));
@@ -82,54 +80,6 @@ fn target_output(r: &mut Resolver, target: &Node) -> TargetOutput {
         star: None,
         columns: name.map(|name| vec![TypedColumn { name, ty: None }]),
     }
-}
-
-/// The columns that `*` (an empty `qualifier`), `t.*` or `s.t.*` expands to. Port of
-/// [`ExpandColumnRefStar`]: `*` expands to the FROM items of the innermost level
-/// ([`ExpandAllTables`]), and `t.*` and `s.t.*` to the item that the qualifier names in any
-/// level ([`refnameNamespaceItem`], [`ExpandSingleTable`]). The columns of an item whose types
-/// are not known as a whole have no types. `None` if the columns are not known, also if a level
-/// has items whose names we don't know, which may be the one the qualifier names.
-///
-/// [`ExpandColumnRefStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1123
-/// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-/// [`refnameNamespaceItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_relation.c#L134
-/// [`ExpandSingleTable`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1401
-fn expand_column_ref_star(r: &Resolver, qualifier: &[String]) -> Option<Vec<TypedColumn>> {
-    if qualifier.is_empty() {
-        let (columns, _) = r.levels().last()?.star_columns()?;
-        return Some(columns);
-    }
-    if has_opaque_items(r.levels()) {
-        return None;
-    }
-    let item = find_qualified_item(r.levels(), qualifier)?;
-    Some(
-        item.columns
-            .as_ref()?
-            .iter()
-            .map(|column| TypedColumn {
-                name: column.name.clone(),
-                ty: column.ty.clone().filter(|_| item.types_known),
-            })
-            .collect(),
-    )
-}
-
-/// The columns that `(arg).*` expands to, where `fields` are the subscripts and field
-/// selections between `arg` and the `*`: the fields of its composite type. Port of
-/// [`ExpandIndirectionStar`] and [`ExpandRowReference`]. `None` if the type or its fields are
-/// not known, or if it isn't composite, which Postgres rejects.
-///
-/// [`ExpandIndirectionStar`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1444
-/// [`ExpandRowReference`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1486
-fn expand_indirection_star(
-    r: &mut Resolver,
-    arg: Option<&Node>,
-    fields: &[Node],
-) -> Option<Vec<TypedColumn>> {
-    let ty = infer_indirection(r, arg, fields)?;
-    row_columns(r, &ty).flatten()
 }
 
 /// Types the expressions of a select list or RETURNING list whose output is `output`, the
@@ -158,103 +108,6 @@ pub(super) fn infer_select_list(r: &mut Resolver, targets: &[Node], output: &mut
     }
 }
 
-/// Records the columns that each `*`, `t.*` and `s.t.*` of a select list or RETURNING list
-/// expands to, when references are collected and the columns are known. The FROM items of the
-/// list must be the innermost level.
-pub(super) fn record_star_references(r: &mut Resolver, output: &QueryOutput) {
-    if !r.collects_references() {
-        return;
-    }
-    for target in &output.targets {
-        let (Some(Star::Columns(qualifier)), Some(columns)) = (&target.star, &target.columns)
-        else {
-            continue;
-        };
-        let columns = match qualifier.as_slice() {
-            [] => r
-                .levels()
-                .last()
-                .and_then(|level| star_columns(level, columns)),
-            _ => find_qualified_item(r.levels(), qualifier)
-                .map(|item| item_columns(item, qualifier, columns)),
-        };
-        if let Some(columns) = columns {
-            r.record(Reference::Star {
-                location: target.location,
-                span: r.star_span(target.location),
-                columns,
-            });
-        }
-    }
-}
-
-/// The columns of `*` in `level`, like [`ExpandAllTables`], which expands to `columns`, with the
-/// item of each from [`Level::star`]. A column is qualified with the name of its FROM item when
-/// there are several, and a column merged by `JOIN ... USING` or a `NATURAL` join is referenced
-/// by its bare name. A column has no qualifier if no name references it with certainty.
-///
-/// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-fn star_columns(level: &Level, columns: &[TypedColumn]) -> Option<Vec<StarColumn>> {
-    if let [item] = level.items.as_slice() {
-        return Some(item_columns(item, &[], columns));
-    }
-    let entries = level.star()?;
-    if entries.len() != columns.len() {
-        return None;
-    }
-    let names: Vec<&str> = columns.iter().map(|column| column.name.as_str()).collect();
-    let columns = entries
-        .iter()
-        .zip(&names)
-        .map(|(entry, name)| {
-            let qualifier = match entry {
-                // The bare name must reference only the merged column.
-                StarEntry::Merged(_) => {
-                    (names.iter().filter(|other| *other == name).count() == 1).then(Vec::new)
-                }
-                // The qualifier must reference only this item, and the name only this column.
-                StarEntry::Item { item, .. } => level.items.get(*item).and_then(|item| {
-                    let item_name = item.name.as_ref()?;
-                    let unique_item = level
-                        .items
-                        .iter()
-                        .filter(|other| other.name.as_ref() == Some(item_name))
-                        .count()
-                        == 1;
-                    (unique_item && has_unique_column(item, name)).then(|| vec![item_name.clone()])
-                }),
-            };
-            StarColumn {
-                qualifier,
-                name: (*name).to_owned(),
-            }
-        })
-        .collect();
-    Some(columns)
-}
-
-/// The columns `columns` of `item`, qualified with `qualifier`. A column whose name another
-/// column of the item has too has no qualifier: its name doesn't reference it.
-fn item_columns(item: &Item, qualifier: &[String], columns: &[TypedColumn]) -> Vec<StarColumn> {
-    columns
-        .iter()
-        .map(|column| StarColumn {
-            qualifier: has_unique_column(item, &column.name).then(|| qualifier.to_vec()),
-            name: column.name.clone(),
-        })
-        .collect()
-}
-
-/// Whether `item` has exactly one column named `name`.
-fn has_unique_column(item: &Item, name: &str) -> bool {
-    item.columns
-        .iter()
-        .flatten()
-        .filter(|column| column.name == name)
-        .count()
-        == 1
-}
-
 /// Resolves a RETURNING clause of a statement on `target` against `level` and returns its
 /// columns.
 pub(super) fn resolve_returning_clause(
@@ -270,7 +123,7 @@ pub(super) fn resolve_returning_clause(
     let (output, _) = r.in_level(level, |r| {
         resolve_list(r, list);
         let mut output = select_list_output(r, list);
-        record_star_references(r, &output);
+        r.record_star_references(&output);
         infer_select_list(r, list, &mut output);
         output
     });

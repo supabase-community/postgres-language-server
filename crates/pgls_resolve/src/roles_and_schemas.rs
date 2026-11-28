@@ -3,7 +3,7 @@
 //! references, and never reported: the catalog doesn't follow the roles a file creates or drops.
 
 use pgls_query::{
-    Node, NodeEnum, NodeRef,
+    Identifier, Node, NodeEnum, NodeRef,
     protobuf::{AConst, GrantTargetType, ObjectType, RoleSpecType, Token, a_const},
 };
 
@@ -101,7 +101,9 @@ fn record_schema_names(r: &mut Resolver, stmt: &NodeEnum) {
         }
         // A comma-separated list of names.
         while let Some(token) = tokens.get(j) {
-            let name = pgls_query::Identifier::new(scanned.text(token)).name();
+            let Some(name) = scanned.identifier_at(token.start).map(Identifier::name) else {
+                break;
+            };
             if !names.contains(&name) {
                 break;
             }
