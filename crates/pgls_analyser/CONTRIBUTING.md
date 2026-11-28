@@ -60,7 +60,7 @@ Let's say we want to create a new **lint** rule called `useMyRuleName`, follow t
    Where severity is optional but can be "info", "warn", or "error" (default).
 
    The script will generate a bunch of files inside the `pgls_analyser` crate.
-   Among the other files, you'll find a file called `use_my_new_rule_name.rs` inside the `pgls_analyser/lib/src/lint/safety` folder. You'll implement your rule in this file.
+   Among the other files, you'll find a file called `use_my_rule_name.rs` inside the `crates/pgls_analyser/src/lint/safety` folder. You'll implement your rule in this file.
 
 1. The `Options` type doesn't have to be used, so it can be considered optional. However, it has to be defined as `type Options = ()`.
 1. Implement the `run` function: The function is called for every statement, and should return zero or more diagnostics. Follow the [pillars](#explain-a-rule-to-the-user) when writing the message of a diagnostic
@@ -319,7 +319,7 @@ Each test file should:
 2. Include one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the number of diagnostics per rule is checked.
 3. Contain valid SQL that should either trigger or not trigger your rule
 
-Rules outside the `typecheck` group run without a catalog. A `-- catalog: builtin` line gives them the built-in catalog of the test database (from `docker-compose up -d`), with the tables, functions and types that the file creates on top. A `-- server_version_num: 110000` line makes it the catalog of that server version.
+Rules outside the `typecheck` group run without a catalog. A `-- catalog: builtin` line gives them the built-in catalog of the test database (from `just db`), with the tables, functions and types that the file creates on top. A `-- server_version_num: 110000` line makes it the catalog of that server version.
 
 **Example test structure for `addSerialColumn` rule:**
 
