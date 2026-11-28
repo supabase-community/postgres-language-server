@@ -1095,6 +1095,17 @@
             }
           ]
         },
+        "banAlterPolicyCondition": {
+          "description": "Changing the condition of a policy may change access for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banCharField": {
           "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
           "anyOf": [
