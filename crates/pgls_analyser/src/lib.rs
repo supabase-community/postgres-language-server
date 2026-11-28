@@ -19,7 +19,6 @@ mod linter_rule;
 pub mod options;
 mod registry;
 mod transaction_block;
-mod utils;
 
 // Re-export linter-specific types
 pub use linter_context::{FileKind, LinterRuleContext, StatementContext};

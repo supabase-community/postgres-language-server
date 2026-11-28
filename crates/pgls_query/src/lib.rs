@@ -15,6 +15,7 @@ mod plpgsql;
 mod scan;
 mod split;
 
+pub use ast_impl::{AlterDomainKind, ConstraintSite};
 pub use deparse::*;
 pub use error::*;
 pub use fingerprint::*;

@@ -96,6 +96,15 @@ impl<'a> QualifiedName<'a> {
     pub fn of_type_name(type_name: &'a TypeName) -> Option<Self> {
         Self::of(&type_name.names)
     }
+
+    /// The name of a built-in object, e.g. `varchar` for `varchar(10)` and `pg_catalog.varchar`,
+    /// but not for `myschema.varchar`. Unqualified names are built-in objects if they exist,
+    /// since `pg_catalog` comes first on the search path. Postgres only accepts the current
+    /// database as the catalog of a three-part name like `mydb.pg_catalog.varchar`, and then
+    /// ignores it, so we ignore it too.
+    pub fn builtin(self) -> Option<&'a str> {
+        matches!(self.schema, None | Some("pg_catalog")).then_some(self.name)
+    }
 }
 
 /// The name with its qualifiers, like `myschema.mood`, unquoted like in Postgres' messages.

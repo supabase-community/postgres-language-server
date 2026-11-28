@@ -1,9 +1,9 @@
 use crate::fix::StatementTokens;
-use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Prefer JSONB over JSON types.
@@ -69,7 +69,7 @@ impl LinterRule for PreferJsonb {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-        for col_def in column_defs(ctx.stmt()) {
+        for col_def in ctx.stmt().column_defs() {
             check_column_def(&mut diagnostics, col_def, ctx.tokens());
         }
         diagnostics
@@ -85,7 +85,7 @@ fn check_column_def(
         return;
     };
 
-    if builtin_type_name(type_name) != Some("json") {
+    if QualifiedName::of_type_name(type_name).and_then(QualifiedName::builtin) != Some("json") {
         return;
     }
 

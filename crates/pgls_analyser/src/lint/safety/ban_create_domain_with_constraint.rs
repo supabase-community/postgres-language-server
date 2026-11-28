@@ -1,9 +1,9 @@
-use crate::utils::constraints;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::ConstrType;
+use pgls_query::protobuf::Constraint;
 
 declare_lint_rule! {
     /// Domains with constraints have poor support for online migrations.
@@ -44,7 +44,7 @@ impl LinterRule for BanCreateDomainWithConstraint {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // `DEFAULT` and `NULL` are constraint nodes too, but don't restrict the values.
         if let pgls_query::NodeEnum::CreateDomainStmt(stmt) = ctx.stmt()
-            && constraints(&stmt.constraints).any(|constraint| {
+            && Constraint::in_list(&stmt.constraints).any(|constraint| {
                 !matches!(
                     constraint.contype(),
                     ConstrType::ConstrDefault | ConstrType::ConstrNull

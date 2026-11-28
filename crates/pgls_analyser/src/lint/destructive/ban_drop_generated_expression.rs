@@ -1,4 +1,3 @@
-use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -34,7 +33,7 @@ impl LinterRule for BanDropGeneratedExpression {
     type Options = ();
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
-        alter_table_cmds(ctx.stmt())
+        ctx.stmt().alter_table_commands()
             .filter(|cmd| cmd.subtype() == AlterTableType::AtDropExpression)
             .map(|cmd| {
                 LinterDiagnostic::new(
