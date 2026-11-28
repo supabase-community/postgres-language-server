@@ -1095,6 +1095,17 @@
             }
           ]
         },
+        "banAlterRowLevelSecurity": {
+          "description": "Changing row level security on a table may change access for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banCharField": {
           "description": "Using CHAR(n) or CHARACTER(n) types is discouraged.",
           "anyOf": [

@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterRowLevelSecurity
+alter table t enable row level security;
+
+```
+
+# Diagnostics
+lint/banAlterRowLevelSecurity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing row level security may change access for existing clients.
+  
+  i Existing clients may no longer see rows that no policy lets through, or see rows the policies hid.
+  
+  i Create the policies that existing clients need before enabling row level security, and check who relies on it before disabling it.
