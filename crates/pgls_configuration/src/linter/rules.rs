@@ -242,6 +242,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banReplaceViewFunction",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banSetSchema",
         recommended: false,
         severity: Severity::Warning,
@@ -715,6 +721,10 @@ pub struct Rules {
     pub ban_non_transactional_statement_in_transaction: Option<
         RuleConfiguration<pgls_analyser::options::BanNonTransactionalStatementInTransaction>,
     >,
+    #[doc = "Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_replace_view_function:
+        Option<RuleConfiguration<pgls_analyser::options::BanReplaceViewFunction>>,
     #[doc = "Moving an object to another schema may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_set_schema: Option<RuleConfiguration<pgls_analyser::options::BanSetSchema>>,
@@ -1029,6 +1039,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "banNonTransactionalStatementInTransaction" => self
                 .ban_non_transactional_statement_in_transaction
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banReplaceViewFunction" => self
+                .ban_replace_view_function
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banSetSchema" => self.ban_set_schema.as_ref().map(RuleConfiguration::level),
@@ -1348,6 +1362,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banNonTransactionalStatementInTransaction" => self
                 .ban_non_transactional_statement_in_transaction
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banReplaceViewFunction" => self
+                .ban_replace_view_function
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banSetSchema" => self
