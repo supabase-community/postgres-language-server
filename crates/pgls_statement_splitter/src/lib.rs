@@ -1697,6 +1697,10 @@ VALUES
             "update set set a = 1;",
             "update set s set a = 1;",
             "update t delete set a = 1;",
+            "create domain update varchar(15) not null;",
+            "create sequence update increment 1;",
+            "create role update login;",
+            "drop type update cascade;",
             "MERGE INTO t USING s insert ON t.a = s.a\n\nWHEN NOT MATCHED THEN INSERT VALUES (s.a);",
         ] {
             Tester::from(sql)
