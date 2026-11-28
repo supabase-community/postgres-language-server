@@ -1,0 +1,14 @@
+---
+source: crates/pgls_treesitter_grammar/tests/grammar_tests.rs
+expression: writer
+---
+call app.my_proc
+-----------------------
+program [0..16] 'call app.my_proc'
+  statement [0..16] 'call app.my_proc'
+    call_statement [0..16] 'call app.my_proc'
+      keyword_call [0..4] 'call'
+      function_reference [5..16] 'app.my_proc'
+        schema_identifier [5..8] 'app' (@function_reference_1of2)
+        . [8..9] '.'
+        function_identifier [9..16] 'my_proc' (@function_reference_2of2)

@@ -590,9 +590,9 @@ merge into users u using posts p on p.post_id = u.id when matched and p.title <>
 
 Results:
 alter - alter (Keyword)
+call - call (Keyword)
 copy - copy (Keyword)
 create - create (Keyword)
 delete - delete (Keyword)
-drop - drop (Keyword)
 
 --------------

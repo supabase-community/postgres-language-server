@@ -23,7 +23,7 @@ As you type SQL, the language server suggests relevant database objects based on
 - **Schemas**: Available schemas in your database
 - **Keywords**: SQL keywords and syntax
 
-The suggestions are context-aware - for example, when typing after `FROM`, you'll see table suggestions, and when typing after `SELECT`, you'll see column suggestions from relevant tables.
+The suggestions are context-aware - for example, when typing after `FROM`, you'll see table suggestions, and when typing after `SELECT`, you'll see column suggestions from relevant tables. After `CALL`, you'll see procedures, and functions in its arguments.
 
 ## Hover
 
