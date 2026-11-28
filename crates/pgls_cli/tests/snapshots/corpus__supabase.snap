@@ -10,10 +10,14 @@ check:
   lint/addingRequiredField: 3
   lint/avoidCreateTrigger: 13
   lint/avoidWideLockWindow: 3
+  lint/banAlterFunctionOptions: 4
+  lint/banAlterGeneratedExpression: 3
   lint/banDropColumn: 8
   lint/banDropConstraint: 2
   lint/banDropFunction: 7
   lint/banDropTable: 2
+  lint/banReplaceViewFunction: 64
+  lint/banReplicaIdentity: 17
   lint/constraintMissingNotValid: 3
   lint/creatingEnum: 13
   lint/disallowUniqueConstraint: 2

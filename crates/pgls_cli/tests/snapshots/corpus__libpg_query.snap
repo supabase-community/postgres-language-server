@@ -6,11 +6,13 @@ files: 60 (0 skipped)
 check:
   lint/addingPrimaryKeyConstraint: 1
   lint/avoidCreateTrigger: 4
+  lint/banAlterFunctionOptions: 2
   lint/banCreateDomainWithConstraint: 10
   lint/banDeleteWithoutWhere: 1
   lint/banDropColumn: 4
   lint/banDropFunction: 7
   lint/banDropTable: 7
+  lint/banReplaceViewFunction: 23
   lint/banTruncate: 22
   lint/banUncommittedTransaction: 20
   lint/banUpdateWithoutWhere: 4

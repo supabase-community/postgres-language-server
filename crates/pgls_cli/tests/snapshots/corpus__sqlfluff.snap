@@ -14,7 +14,11 @@ check:
   lint/avoidCreateTrigger: 14
   lint/avoidWideLockWindow: 23
   lint/banAlterDomainWithAddConstraint: 2
+  lint/banAlterFunctionOptions: 112
+  lint/banAlterGeneratedExpression: 2
   lint/banAlterIdentity: 2
+  lint/banAlterPolicyCondition: 6
+  lint/banAlterPolicyRoles: 3
   lint/banCharField: 10
   lint/banConcurrentIndexCreationInTransaction: 8
   lint/banCreateDomainWithConstraint: 15
@@ -31,6 +35,8 @@ check:
   lint/banDropTrigger: 5
   lint/banDropType: 18
   lint/banDropView: 25
+  lint/banReplaceViewFunction: 23
+  lint/banReplicaIdentity: 17
   lint/banSetSchema: 20
   lint/banTruncate: 15
   lint/banTruncateCascade: 2

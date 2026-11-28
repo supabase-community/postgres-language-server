@@ -7,6 +7,8 @@ check:
   lint/avoidAlterEnumAddValue: 3
   lint/avoidCreateTrigger: 19
   lint/avoidWideLockWindow: 4
+  lint/banAlterFunctionOptions: 4
+  lint/banAlterGeneratedExpression: 3
   lint/banCharField: 2
   lint/banConcurrentIndexCreationInTransaction: 6
   lint/banDeleteWithoutWhere: 27
@@ -18,6 +20,8 @@ check:
   lint/banDropTrigger: 15
   lint/banDropType: 5
   lint/banDropView: 10
+  lint/banReplaceViewFunction: 52
+  lint/banReplicaIdentity: 1
   lint/banUpdateWithoutWhere: 1
   lint/creatingEnum: 4
   lint/lockTimeoutWarning: 6
