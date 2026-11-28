@@ -109,13 +109,16 @@ impl Preprocessed {
             else {
                 continue;
             };
-            // Only a value of the host makes the identifier ambiguous, not a `%%` in a quoted
-            // name.
-            let has_unknown = in_token
+            // An identifier with only known values, like the `}}` of the quoted name `"}}"`, is
+            // a name that the host writes, and stays as written: as a parameter, it would be a
+            // value after `select a`, not an alias.
+            if !in_token
                 .iter()
-                .any(|expansion| matches!(expansion.value, Value::Unknown { .. }));
+                .any(|expansion| matches!(expansion.value, Value::Unknown { .. }))
+            {
+                continue;
+            }
             if let Some((before_kind, before)) = before
-                && has_unknown
                 && ambiguous_after(before_kind, &filled[before])
             {
                 ambiguous.push(Ambiguity {
