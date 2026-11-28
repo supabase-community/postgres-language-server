@@ -10,7 +10,6 @@ pub enum CompletionItemKind {
     Table,
     Function,
     Column,
-    /// A parameter of the SQL function whose body is completed.
     Parameter,
     Schema,
     Policy,
