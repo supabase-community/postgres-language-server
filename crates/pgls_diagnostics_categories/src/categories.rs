@@ -42,6 +42,7 @@ define_categories! {
     "lint/banDropFunction": "https://pg-language-server.com/latest/reference/rules/ban-drop-function/",
     "lint/banDropGeneratedExpression": "https://pg-language-server.com/latest/reference/rules/ban-drop-generated-expression/",
     "lint/banDropNotNull": "https://pg-language-server.com/latest/reference/rules/ban-drop-not-null/",
+    "lint/banDropPolicy": "https://pg-language-server.com/latest/reference/rules/ban-drop-policy/",
     "lint/banDropSchema": "https://pg-language-server.com/latest/reference/rules/ban-drop-schema/",
     "lint/banDropSequence": "https://pg-language-server.com/latest/reference/rules/ban-drop-sequence/",
     "lint/banDropTable": "https://pg-language-server.com/latest/reference/rules/ban-drop-table/",

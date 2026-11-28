@@ -13,6 +13,7 @@ check:
   lint/banDropConstraint: 6
   lint/banDropExtension: 16
   lint/banDropFunction: 49
+  lint/banDropPolicy: 2
   lint/banDropSchema: 28
   lint/banDropTable: 120
   lint/banDropTrigger: 15

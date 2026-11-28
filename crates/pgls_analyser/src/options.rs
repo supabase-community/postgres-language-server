@@ -46,6 +46,8 @@ pub type BanDropFunction =
 pub type BanDropGeneratedExpression = < lint :: destructive :: ban_drop_generated_expression :: BanDropGeneratedExpression as crate :: LinterRule > :: Options ;
 pub type BanDropNotNull =
     <lint::destructive::ban_drop_not_null::BanDropNotNull as crate::LinterRule>::Options;
+pub type BanDropPolicy =
+    <lint::destructive::ban_drop_policy::BanDropPolicy as crate::LinterRule>::Options;
 pub type BanDropSchema =
     <lint::destructive::ban_drop_schema::BanDropSchema as crate::LinterRule>::Options;
 pub type BanDropSequence =
