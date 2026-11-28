@@ -55,6 +55,21 @@ pub struct FunctionParam {
     pub is_array: bool,
 }
 
+impl FunctionParam {
+    /// The type as the parser read it, like `int4` or `public.status[]`, with the schema
+    /// unless it is `pg_catalog`.
+    pub fn type_label(&self) -> String {
+        let mut label = match self.type_schema.as_deref() {
+            Some(schema) if schema != "pg_catalog" => format!("{schema}.{}", self.type_name),
+            _ => self.type_name.clone(),
+        };
+        if self.is_array {
+            label.push_str("[]");
+        }
+        label
+    }
+}
+
 /// The SQL function whose body is being resolved. Its parameters are in scope.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionContext {

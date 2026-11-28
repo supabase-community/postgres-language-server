@@ -118,6 +118,11 @@ impl CompletionScore<'_> {
             // If both qualifiers are already written out, we must check the item's name itself.
             (Some(_), Some(_)) => None,
 
+            // The filter only keeps the parameters qualified with the function's name.
+            (None, Some(_)) if matches!(self.data, CompletionRelevanceData::Parameter { .. }) => {
+                None
+            }
+
             // If only one qualifier is written out, we might look at a schema, a table, or an alias.
             (None, Some(_)) => {
                 let qualifier = ctx.tail_qualifier_sanitized().unwrap_or_default();
@@ -245,6 +250,17 @@ impl CompletionScore<'_> {
                 }
                 _ => -15,
             },
+            CompletionRelevanceData::Parameter { .. } => match clause_type {
+                WrappingClause::Select
+                | WrappingClause::Where
+                | WrappingClause::Returning
+                | WrappingClause::Update
+                | WrappingClause::Delete
+                | WrappingClause::Merge
+                | WrappingClause::MergeWhen
+                | WrappingClause::Join { .. } => 10,
+                _ => -15,
+            },
             CompletionRelevanceData::Schema(_) => match clause_type {
                 WrappingClause::From if !has_qualifier => 15,
                 WrappingClause::Join { .. } if !has_qualifier => 15,
@@ -333,6 +349,7 @@ impl CompletionScore<'_> {
             }
 
             CompletionRelevanceData::Schema(_)
+            | CompletionRelevanceData::Parameter { .. }
             | CompletionRelevanceData::Role(_)
             | CompletionRelevanceData::Keyword(_) => None,
         };
@@ -358,6 +375,9 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Table(t) => t.name.as_str(),
             CompletionRelevanceData::Function(f) => f.name.as_str(),
             CompletionRelevanceData::Column(c) => c.name.as_str(),
+            CompletionRelevanceData::Parameter { param, .. } => {
+                param.name.as_deref().unwrap_or_default()
+            }
             CompletionRelevanceData::Schema(s) => s.name.as_str(),
             CompletionRelevanceData::Policy(p) => p.name.as_str(),
             CompletionRelevanceData::Role(r) => r.name.as_str(),
@@ -372,6 +392,7 @@ impl CompletionScore<'_> {
             CompletionRelevanceData::Column(c) => Some(c.schema_name.as_str()),
             CompletionRelevanceData::Schema(s) => Some(s.name.as_str()),
             CompletionRelevanceData::Policy(p) => Some(p.schema_name.as_str()),
+            CompletionRelevanceData::Parameter { .. } => None,
             CompletionRelevanceData::Role(_) => None,
             CompletionRelevanceData::Keyword(_) => None,
         }
@@ -389,6 +410,11 @@ impl CompletionScore<'_> {
     fn check_relations_in_stmt(&mut self, ctx: &TreesitterContext) {
         match self.data {
             CompletionRelevanceData::Table(_) | CompletionRelevanceData::Function(_) => return,
+            // The parameters are in scope like the columns of the relations of the statement.
+            CompletionRelevanceData::Parameter { .. } => {
+                self.score += 45;
+                return;
+            }
             _ => {}
         }
 

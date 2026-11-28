@@ -6,8 +6,8 @@ use crate::{
     builder::CompletionBuilder,
     item::CompletionItem,
     providers::{
-        complete_columns, complete_functions, complete_keywords, complete_policies, complete_roles,
-        complete_schemas, complete_tables,
+        complete_columns, complete_functions, complete_keywords, complete_parameters,
+        complete_policies, complete_roles, complete_schemas, complete_tables,
     },
     sanitization::SanitizedCompletionParams,
 };
@@ -20,6 +20,8 @@ pub struct CompletionParams<'a> {
     pub schema: &'a pgls_catalog::Snapshot,
     pub text: String,
     pub tree: &'a tree_sitter::Tree,
+    /// The SQL function whose body the statement is in. Its parameters are completed.
+    pub function: Option<&'a pgls_resolve::FunctionContext>,
 }
 
 #[tracing::instrument(level = "debug", skip_all, fields(
@@ -34,6 +36,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
         .filter(|word| word.chars().all(|c| c.is_alphabetic()))
         .any(|t| t == t.to_ascii_uppercase());
 
+    let function = params.function;
     let sanitized_params = SanitizedCompletionParams::from(params);
 
     let ctx = TreesitterContext::new(TreeSitterContextParams {
@@ -48,6 +51,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
     complete_tables(&ctx, sanitized_params.schema, &mut builder);
     complete_functions(&ctx, sanitized_params.schema, &mut builder);
     complete_columns(&ctx, sanitized_params.schema, &mut builder);
+    complete_parameters(&ctx, function, &mut builder);
     complete_schemas(&ctx, sanitized_params.schema, &mut builder);
     complete_policies(&ctx, sanitized_params.schema, &mut builder);
     complete_roles(&ctx, sanitized_params.schema, &mut builder);

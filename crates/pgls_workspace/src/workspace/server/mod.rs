@@ -1780,12 +1780,14 @@ impl Workspace for WorkspaceServer {
                 let request =
                     self.editor_request(params.project_key, &params.path, settings, snapshot, doc);
                 let snapshot = self.snapshot_before(&request, doc, &stmt);
+                let function = doc.function(stmt.id());
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
                     schema: snapshot.as_ref(),
                     tree: &cst,
                     text: doc.sql(&stmt).to_string(),
+                    function: function.as_ref(),
                 });
 
                 self.charge_document_caches(&params.path, doc);

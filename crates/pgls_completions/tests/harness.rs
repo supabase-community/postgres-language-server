@@ -233,6 +233,7 @@ impl Harness {
                 schema: snapshot,
                 text: cut.text.to_owned(),
                 tree: &tree,
+                function: None,
             })
         }));
         let items = match items {

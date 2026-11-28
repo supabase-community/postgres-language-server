@@ -37,6 +37,7 @@ fn to_params<'a>(
         schema: cache,
         text,
         tree,
+        function: None,
     }
 }
 

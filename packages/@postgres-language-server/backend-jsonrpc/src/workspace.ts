@@ -513,6 +513,7 @@ export type CompletionItemKind =
   | "table"
   | "function"
   | "column"
+  | "parameter"
   | "schema"
   | "policy"
   | "role"

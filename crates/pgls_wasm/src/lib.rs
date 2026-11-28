@@ -553,6 +553,7 @@ impl Workspace {
                 let kind = match c.kind {
                     pgls_completions::CompletionItemKind::Table => "table",
                     pgls_completions::CompletionItemKind::Column => "column",
+                    pgls_completions::CompletionItemKind::Parameter => "parameter",
                     pgls_completions::CompletionItemKind::Function => "function",
                     pgls_completions::CompletionItemKind::Schema => "schema",
                     pgls_completions::CompletionItemKind::Policy => "policy",

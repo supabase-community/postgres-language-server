@@ -19,6 +19,7 @@ As you type SQL, the language server suggests relevant database objects based on
 
 - **Tables**: Available tables from your database schema
 - **Columns**: Columns from tables referenced in your query
+- **Parameters**: In the body of a `LANGUAGE sql` function, its named parameters, as `user_id` or `fn.user_id`, where a value goes
 - **Functions**: Database functions and procedures
 - **Schemas**: Available schemas in your database
 - **Keywords**: SQL keywords and syntax
