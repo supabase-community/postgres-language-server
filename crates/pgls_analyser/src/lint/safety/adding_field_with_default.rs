@@ -1,9 +1,9 @@
-use crate::utils::{alter_table_cmds, altered_relation, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::Decision;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::Constraint;
 use pgls_resolve::contains_volatile_functions;
 
 declare_lint_rule! {
@@ -56,7 +56,11 @@ impl LinterRule for AddingFieldWithDefault {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // Other transactions can't see a table created earlier in the transaction, so its
         // rewrite blocks no one.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
         let mut diagnostics = Vec::new();
@@ -64,16 +68,16 @@ impl LinterRule for AddingFieldWithDefault {
         // Since Postgres 11, a default without volatile functions needs no rewrite.
         let has_fast_defaults = ctx.catalog().server_version_at_least(11) == Some(true);
 
-        for cmd in alter_table_cmds(ctx.stmt()) {
+        for cmd in ctx.stmt().alter_table_commands() {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
                 && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition()
             {
-                let has_default = column_constraints(col_def)
+                let has_default = Constraint::in_list(&col_def.constraints)
                     .any(|c| c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault);
 
                 // A virtual generated column ('v', Postgres 18) is computed on read and
                 // needs no rewrite.
-                let has_stored_generated = column_constraints(col_def).any(|c| {
+                let has_stored_generated = Constraint::in_list(&col_def.constraints).any(|c| {
                     c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
                         && c.generated_kind == "s"
                 });
@@ -93,7 +97,7 @@ impl LinterRule for AddingFieldWithDefault {
                 } else if has_default {
                     // For PG 11+, check if the default is volatile
                     if has_fast_defaults {
-                        let is_safe_default = column_constraints(col_def).any(|c| {
+                        let is_safe_default = Constraint::in_list(&col_def.constraints).any(|c| {
                             c.contype() == pgls_query::protobuf::ConstrType::ConstrDefault
                                 && c.raw_expr
                                     .as_ref()

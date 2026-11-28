@@ -1,8 +1,8 @@
-use crate::utils::{alter_table_cmds, altered_relation, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::Constraint;
 use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
@@ -47,12 +47,16 @@ impl LinterRule for AddSerialColumn {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // Other transactions can't see a table created earlier in the transaction, so its
         // rewrite blocks no one.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
         let mut diagnostics = Vec::new();
 
-        for cmd in alter_table_cmds(ctx.stmt()) {
+        for cmd in ctx.stmt().alter_table_commands() {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAddColumn
                 && let Some(pgls_query::NodeEnum::ColumnDef(col_def)) = cmd.definition()
             {
@@ -78,7 +82,7 @@ impl LinterRule for AddSerialColumn {
                 }
 
                 // Check for GENERATED ALWAYS AS ... STORED
-                let has_stored_generated = column_constraints(col_def).any(|c| {
+                let has_stored_generated = Constraint::in_list(&col_def.constraints).any(|c| {
                     c.contype() == pgls_query::protobuf::ConstrType::ConstrGenerated
                         && c.generated_when == "a" // 'a' = ALWAYS
                         // 's' = STORED. A VIRTUAL column (Postgres 18) is computed on

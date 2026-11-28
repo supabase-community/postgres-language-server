@@ -1,9 +1,9 @@
 use crate::fix::{StatementTokens, in_case_of};
-use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Prefer using TEXT over VARCHAR(n) types.
@@ -53,7 +53,7 @@ impl LinterRule for PreferTextField {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-        for col_def in column_defs(ctx.stmt()) {
+        for col_def in ctx.stmt().column_defs() {
             check_column_def(&mut diagnostics, col_def, ctx.tokens());
         }
         diagnostics
@@ -67,7 +67,8 @@ fn check_column_def(
 ) {
     // Check if it's varchar with a size limit
     if let Some(type_name) = &col_def.type_name
-        && builtin_type_name(type_name) == Some("varchar")
+        && QualifiedName::of_type_name(type_name).and_then(QualifiedName::builtin)
+            == Some("varchar")
         && !type_name.typmods.is_empty()
     {
         diagnostics.push(

@@ -1,4 +1,3 @@
-use crate::utils::column_defs;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -60,7 +59,7 @@ impl LinterRule for PreferIdentity {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-        for col_def in column_defs(ctx.stmt()) {
+        for col_def in ctx.stmt().column_defs() {
             check_column_def(&mut diagnostics, col_def);
         }
         diagnostics

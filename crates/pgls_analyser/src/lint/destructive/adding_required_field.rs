@@ -1,8 +1,8 @@
-use crate::utils::{alter_table_cmds, altered_relation, column_constraints};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::protobuf::Constraint;
 use pgls_query::protobuf::{AlterTableCmd, AlterTableType, ColumnDef, ConstrType, Node};
 
 declare_lint_rule! {
@@ -35,10 +35,14 @@ impl LinterRule for AddingRequiredField {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         // No other transaction has written to a table created earlier in the transaction.
-        if altered_relation(ctx.stmt()).is_some_and(|relation| ctx.is_new_relation(relation)) {
+        if ctx
+            .stmt()
+            .altered_relation()
+            .is_some_and(|relation| ctx.is_new_relation(relation))
+        {
             return vec![];
         }
-        let commands: Vec<&AlterTableCmd> = alter_table_cmds(ctx.stmt()).collect();
+        let commands: Vec<&AlterTableCmd> = ctx.stmt().alter_table_commands().collect();
 
         // Columns made NOT NULL by `ADD CONSTRAINT ... NOT NULL column` (Postgres 18) in the
         // same statement.
@@ -85,7 +89,7 @@ impl LinterRule for AddingRequiredField {
 /// Whether a new column is NOT NULL and gets no value from Postgres: no default, not generated,
 /// not an identity column, and not `serial`.
 fn is_required(column: &ColumnDef, not_null_columns: &[&str]) -> bool {
-    let constraint_types: Vec<ConstrType> = column_constraints(column)
+    let constraint_types: Vec<ConstrType> = Constraint::in_list(&column.constraints)
         .map(|constraint| constraint.contype())
         .collect();
     let is_not_null = constraint_types.contains(&ConstrType::ConstrNotnull)

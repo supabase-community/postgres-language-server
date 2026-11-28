@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -42,7 +42,7 @@ impl LinterRule for BanSetSchema {
             return vec![];
         };
 
-        let object = object_type_noun(stmt.object_type());
+        let object = stmt.object_type().noun();
         vec![
             LinterDiagnostic::new(
                 rule_category!(),

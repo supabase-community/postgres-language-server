@@ -1,4 +1,3 @@
-use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
@@ -55,7 +54,7 @@ impl LinterRule for RequireSeparateConstraintValidation {
             return diagnostics;
         };
 
-        for cmd in alter_table_cmds(ctx.stmt()) {
+        for cmd in ctx.stmt().alter_table_commands() {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtValidateConstraint
                 && !cmd.name.is_empty()
                 && tx_state.has_not_valid_constraint(relation, &cmd.name, ctx.catalog())

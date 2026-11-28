@@ -1,8 +1,8 @@
-use crate::utils::{AlterDomainKind, alter_table_cmds};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::AlterDomainKind;
 use pgls_query::protobuf::{AlterTableType, Node, Token};
 
 declare_lint_rule! {
@@ -47,12 +47,13 @@ impl LinterRule for BanDropDefault {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let defaults: Vec<(&str, &str)> = match ctx.stmt() {
-            pgls_query::NodeEnum::AlterTableStmt(_) => alter_table_cmds(ctx.stmt())
+            pgls_query::NodeEnum::AlterTableStmt(stmt) => stmt
+                .commands()
                 .filter(|cmd| cmd.subtype() == AlterTableType::AtColumnDefault && cmd.def.is_none())
                 .map(|cmd| ("column", cmd.name.as_str()))
                 .collect(),
             pgls_query::NodeEnum::AlterDomainStmt(stmt)
-                if AlterDomainKind::of(stmt) == Some(AlterDomainKind::DropDefault) =>
+                if stmt.kind() == Some(AlterDomainKind::DropDefault) =>
             {
                 let name = stmt.type_name.last().and_then(Node::string_value);
                 vec![("domain", name.unwrap_or_default())]

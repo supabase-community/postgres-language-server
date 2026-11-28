@@ -1,9 +1,9 @@
 use crate::fix::StatementTokens;
-use crate::utils::{builtin_type_name, column_defs};
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query_ext::utils::QualifiedName;
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {
@@ -67,7 +67,7 @@ impl LinterRule for PreferTimestamptz {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = Vec::new();
-        for col_def in column_defs(ctx.stmt()) {
+        for col_def in ctx.stmt().column_defs() {
             check_column_def(&mut diagnostics, col_def, ctx.tokens());
         }
         diagnostics
@@ -81,7 +81,9 @@ fn check_column_def(
 ) {
     if let Some(type_name) = &col_def.type_name {
         // Check for "timestamp" (without timezone)
-        if builtin_type_name(type_name) == Some("timestamp") {
+        if QualifiedName::of_type_name(type_name).and_then(QualifiedName::builtin)
+            == Some("timestamp")
+        {
             diagnostics.push(
                 LinterDiagnostic::new(
                     rule_category!(),

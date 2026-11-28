@@ -1,8 +1,8 @@
-use crate::utils::AlterDomainKind;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::AlterDomainKind;
 
 declare_lint_rule! {
     /// Adding a constraint to a domain has poor support for online migrations.
@@ -36,7 +36,7 @@ impl LinterRule for BanAlterDomainWithAddConstraint {
 
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         if let pgls_query::NodeEnum::AlterDomainStmt(stmt) = ctx.stmt()
-            && AlterDomainKind::of(stmt) == Some(AlterDomainKind::AddConstraint)
+            && stmt.kind() == Some(AlterDomainKind::AddConstraint)
         {
             return vec![
                 LinterDiagnostic::new(

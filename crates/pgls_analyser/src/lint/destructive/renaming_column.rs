@@ -1,4 +1,4 @@
-use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, utils::object_type_noun};
+use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
@@ -45,7 +45,7 @@ impl LinterRule for RenamingColumn {
             ) {
                 return diagnostics;
             }
-            let column = object_type_noun(rename_type);
+            let column = rename_type.noun();
             diagnostics.push(LinterDiagnostic::new(
                     rule_category!(),
                     None,

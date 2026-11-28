@@ -1,4 +1,3 @@
-use crate::utils::alter_table_cmds;
 use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_catalog::alter_table_cmd_lock;
@@ -46,7 +45,7 @@ impl LinterRule for AvoidAttachingPartition {
     fn run(ctx: &LinterRuleContext<Self>) -> Vec<LinterDiagnostic> {
         let mut diagnostics = vec![];
 
-        for cmd in alter_table_cmds(ctx.stmt()) {
+        for cmd in ctx.stmt().alter_table_commands() {
             if cmd.subtype() == pgls_query::protobuf::AlterTableType::AtAttachPartition {
                 let parent_lock = alter_table_cmd_lock(cmd).name();
                 diagnostics.push(
