@@ -1,243 +1,56 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Postgres Language Server: a Rust workspace (`crates/pgls_*`) with an LSP server, a CLI (`postgres-language-server`, legacy name `postgrestools`) and TypeScript packages in `packages/`. It lints, type-checks, formats and completes SQL against a snapshot of a Postgres database.
 
-## Project Overview
+Read these instead of guessing:
 
-This is a Postgres Language Server implementation providing LSP features for SQL development, including autocompletion, syntax error highlighting, type-checking, and linting. The project is built in Rust using a modular crate architecture and includes TypeScript packages for editor integrations.
+- [CONTRIBUTING.md](./CONTRIBUTING.md): setup, tests, common tasks and the engineering rules.
+- [ARCHITECTURE.md](./ARCHITECTURE.md): what each crate does and how a file flows through them.
+- [crates/pgls_analyser/CONTRIBUTING.md](./crates/pgls_analyser/CONTRIBUTING.md): how a lint rule is written.
 
-## Key Commands
+Skills for repeated workflows live in `.agents/skills/` (`.claude/skills` links there): `write-lint-rule`, `port-lint-rule`.
 
-### Development Setup
-```bash
-# Fresh checkout or worktree: libpg_query submodule and JS dependencies
-just setup
+## Running commands
 
-# Install development tools
-just install-tools
+- In a fresh checkout or worktree, run `nix develop -c just setup` first. It checks out the `libpg_query` submodule and installs the JS dependencies; without it `just format` fails with `Script not found "oxfmt"`.
+- Building `pgls_query` needs libclang, and codegen needs nightly `rustfmt`, `taplo` and `bun`. The Nix flake provides them; outside it, builds fail with `Unable to find libclang`. In a non-interactive shell, wrap each command: `nix develop -c cargo test -p pgls_analyser`, or `nix develop -c bash -c '...'` for several. The first `nix develop` takes minutes.
+- Database tests need `just db` (`DATABASE_URL` in `.env`). All worktrees share that one container; without it, tests fail at once with `test database not reachable at <url>`.
+- Build and test one crate at a time (`cargo test -p <crate>`); the workspace suite is slow. CI runs `cargo nextest run --workspace --profile ci` (see `.config/nextest.toml`) and the doctests separately.
+- A worktree's `target/` grows to about 6 GB; `just clean` removes it. With several worktrees building at once, `CARGO_INCREMENTAL=0` saves about 2 GB each. Never share one `CARGO_TARGET_DIR` between worktrees: the workspace crates overwrite each other. `RUSTC_WRAPPER=sccache` (in the Nix shell) caches crates.io dependencies across worktrees, and the workspace crates only with `CARGO_INCREMENTAL=0`.
+- The WASM e2e tests (`bun run test:e2e` in `packages/@postgres-language-server/wasm`) serve on port 3000; set `PGLS_E2E_PORT` if it's taken.
 
-# Start the test database and wait until it accepts connections
-just db
-
-# For Nix users
-nix develop -c just db
-```
-
-### Running Commands as an Agent
-In a fresh checkout or worktree, run `nix develop -c just setup` first. It checks out the `libpg_query` submodule and installs the JS dependencies.
-
-Building `pgls_query` needs libclang, and codegen needs nightly `rustfmt`, `taplo` and `bun`. Outside the Nix shell, builds fail with `Unable to find libclang`. The flake provides all of these and sets `LIBCLANG_PATH`. In a non-interactive shell, `nix develop` alone just opens a subshell, so wrap each command instead:
+## Commands
 
 ```bash
-nix develop -c cargo build -p pgls_analyser
-nix develop -c just gen-lint
-nix develop -c bash -c 'cargo clippy --workspace --all-targets -- -D warnings && cargo test -p pgls_analyser'
-```
-
-- The first `nix develop` downloads the toolchain and takes a few minutes; give it a generous timeout. Later runs start in seconds.
-- `just format`, which `just gen-lint` ends with, runs `bun oxfmt`. Without `just setup` it fails with `Script not found "oxfmt"` and leaves the generated TS files unformatted.
-- Database tests need the database from `just db` (see `DATABASE_URL` in `.env`). All worktrees share one database: `docker-compose.yml` sets the project name, so `just db` in another worktree reuses the running container. If the database isn't running, the tests fail at once with `test database not reachable at <url>`.
-- The WASM e2e tests (`bun run test:e2e` in `packages/@postgres-language-server/wasm`) serve the test page on port 3000. If that port is taken, e.g. by another worktree, set `PGLS_E2E_PORT`.
-- A worktree's `target/` takes about 6 GB after building every test; `just clean` removes it. When several worktrees build at once, `CARGO_INCREMENTAL=0` saves about 2 GB more per worktree, at the cost of slower rebuilds. Don't point several worktrees at one `CARGO_TARGET_DIR`: the artifacts of the workspace crates have the same names in every worktree, so the builds overwrite each other.
-- The Nix shell has `sccache`. With `RUSTC_WRAPPER=sccache`, compiled crates are cached in `~/.cache/sccache` (`SCCACHE_DIR`), shared by all worktrees without the overwriting of a shared `CARGO_TARGET_DIR`. It's off by default because it barely helps a new worktree: the cache keys contain the crate's absolute path, so only crates.io dependencies hit (about 75% of the Rust compilations of `-p pgls_analyser`), while the workspace crates and the C code of `libpg_query`, which take most of the build time, compile again. A clean rebuild in the same worktree, e.g. after `just clean`, is 3 to 5 times faster. sccache doesn't cache incrementally compiled crates, so it caches the workspace crates only with `CARGO_INCREMENTAL=0`. The cache grows to 10 GB unless `SCCACHE_CACHE_SIZE` says otherwise.
-
-### Building and Testing
-```bash
-# Run all tests
-just test
-# or: cargo test --workspace --no-fail-fast
-
-# Test specific crate
-just test-crate pgls_lsp
-
-# Run doc tests
-just test-doc
-```
-
-### Code Quality
-```bash
-# Format all code (Rust, TOML, JS/TS)
-just format
-
-# Lint entire codebase
-just lint
-# or: cargo clippy && cargo run -p rules_check && bun oxlint packages/
-
-# Fix linting issues
-just lint-fix
-
-# What CI's Rust jobs gate on: format check, clippy with -D warnings, clean codegen
-just check
-
-# Lint the GitHub Actions workflows (actionlint)
-just lint-actions
-
-# Full ready check (run before committing)
-just ready
-```
-
-### Code Generation
-```bash
-# Generate linter code and configuration
-just gen-lint
-
-# Create new lint rule
-just new-lintrule <group> <rulename> [severity]
-
-# Create new crate
-just new-crate <name>
-```
-
-### CLI Usage
-The main CLI binary is `postgres-language-server` (legacy name: `postgrestools`):
-```bash
+just check                        # what CI's Rust jobs gate on: format check, clippy -D warnings, lint-features, clean codegen
+just format                       # Rust, TOML and JS/TS
+just gen-lint                     # after changing rules, configuration or the workspace API
 cargo run -p pgls_cli -- check file.sql
-# or after building:
-./target/release/postgres-language-server check file.sql
+just tree-print file.sql          # tree-sitter tree, for completions and hover
+just record-regress <major>       # re-record the Postgres regression fixtures (Docker); --catalog-only after changing snapshot queries
+just corpus                       # CLI and fuzz oracles over real-world SQL (crates/pgls_cli/tests/corpus.toml)
+just fuzz <target> [seconds]      # libFuzzer targets in fuzz/: splitter_vs_parser, formatter_roundtrip, lexer_vs_scan, lsp_messages
+just lint-actions                 # actionlint over .github/workflows
 ```
 
-## Architecture
+## Rules
 
-### Crate Structure
-The project uses a modular Rust workspace with crates prefixed with `pgls_`:
+- Follow the [engineering rules](./CONTRIBUTING.md#engineering-rules): no recursion whose depth grows with the input; a named limit (`*_max`, unit last) on every loop, walk, queue and cache over external input, logged when hit; no `unwrap`/`expect`/indexing on data from the client, database, file system or config; paired `debug_assert!`s where ranges cross a boundary; coalesce external events; set stack sizes, timeouts, pool sizes and recursion limits explicitly; state the cost and a 20k-statement timing of work on the request path; turn "Not covered" lists into issues.
+- Convert offsets and positions with `pgls_line_index`, never by hand.
+- Write database tests as `#[pgls_test_utils::db_test] async fn name(test_db: PgPool)`, not `#[sqlx::test]`: it fails fast without a database and caps the pool, so tests don't time out when worktrees share the database.
+- Type rules (`pgls_catalog::typing`, `pgls_resolve`) port Postgres' parser. Link the Postgres function next to each port at the tag of the newest fixtures (e.g. `https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557`), and only report what Postgres certainly rejects; anything not modelled is unknown. `crates/pgls_analyser/tests/postgres_regress.rs` fails on any finding on a statement Postgres accepted.
+- Snapshot tests use `insta`: `INSTA_UPDATE=always cargo test -p <crate>` writes the new snapshots; read their diff before committing.
+- Turn a fuzz crash (`fuzz/artifacts/<target>/`) into a test of the crate it's in before fixing it.
+- Generated files are committed. Run `just gen-lint` after changing rules or configuration; CI fails if it changes anything. After changing a query in `crates/pgls_catalog/src/snapshot/queries/`, run `cargo sqlx prepare --workspace` against the test database.
+- Fixtures under `crates/pgls_postgres_regress/data/<major>/` are recorded, never edited by hand. A splitter fix needs no re-record: `crates/pgls_postgres_regress/tests/splitter.rs` snapshots where the splitter differs from them.
+- Commits and PR titles follow [Conventional Commits](https://www.conventionalcommits.org), e.g. `fix(completions): ...`.
+- Never add "Claude" or any other AI assistant's name to commit messages or pull request descriptions.
 
-**Core Infrastructure:**
-- `pgls_workspace` - Main API and workspace management
-- `pgls_lsp` - Language Server Protocol implementation  
-- `pgls_cli` - Command-line interface
-- `pgls_fs` - Virtual file system abstraction
-- `pgls_configuration` - Configuration management
+## Code Generation
 
-**Parser and Language Processing:**
-- `pgls_query` - Postgres query parsing (wraps libpg_query), methods on the AST's types, and names (`Identifier`, `QualifiedName`)
-- `pgls_query_ext` - The statements in the body of a function, and the parser's syntax diagnostics
-- `pgls_lexer` - SQL tokenizer with whitespace handling
-- `pgls_statement_splitter` - Splits source into individual statements
-- `pgls_treesitter` - Tree-sitter integration for additional parsing
+Parse node code is generated by `pgls_query_macros` from the `libpg_query` submodule. To upgrade libpg_query, check out the new tag in `crates/pgls_query/vendor/libpg_query` and commit the submodule: `pgls_query_macros` and `pgls_pretty_print_codegen` read `protobuf/pg_query.proto` from it, and `pgls_tokenizer`'s build script reads `src/postgres/include/parser/kwlist.h`. `crates/pgls_query/src/protobuf.rs` is only regenerated when `protoc` is on the `PATH`, which the Nix shell doesn't provide: prepend the `bin` of `nix build --print-out-paths nixpkgs#protobuf` to `PATH` for one `cargo build -p pgls_query`.
 
-**Features:**
-- `pgls_completions` - Autocompletion engine
-- `pgls_hover` - Hover information provider
-- `pgls_semantic_tokens` - Semantic highlighting of resolved names
-- `pgls_analyser` & `pgls_analyse` - Linting and analysis framework
-- `pgls_walk` - The walk over a file's statements that lint and the editor features share: the catalog and session as each statement sees them
-- `pgls_typecheck` - EXPLAIN fallback for typecheck
-- `pgls_catalog` - Database snapshot, the file's DDL on top of it, and Postgres' type rules
-- `pgls_resolve` - Name resolution and type inference of a statement against the catalog: its findings, the output columns of its query, and what its names refer to
+Builds download nothing. The database lints are vendored at the upstream commit in their `vendor/COMMIT_SHA.txt`:
 
-**Utilities:**
-- `pgls_diagnostics` - Error and warning reporting
-- `pgls_console` - Terminal output and formatting
-- `pgls_text_edit` - Text manipulation utilities
-- `pgls_line_index` - Converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, and the character positions that Postgres reports to offsets. Convert positions with it, not by hand
-- `pgls_suppressions` - Rule suppression handling
-- `pgls_migrations` - Migration tools (Supabase, dbmate, goose): migration files and versions, up/down sections, project detection for `init`
-- `pgls_templating` - What a host substitutes in a file before Postgres sees it (goose's `ENVSUB`, Go printf and Rust fmt templates): the text with same-length placeholders that the analysis reads (`Preprocessed`)
-
-### TypeScript Packages
-Located in `packages/`:
-- Backend JSON-RPC bridge in `packages/@postgres-language-server/backend-jsonrpc/` (legacy: `packages/@postgrestools/backend-jsonrpc/`)
-- CLI package in `packages/@postgres-language-server/cli/`
-- WASM package in `packages/@postgres-language-server/wasm/`
-- Legacy main TypeScript package in `packages/@postgrestools/postgrestools/`
-
-### Database Integration
-The server connects to a Postgres database and loads a snapshot of its schema (`pgls_catalog::Snapshot`). The catalog applies the DDL of the current file on top of it, so linting, completions, and hover see objects created earlier in the file.
-
-### Statement Processing Flow
-1. Input source code is split into individual SQL statements
-2. Each statement is parsed using libpg_query (via `pgls_query`)
-3. Statements are analyzed against the catalog
-4. Results are cached and updated incrementally on file changes
-
-## Testing
-
-### Test Data Location
-- SQL test cases: `crates/pgls_statement_splitter/tests/data/`
-- Analyzer test specs: `crates/pgls_analyser/tests/specs/`
-- Example SQL files: `example/`, `test.sql`
-- Postgres regression fixtures: `crates/pgls_postgres_regress/data/<major>/` (15–18): the upstream regression SQL, Postgres' verdict per statement, the types of the columns of the accepted statements that return rows, the objects of the database after each file, and the catalog of a fresh database. Re-record a version with `just record-regress <major>` (needs Docker), or only its catalog with `just record-regress <major> --catalog-only` after changing the snapshot queries. A splitter fix needs no re-record: the verdicts are keyed by the byte ranges of the statements Postgres was sent, and `crates/pgls_postgres_regress/tests/splitter.rs` snapshots where the splitter differs from them. `output_types_agree_with_postgres` in `crates/pgls_analyser/tests/postgres_regress.rs` snapshots where the resolver's output column types differ from Postgres', and `catalog_agrees_with_postgres` where the catalog after each file differs from the database's objects.
-
-### Type Checking
-The type rules in `pgls_catalog::typing` and `pgls_resolve` port Postgres' parser from the latest supported version. Link the Postgres function next to each port, at the tag of the newest fixtures (e.g. `https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_coerce.c#L557`). Only report what Postgres would certainly reject; anything not modelled is unknown and never reported. `crates/pgls_analyser/tests/postgres_regress.rs` fails on any finding on a statement Postgres accepted, on every version.
-
-### Database Tests
-Write tests that need a database as `#[pgls_test_utils::db_test] async fn name(test_db: PgPool)`, not `#[sqlx::test]`. sqlx still creates a database per test from `template1` and runs the migrations of `pgls_test_utils`, but `db_test` fails fast when the database isn't running, and gives each test a pool of at most 2 connections that waits up to 2 minutes for one (see `pgls_test_utils::db`), so tests don't time out when several worktrees share the database.
-
-### Fuzzing
-`fuzz/` holds the libFuzzer targets, as a workspace of its own: `splitter_vs_parser`, `formatter_roundtrip`, `lexer_vs_scan` and `lsp_messages`. `just fuzz <target> [seconds]` runs one, seeded from the regression SQL and, once `cargo test -p pgls_cli --test corpus -- --ignored --exact corpus_sources` has fetched them, the corpus test's sources; with `CC=$PWD/fuzz/asan-cc RUSTFLAGS="-Clinker=clang -Clink-arg=-fsanitize=address"`, libpg_query and the tree-sitter grammar run under AddressSanitizer. The `Nightly` workflow runs each for 10 minutes that way and uploads a crash as an artifact. Turn a crash into a test of the crate it's in before fixing it.
-
-### Snapshot Testing
-The project uses `insta` for snapshot testing. Update snapshots with:
-```bash
-cargo insta review
-# or accept all new and changed snapshots without the interactive review:
-INSTA_UPDATE=always cargo test -p pgls_analyser --test rules_tests
-```
-
-### Lint Rules
-`crates/pgls_analyser/CONTRIBUTING.md` explains how to write a rule. Things that are easy to miss:
-- `just new-lintrule` runs the whole of `just gen-lint` for every rule. To scaffold several rules, run `cargo run -p xtask_codegen -- new-lintrule --category=lint --group=<group> --name=<ruleName> --severity=<info|warn|error>` for each, then `just gen-lint` once.
-- New rules keep `version: "next"`; the release workflow replaces it with the released version.
-- A spec file under `tests/specs/<group>/<ruleName>/` lists one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the count per rule is checked, not which statement the line is above.
-- Every `expect_diagnostic` snippet in a rule's doc comment must produce exactly one diagnostic. `docs_codegen`, which runs as part of `just gen-lint`, fails otherwise.
-- The vendored libpg_query is Postgres 18, so it parses syntax that older servers reject (`RETURNING WITH (OLD AS o)`, virtual generated columns, `NOT ENFORCED`, ...). Where the server version matters, check `server_version_num()` of the catalog.
-- The parser truncates identifiers to 63 bytes. For the source text as written, scan the statement with `pgls_query::scan`.
-- `ctx.stmt().iter()` walks every nested node of a statement (CTEs, subqueries, `ON CONFLICT`, ...) as a `NodeRef`.
-- To see the AST of a statement, print `pgls_query::parse(sql)?.into_root()` with `{:#?}`, e.g. from a throwaway test.
-
-## Configuration Files
-
-### Rust Configuration
-- `Cargo.toml` - Workspace definition with all crate dependencies
-- `rust-toolchain.toml` - Rust version specification  
-- `rustfmt.toml` - Code formatting configuration
-- `clippy.toml` - Clippy linting configuration
-
-### Other Tools
-- `.oxlintrc.json` / `.oxfmtrc.json` - oxlint linter and oxfmt formatter configuration for JS/TS
-- `taplo.toml` - TOML formatting configuration
-- `justfile` - Task runner with all development commands
-- `docker-compose.yml` - Database setup for testing
-
-## Development Notes
-
-### Code Quality Guidelines
-**IMPORTANT**: Always run `cargo clippy --workspace --all-targets -- -D warnings` (the command CI runs) and fix all warnings after making code changes. Clippy warnings must be resolved before committing code to maintain code quality standards. Before pushing, `just check` runs everything CI's Rust jobs gate on: the format check, this clippy command and the codegen check.
-
-### Engineering Rules
-**IMPORTANT**: Follow the "Engineering rules" in `CONTRIBUTING.md`. In short: no recursion whose depth grows with the input (per statement, file or config); a named limit (`*_max`, unit last) on every loop, walk, queue and cache over external input, logged when hit; no `unwrap`/`expect`/indexing on data from the client, database, file system or config; paired `debug_assert!`s where ranges cross a boundary (statement → file offsets → LSP positions, fix edits → document); coalesce external events; set stack sizes, timeouts, pool sizes and recursion limits explicitly; state the cost and a 20k-statement timing for work on the request path; turn "Not covered" lists into issues.
-
-### Git Commit and PR Guidelines
-**IMPORTANT**: NEVER add "Claude" or any AI assistant name to commit messages or pull request descriptions. Commits and PRs should appear as authored by the human developer only.
-
-### Code Generation
-Many parser structures are generated from PostgreSQL's protobuf definitions using procedural macros in `pgls_query_macros`. Run `just gen-lint` after modifying analyzer rules or configurations.
-
-To upgrade libpg_query, check out the new tag in `crates/pgls_query/vendor/libpg_query` and commit the submodule. The generators (`pgls_query_macros`, `pgls_pretty_print_codegen`) read `protobuf/pg_query.proto` from the submodule, and `pgls_tokenizer`'s build script reads `src/postgres/include/parser/kwlist.h` into `Keyword::ALL`, from which the lexer and the printer generate their keyword tokens, so there is nothing to copy. `crates/pgls_query/src/protobuf.rs` is only regenerated when `protoc` is on the `PATH`, which the Nix shell doesn't provide: `nix build --print-out-paths nixpkgs#protobuf` and prepend its `bin` to `PATH` for one `cargo build -p pgls_query`.
-
-Builds don't download anything. The database lints are vendored at the upstream commit in their `vendor/COMMIT_SHA.txt`:
 - pglinter's `sql/rules.sql` is copied as is into `crates/pgls_pglinter/vendor/sql/`. To upgrade, download `https://raw.githubusercontent.com/pmpetit/pglinter/<sha>/sql/rules.sql` into it, write `<sha>` to `COMMIT_SHA.txt`, then run `just gen-lint`.
 - splinter's lints are adapted by hand into `crates/pgls_splinter/vendor/<category>/<name>.sql`: a `-- meta:` header instead of `create view`, `"name!"`-style column aliases for sqlx, no trailing `;`. To upgrade, adapt the changed files of `lints/` the same way, update `COMMIT_SHA.txt`, then run `just gen-lint`.
-
-### Database Schema
-The introspection queries live in `crates/pgls_catalog/src/snapshot/queries/`. After changing one, run `cargo sqlx prepare --workspace` against the test database to update `.sqlx/`.
-
-### Code Refactoring Tools
-The project has `ast-grep` available for advanced code search and refactoring tasks. ast-grep is a structural search/replace tool that understands code syntax, making it useful for:
-- Renaming types, functions, or variables across the codebase
-- Finding and replacing code patterns
-- Performing structural code transformations
-
-Example usage:
-```bash
-# Search for a pattern
-ast-grep --pattern 'struct $NAME { $$$FIELDS }'
-
-# Replace a pattern across files
-ast-grep --pattern 'OldType' --rewrite 'NewType' --update-all
-```
-
-### Multi-Platform Support
-The project includes platform-specific allocators and build configurations for Windows, macOS, and Linux.
-- Seeing the Treesitter tree for an SQL query can be helpful to debug and implement features. To do this, create a file with an SQL query, and run `just tree-print <file.sql>`.
