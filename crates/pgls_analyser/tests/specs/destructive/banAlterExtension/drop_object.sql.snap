@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterExtension
+alter extension postgis drop function f();
+
+```
+
+# Diagnostics
+lint/banAlterExtension ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Removing an object from extension postgis may break existing clients.
+  
+  i Later updates of the extension no longer manage the object, so it keeps its old definition.
+  
+  i Make sure that nothing relies on the extension managing the object before removing it.
