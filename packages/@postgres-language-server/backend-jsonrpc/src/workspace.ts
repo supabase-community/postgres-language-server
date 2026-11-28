@@ -87,6 +87,7 @@ export type Category =
   | "lint/avoidWideLockWindow"
   | "lint/banAlterDomainWithAddConstraint"
   | "lint/banAlterIdentity"
+  | "lint/banAlterViewOptions"
   | "lint/banCharField"
   | "lint/banConcurrentIndexCreationInTransaction"
   | "lint/banCreateDomainWithConstraint"
@@ -1152,6 +1153,10 @@ export interface LinterRules {
    * Changing the identity of a column may break inserts from existing clients.
    */
   banAlterIdentity?: RuleConfiguration_for_Null;
+  /**
+   * Changing the options of a view may change behaviour for existing clients.
+   */
+  banAlterViewOptions?: RuleConfiguration_for_Null;
   /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */

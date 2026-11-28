@@ -51,6 +51,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [adding-serial-primary-key-field](https://squawkhq.com/docs/adding-serial-primary-key-field) |[addingPrimaryKeyConstraint](./rules/adding-primary-key-constraint.md) |
 | [ban-alter-domain-with-add-constraint](https://squawkhq.com/docs/ban-alter-domain-with-add-constraint) |[banAlterDomainWithAddConstraint](./rules/ban-alter-domain-with-add-constraint.md) |
 | [ban-alter-identity](https://squawkhq.com/docs/ban-alter-identity) |[banAlterIdentity](./rules/ban-alter-identity.md) |
+| [ban-alter-view-options](https://squawkhq.com/docs/ban-alter-view-options) |[banAlterViewOptions](./rules/ban-alter-view-options.md) |
 | [ban-char-field](https://squawkhq.com/docs/ban-char-field) |[banCharField](./rules/ban-char-field.md) |
 | [ban-concurrent-index-creation-in-transaction](https://squawkhq.com/docs/ban-concurrent-index-creation-in-transaction) |[banConcurrentIndexCreationInTransaction](./rules/ban-concurrent-index-creation-in-transaction.md) |
 | [ban-create-domain-with-constraint](https://squawkhq.com/docs/ban-create-domain-with-constraint) |[banCreateDomainWithConstraint](./rules/ban-create-domain-with-constraint.md) |

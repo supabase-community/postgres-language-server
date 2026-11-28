@@ -534,6 +534,10 @@ export interface LinterRules {
    */
   banAlterIdentity?: RuleConfiguration_for_Null;
   /**
+   * Changing the options of a view may change behaviour for existing clients.
+   */
+  banAlterViewOptions?: RuleConfiguration_for_Null;
+  /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */
   banCharField?: RuleConfiguration_for_Null;
