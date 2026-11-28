@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterViewOptions
+alter view v set (security_barrier = true);
+
+```
+
+# Diagnostics
+lint/banAlterViewOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the options of a view may change behaviour for existing clients.
+  
+  i The options decide with whose privileges the view runs, which rows it returns, and which writes through it Postgres accepts.
+  
+  i Check that existing clients work with the new options before changing them.
