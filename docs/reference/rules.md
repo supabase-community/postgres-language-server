@@ -42,6 +42,7 @@ Code that loses data or breaks existing clients.
 | [banDropFunction](./rules/ban-drop-function.md) 🛠 | Dropping a function, procedure, routine, or aggregate may break existing clients. |
 | [banDropGeneratedExpression](./rules/ban-drop-generated-expression.md) 🛠 | Dropping the expression of a generated column may break existing clients. |
 | [banDropNotNull](./rules/ban-drop-not-null.md) ✅ 🛠 | Dropping a NOT NULL constraint may break existing clients. |
+| [banDropPolicy](./rules/ban-drop-policy.md) 🛠 | Dropping a policy or rule may change behaviour for existing clients. |
 | [banDropSchema](./rules/ban-drop-schema.md) ✅ 🛠 | Dropping a schema will remove all objects within it and may break existing clients. |
 | [banDropSequence](./rules/ban-drop-sequence.md) 🛠 | Dropping a sequence may break existing clients. |
 | [banDropTable](./rules/ban-drop-table.md) ✅ 🛠 | Dropping a table may break existing clients. |

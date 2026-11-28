@@ -100,6 +100,7 @@ export type Category =
   | "lint/banDropFunction"
   | "lint/banDropGeneratedExpression"
   | "lint/banDropNotNull"
+  | "lint/banDropPolicy"
   | "lint/banDropSchema"
   | "lint/banDropSequence"
   | "lint/banDropTable"
@@ -1204,6 +1205,10 @@ export interface LinterRules {
    * Dropping a NOT NULL constraint may break existing clients.
    */
   banDropNotNull?: RuleConfiguration_for_Null;
+  /**
+   * Dropping a policy or rule may change behaviour for existing clients.
+   */
+  banDropPolicy?: RuleConfiguration_for_Null;
   /**
    * Dropping a schema will remove all objects within it and may break existing clients.
    */
