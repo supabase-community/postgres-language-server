@@ -1,0 +1,13 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- found by the fuzzer: Go writes `%++` for `%%++`, one operator, so the text that is analysed
+-- holds ` %++`, not `% ++`. The formatter can't put `%%` back into one operator, and the statement
+-- stays as written
+SELECT a%%++c;
+-- `%%` before another character is formatted
+select a %% b;
+
+---
+diagnostics:
+  `SELECT a%%++c;`: Format error: Placeholders could not be restored after formatting, the statement was left untouched
