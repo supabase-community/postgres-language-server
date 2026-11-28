@@ -56,9 +56,11 @@ const DML_EVENT: &[SyntaxKind] = &[
 ];
 
 /// The objects of `ALTER`, e.g. `ALTER TABLE`, `ALTER PROCEDURAL LANGUAGE` or `ALTER LARGE OBJECT`.
+/// They're followed by the object's name, so a statement keyword after one is a name, e.g. in
+/// `CREATE DOMAIN update text`, see [`Splitter::at_operand`].
 ///
 /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L9386
-const ALTER_OBJECTS: &[SyntaxKind] = &[
+pub(super) const ALTER_OBJECTS: &[SyntaxKind] = &[
     SyntaxKind::AGGREGATE_KW,
     SyntaxKind::COLLATION_KW,
     SyntaxKind::CONVERSION_KW,

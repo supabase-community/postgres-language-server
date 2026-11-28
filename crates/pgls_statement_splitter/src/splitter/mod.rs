@@ -206,7 +206,7 @@ impl<'a> Splitter<'a> {
     }
 
     /// Whether the token at `idx` needs an operand after it, see [`NEEDS_OPERAND`] and
-    /// [`OPERATOR_CHARS`]. A `*` only if it multiplies, e.g. `2*`: on its own it can end a
+    /// [`OPERATOR_CHARS`], or a name, see [`start::ALTER_OBJECTS`]. A `*` only if it multiplies, e.g. `2*`: on its own it can end a
     /// statement, e.g. `select *` or `select t.*`. In an operator of several characters, e.g. `~*`,
     /// it is part of an `OPERATOR` token.
     /// A `*` after an operand is `a_expr '*' a_expr`:
@@ -230,7 +230,11 @@ impl<'a> Splitter<'a> {
                         | SyntaxKind::R_BRACK
                 )
             }),
-            kind => NEEDS_OPERAND.contains(&kind) || OPERATOR_CHARS.contains(&kind),
+            kind => {
+                NEEDS_OPERAND.contains(&kind)
+                    || OPERATOR_CHARS.contains(&kind)
+                    || start::ALTER_OBJECTS.contains(&kind)
+            }
         }
     }
 
