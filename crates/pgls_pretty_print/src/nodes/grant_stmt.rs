@@ -117,7 +117,14 @@ pub(super) fn emit_grant_stmt(e: &mut EventEmitter, n: &GrantStmt) {
     }
 
     // Object names
-    if !n.objects.is_empty() {
+    if objtype == ObjectType::ObjectParameterAcl {
+        // The parser joins the parts of a parameter name with `.`, like a setting name.
+        // https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/gram.y#L7782
+        emit_grant_list(e, &n.objects, |e, node| match &node.node {
+            Some(NodeEnum::String(name)) => emit_variable_name(e, &name.sval),
+            _ => emit_node(e, node),
+        });
+    } else if !n.objects.is_empty() {
         emit_grant_list(e, &n.objects, emit_node);
     }
 

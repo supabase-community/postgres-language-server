@@ -1,0 +1,1 @@
+GRANT SET, ETLrollbackM ON PARAMETER work_mem, plpgsreJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJativeql.extra_warnings TO my_I;
