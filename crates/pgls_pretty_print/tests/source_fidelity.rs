@@ -574,6 +574,6 @@ fn drop_transform() {
 fn grant_on_a_parameter() {
     assert_eq!(
         format("GRANT SET, ALTER SYSTEM ON PARAMETER work_mem, plpgsql.extra_warnings TO u"),
-        r#"grant set, alter system on parameter work_mem, "plpgsql.extra_warnings" to u;"#
+        "grant set, alter system on parameter work_mem, plpgsql.extra_warnings to u;"
     );
 }
