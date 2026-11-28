@@ -24,10 +24,21 @@ pub type AvoidWideLockWindow =
     <lint::safety::avoid_wide_lock_window::AvoidWideLockWindow as crate::LinterRule>::Options;
 pub type BanAlterDatabaseOptions = < lint :: destructive :: ban_alter_database_options :: BanAlterDatabaseOptions as crate :: LinterRule > :: Options ;
 pub type BanAlterDomainWithAddConstraint = < lint :: safety :: ban_alter_domain_with_add_constraint :: BanAlterDomainWithAddConstraint as crate :: LinterRule > :: Options ;
+pub type BanAlterExtension =
+    <lint::destructive::ban_alter_extension::BanAlterExtension as crate::LinterRule>::Options;
+pub type BanAlterFunctionOptions = < lint :: destructive :: ban_alter_function_options :: BanAlterFunctionOptions as crate :: LinterRule > :: Options ;
 pub type BanAlterGeneratedExpression = < lint :: destructive :: ban_alter_generated_expression :: BanAlterGeneratedExpression as crate :: LinterRule > :: Options ;
 pub type BanAlterIdentity =
     <lint::destructive::ban_alter_identity::BanAlterIdentity as crate::LinterRule>::Options;
 pub type BanAlterPolicyCondition = < lint :: destructive :: ban_alter_policy_condition :: BanAlterPolicyCondition as crate :: LinterRule > :: Options ;
+pub type BanAlterPolicyRoles =
+    <lint::destructive::ban_alter_policy_roles::BanAlterPolicyRoles as crate::LinterRule>::Options;
+pub type BanAlterRoleOptions =
+    <lint::destructive::ban_alter_role_options::BanAlterRoleOptions as crate::LinterRule>::Options;
+pub type BanAlterRowLevelSecurity = < lint :: destructive :: ban_alter_row_level_security :: BanAlterRowLevelSecurity as crate :: LinterRule > :: Options ;
+pub type BanAlterSystemOptions = < lint :: destructive :: ban_alter_system_options :: BanAlterSystemOptions as crate :: LinterRule > :: Options ;
+pub type BanAlterViewOptions =
+    <lint::destructive::ban_alter_view_options::BanAlterViewOptions as crate::LinterRule>::Options;
 pub type BanCharField = <lint::style::ban_char_field::BanCharField as crate::LinterRule>::Options;
 pub type BanConcurrentIndexCreationInTransaction = < lint :: correctness :: ban_concurrent_index_creation_in_transaction :: BanConcurrentIndexCreationInTransaction as crate :: LinterRule > :: Options ;
 pub type BanCreateDomainWithConstraint = < lint :: safety :: ban_create_domain_with_constraint :: BanCreateDomainWithConstraint as crate :: LinterRule > :: Options ;
@@ -64,6 +75,8 @@ pub type BanDropView =
 pub type BanDuplicateColumnAssignments = < lint :: correctness :: ban_duplicate_column_assignments :: BanDuplicateColumnAssignments as crate :: LinterRule > :: Options ;
 pub type BanNonTransactionalStatementInTransaction = < lint :: correctness :: ban_non_transactional_statement_in_transaction :: BanNonTransactionalStatementInTransaction as crate :: LinterRule > :: Options ;
 pub type BanReplaceViewFunction = < lint :: destructive :: ban_replace_view_function :: BanReplaceViewFunction as crate :: LinterRule > :: Options ;
+pub type BanReplicaIdentity =
+    <lint::destructive::ban_replica_identity::BanReplicaIdentity as crate::LinterRule>::Options;
 pub type BanSetSchema =
     <lint::destructive::ban_set_schema::BanSetSchema as crate::LinterRule>::Options;
 pub type BanTruncate = <lint::destructive::ban_truncate::BanTruncate as crate::LinterRule>::Options;
