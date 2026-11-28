@@ -8,6 +8,12 @@ use std::collections::HashMap;
 use crate::{Ambiguity, Argument, Expansion, Preprocessed, SharedName, Value};
 
 impl Preprocessed {
+    /// The characters of Postgres' operators, `op_chars` of
+    /// https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/scan.l
+    const OPERATOR_CHARS: [char; 17] = [
+        '~', '!', '@', '#', '^', '&', '|', '`', '?', '+', '-', '*', '/', '%', '<', '>', '=',
+    ];
+
     /// The text that the analysis reads for `text`, with placeholders for `expansions`, which
     /// are in file order and don't overlap.
     ///
@@ -44,11 +50,20 @@ impl Preprocessed {
                 Value::Unknown { .. } => filled.extend(std::iter::repeat_n('x', range.len())),
                 Value::Known(written) => {
                     debug_assert!(written.len() <= range.len());
-                    filled.push_str(written);
-                    filled.extend(std::iter::repeat_n(
-                        ' ',
-                        range.len().saturating_sub(written.len()),
-                    ));
+                    let padding =
+                        std::iter::repeat_n(' ', range.len().saturating_sub(written.len()));
+                    // An operator character after it continues the operator that the host
+                    // writes, like the `%++` of `%%++`, so the padding goes before it.
+                    if text
+                        .get(range.end..)
+                        .is_some_and(|after| after.starts_with(Self::OPERATOR_CHARS))
+                    {
+                        filled.extend(padding);
+                        filled.push_str(written);
+                    } else {
+                        filled.push_str(written);
+                        filled.extend(padding);
+                    }
                 }
             }
             end = range.end;

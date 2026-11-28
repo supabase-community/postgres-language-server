@@ -6,9 +6,13 @@ source: crates/pgls_templating/tests/readers.rs
   2 | -- a lone percent sign that starts no directive is SQL, which Go would mangle
   3 | select 7 % 2, 8, 9 %;
   4 | select '%z', '%[x]d', '%[1d', '%Y', '%[0]d', '%';
+  5 | -- before an operator character, the padding goes first: Go writes `%++`, one operator
+  6 | select a%%++c;
+    | select a %++c;
 
 placeholders:
       9..11 `%%` -> `% ` written as `%`
      19..21 `%%` -> `%%` unknown value
      26..28 `%%` -> `% ` written as `%`
      29..31 `%d` -> `$a` value
+   285..287 `%%` -> ` %` written as ` %`
