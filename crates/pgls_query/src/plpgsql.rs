@@ -66,13 +66,16 @@ pub fn parse_plpgsql_json(stmt: &str) -> Result<String> {
 
 /// Messages libpg_query reports on valid PL/pgSQL functions because it compiles them without a
 /// catalog: it only knows the types of `pg_catalog`, reads an unknown type in `public` as
-/// `record`, so an array of one as `_record`, finds no element type for a `VARIADIC` array, and
-/// fails with `Not implemented` on anything else, e.g. a type in another schema.
+/// `record`, so an array of one as `_record`, which a variable can't have, finds no element type
+/// for a `VARIADIC` array, and fails with `Not implemented` on anything else, e.g. a type in
+/// another schema. Postgres writes an array of `record` as `record[]`, so a message with
+/// `_record` only comes from libpg_query.
 /// https://github.com/pganalyze/libpg_query/blob/18.1.0/src/postgres/src_backend_utils_cache_syscache.c#L332-L344
 const NO_CATALOG_ERRORS: &[&str] = &[
     "Not implemented",
     "cannot accept type _record",
     "cannot return type _record",
+    "has pseudo-type _record",
     "VARIADIC parameter must be an array",
 ];
 
@@ -125,6 +128,7 @@ mod tests {
             "create function f() returns my_enum[] language plpgsql as $$ begin return null; end $$",
             "create function f() returns void language plpgsql as $$ declare u auth.users; begin end $$",
             "create function f(variadic b int[]) returns void language plpgsql as $$ begin end $$",
+            "create function f() returns void language plpgsql as $$ declare x my_type[]; begin end $$",
         ] {
             let err = parse_plpgsql(input).expect_err(input);
             assert!(err.is_false_positive_without_catalog(), "{input}: {err}");
