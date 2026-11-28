@@ -1,0 +1,43 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterRoleOptions
+alter user app nobypassrls;
+-- expect_lint/banAlterRoleOptions
+alter user app in database db set search_path to private;
+-- expect_lint/banAlterRoleOptions
+alter user app reset all;
+
+```
+
+# Diagnostics
+lint/banAlterRoleOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the options of a role may change access for existing clients.
+  
+  i The options decide whether clients can connect as the role and what they can access.
+  
+  i Check that the clients that use the role work with the change before making it.
+  
+
+
+lint/banAlterRoleOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the settings of a role may change behaviour for existing clients.
+  
+  i The settings apply to every new session of the role, e.g. which schemas its queries find.
+  
+  i Check that the clients that use the role work with the change before making it.
+  
+
+
+lint/banAlterRoleOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the settings of a role may change behaviour for existing clients.
+  
+  i The settings apply to every new session of the role, e.g. which schemas its queries find.
+  
+  i Check that the clients that use the role work with the change before making it.

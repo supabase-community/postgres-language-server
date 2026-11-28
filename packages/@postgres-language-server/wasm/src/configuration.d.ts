@@ -526,13 +526,53 @@ export interface LinterRules {
    */
   avoidWideLockWindow?: RuleConfiguration_for_Null;
   /**
+   * Changing the options or settings of a database may change behaviour for existing clients.
+   */
+  banAlterDatabaseOptions?: RuleConfiguration_for_Null;
+  /**
    * Adding a constraint to a domain has poor support for online migrations.
    */
   banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
   /**
+   * Updating an extension or removing an object from it may break existing clients.
+   */
+  banAlterExtension?: RuleConfiguration_for_Null;
+  /**
+   * Changing the options of a function, procedure or routine may change behaviour for existing clients.
+   */
+  banAlterFunctionOptions?: RuleConfiguration_for_Null;
+  /**
+   * Adding a generated column or changing its expression may break existing clients.
+   */
+  banAlterGeneratedExpression?: RuleConfiguration_for_Null;
+  /**
    * Changing the identity of a column may break inserts from existing clients.
    */
   banAlterIdentity?: RuleConfiguration_for_Null;
+  /**
+   * Changing the condition of a policy may change access for existing clients.
+   */
+  banAlterPolicyCondition?: RuleConfiguration_for_Null;
+  /**
+   * Changing the roles of a policy may change access for existing clients.
+   */
+  banAlterPolicyRoles?: RuleConfiguration_for_Null;
+  /**
+   * Changing the options or settings of a role may change access or behaviour for existing clients.
+   */
+  banAlterRoleOptions?: RuleConfiguration_for_Null;
+  /**
+   * Changing row level security on a table may change access for existing clients.
+   */
+  banAlterRowLevelSecurity?: RuleConfiguration_for_Null;
+  /**
+   * Changing the server configuration may change behaviour for existing clients.
+   */
+  banAlterSystemOptions?: RuleConfiguration_for_Null;
+  /**
+   * Changing the options of a view may change behaviour for existing clients.
+   */
+  banAlterViewOptions?: RuleConfiguration_for_Null;
   /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */
@@ -621,6 +661,14 @@ export interface LinterRules {
    * Statements that Postgres can't run inside a transaction block.
    */
   banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients.
+   */
+  banReplaceViewFunction?: RuleConfiguration_for_Null;
+  /**
+   * Changing the replica identity of a table or a publication may break logical replication consumers.
+   */
+  banReplicaIdentity?: RuleConfiguration_for_Null;
   /**
    * Moving an object to another schema may break existing clients.
    */

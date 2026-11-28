@@ -103,6 +103,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterDatabaseOptions",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "safety",
         name: "banAlterDomainWithAddConstraint",
         recommended: false,
@@ -110,7 +116,61 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banAlterExtension",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterFunctionOptions",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterGeneratedExpression",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banAlterIdentity",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterPolicyCondition",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterPolicyRoles",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterRoleOptions",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterRowLevelSecurity",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterSystemOptions",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterViewOptions",
         recommended: false,
         severity: Severity::Warning,
     },
@@ -245,6 +305,18 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         name: "banNonTransactionalStatementInTransaction",
         recommended: true,
         severity: Severity::Error,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banReplaceViewFunction",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
+        name: "banReplicaIdentity",
+        recommended: false,
+        severity: Severity::Warning,
     },
     LinterRuleMetadata {
         group: "destructive",
@@ -644,13 +716,52 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avoid_wide_lock_window:
         Option<RuleConfiguration<pgls_analyser::options::AvoidWideLockWindow>>,
+    #[doc = "Changing the options or settings of a database may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_database_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterDatabaseOptions>>,
     #[doc = "Adding a constraint to a domain has poor support for online migrations."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_domain_with_add_constraint:
         Option<RuleConfiguration<pgls_analyser::options::BanAlterDomainWithAddConstraint>>,
+    #[doc = "Updating an extension or removing an object from it may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_extension: Option<RuleConfiguration<pgls_analyser::options::BanAlterExtension>>,
+    #[doc = "Changing the options of a function, procedure or routine may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_function_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterFunctionOptions>>,
+    #[doc = "Adding a generated column or changing its expression may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_generated_expression:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterGeneratedExpression>>,
     #[doc = "Changing the identity of a column may break inserts from existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_identity: Option<RuleConfiguration<pgls_analyser::options::BanAlterIdentity>>,
+    #[doc = "Changing the condition of a policy may change access for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_policy_condition:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterPolicyCondition>>,
+    #[doc = "Changing the roles of a policy may change access for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_policy_roles:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterPolicyRoles>>,
+    #[doc = "Changing the options or settings of a role may change access or behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_role_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterRoleOptions>>,
+    #[doc = "Changing row level security on a table may change access for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_row_level_security:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterRowLevelSecurity>>,
+    #[doc = "Changing the server configuration may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_system_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterSystemOptions>>,
+    #[doc = "Changing the options of a view may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_view_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterViewOptions>>,
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
@@ -724,6 +835,13 @@ pub struct Rules {
     pub ban_non_transactional_statement_in_transaction: Option<
         RuleConfiguration<pgls_analyser::options::BanNonTransactionalStatementInTransaction>,
     >,
+    #[doc = "Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_replace_view_function:
+        Option<RuleConfiguration<pgls_analyser::options::BanReplaceViewFunction>>,
+    #[doc = "Changing the replica identity of a table or a publication may break logical replication consumers."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_replica_identity: Option<RuleConfiguration<pgls_analyser::options::BanReplicaIdentity>>,
     #[doc = "Moving an object to another schema may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_set_schema: Option<RuleConfiguration<pgls_analyser::options::BanSetSchema>>,
@@ -975,12 +1093,52 @@ impl Rules {
                 .avoid_wide_lock_window
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterDatabaseOptions" => self
+                .ban_alter_database_options
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banAlterDomainWithAddConstraint" => self
                 .ban_alter_domain_with_add_constraint
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterExtension" => self
+                .ban_alter_extension
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterFunctionOptions" => self
+                .ban_alter_function_options
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterGeneratedExpression" => self
+                .ban_alter_generated_expression
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banAlterIdentity" => self
                 .ban_alter_identity
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterPolicyCondition" => self
+                .ban_alter_policy_condition
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterPolicyRoles" => self
+                .ban_alter_policy_roles
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterRoleOptions" => self
+                .ban_alter_role_options
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterRowLevelSecurity" => self
+                .ban_alter_row_level_security
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterSystemOptions" => self
+                .ban_alter_system_options
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banAlterViewOptions" => self
+                .ban_alter_view_options
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banCharField" => self.ban_char_field.as_ref().map(RuleConfiguration::level),
@@ -1039,6 +1197,14 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "banNonTransactionalStatementInTransaction" => self
                 .ban_non_transactional_statement_in_transaction
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banReplaceViewFunction" => self
+                .ban_replace_view_function
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banReplicaIdentity" => self
+                .ban_replica_identity
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banSetSchema" => self.ban_set_schema.as_ref().map(RuleConfiguration::level),
@@ -1268,12 +1434,52 @@ impl Rules {
                 .avoid_wide_lock_window
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "banAlterDatabaseOptions" => self
+                .ban_alter_database_options
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "banAlterDomainWithAddConstraint" => self
                 .ban_alter_domain_with_add_constraint
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
+            "banAlterExtension" => self
+                .ban_alter_extension
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterFunctionOptions" => self
+                .ban_alter_function_options
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterGeneratedExpression" => self
+                .ban_alter_generated_expression
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
             "banAlterIdentity" => self
                 .ban_alter_identity
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterPolicyCondition" => self
+                .ban_alter_policy_condition
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterPolicyRoles" => self
+                .ban_alter_policy_roles
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterRoleOptions" => self
+                .ban_alter_role_options
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterRowLevelSecurity" => self
+                .ban_alter_row_level_security
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterSystemOptions" => self
+                .ban_alter_system_options
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterViewOptions" => self
+                .ban_alter_view_options
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banCharField" => self
@@ -1362,6 +1568,14 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banNonTransactionalStatementInTransaction" => self
                 .ban_non_transactional_statement_in_transaction
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banReplaceViewFunction" => self
+                .ban_replace_view_function
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banReplicaIdentity" => self
+                .ban_replica_identity
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banSetSchema" => self

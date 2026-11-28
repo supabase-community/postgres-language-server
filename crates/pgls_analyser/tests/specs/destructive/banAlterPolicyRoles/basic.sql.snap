@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterPolicyRoles
+alter policy p on t to admin;
+
+```
+
+# Diagnostics
+lint/banAlterPolicyRoles ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the roles of policy p may change access for existing clients.
+  
+  i The policy no longer applies to the roles it applied to before, or applies to new ones.
+  
+  i Check which roles existing clients use before changing the roles of the policy.

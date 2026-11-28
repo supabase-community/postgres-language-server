@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banReplaceViewFunction
+create or replace view v as select 1 as id;
+
+```
+
+# Diagnostics
+lint/banReplaceViewFunction ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Replacing a view may change behaviour for existing clients.
+  
+  i Existing clients get different results or side effects without any change to their SQL.
+  
+  i Check that existing clients work with the new definition, or create a new object and move clients to it.

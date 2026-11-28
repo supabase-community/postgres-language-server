@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterGeneratedExpression
+alter table t alter column c set expression as (id + 2);
+
+```
+
+# Diagnostics
+lint/banAlterGeneratedExpression ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the expression of generated column c may break existing clients.
+  
+  i Existing clients read different values from the column.
+  
+  i Check that clients can handle the new values before changing the expression.

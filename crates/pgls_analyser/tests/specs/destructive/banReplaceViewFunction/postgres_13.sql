@@ -1,0 +1,5 @@
+-- Postgres 13 has no CREATE OR REPLACE TRIGGER, so the statement fails without changing anything.
+-- catalog: builtin
+-- server_version_num: 130000
+-- expect_no_diagnostics
+create or replace trigger tr before insert on t for each row execute function f();
