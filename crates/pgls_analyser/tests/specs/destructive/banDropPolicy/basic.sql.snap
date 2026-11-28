@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropPolicy
+drop policy if exists p on t;
+
+```
+
+# Diagnostics
+lint/banDropPolicy ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a policy may change access for existing clients.
+  
+  i Existing clients may be able to read or write different rows once the policy is gone.
+  
+  i Update clients that depend on it before dropping it.
