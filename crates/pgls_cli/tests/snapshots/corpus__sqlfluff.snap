@@ -13,12 +13,17 @@ check:
   lint/avoidAttachingPartition: 5
   lint/avoidCreateTrigger: 14
   lint/avoidWideLockWindow: 23
+  lint/banAlterDatabaseOptions: 26
   lint/banAlterDomainWithAddConstraint: 2
+  lint/banAlterExtension: 4
   lint/banAlterFunctionOptions: 112
   lint/banAlterGeneratedExpression: 2
   lint/banAlterIdentity: 2
   lint/banAlterPolicyCondition: 6
   lint/banAlterPolicyRoles: 3
+  lint/banAlterRoleOptions: 40
+  lint/banAlterSystemOptions: 7
+  lint/banAlterViewOptions: 12
   lint/banCharField: 10
   lint/banConcurrentIndexCreationInTransaction: 8
   lint/banCreateDomainWithConstraint: 15

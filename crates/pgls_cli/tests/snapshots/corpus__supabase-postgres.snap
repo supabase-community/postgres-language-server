@@ -7,8 +7,12 @@ check:
   lint/avoidAlterEnumAddValue: 3
   lint/avoidCreateTrigger: 19
   lint/avoidWideLockWindow: 4
+  lint/banAlterExtension: 1
   lint/banAlterFunctionOptions: 4
   lint/banAlterGeneratedExpression: 3
+  lint/banAlterRoleOptions: 31
+  lint/banAlterRowLevelSecurity: 2
+  lint/banAlterViewOptions: 1
   lint/banCharField: 2
   lint/banConcurrentIndexCreationInTransaction: 6
   lint/banDeleteWithoutWhere: 27

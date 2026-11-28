@@ -10,8 +10,11 @@ check:
   lint/addingRequiredField: 3
   lint/avoidCreateTrigger: 13
   lint/avoidWideLockWindow: 3
+  lint/banAlterDatabaseOptions: 1
   lint/banAlterFunctionOptions: 4
   lint/banAlterGeneratedExpression: 3
+  lint/banAlterRoleOptions: 6
+  lint/banAlterRowLevelSecurity: 58
   lint/banDropColumn: 8
   lint/banDropConstraint: 2
   lint/banDropFunction: 7
