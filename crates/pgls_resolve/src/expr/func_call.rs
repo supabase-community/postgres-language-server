@@ -1,5 +1,5 @@
 use pgls_query::NodeEnum;
-use pgls_query_ext::utils::QualifiedName;
+use pgls_query::QualifiedName;
 
 use super::infer_expr;
 use crate::{resolver::Resolver, utils::named};

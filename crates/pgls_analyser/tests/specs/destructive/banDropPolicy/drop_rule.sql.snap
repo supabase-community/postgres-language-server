@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banDropPolicy
+drop rule if exists r on t;
+
+```
+
+# Diagnostics
+lint/banDropPolicy ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Dropping a rule may change behaviour for existing clients.
+  
+  i Postgres no longer rewrites the queries of existing clients on the table or view.
+  
+  i Update clients that depend on it before dropping it.

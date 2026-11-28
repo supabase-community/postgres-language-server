@@ -242,6 +242,7 @@ impl Harness {
                 search_path,
                 text: cut.text.to_owned(),
                 tree: &tree,
+                function: None,
             })
         }));
         let items = match items {

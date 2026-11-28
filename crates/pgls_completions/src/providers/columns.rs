@@ -1,5 +1,6 @@
 use pgls_catalog::{Catalog, Column, ColumnClassKind, Snapshot, typing::Type};
 use pgls_query::{Identifier, protobuf};
+use pgls_resolve::FunctionContext;
 use pgls_tokenizer::NamePosition;
 use pgls_treesitter::{DerivedRelationMatch, TreeSitterQueriesExecutor, TreesitterContext};
 
@@ -51,8 +52,9 @@ pub(crate) struct DerivedColumns {
 }
 
 impl DerivedColumns {
-    /// Resolves the query of each CTE and subquery against `catalog`, like hover does. Without a
-    /// catalog, there are none.
+    /// Resolves the query of each CTE and subquery against `catalog`, like hover does, with the
+    /// parameters of `function` in scope in a SQL function body. Without a catalog, there are
+    /// none.
     ///
     /// Cost: a parse and a resolution of each CTE and subquery of the statement, up to
     /// [`DERIVED_RELATIONS_MAX`], with the CTEs before it.
@@ -60,6 +62,7 @@ impl DerivedColumns {
         ctx: &TreesitterContext,
         catalog: Option<&Catalog>,
         search_path: &[String],
+        function: Option<&FunctionContext>,
     ) -> Self {
         let mut columns = Vec::new();
         let Some(catalog) = catalog else {
@@ -88,7 +91,8 @@ impl DerivedColumns {
                 continue;
             };
             let query = protobuf::Node { node: Some(root) };
-            let Some(output) = pgls_resolve::query_columns(&query, catalog, search_path) else {
+            let Some(output) = pgls_resolve::query_columns(&query, catalog, search_path, function)
+            else {
                 continue;
             };
             let table_name = relation.get_name(ctx.text);
@@ -1280,5 +1284,48 @@ mod tests {
             found.sort();
             assert_eq!(found, expected, "{query}");
         }
+    }
+
+    /// In the body of a SQL function, the queries of CTEs see the function's parameters.
+    #[pgls_test_utils::db_test]
+    async fn completes_cte_columns_over_function_parameters(pool: PgPool) {
+        let cursor = QueryWithCursorPosition::cursor_marker();
+        let query = format!(
+            "with c as (select user_id * 2 as twice, names[1] as first_name) select c.{cursor} from c"
+        );
+        let (tree, snapshot) = get_test_deps(None, query.as_str().into(), &pool).await;
+        let catalog = pgls_catalog::Catalog::from_snapshot(snapshot.clone());
+        let param = |name: &str, type_name: &str, is_array| pgls_resolve::FunctionParam {
+            name: Some(name.to_owned()),
+            type_schema: Some("pg_catalog".to_owned()),
+            type_name: type_name.to_owned(),
+            is_array,
+        };
+        let function = pgls_resolve::FunctionContext {
+            function_name: "fn".to_owned(),
+            params: vec![
+                param("user_id", "int4", false),
+                param("names", "text", true),
+            ],
+        };
+        let items = complete(crate::CompletionParams {
+            catalog: Some(&catalog),
+            search_path: &["public".to_owned()],
+            function: Some(&function),
+            ..get_test_params(&tree, &snapshot, query.as_str().into())
+        });
+
+        let mut found: Vec<(&str, &str)> = items
+            .iter()
+            .filter(|item| item.kind == CompletionItemKind::Column)
+            .map(|item| {
+                (
+                    item.label.as_str(),
+                    item.detail.as_deref().unwrap_or_default(),
+                )
+            })
+            .collect();
+        found.sort();
+        assert_eq!(found, [("first_name", "text"), ("twice", "int4")]);
     }
 }

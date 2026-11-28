@@ -1,0 +1,12 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- found by the fuzzer: a quoted name with only escapes, like `"}}"`, is a name, also as an alias:
+-- the statement stays as written
+SELECT S "}}";
+select a   "{{x}}" from t where b = {};
+
+---
+diagnostics:
+  `SELECT S "}}";`: Format error: Placeholders could not be restored after formatting, the statement was left untouched
+  `select a   "{{x}}" from t where b = {};`: Format error: Placeholders could not be restored after formatting, the statement was left untouched

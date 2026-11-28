@@ -130,9 +130,14 @@ impl NormalizedStatements {
                 .into_iter()
                 .map(|statement| {
                     let mut statement = statement.clone();
+                    // A body with named parameters, like `select $name` or `select :a`, parses
+                    // with them converted, like the formatter reads it.
                     if let NodeEnum::CreateFunctionStmt(function) = &mut statement
                         && let Some(body) = function.option_value_mut("as")
                         && let Some(deparsed) = pgls_query::parse(body)
+                            .or_else(|_| {
+                                pgls_query::parse(&pgls_lexer::convert_to_positional_params(body))
+                            })
                             .ok()
                             .and_then(|parsed| parsed.deparse().ok())
                     {

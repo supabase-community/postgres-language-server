@@ -111,6 +111,7 @@ impl CompletionFilter<'_> {
                 .or_else(|| self.check_clause(ctx))?;
 
             self.check_invocation(ctx)?;
+            self.check_call_target(ctx)?;
             self.check_mentioned_schema_or_alias(ctx)?;
             self.check_merge_visibility(ctx)?;
 
@@ -180,8 +181,18 @@ impl CompletionFilter<'_> {
         if ctx.node_under_cursor_is_within_field(&["custom_type"])
             && matches!(
                 self.data,
-                CompletionRelevanceData::Column(_) | CompletionRelevanceData::Function(_)
+                CompletionRelevanceData::Column(_)
+                    | CompletionRelevanceData::Function(_)
+                    | CompletionRelevanceData::Parameter { .. }
             )
+        {
+            return None;
+        }
+
+        // A column that can't be qualified, like the target of `SET col = ...`, is a name and
+        // not a value.
+        if current_node_kind == "column_identifier"
+            && matches!(self.data, CompletionRelevanceData::Parameter { .. })
         {
             return None;
         }
@@ -217,7 +228,7 @@ impl CompletionFilter<'_> {
             "policy_identifier" => matches!(self.data, CompletionRelevanceData::Policy(_)),
 
             "any_identifier" => match self.data {
-                CompletionRelevanceData::Column(_) => {
+                CompletionRelevanceData::Column(_) | CompletionRelevanceData::Parameter { .. } => {
                     let matches_field = ctx.node_under_cursor_is_within_field(&[
                         "object_reference_1of1",
                         "object_reference_2of2",
@@ -387,6 +398,24 @@ impl CompletionFilter<'_> {
                         }
                     }
 
+                    // A value, wherever a column is one, and on both sides of a condition.
+                    CompletionRelevanceData::Parameter { .. } => match clause {
+                        WrappingClause::Select
+                        | WrappingClause::Update
+                        | WrappingClause::Delete
+                        | WrappingClause::Returning
+                        | WrappingClause::MergeWhen
+                        | WrappingClause::Where => true,
+
+                        WrappingClause::Merge => !is_merge_relation(ctx),
+
+                        WrappingClause::Join { on_node: Some(on) } => {
+                            ctx.node_under_cursor.start_byte() >= on.end_byte()
+                        }
+
+                        _ => false,
+                    },
+
                     CompletionRelevanceData::Function(f) => match clause {
                         // DELETE takes a table, not a function.
                         WrappingClause::From => !ctx.history_ends_with(&[
@@ -512,13 +541,30 @@ impl CompletionFilter<'_> {
         (!hidden).then_some(())
     }
 
+    /// `CALL` takes a procedure, and its arguments take functions: Postgres rejects `CALL` of a
+    /// function and a procedure in an expression.
+    fn check_call_target(&self, ctx: &TreesitterContext) -> Option<()> {
+        let CompletionRelevanceData::Function(f) = self.data else {
+            return Some(());
+        };
+
+        if ctx.wrapping_clause_type != Some(WrappingClause::Call) {
+            return Some(());
+        }
+
+        let is_target = !ctx.node_under_cursor_is_within_field(&["parameter"]);
+        (is_target == matches!(f.kind, ProcKind::Procedure)).then_some(())
+    }
+
     fn check_invocation(&self, ctx: &TreesitterContext) -> Option<()> {
         if !ctx.is_invocation {
             return Some(());
         }
 
         match self.data {
-            CompletionRelevanceData::Table(_) | CompletionRelevanceData::Column(_) => return None,
+            CompletionRelevanceData::Table(_)
+            | CompletionRelevanceData::Column(_)
+            | CompletionRelevanceData::Parameter { .. } => return None,
             _ => {}
         }
 
@@ -543,6 +589,11 @@ impl CompletionFilter<'_> {
                     && ctx
                         .head_qualifier_sanitized()
                         .is_none_or(|schema| col.schema_name == schema.as_str())
+            }
+
+            // `fn.param`, qualified with the name of the function.
+            CompletionRelevanceData::Parameter { function, .. } => {
+                function.function_name == tail_qualifier && ctx.head_qualifier_sanitized().is_none()
             }
 
             // we should never allow schema suggestions if there already was one.

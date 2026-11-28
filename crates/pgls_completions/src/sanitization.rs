@@ -394,6 +394,7 @@ mod tests {
             search_path: &[],
             text: input.into(),
             tree: leaked_tree,
+            function: None,
         }
     }
 

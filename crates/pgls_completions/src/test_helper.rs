@@ -74,6 +74,7 @@ pub(crate) fn get_test_params<'a>(
         search_path: &[],
         tree,
         text,
+        function: None,
     }
 }
 
@@ -538,6 +539,7 @@ impl TestCompletionsCase {
             catalog: Some(&catalog),
             search_path: &["public".to_owned()],
             tree: &tree,
+            function: None,
         };
 
         let items = complete(params);

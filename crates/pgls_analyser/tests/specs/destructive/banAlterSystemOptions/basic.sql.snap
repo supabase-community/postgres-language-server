@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterSystemOptions
+alter system set timezone = 'UTC';
+
+```
+
+# Diagnostics
+lint/banAlterSystemOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the server configuration may change behaviour for existing clients.
+  
+  i The settings apply to every database and session of the server once the configuration is reloaded.
+  
+  i Change the setting for a database or role instead, or check that every client of the server works with it.

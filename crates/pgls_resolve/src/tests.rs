@@ -367,7 +367,7 @@ fn search_and_cycle_add_columns_to_ctes() {
     };
     let catalog = Catalog::from_base(database());
     assert_eq!(
-        query_columns(&query, &catalog, &search_path()).map(|columns| columns
+        query_columns(&query, &catalog, &search_path(), None).map(|columns| columns
             .into_iter()
             .map(|column| column.name)
             .collect::<Vec<_>>()),
@@ -388,7 +388,7 @@ fn search_and_cycle_columns_have_types() {
         let query = pgls_query::protobuf::Node {
             node: parsed.stmts().first().map(|node| (**node).clone()),
         };
-        query_columns(&query, &catalog, &search_path())
+        query_columns(&query, &catalog, &search_path(), None)
             .expect("known columns")
             .into_iter()
             .map(|column| column.ty)
@@ -810,7 +810,7 @@ fn merge_action_is_a_function_call_before_postgres_17() {
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
     for (version, typed) in [(150000, false), (160000, false), (170000, true)] {
         let catalog = Catalog::from_base(database_of_version(version));
-        let columns = query_columns(&node, &catalog, &search_path).unwrap();
+        let columns = query_columns(&node, &catalog, &search_path, None).unwrap();
         assert_eq!(columns[0].ty.is_some(), typed, "{version}");
     }
 }
@@ -826,7 +826,7 @@ fn merge_returning_star_expands_the_source_first() {
     .into_root()
     .unwrap();
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
-    let columns = query_columns(&node, &catalog, &search_path).unwrap();
+    let columns = query_columns(&node, &catalog, &search_path, None).unwrap();
     let names = columns.iter().map(|c| c.name.as_str()).collect::<Vec<_>>();
     assert_eq!(names, ["id", "user_id", "title", "id", "name"]);
 }
@@ -942,7 +942,7 @@ fn star_output_names(sql: &str) -> Option<Vec<String>> {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    query_columns(&query, &catalog, &search_path())
+    query_columns(&query, &catalog, &search_path(), None)
         .map(|columns| columns.into_iter().map(|column| column.name).collect())
 }
 
@@ -1028,7 +1028,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let types: Vec<_> = query_columns(&query, &catalog, &search_path())
+    let types: Vec<_> = query_columns(&query, &catalog, &search_path(), None)
         .expect("known columns")
         .into_iter()
         .map(|column| column.ty)
@@ -1051,7 +1051,7 @@ fn natural_joins_merge_the_columns_both_sides_have() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let types: Vec<_> = query_columns(&query, &catalog, &search_path())
+    let types: Vec<_> = query_columns(&query, &catalog, &search_path(), None)
         .expect("known columns")
         .into_iter()
         .map(|column| column.ty)
@@ -1509,7 +1509,7 @@ fn correlated_scalar_subquery_has_the_type_of_the_outer_column() {
         .into_root()
         .unwrap();
     let node = pgls_query::protobuf::Node { node: Some(stmt) };
-    let columns = query_columns(&node, &catalog, &search_path).unwrap();
+    let columns = query_columns(&node, &catalog, &search_path, None).unwrap();
     assert_eq!(columns.len(), 1);
     assert_eq!(columns[0].name, "id");
     // `users.id` is int8, oid 20.
@@ -1528,7 +1528,7 @@ fn typed_output_names(sql: &str) -> Option<Vec<String>> {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    query_columns(&query, &catalog, &search_path())
+    query_columns(&query, &catalog, &search_path(), None)
         .map(|columns| columns.into_iter().map(|column| column.name).collect())
 }
 
@@ -1571,7 +1571,7 @@ fn cte_column_lists_apply_to_typed_columns() {
     let query = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    let columns = query_columns(&query, &catalog, &search_path()).expect("known columns");
+    let columns = query_columns(&query, &catalog, &search_path(), None).expect("known columns");
     assert_eq!(
         columns[0].ty,
         catalog
@@ -1711,6 +1711,7 @@ fn sequence_columns_have_types_in_queries() {
             &pgls_query::protobuf::Node { node: query },
             &catalog,
             &search_path,
+            None,
         )
         .unwrap_or_else(|| panic!("output of {sequence}"));
         assert_eq!(output.len(), 1);

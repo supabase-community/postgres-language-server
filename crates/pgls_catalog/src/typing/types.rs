@@ -4,8 +4,8 @@
 use crate::Catalog;
 use crate::typing::{Decision, Type, TypeId, TypedColumn};
 use crate::{Lookup, TypeInfo, TypeKind};
+use pgls_query::QualifiedName;
 use pgls_query::protobuf;
-use pgls_query_ext::utils::QualifiedName;
 
 /// The type with this identity. Unknown if it is missing too, as an identity always comes from
 /// the catalog.

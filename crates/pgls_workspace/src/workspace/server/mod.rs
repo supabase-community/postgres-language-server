@@ -1783,6 +1783,7 @@ impl Workspace for WorkspaceServer {
                 let search_path = settings
                     .map(|settings| settings.typecheck.search_path.as_slice())
                     .unwrap_or_default();
+                let function = doc.function(stmt.id());
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
@@ -1791,6 +1792,7 @@ impl Workspace for WorkspaceServer {
                     search_path,
                     tree: &cst,
                     text: doc.sql(&stmt).to_string(),
+                    function: function.as_ref(),
                 });
 
                 self.charge_document_caches(&params.path, doc);

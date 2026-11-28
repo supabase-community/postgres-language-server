@@ -60,11 +60,11 @@ Let's say we want to create a new **lint** rule called `useMyRuleName`, follow t
    Where severity is optional but can be "info", "warn", or "error" (default).
 
    The script will generate a bunch of files inside the `pgls_analyser` crate.
-   Among the other files, you'll find a file called `use_my_new_rule_name.rs` inside the `pgls_analyser/lib/src/lint/safety` folder. You'll implement your rule in this file.
+   Among the other files, you'll find a file called `use_my_rule_name.rs` inside the `crates/pgls_analyser/src/lint/safety` folder. You'll implement your rule in this file.
 
 1. The `Options` type doesn't have to be used, so it can be considered optional. However, it has to be defined as `type Options = ()`.
 1. Implement the `run` function: The function is called for every statement, and should return zero or more diagnostics. Follow the [pillars](#explain-a-rule-to-the-user) when writing the message of a diagnostic
-1. The AST matching that several rules share is a method on the parse tree's types in `pgls_query`, e.g. the subcommands of an `ALTER TABLE` (`stmt.alter_table_commands()`), the columns a statement adds or retypes (`stmt.column_defs()`), the constraints an `ALTER TABLE` adds (`stmt.added_constraints()`), the options of a statement (`DefElem::find`, `DefElem::bool_value`, `VacuumStmt::is_full`) and the name of a `String` node (`Node::string_value`). Names are read with `QualifiedName` in `pgls_query_ext::utils`, which the catalog uses too, e.g. the name of a built-in type (`QualifiedName::of_type_name(t).and_then(QualifiedName::builtin)`). `fix.rs` has the token helpers for spans and fixes, e.g. `StatementTokens::range_at`, `list_elements` and `insert_after_keyword`. The context gives the session (`ctx.session()`: search path, transaction, created objects) and the catalog before the statement (`ctx.catalog()`). Rules about locks, scans and rewrites skip tables created earlier in the transaction, which no other transaction can see yet: `ctx.is_new_relation(relation)`, with `stmt.altered_relation()` for the table of an `ALTER TABLE`.
+1. The AST matching that several rules share is a method on the parse tree's types in `pgls_query`, e.g. the subcommands of an `ALTER TABLE` (`stmt.alter_table_commands()`), the columns a statement adds or retypes (`stmt.column_defs()`), the constraints an `ALTER TABLE` adds (`stmt.added_constraints()`), the options of a statement (`DefElem::find`, `DefElem::bool_value`, `VacuumStmt::is_full`) and the name of a `String` node (`Node::string_value`). Names are read with `QualifiedName`, also in `pgls_query`, e.g. the name of a built-in type (`QualifiedName::of_type_name(t).and_then(QualifiedName::builtin)`). `fix.rs` has the token helpers for spans and fixes, e.g. `StatementTokens::range_at`, `list_elements` and `insert_after_keyword`. The context gives the session (`ctx.session()`: search path, transaction, created objects) and the catalog before the statement (`ctx.catalog()`). Rules about locks, scans and rewrites skip tables created earlier in the transaction, which no other transaction can see yet: `ctx.is_new_relation(relation)`, with `stmt.altered_relation()` for the table of an `ALTER TABLE`.
 
 Don't forget to format your code with `just f` and lint with `just l`.
 
@@ -319,7 +319,7 @@ Each test file should:
 2. Include one `-- expect_lint/<ruleName>` line per expected diagnostic, or `-- expect_no_diagnostics`. Only the number of diagnostics per rule is checked.
 3. Contain valid SQL that should either trigger or not trigger your rule
 
-Rules outside the `typecheck` group run without a catalog. A `-- catalog: builtin` line gives them the built-in catalog of the test database (from `docker-compose up -d`), with the tables, functions and types that the file creates on top. A `-- server_version_num: 110000` line makes it the catalog of that server version.
+Rules outside the `typecheck` group run without a catalog. A `-- catalog: builtin` line gives them the built-in catalog of the test database (from `just db`), with the tables, functions and types that the file creates on top. A `-- server_version_num: 110000` line makes it the catalog of that server version.
 
 **Example test structure for `addSerialColumn` rule:**
 

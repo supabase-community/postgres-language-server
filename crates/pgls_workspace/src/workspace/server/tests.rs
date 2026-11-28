@@ -2988,6 +2988,81 @@ async fn completions_after_the_end_of_an_unterminated_statement(test_db: PgPool)
 }
 
 #[pgls_test_utils::db_test]
+async fn completions_offer_the_parameters_of_a_sql_function_in_its_body(test_db: PgPool) {
+    test_db
+        .execute("create table param_users (id int primary key);")
+        .await
+        .expect("setup sql failed");
+
+    let mut conf = PartialConfiguration::init();
+    conf.merge_with(PartialConfiguration {
+        db: Some(PartialDatabaseConfiguration {
+            database: Some(
+                test_db
+                    .connect_options()
+                    .get_database()
+                    .unwrap()
+                    .to_string(),
+            ),
+            ..Default::default()
+        }),
+        ..Default::default()
+    });
+    let (workspace, project_key) =
+        get_test_workspace(Some(conf)).expect("Unable to create test workspace");
+    let path = PgLSPath::new("test.sql");
+
+    for (content, typed) in [
+        (
+            "create function f(user_id int) returns setof param_users language sql \
+             as $$ select * from param_users where id = u $$;",
+            "id = u",
+        ),
+        (
+            "create function f(user_id int) returns int language sql \
+             begin atomic select f.u; end;",
+            "f.u",
+        ),
+    ] {
+        workspace
+            .open_file(OpenFileParams {
+                project_key,
+                path: path.clone(),
+                content: content.into(),
+                version: 1,
+            })
+            .expect("Unable to open test file");
+
+        let at = content.find(typed).expect("the typed text") + typed.len();
+        let completions = workspace
+            .get_completions(crate::features::completions::GetCompletionsParams {
+                project_key,
+                path: path.clone(),
+                position: TextSize::new(u32::try_from(at).unwrap()),
+            })
+            .expect("Unable to request completions");
+
+        let first = completions.items.first().expect("a completion");
+        assert_eq!(
+            (first.label.as_str(), &first.kind, first.detail.as_deref()),
+            (
+                "user_id",
+                &pgls_completions::CompletionItemKind::Parameter,
+                Some("int4")
+            ),
+            "{content}"
+        );
+
+        workspace
+            .close_file(crate::workspace::CloseFileParams {
+                project_key,
+                path: path.clone(),
+            })
+            .expect("Unable to close test file");
+    }
+}
+
+#[pgls_test_utils::db_test]
 async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
     test_db
         .execute("create schema auth; create table auth.users (id serial primary key);")
@@ -3592,7 +3667,13 @@ async fn execute_statement_can_be_cancelled(test_db: PgPool) {
     let start = Instant::now();
     let result = std::thread::scope(|scope| {
         let execution = scope.spawn(|| workspace.execute_statement(params.clone()));
-        std::thread::sleep(Duration::from_millis(500));
+        // Cancel as soon as the execution is registered, likely before the statement reached
+        // the backend, which ignores a cancel until then.
+        let registered = Instant::now();
+        while workspace.running_statements.is_empty() {
+            assert!(registered.elapsed() < Duration::from_secs(10));
+            std::thread::sleep(Duration::from_millis(1));
+        }
         workspace
             .cancel_statement_execution(params.clone())
             .unwrap();

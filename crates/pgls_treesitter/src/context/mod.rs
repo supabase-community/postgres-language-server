@@ -50,6 +50,8 @@ pub enum WrappingClause<'a> {
     AlterPolicy,
     DropPolicy,
     CheckOrUsingClause,
+    /// `CALL p(...)`.
+    Call,
 }
 
 /// A column of the statement. Both are names, see [`Identifier::name`].
@@ -548,6 +550,7 @@ impl<'a> TreesitterContext<'a> {
             "drop_policy" => Some(WrappingClause::DropPolicy),
             "check_or_using_clause" => Some(WrappingClause::CheckOrUsingClause),
             "insert" => Some(WrappingClause::Insert),
+            "call_statement" => Some(WrappingClause::Call),
             "join" => {
                 // sadly, we need to manually iterate over the children –
                 // `node.child_by_field_id(..)` does not work as expected

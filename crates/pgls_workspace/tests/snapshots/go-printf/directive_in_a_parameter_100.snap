@@ -1,0 +1,13 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- found by the fuzzer: the directive `%c` in the parameter `@mpo%ca` stays as written, and its `%`
+-- isn't the `%` of `%%`: the statement stays as written
+SELECT
+i@mpo%ca;
+select 1;
+
+---
+diagnostics:
+  `SELECT
+i@mpo%ca;`: Format error: Placeholders could not be restored after formatting, the statement was left untouched

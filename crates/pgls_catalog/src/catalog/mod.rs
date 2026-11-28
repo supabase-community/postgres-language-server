@@ -20,7 +20,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
-use pgls_query_ext::utils::QualifiedName;
+use pgls_query::QualifiedName;
 
 use crate::Candidates;
 use crate::lookup::{

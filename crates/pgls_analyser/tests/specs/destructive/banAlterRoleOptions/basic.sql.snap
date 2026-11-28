@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterRoleOptions
+alter role r nologin;
+
+```
+
+# Diagnostics
+lint/banAlterRoleOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the options of a role may change access for existing clients.
+  
+  i The options decide whether clients can connect as the role and what they can access.
+  
+  i Check that the clients that use the role work with the change before making it.

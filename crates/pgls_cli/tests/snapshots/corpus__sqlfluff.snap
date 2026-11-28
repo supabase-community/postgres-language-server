@@ -13,8 +13,17 @@ check:
   lint/avoidAttachingPartition: 5
   lint/avoidCreateTrigger: 14
   lint/avoidWideLockWindow: 23
+  lint/banAlterDatabaseOptions: 26
   lint/banAlterDomainWithAddConstraint: 2
+  lint/banAlterExtension: 4
+  lint/banAlterFunctionOptions: 112
+  lint/banAlterGeneratedExpression: 2
   lint/banAlterIdentity: 2
+  lint/banAlterPolicyCondition: 6
+  lint/banAlterPolicyRoles: 3
+  lint/banAlterRoleOptions: 40
+  lint/banAlterSystemOptions: 7
+  lint/banAlterViewOptions: 12
   lint/banCharField: 10
   lint/banConcurrentIndexCreationInTransaction: 8
   lint/banCreateDomainWithConstraint: 15
@@ -27,10 +36,13 @@ check:
   lint/banDropExtension: 2
   lint/banDropFunction: 20
   lint/banDropNotNull: 1
+  lint/banDropPolicy: 9
   lint/banDropSequence: 5
   lint/banDropTrigger: 5
   lint/banDropType: 18
   lint/banDropView: 25
+  lint/banReplaceViewFunction: 23
+  lint/banReplicaIdentity: 17
   lint/banSetSchema: 20
   lint/banTruncate: 15
   lint/banTruncateCascade: 2

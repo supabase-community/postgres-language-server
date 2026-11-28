@@ -104,6 +104,13 @@ impl Tagged {
         (next == self.order.len()).then_some(restored)
     }
 
+    /// `text` with each tag of a named parameter as a plain name, `pgls_t0`, which the parser
+    /// reads as written, unlike `$pgls_t0`, so that the statement can be compared with how
+    /// Postgres reads it.
+    pub fn readable(text: &str) -> String {
+        text.replace(Self::TAG, &Self::TAG[1..])
+    }
+
     /// Whether a token of `kind` holds placeholders as written.
     fn is_kept(kind: SyntaxKind) -> bool {
         Self::is_string(kind) || kind == SyntaxKind::COMMENT
@@ -199,6 +206,9 @@ impl Preprocessed {
                 tagged.named.push(written.to_string());
             } else if placeholder.start() == token.start()
                 && text != written
+                // Not a placeholder that the text holds as written, like the `%c` of the
+                // parameter `@mpo%ca`, whose `%` would read as the `%` of `%%`.
+                && analysed.get(std::ops::Range::<usize>::from(placeholder)) != Some(written)
                 && placeholder.end() >= token.end()
                 && in_token.peek().is_none()
             {

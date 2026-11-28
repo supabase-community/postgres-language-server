@@ -380,6 +380,76 @@ mod tests {
         .await;
     }
 
+    /// `CALL` takes a procedure, its arguments take functions.
+    #[pgls_test_utils::db_test]
+    async fn completes_procedures_after_call(pool: PgPool) {
+        let setup = r#"
+          create schema app;
+          create function my_fn() returns int language sql as $$ select 1 $$;
+          create procedure my_proc(a int) language sql as $$ select a $$;
+          create procedure app.my_app_proc() language sql as $$ select 1 $$;
+        "#;
+        pool.execute(setup).await.unwrap();
+
+        let c = QueryWithCursorPosition::cursor_marker();
+
+        assert_complete_results(
+            format!("call my_{c}").as_str(),
+            vec![
+                CompletionAssertion::CompletionTextAndRange(
+                    "my_proc(${1:a})".into(),
+                    TextRange::new(5.into(), 8.into()),
+                ),
+                CompletionAssertion::LabelNotExists("my_fn".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("call app.{c}").as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind(
+                    "my_app_proc".into(),
+                    CompletionItemKind::Function,
+                ),
+                CompletionAssertion::LabelNotExists("my_proc".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+
+        assert_complete_results(
+            format!("call my_proc(my_{c})").as_str(),
+            vec![
+                CompletionAssertion::LabelAndKind("my_fn".into(), CompletionItemKind::Function),
+                CompletionAssertion::LabelNotExists("my_proc".into()),
+                CompletionAssertion::LabelNotExists("my_app_proc".into()),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
+    /// Built-in functions are offered too, like `array_agg` in a select list.
+    #[pgls_test_utils::db_test]
+    async fn completes_builtin_functions(pool: PgPool) {
+        assert_complete_results(
+            format!("select arra{}", QueryWithCursorPosition::cursor_marker()).as_str(),
+            vec![
+                // `array[...]`
+                CompletionAssertion::LabelAndKind("array".into(), CompletionItemKind::Keyword),
+                CompletionAssertion::LabelAndKind("array_agg".into(), CompletionItemKind::Function),
+            ],
+            None,
+            &pool,
+        )
+        .await;
+    }
+
     /// The placeholders are the arguments a call passes, not the `OUT` or `TABLE` parameters.
     #[pgls_test_utils::db_test]
     async fn inserts_placeholders_for_call_arguments(pool: PgPool) {

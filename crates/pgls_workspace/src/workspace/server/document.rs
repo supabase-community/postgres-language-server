@@ -630,6 +630,16 @@ impl Document {
         self.cache.tree(&stmt.id, self.generation)
     }
 
+    /// The SQL function whose body `id` is a statement of. Its parameters are in scope there.
+    pub(crate) fn function(&self, id: &StatementId) -> Option<pgls_resolve::FunctionContext> {
+        let parent = self.cache.parse(&id.parent()?, self.generation);
+        let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) = parent.as_ref().as_deref()
+        else {
+            return None;
+        };
+        pgls_resolve::FunctionContext::from_create_function(create_fn)
+    }
+
     /// What the walk takes of `stmt`: the statement if it parses, its syntax error, and the
     /// statement again if it is a top-level statement that doesn't parse.
     pub(crate) fn walk_input(&self, stmt: DocumentStatement) -> StatementWalkInput {
@@ -667,16 +677,7 @@ impl Document {
                 sql: id.content().to_owned(),
             });
 
-        // Statements in the body of a SQL function can reference its parameters.
-        let function = id.parent().and_then(|root| {
-            let parent = self.cache.parse(&root, self.generation);
-            let Ok(pgls_query::NodeEnum::CreateFunctionStmt(create_fn)) =
-                parent.as_ref().as_deref()
-            else {
-                return None;
-            };
-            pgls_resolve::FunctionContext::from_create_function(create_fn)
-        });
+        let function = self.function(&id);
 
         StatementWalkInput {
             analysable: ast_option.map(|root| {

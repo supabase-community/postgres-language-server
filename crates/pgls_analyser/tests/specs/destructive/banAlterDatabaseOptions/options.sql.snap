@@ -1,0 +1,31 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterDatabaseOptions
+alter database d with connection limit 5;
+-- expect_lint/banAlterDatabaseOptions
+alter database d reset search_path;
+
+```
+
+# Diagnostics
+lint/banAlterDatabaseOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the options of a database may change behaviour for existing clients.
+  
+  i The options decide whether and how many clients can connect to the database.
+  
+  i Check that the clients of the database work with the change before making it.
+  
+
+
+lint/banAlterDatabaseOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the settings of a database may change behaviour for existing clients.
+  
+  i The settings apply to every new session in the database, e.g. which schemas its queries find.
+  
+  i Check that the clients of the database work with the change before making it.

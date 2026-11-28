@@ -19,11 +19,12 @@ As you type SQL, the language server suggests relevant database objects based on
 
 - **Tables**: Available tables from your database schema
 - **Columns**: Columns from tables referenced in your query, and the columns of CTEs and of subqueries in `FROM` with their inferred types (`with c as (select id from users) select c.|`)
+- **Parameters**: In the body of a `LANGUAGE sql` function, its named parameters, as `user_id` or `fn.user_id`, where a value goes
 - **Functions**: Database functions and procedures
 - **Schemas**: Available schemas in your database
 - **Keywords**: SQL keywords and syntax
 
-The suggestions are context-aware - for example, when typing after `FROM`, you'll see table suggestions, and when typing after `SELECT`, you'll see column suggestions from relevant tables.
+The suggestions are context-aware - for example, when typing after `FROM`, you'll see table suggestions, and when typing after `SELECT`, you'll see column suggestions from relevant tables. After `CALL`, you'll see procedures, and functions in its arguments.
 
 ## Hover
 

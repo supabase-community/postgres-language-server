@@ -8,7 +8,6 @@ source: crates/pgls_templating/tests/readers.rs
   3 | select 7 %% %d, a::%s, '%s' as x, "%s" from t; -- a %s
     | select 7 %  $m, a::$n, '%s' as x, $p__ from t; -- a %s
   4 | select a "100%%" from t;
-    | select a $e100__ from t;
 
 placeholders:
      12..14 `%s` -> `$a` identifier
@@ -29,4 +28,4 @@ placeholders:
    149..151 `%s` -> `%s` unknown value
    159..163 `"%s"` -> `$p__` value
    177..179 `%s` -> `%s` in a comment
-   189..196 `"100%%"` -> `$e100__` value
+   193..195 `%%` -> `%%` as written

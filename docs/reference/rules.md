@@ -31,7 +31,17 @@ Code that loses data or breaks existing clients.
 | Rule | Description |
 | --- | --- |
 | [addingRequiredField](./rules/adding-required-field.md) 🛠 | Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required. |
+| [banAlterDatabaseOptions](./rules/ban-alter-database-options.md) 🛠 | Changing the options or settings of a database may change behaviour for existing clients. |
+| [banAlterExtension](./rules/ban-alter-extension.md) 🛠 | Updating an extension or removing an object from it may break existing clients. |
+| [banAlterFunctionOptions](./rules/ban-alter-function-options.md) 🛠 | Changing the options of a function, procedure or routine may change behaviour for existing clients. |
+| [banAlterGeneratedExpression](./rules/ban-alter-generated-expression.md) 🛠 | Adding a generated column or changing its expression may break existing clients. |
 | [banAlterIdentity](./rules/ban-alter-identity.md) 🛠 | Changing the identity of a column may break inserts from existing clients. |
+| [banAlterPolicyCondition](./rules/ban-alter-policy-condition.md) 🛠 | Changing the condition of a policy may change access for existing clients. |
+| [banAlterPolicyRoles](./rules/ban-alter-policy-roles.md) 🛠 | Changing the roles of a policy may change access for existing clients. |
+| [banAlterRoleOptions](./rules/ban-alter-role-options.md) 🛠 | Changing the options or settings of a role may change access or behaviour for existing clients. |
+| [banAlterRowLevelSecurity](./rules/ban-alter-row-level-security.md) 🛠 | Changing row level security on a table may change access for existing clients. |
+| [banAlterSystemOptions](./rules/ban-alter-system-options.md) 🛠 | Changing the server configuration may change behaviour for existing clients. |
+| [banAlterViewOptions](./rules/ban-alter-view-options.md) 🛠 | Changing the options of a view may change behaviour for existing clients. |
 | [banDeleteWithoutWhere](./rules/ban-delete-without-where.md) ✅ | A `DELETE` statement without a `WHERE` clause will remove all rows from the table. |
 | [banDropColumn](./rules/ban-drop-column.md) ✅ 🛠 | Dropping a column may break existing clients. |
 | [banDropConstraint](./rules/ban-drop-constraint.md) 🛠 | Dropping a constraint may break existing clients. |
@@ -42,11 +52,14 @@ Code that loses data or breaks existing clients.
 | [banDropFunction](./rules/ban-drop-function.md) 🛠 | Dropping a function, procedure, routine, or aggregate may break existing clients. |
 | [banDropGeneratedExpression](./rules/ban-drop-generated-expression.md) 🛠 | Dropping the expression of a generated column may break existing clients. |
 | [banDropNotNull](./rules/ban-drop-not-null.md) ✅ 🛠 | Dropping a NOT NULL constraint may break existing clients. |
+| [banDropPolicy](./rules/ban-drop-policy.md) 🛠 | Dropping a policy or rule may change behaviour for existing clients. |
 | [banDropSchema](./rules/ban-drop-schema.md) ✅ 🛠 | Dropping a schema will remove all objects within it and may break existing clients. |
 | [banDropSequence](./rules/ban-drop-sequence.md) 🛠 | Dropping a sequence may break existing clients. |
 | [banDropTable](./rules/ban-drop-table.md) ✅ 🛠 | Dropping a table may break existing clients. |
 | [banDropType](./rules/ban-drop-type.md) 🛠 | Dropping a type, cast, operator, operator class, or operator family may break existing clients. |
 | [banDropView](./rules/ban-drop-view.md) 🛠 | Dropping a view or materialized view may break existing clients. |
+| [banReplaceViewFunction](./rules/ban-replace-view-function.md) 🛠 | Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients. |
+| [banReplicaIdentity](./rules/ban-replica-identity.md) 🛠 | Changing the replica identity of a table or a publication may break logical replication consumers. |
 | [banSetSchema](./rules/ban-set-schema.md) 🛠 | Moving an object to another schema may break existing clients. |
 | [banTruncate](./rules/ban-truncate.md) ✅ 🛠 | Truncating a table removes all rows and can cause data loss in production. |
 | [banTruncateCascade](./rules/ban-truncate-cascade.md) 🛠 | Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables. |

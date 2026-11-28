@@ -2,8 +2,8 @@
 
 use std::rc::Rc;
 
+use pgls_query::QualifiedName;
 use pgls_query::protobuf::RangeVar;
-use pgls_query_ext::utils::QualifiedName;
 
 use super::{Resolver, alias::apply_alias};
 use crate::{

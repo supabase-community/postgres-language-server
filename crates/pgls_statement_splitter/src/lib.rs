@@ -264,22 +264,20 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
         return None;
     }
     // COPY data is read after its COPY statement, so a region with COPY data whose statement is
-    // before it can't be lexed on its own, and changing a COPY statement in the region can turn
-    // text after the region into data or back.
+    // before it can't be lexed on its own, and changing a COPY statement in the region, before
+    // or after the change, can turn text after the region into data or back. The lexer tells a
+    // COPY statement, since it reads the first word as psql does: `%copy t from stdin;` is one.
     let old_region_end = (new_region_end + old.len()).checked_sub(new.len())?;
-    let is_copy = |text: &str, range: &TextRange| {
-        text.get(usize::from(range.start())..)
-            .and_then(|statement| statement.get(..4))
-            .is_some_and(|word| word.eq_ignore_ascii_case("copy"))
+    let has_copy = |text: &str, end: usize| {
+        text.get(start..end)
+            .is_none_or(|region| Lexer::new(region).lex().has_copy())
     };
     if previous
         .copy_data
         .iter()
         .any(|data| usize::from(data.end()) > start && usize::from(data.start()) < old_region_end)
-        || ranges
-            .get(first..last)?
-            .iter()
-            .any(|range| is_copy(old, range))
+        || has_copy(old, old_region_end)
+        || has_copy(new, new_region_end)
     {
         return None;
     }
@@ -293,13 +291,6 @@ fn split_region(old: &str, previous: &SplitResult, new: &str) -> Option<SplitRes
 
     // `split` returns ranges relative to the region; `+ offset` makes them offsets into `new`.
     let region = split(&new[start..new_region_end]);
-    if region
-        .ranges
-        .iter()
-        .any(|range| is_copy(&new[start..new_region_end], range))
-    {
-        return None;
-    }
     let region_ranges: Vec<TextRange> = region.ranges.iter().map(|range| *range + offset).collect();
 
     // Step 3: the statements before and after the change come out as before, so the region
@@ -2105,6 +2096,18 @@ VALUES
             old.replace("stdin", "stdon"),
             old.replace("select 0", "copy u from stdin"),
             old.replace("select 6;", "copy u from stdin;\nselect 6;"),
+        ] {
+            assert_eq!(split_edited(old, &previous, &new), split(&new), "{new}");
+        }
+
+        // The first word of a statement is its first identifier, so `%copy t from stdin;` is a
+        // COPY statement too. Deleting the `(` before it, which kept its `;` from ending the
+        // statement, starts the COPY data.
+        let old = "select 1;\nselect 1;\nupdate t set x = 1\n\n(select 2;%copy t from stdin;\n1\n\\.\nselect 1;\nselect 1;\n";
+        let previous = split(old);
+        for new in [
+            old.replace("update t set x = 1\n\n(", ""),
+            old.replace("(select 2;", "select 2;"),
         ] {
             assert_eq!(split_edited(old, &previous, &new), split(&new), "{new}");
         }

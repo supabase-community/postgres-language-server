@@ -39,6 +39,7 @@ fn to_params<'a>(
         search_path: &[],
         text,
         tree,
+        function: None,
     }
 }
 
