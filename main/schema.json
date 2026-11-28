@@ -1073,6 +1073,17 @@
             }
           ]
         },
+        "banAlterDatabaseOptions": {
+          "description": "Changing the options or settings of a database may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banAlterDomainWithAddConstraint": {
           "description": "Adding a constraint to a domain has poor support for online migrations.",
           "anyOf": [
@@ -1084,8 +1095,107 @@
             }
           ]
         },
+        "banAlterExtension": {
+          "description": "Updating an extension or removing an object from it may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterFunctionOptions": {
+          "description": "Changing the options of a function, procedure or routine may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterGeneratedExpression": {
+          "description": "Adding a generated column or changing its expression may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banAlterIdentity": {
           "description": "Changing the identity of a column may break inserts from existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterPolicyCondition": {
+          "description": "Changing the condition of a policy may change access for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterPolicyRoles": {
+          "description": "Changing the roles of a policy may change access for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterRoleOptions": {
+          "description": "Changing the options or settings of a role may change access or behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterRowLevelSecurity": {
+          "description": "Changing row level security on a table may change access for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterSystemOptions": {
+          "description": "Changing the server configuration may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banAlterViewOptions": {
+          "description": "Changing the options of a view may change behaviour for existing clients.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"
@@ -1328,6 +1438,28 @@
         },
         "banNonTransactionalStatementInTransaction": {
           "description": "Statements that Postgres can't run inside a transaction block.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banReplaceViewFunction": {
+          "description": "Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "banReplicaIdentity": {
+          "description": "Changing the replica identity of a table or a publication may break logical replication consumers.",
           "anyOf": [
             {
               "$ref": "#/definitions/RuleConfiguration"

@@ -193,10 +193,40 @@
         <loc>https://pg-language-server.com/main/reference/rules/avoid-wide-lock-window/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-database-options/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-alter-domain-with-add-constraint/</loc>
       </url>
       <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-extension/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-function-options/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-generated-expression/</loc>
+      </url>
+      <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-alter-identity/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-policy-condition/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-policy-roles/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-role-options/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-row-level-security/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-system-options/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-alter-view-options/</loc>
       </url>
       <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-char-field/</loc>
@@ -263,6 +293,12 @@
       </url>
       <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-non-transactional-statement-in-transaction/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-replace-view-function/</loc>
+      </url>
+      <url>
+        <loc>https://pg-language-server.com/main/reference/rules/ban-replica-identity/</loc>
       </url>
       <url>
         <loc>https://pg-language-server.com/main/reference/rules/ban-set-schema/</loc>

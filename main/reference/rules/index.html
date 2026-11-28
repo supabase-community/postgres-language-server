@@ -1396,8 +1396,48 @@
 <td>Adding a new column that is NOT NULL and has no default value to an existing table effectively makes it required.</td>
 </tr>
 <tr>
+<td><a href=".././rules/ban-alter-database-options/">banAlterDatabaseOptions</a> 🛠</td>
+<td>Changing the options or settings of a database may change behaviour for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-extension/">banAlterExtension</a> 🛠</td>
+<td>Updating an extension or removing an object from it may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-function-options/">banAlterFunctionOptions</a> 🛠</td>
+<td>Changing the options of a function, procedure or routine may change behaviour for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-generated-expression/">banAlterGeneratedExpression</a> 🛠</td>
+<td>Adding a generated column or changing its expression may break existing clients.</td>
+</tr>
+<tr>
 <td><a href=".././rules/ban-alter-identity/">banAlterIdentity</a> 🛠</td>
 <td>Changing the identity of a column may break inserts from existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-policy-condition/">banAlterPolicyCondition</a> 🛠</td>
+<td>Changing the condition of a policy may change access for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-policy-roles/">banAlterPolicyRoles</a> 🛠</td>
+<td>Changing the roles of a policy may change access for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-role-options/">banAlterRoleOptions</a> 🛠</td>
+<td>Changing the options or settings of a role may change access or behaviour for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-row-level-security/">banAlterRowLevelSecurity</a> 🛠</td>
+<td>Changing row level security on a table may change access for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-system-options/">banAlterSystemOptions</a> 🛠</td>
+<td>Changing the server configuration may change behaviour for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-alter-view-options/">banAlterViewOptions</a> 🛠</td>
+<td>Changing the options of a view may change behaviour for existing clients.</td>
 </tr>
 <tr>
 <td><a href=".././rules/ban-delete-without-where/">banDeleteWithoutWhere</a> ✅</td>
@@ -1462,6 +1502,14 @@
 <tr>
 <td><a href=".././rules/ban-drop-view/">banDropView</a> 🛠</td>
 <td>Dropping a view or materialized view may break existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-replace-view-function/">banReplaceViewFunction</a> 🛠</td>
+<td>Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients.</td>
+</tr>
+<tr>
+<td><a href=".././rules/ban-replica-identity/">banReplicaIdentity</a> 🛠</td>
+<td>Changing the replica identity of a table or a publication may break logical replication consumers.</td>
 </tr>
 <tr>
 <td><a href=".././rules/ban-set-schema/">banSetSchema</a> 🛠</td>
