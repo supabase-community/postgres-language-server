@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterGeneratedExpression
+alter table t add column c int generated always as (id + 1) stored;
+
+```
+
+# Diagnostics
+lint/banAlterGeneratedExpression ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Adding generated column c may break existing clients.
+  
+  i SELECT * returns an additional column, and INSERT ... SELECT * tries to write the generated column, which fails.
+  
+  i Make sure that clients list the columns they insert and select before adding the column.

@@ -1084,6 +1084,17 @@
             }
           ]
         },
+        "banAlterGeneratedExpression": {
+          "description": "Adding a generated column or changing its expression may break existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banAlterIdentity": {
           "description": "Changing the identity of a column may break inserts from existing clients.",
           "anyOf": [
