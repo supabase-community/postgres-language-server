@@ -435,9 +435,6 @@ mod tests {
             Some("select 1 -- xxx, 2\nfrom t;".to_string())
         );
         let whole = TextRange::up_to(pgls_text_size::TextSize::of(text));
-        assert_eq!(
-            Template::RustFmt.read(text).unwrap().tag(text, whole),
-            None
-        );
+        assert_eq!(Template::RustFmt.read(text).unwrap().tag(text, whole), None);
     }
 }

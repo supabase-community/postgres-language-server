@@ -191,8 +191,9 @@ impl Preprocessed {
                 // the text doesn't hold as written, see [`Preprocessed::substitute`], can't be
                 // put back.
                 in_token.for_each(drop);
-                if source.get(std::ops::Range::<usize>::from(token.checked_add(range.start())?))
-                    != Some(text)
+                if source.get(std::ops::Range::<usize>::from(
+                    token.checked_add(range.start())?,
+                )) != Some(text)
                 {
                     return None;
                 }
