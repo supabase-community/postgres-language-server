@@ -31,6 +31,7 @@ define_categories! {
     "lint/banAlterGeneratedExpression": "https://pg-language-server.com/latest/reference/rules/ban-alter-generated-expression/",
     "lint/banAlterIdentity": "https://pg-language-server.com/latest/reference/rules/ban-alter-identity/",
     "lint/banAlterPolicyCondition": "https://pg-language-server.com/latest/reference/rules/ban-alter-policy-condition/",
+    "lint/banAlterPolicyRoles": "https://pg-language-server.com/latest/reference/rules/ban-alter-policy-roles/",
     "lint/banCharField": "https://pg-language-server.com/latest/reference/rules/ban-char-field/",
     "lint/banConcurrentIndexCreationInTransaction": "https://pg-language-server.com/latest/reference/rules/ban-concurrent-index-creation-in-transaction/",
     "lint/banCreateDomainWithConstraint": "https://pg-language-server.com/latest/reference/rules/ban-create-domain-with-constraint/",
