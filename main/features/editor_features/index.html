@@ -1410,11 +1410,12 @@
 <ul>
 <li><strong>Tables</strong>: Available tables from your database schema</li>
 <li><strong>Columns</strong>: Columns from tables referenced in your query</li>
+<li><strong>Parameters</strong>: In the body of a <code>LANGUAGE sql</code> function, its named parameters, as <code>user_id</code> or <code>fn.user_id</code>, where a value goes</li>
 <li><strong>Functions</strong>: Database functions and procedures</li>
 <li><strong>Schemas</strong>: Available schemas in your database</li>
 <li><strong>Keywords</strong>: SQL keywords and syntax</li>
 </ul>
-<p>The suggestions are context-aware - for example, when typing after <code>FROM</code>, you'll see table suggestions, and when typing after <code>SELECT</code>, you'll see column suggestions from relevant tables.</p>
+<p>The suggestions are context-aware - for example, when typing after <code>FROM</code>, you'll see table suggestions, and when typing after <code>SELECT</code>, you'll see column suggestions from relevant tables. After <code>CALL</code>, you'll see procedures, and functions in its arguments.</p>
 <h2 id="hover">Hover<a class="headerlink" href="#hover" title="Permanent link">&para;</a></h2>
 <p>Hovering a name shows the object it refers to:</p>
 <ul>
