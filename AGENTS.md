@@ -131,6 +131,7 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_line_index` - Converts offsets to line/column positions in UTF-8, UTF-16 or UTF-32 and back, and the character positions that Postgres reports to offsets. Convert positions with it, not by hand
 - `pgls_suppressions` - Rule suppression handling
 - `pgls_migrations` - Migration tools (Supabase, dbmate, goose): migration files and versions, up/down sections, project detection for `init`
+- `pgls_templating` - What a host substitutes in a file before Postgres sees it (goose's `ENVSUB`, Go printf and Rust fmt templates): the text with same-length placeholders that the analysis reads (`Preprocessed`)
 
 ### TypeScript Packages
 Located in `packages/`:

@@ -1,0 +1,36 @@
+[package]
+authors.workspace    = true
+categories.workspace = true
+description          = "SQL files that a host fills in before Postgres sees them: Go and Rust format strings, goose's ENVSUB"
+edition.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+license.workspace    = true
+name                 = "pgls_templating"
+repository.workspace = true
+version              = "0.0.0"
+
+
+[dependencies]
+pgls_lexer     = { workspace = true }
+pgls_text_size = { workspace = true }
+schemars       = { workspace = true, optional = true }
+serde          = { workspace = true, features = ["derive"] }
+tracing        = { workspace = true }
+
+[dev-dependencies]
+dir-test                = { workspace = true }
+insta                   = { workspace = true }
+pgls_migrations         = { workspace = true }
+pgls_statement_splitter = { workspace = true }
+
+[lib]
+doctest = false
+
+[features]
+schema = ["dep:schemars"]
+# `Template::render` and `Expansion::render`, the oracle of the tests of the formatter.
+testing = []
+
+[lints]
+workspace = true

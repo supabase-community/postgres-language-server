@@ -9,7 +9,7 @@ use super::{
     Resolver,
     from_clause::resolve_from_clause,
     record_unresolved_node,
-    res_target::{infer_select_list, record_star_references, select_list_output},
+    res_target::{infer_select_list, select_list_output},
     resolve_list, resolve_node,
     with_clause::resolve_with_clause,
 };
@@ -192,7 +192,7 @@ fn resolve_select(r: &mut Resolver, n: &SelectStmt) -> Option<QueryOutput> {
         let mut output = select_list_output(r, &n.target_list);
         let output_names = output.output_names();
         r.set_output_names(output_names.clone());
-        record_star_references(r, &output);
+        r.record_star_references(&output);
         for node in n.where_clause.iter().chain(&n.having_clause) {
             resolve_expr(r, node);
         }

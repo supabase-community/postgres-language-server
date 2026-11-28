@@ -1,0 +1,27 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- the printer writes `limit` before `offset`, which would swap the arguments of Go: the
+-- statements stay as written
+select * from t offset %d limit %d;
+select * from t offset '%d' limit '%d';
+-- a comment, which Go reads too, moves with its clause and keeps its place before `limit %d`
+select * from t /* %d */ limit %d offset 1;
+-- in the printer's order, it is formatted
+select * from t limit %d offset %d;
+-- the printer writes the options of a function in its own order, before `as`: the comment after
+-- `immutable` would move before the body, whose `%v` would take the comment's argument
+create function f() returns int language sql as 'select %v' immutable /* %v */ strict;
+-- the comment of `h` stays before the body, and the statement is formatted
+create function h()
+returns /* %v */ int
+language sql
+immutable
+strict
+as 'select %d';
+
+---
+diagnostics:
+  `select * from t offset %d limit %d;`: Format error: Placeholders could not be restored after formatting, the statement was left untouched
+  `select * from t offset '%d' limit '%d';`: Format error: Placeholders could not be restored after formatting, the statement was left untouched
+  `create function f() returns int language sql as 'select %v' immutable /* %v */ strict;`: Format error: Formatter: 1 comment(s) could not be placed, the statement was left as written

@@ -31,6 +31,7 @@ use pgls_configuration::{
     plpgsql_check::PlPgSqlCheckConfiguration,
     semantic_tokens::SemanticTokensConfiguration,
     splinter::SplinterConfiguration,
+    templating::{Template, TemplatingConfiguration},
 };
 use pgls_fs::{PgLSPath, normalize_path};
 use pgls_matcher::Matcher;
@@ -312,6 +313,9 @@ pub struct Settings {
     /// Migrations settings
     pub migrations: Option<MigrationSettings>,
 
+    /// The files that are format strings of a host language
+    pub templating: TemplatingSettings,
+
     /// Inlay hint settings for the workspace
     pub inlay_hints: InlayHintsSettings,
 
@@ -393,6 +397,14 @@ impl Settings {
             self.semantic_tokens = SemanticTokensSettings {
                 enabled: SemanticTokensConfiguration::from(semantic_tokens).enabled,
             };
+        }
+
+        // templating part
+        if let Some(templating) = configuration.templating {
+            self.templating = TemplatingSettings::new(
+                working_directory.clone(),
+                TemplatingConfiguration::from(templating),
+            )?;
         }
 
         // Migrations settings
@@ -729,6 +741,38 @@ pub struct FormatterSettings {
 
     /// The files that are formatted: `format.include` and `format.ignore`.
     pub paths: PathFilter,
+}
+
+/// The files that are format strings of a host language.
+#[derive(Debug, Default)]
+pub struct TemplatingSettings {
+    /// `templating.syntax`.
+    pub syntax: Template,
+
+    /// The files that are templates: `templating.include` and `templating.ignore`.
+    pub paths: PathFilter,
+}
+
+impl TemplatingSettings {
+    /// The settings of `templating`, with globs relative to `working_directory`.
+    pub fn new(
+        working_directory: Option<PathBuf>,
+        conf: TemplatingConfiguration,
+    ) -> Result<Self, WorkspaceError> {
+        Ok(Self {
+            syntax: conf.syntax,
+            paths: PathFilter::new(working_directory, &conf.include, &conf.ignore)?,
+        })
+    }
+
+    /// The template syntax of the file at `path`.
+    pub fn template_of(&self, path: &Path) -> Template {
+        if self.paths.contains(path) {
+            self.syntax
+        } else {
+            Template::None
+        }
+    }
 }
 
 impl FormatterSettings {

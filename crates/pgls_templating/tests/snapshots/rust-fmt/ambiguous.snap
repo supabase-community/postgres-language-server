@@ -1,0 +1,17 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select * from t {alias};
+    | select * from t $a_____;
+  2 | select * from t {}{}, t {0}_x;
+    | select * from t $bc_, t $b_x_;
+
+placeholders:
+     16..23 `{alias}` -> `$a_____` value
+     41..45 `{}{}` -> `$bc_` value
+     49..54 `{0}_x` -> `$b_x_` value
+
+diagnostics:
+  16..23 `{alias}`: A template placeholder directly after `t` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  41..45 `{}{}`: A template placeholder directly after `t` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.
+  49..54 `{0}_x`: A template placeholder directly after `t` can't be read: write `AS` before an alias; a placeholder can stand for a name or a value, not a SQL clause.

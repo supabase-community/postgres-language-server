@@ -1,0 +1,10 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- +goose Up
+  2 | -- +goose ENVSUB ON
+  3 | insert into audit_log (message) values ('${MESSAGE}'); -- ${NOTE}
+
+placeholders:
+     74..84 `${MESSAGE}` -> `${MESSAGE}` unknown value
+     91..98 `${NOTE}` -> `${NOTE}` in a comment

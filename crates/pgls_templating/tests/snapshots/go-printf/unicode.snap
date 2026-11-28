@@ -1,0 +1,11 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select 'é%s', "ü%s", 漢_%s from "漢字" where x = %d;
+    | select 'é%s', $b____, $_c___ from "漢字" where x = $d;
+
+placeholders:
+     10..12 `%s` -> `%s` unknown value
+     15..21 `"ü%s"` -> `$b____` value
+     23..29 `漢_%s` -> `$_c___` value
+     54..56 `%d` -> `$d` value

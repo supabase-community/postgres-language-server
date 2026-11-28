@@ -7,7 +7,9 @@ use crate::{SyntaxKind, lex};
 // Keywords that, when preceding a named parameter, indicate that the parameter should be treated
 // as an identifier rather than a positional parameter. `ON` does too, unless it introduces a
 // condition, see [`on_introduces_condition`].
-const IDENTIFIER_CONTEXT: [SyntaxKind; 26] = [
+const IDENTIFIER_CONTEXT: [SyntaxKind; 27] = [
+    // An alias or a type, like `select 1 as :alias` or `cast(x as :type)`.
+    SyntaxKind::AS_KW,
     SyntaxKind::TO_KW,
     SyntaxKind::FROM_KW,
     SyntaxKind::INTO_KW,
@@ -448,6 +450,8 @@ mod tests {
             "drop view if exists $report",
             "select * from orders join :customers using (id)",
             "update :items set id = 1",
+            "select total as :alias from orders",
+            "select cast(total as $type) from orders",
             "select * from orders, :items",
             "select * from orders o join items i on o.id = i.id, $more where o.id = 1",
             "select * from (select * from a, b) s, $more",

@@ -127,6 +127,7 @@ pub(crate) fn fix_file(
         open.project_key(),
         open.settings_version(),
         open.migration_tool(),
+        open.template(),
         open.max_size(),
         code,
         0,

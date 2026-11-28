@@ -1,0 +1,11 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- found by the fuzzer: to Go, the `%T` of `%TYPE` is a directive, and the body of the
+-- function, which has none, is formatted
+create function hobbies_by_name(hobbies_r.name%TYPE)
+returns hobbies_r.person%TYPE
+language sql
+as $$
+select person from hobbies_r where name = $1;
+$$;

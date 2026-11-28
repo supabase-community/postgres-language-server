@@ -97,6 +97,7 @@ fn apply_override(base: &mut PartialConfiguration, override_layer: &PartialConfi
     replace_string_sets!(files: include, ignore);
     replace_string_sets!(linter: include, ignore);
     replace_string_sets!(format: include, ignore);
+    replace_string_sets!(templating: include, ignore);
     replace_string_sets!(splinter: ignore);
     replace_string_sets!(typecheck: search_path);
     replace_string_sets!(db: allow_statement_executions_against);

@@ -1,0 +1,15 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select {}, {0}, {name}, {name:>8}, { }, {value:>width$.precision$}, {:?}, {:.*} from t;
+    | select $a, $a_, $b____, $b_______, $c_, $d________________________, $e__, $f___ from t;
+
+placeholders:
+       7..9 `{}` -> `$a` value
+     11..14 `{0}` -> `$a_` value
+     16..22 `{name}` -> `$b____` value
+     24..33 `{name:>8}` -> `$b_______` value
+     35..38 `{ }` -> `$c_` value
+     40..66 `{value:>width$.precision$}` -> `$d________________________` value
+     68..72 `{:?}` -> `$e__` value
+     74..79 `{:.*}` -> `$f___` value

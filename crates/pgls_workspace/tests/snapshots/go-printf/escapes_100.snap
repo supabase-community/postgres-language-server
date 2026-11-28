@@ -1,0 +1,4 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+select 7 %% 2, 'a%%b' from t where n %% %d = 0;

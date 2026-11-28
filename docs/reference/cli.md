@@ -137,6 +137,8 @@ Lints your database schema.
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
+- **`    --template-syntax`**=_`<go-printf|rust-fmt|none>`_ &mdash; 
+  The format strings that the files are: "go-printf" for Go's `fmt.Sprintf` (`%s`, `%d`, `%[1]v`, `%%`), "rust-fmt" for Rust's `format!` (`{}`, `{0}`, `{name}`, `{{`), or "none". The analysis reads the SQL around the placeholders. Default: "none".
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
 - **`    --indent-size`**=_`NUMBER`_ &mdash; 
@@ -264,6 +266,8 @@ Runs everything to the requested files.
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
+- **`    --template-syntax`**=_`<go-printf|rust-fmt|none>`_ &mdash; 
+  The format strings that the files are: "go-printf" for Go's `fmt.Sprintf` (`%s`, `%d`, `%[1]v`, `%%`), "rust-fmt" for Rust's `format!` (`{}`, `{0}`, `{name}`, `{{`), or "none". The analysis reads the SQL around the placeholders. Default: "none".
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
 - **`    --indent-size`**=_`NUMBER`_ &mdash; 
@@ -417,6 +421,8 @@ Formats the requested files.
   The migration tool that runs the migration files: "supabase", "dbmate", "goose" or "none". The marker comments of the tool split a migration file into up and down sections, which are analysed as migrations of their own: `-- migrate:up` and `-- migrate:down` of dbmate, `-- +goose Up` and `-- +goose Down` of goose. The Supabase CLI runs every file as one migration. Default: "none", every file is one migration.
 - **`    --lint-down`**=_`<true|false>`_ &mdash; 
   If `false`, the down sections of migration files are not linted. Default: `true`.
+- **`    --template-syntax`**=_`<go-printf|rust-fmt|none>`_ &mdash; 
+  The format strings that the files are: "go-printf" for Go's `fmt.Sprintf` (`%s`, `%d`, `%[1]v`, `%%`), "rust-fmt" for Rust's `format!` (`{}`, `{0}`, `{name}`, `{{`), or "none". The analysis reads the SQL around the placeholders. Default: "none".
 - **`    --line-width`**=_`NUMBER`_ &mdash; 
   Maximum line width before breaking. Default: 100.
 - **`    --indent-size`**=_`NUMBER`_ &mdash; 
@@ -611,9 +617,17 @@ Acts as a server for the Language Server Protocol over stdin/stdout.
 
 Parses a SQL file (or standard input) and writes the parse tree as a protobuf `ParseResult` message.
 
-**Usage**: **`postgres-language-server`** **`parse`** \[**`--file`**=_`PATH`_\]
+**Usage**: **`postgres-language-server`** **`parse`** \[**`--config-path`**=_`PATH`_\] \[**`--file`**=_`PATH`_\]
+
+**The configuration of SQL files that are format strings of a host language.**
+- **`    --template-syntax`**=_`<go-printf|rust-fmt|none>`_ &mdash; 
+  The format strings that the files are: "go-printf" for Go's `fmt.Sprintf` (`%s`, `%d`, `%[1]v`, `%%`), "rust-fmt" for Rust's `format!` (`{}`, `{0}`, `{name}`, `{{`), or "none". The analysis reads the SQL around the placeholders. Default: "none".
+
+
 
 **Available options:**
+- **`    --config-path`**=_`PATH`_ &mdash; 
+  Set the file path to the configuration file, or the directory path to find `postgres-language-server.jsonc`. By default, the configuration of the folder of the file applies, or of the working directory for standard input.
 - **`    --file`**=_`PATH`_ &mdash; 
   Path to the SQL file to parse. When omitted, the SQL is read from standard input.
 - **`    --stdin-file-path`**=_`PATH`_ &mdash; 

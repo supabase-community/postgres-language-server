@@ -1,0 +1,9 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select '{{"a": {v}}}'::jsonb, '{1,2}'::int[], '{"a": 1}';
+
+placeholders:
+      8..10 `{{` -> `{{` unknown value
+     15..18 `{v}` -> `{v}` unknown value
+     18..20 `}}` -> `}}` unknown value

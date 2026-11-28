@@ -536,9 +536,9 @@ impl<'a> Resolver<'a> {
     /// The alias `alias` after the (possibly qualified) name starting at `location`: its location
     /// and span, if it is written there.
     pub(crate) fn alias_location(&self, location: i32, alias: &str) -> Option<(i32, TextRange)> {
-        let sql = self.sql?;
-        let (start, end) = self.tokens()?.alias_span(usize::try_from(location).ok()?)?;
-        if pgls_query::Identifier::new(sql.get(start..end)?).name() != alias {
+        let tokens = self.tokens()?;
+        let (start, end) = tokens.alias_span(usize::try_from(location).ok()?)?;
+        if tokens.identifier_at(start)?.name() != alias {
             return None;
         }
         Some((

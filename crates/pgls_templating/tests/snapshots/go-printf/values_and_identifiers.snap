@@ -1,0 +1,27 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select * from %s.%s where id = %d and name = %q;
+    | select * from $a.$b where id = $c and name = $d;
+  2 | insert into %s (a, b) values (%d, %v);
+    | insert into $e (a, b) values ($f, $g);
+  3 | update %s set a = %d where b in (%v, %v);
+    | update $h set a = $i where b in ($j, $k);
+  4 | select a as %s, cast(b as %s) from t join %s on true;
+    | select a as $l, cast(b as $m) from t join $n on true;
+
+placeholders:
+     14..16 `%s` -> `$a` identifier
+     17..19 `%s` -> `$b` identifier
+     31..33 `%d` -> `$c` value
+     45..47 `%q` -> `$d` value
+     61..63 `%s` -> `$e` identifier
+     79..81 `%d` -> `$f` value
+     83..85 `%v` -> `$g` value
+     95..97 `%s` -> `$h` identifier
+   106..108 `%d` -> `$i` value
+   121..123 `%v` -> `$j` value
+   125..127 `%v` -> `$k` value
+   142..144 `%s` -> `$l` identifier
+   156..158 `%s` -> `$m` identifier
+   172..174 `%s` -> `$n` identifier

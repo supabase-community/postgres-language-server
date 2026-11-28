@@ -8,6 +8,9 @@ use pgls_diagnostics::{DiagnosticExt, serde::Diagnostic as SDiagnostic};
 use pgls_pretty_print::{FormatConfig, FormatStatementParams};
 use pgls_text_size::TextRange;
 
+use pgls_query_ext::diagnostics::SyntaxDiagnostic;
+use pgls_templating::Template;
+
 use super::{StatementId, document::Document, sql_function};
 use crate::{
     WorkspaceError,
@@ -86,7 +89,11 @@ pub(super) fn format_document(
                 continue;
             };
 
-            if statements_per_body.get(&parent_id) != Some(&1) {
+            // A body with placeholders is kept as written, so that the strings with them stay
+            // the same.
+            if statements_per_body.get(&parent_id) != Some(&1)
+                || doc.touches_placeholder(stmt.range())
+            {
                 continue;
             }
             if stops() {
@@ -104,7 +111,8 @@ pub(super) fn format_document(
                 continue;
             };
 
-            let Some(formatted) = restore_named_parameters(text, &result.formatted, ast) else {
+            let Some(formatted) = restore_named_parameters(text, &result.formatted, ast, None)
+            else {
                 continue;
             };
 
@@ -148,23 +156,73 @@ pub(super) fn format_document(
             formatted_output.push_str(gap);
         }
         last_end = stmt_end;
+        // The statement as written in the file, without the placeholders of the host.
+        let written = &source[stmt_start..stmt_end];
 
-        // Leave statements outside the requested range untouched, and those with `ENVSUB`
-        // expansions, whose text holds placeholders.
-        if range.is_some_and(|filter_range| stmt_range.intersect(filter_range).is_none())
-            || doc.touches_placeholder(stmt_range)
-        {
-            formatted_output.push_str(&source[stmt_start..stmt_end]);
+        // Leave statements outside the requested range untouched.
+        if range.is_some_and(|filter_range| stmt_range.intersect(filter_range).is_none()) {
+            formatted_output.push_str(written);
+            continue;
+        }
+        let unrestorable = |message: &str| {
+            SDiagnostic::new(
+                pgls_diagnostics::Error::from(WorkspaceError::format_error(format!(
+                    "{message} could not be restored after formatting, the statement was left \
+                     untouched"
+                )))
+                .with_file_path(path)
+                .with_file_span(stmt_range),
+            )
+        };
+
+        // A template placeholder that can't be read where it is, like an alias without `AS`, may
+        // parse as something else, like `four $1` as a cast: the statement stays as written.
+        if let Some(ambiguity) = doc.ambiguity_in(stmt_range) {
+            diagnostics.push(SDiagnostic::new(
+                pgls_diagnostics::Error::from(SyntaxDiagnostic::new(
+                    ambiguity.message(source),
+                    Some(ambiguity.placeholder),
+                ))
+                .with_file_path(path),
+            ));
+            formatted_output.push_str(written);
             continue;
         }
 
         match &**ast_result {
             Ok(ast) => {
+                // A statement that the splitter ended at the next one stays as written, see
+                // `Document::terminator`.
                 let Some(terminator) = doc.terminator(stmt_range) else {
-                    formatted_output.push_str(text);
+                    formatted_output.push_str(written);
                     continue;
                 };
-                let mut ast = Arc::clone(ast);
+                // A statement with placeholders of the host, like a goose `ENVSUB` expansion or
+                // a template directive, is printed with a tag for each placeholder, see
+                // [`pgls_templating::Tagged`].
+                let tagged = if doc.touches_placeholder(stmt_range) {
+                    match doc
+                        .preprocessed()
+                        .and_then(|preprocessed| preprocessed.tag(source, stmt_range))
+                        .and_then(|tagged| {
+                            let converted = pgls_lexer::convert_to_positional_params(&tagged.text);
+                            let ast = pgls_query::parse(&converted).ok()?.into_root()?;
+                            Some((tagged, Arc::new(ast)))
+                        }) {
+                        Some(tagged) => Some(tagged),
+                        None => {
+                            diagnostics.push(unrestorable("Placeholders"));
+                            formatted_output.push_str(written);
+                            continue;
+                        }
+                    }
+                } else {
+                    None
+                };
+                let (mut ast, text) = match &tagged {
+                    Some((tagged, ast)) => (Arc::clone(ast), tagged.text.as_str()),
+                    None => (Arc::clone(ast), text),
+                };
                 if let Some(formatted_sql_fn_body) = formatted_sql_fn_bodies.get(stmt.id()) {
                     // Copies the tree only for the functions whose body is replaced.
                     sql_function::set_formatted_sql_fn_body(
@@ -177,11 +235,21 @@ pub(super) fn format_document(
                     terminator,
                     ..FormatStatementParams::new(&ast, text, &config)
                 }) {
-                    Ok(result) => match restore_named_parameters(text, &result.formatted, &ast) {
+                    // The printer may write the directive of a template, like the `% c` of
+                    // `timest % cast(...)` for `timest%amptz '...'`, also in a statement without
+                    // one, which would change what the host writes.
+                    Ok(result) => match restore_named_parameters(
+                        text,
+                        &result.formatted,
+                        &ast,
+                        tagged.as_ref().map(|(tagged, _)| tagged),
+                    )
+                    .filter(|formatted| doc.template().keeps_directives(written, formatted))
+                    {
                         Some(formatted) => {
-                            if text != formatted {
+                            if written != formatted {
                                 statements.push(StatementFormatResult {
-                                    original: text.to_owned(),
+                                    original: written.to_owned(),
                                     formatted: formatted.clone(),
                                     range: stmt_range,
                                 });
@@ -189,17 +257,14 @@ pub(super) fn format_document(
                             formatted_output.push_str(&formatted);
                         }
                         None => {
-                            diagnostics.push(SDiagnostic::new(
-                                pgls_diagnostics::Error::from(WorkspaceError::format_error(
-                                    "Named parameters could not be restored after \
-                                             formatting, the statement was left untouched"
-                                        .to_string(),
-                                ))
-                                .with_file_path(path)
-                                .with_file_span(stmt_range),
+                            diagnostics.push(unrestorable(
+                                if tagged.is_some() || doc.template() != Template::None {
+                                    "Placeholders"
+                                } else {
+                                    "Named parameters"
+                                },
                             ));
-
-                            formatted_output.push_str(text);
+                            formatted_output.push_str(written);
                         }
                     },
                     Err(err) => {
@@ -211,7 +276,7 @@ pub(super) fn format_document(
                             .with_file_span(stmt_range),
                         ));
 
-                        formatted_output.push_str(text);
+                        formatted_output.push_str(written);
                     }
                 }
             }
@@ -221,7 +286,7 @@ pub(super) fn format_document(
                         .with_file_path(path),
                 ));
 
-                formatted_output.push_str(text);
+                formatted_output.push_str(written);
             }
         }
     }
@@ -277,7 +342,8 @@ fn collapse_blank_lines(text: &str) -> String {
     result
 }
 
-/// Put psql named parameters back where the formatter printed their placeholders.
+/// Put psql named parameters back where the formatter printed their placeholders, and then the
+/// text of the file in place of the placeholders of `tagged`, see [`pgls_templating::Tagged`].
 ///
 /// The parser only ever sees placeholders, so the printed statement carries `$1`, `':fname'` or a
 /// bare identifier instead of `:id`, `:'fname'` or `:raw_data`. Substitution happens on the token
@@ -289,6 +355,7 @@ fn restore_named_parameters(
     original: &str,
     formatted: &str,
     original_ast: &pgls_query::NodeEnum,
+    tagged: Option<&pgls_templating::Tagged>,
 ) -> Option<String> {
     use pgls_lexer::{SyntaxKind, lex};
 
@@ -298,7 +365,10 @@ fn restore_named_parameters(
         && conversion.value_replacements.is_empty()
         && conversion.string_replacements.is_empty()
     {
-        return Some(formatted.to_string());
+        return match tagged {
+            Some(tagged) => tagged.restore(formatted),
+            None => Some(formatted.to_string()),
+        };
     }
 
     if !conversion.restorable {
@@ -359,5 +429,10 @@ fn restore_named_parameters(
         }
     }
 
-    Some(restored)
+    // The text of the file in place of the placeholders of a host, after the checks above, which
+    // compare the statement with its tags.
+    match tagged {
+        Some(tagged) => tagged.restore(&restored),
+        None => Some(restored),
+    }
 }

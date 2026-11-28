@@ -1,0 +1,4 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+select cast('{{"a": 1}}' as jsonb), cast('{{1,2}}' as int[]) from {table};

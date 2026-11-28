@@ -19,6 +19,8 @@ create table U&"\D83D\DE00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 -- The escapes are longer than the 63 bytes they stand for.
 create table U&"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!0061!0061!0061" UESCAPE '!' (id int);
 create table U&"\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061\0061" (id int);
+-- The UESCAPE clause after a comment: 63 bytes.
+create table U&"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!0061!0061!0061" /* c */ UESCAPE '!' (id int);
 
 ```
 

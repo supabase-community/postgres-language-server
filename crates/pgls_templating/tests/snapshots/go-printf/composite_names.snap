@@ -1,0 +1,15 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | create table app_%s (id bigint);
+    | create table $app_a (id bigint);
+  2 | select * from tenant_%d, "%s", %s%s, s_%s.t_%s;
+    | select * from $tenant_b, $c__, $de_, $s_f.$t_g;
+
+placeholders:
+     13..19 `app_%s` -> `$app_a` identifier
+     47..56 `tenant_%d` -> `$tenant_b` identifier
+     58..62 `"%s"` -> `$c__` identifier
+     64..68 `%s%s` -> `$de_` identifier
+     70..74 `s_%s` -> `$s_f` identifier
+     75..79 `t_%s` -> `$t_g` identifier

@@ -2,6 +2,7 @@
 //! constants and aliases. The parse tree only has the location where each starts, so the end is
 //! found in the tokens of Postgres' scanner, scanned once per statement.
 
+use pgls_query::Identifier;
 use pgls_query::protobuf::{KeywordKind, ScanToken, Token as Kind};
 
 /// The most tokens of a SQL construct that uses an operator, like `IS NOT DISTINCT FROM`.
@@ -58,6 +59,16 @@ impl<'a> Tokens<'a> {
     /// The text of `token`.
     pub(crate) fn text(&self, token: &Token) -> &'a str {
         self.sql.get(token.start..token.end).unwrap_or_default()
+    }
+
+    /// The identifier of the token that starts at `start`, see [`Identifier::from_tokens`].
+    pub(crate) fn identifier_at(&self, start: usize) -> Option<Identifier<'a>> {
+        Identifier::from_tokens(
+            self.tokens
+                .get(self.at(start)?..)?
+                .iter()
+                .map(|token| (token.kind, self.text(token))),
+        )
     }
 
     /// The index of the token that starts at `start`.
