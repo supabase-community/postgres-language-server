@@ -530,6 +530,10 @@ export interface LinterRules {
    */
   banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
   /**
+   * Updating an extension or removing an object from it may break existing clients.
+   */
+  banAlterExtension?: RuleConfiguration_for_Null;
+  /**
    * Changing the identity of a column may break inserts from existing clients.
    */
   banAlterIdentity?: RuleConfiguration_for_Null;

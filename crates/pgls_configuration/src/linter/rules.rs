@@ -110,6 +110,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banAlterExtension",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banAlterIdentity",
         recommended: false,
         severity: Severity::Warning,
@@ -642,6 +648,9 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_domain_with_add_constraint:
         Option<RuleConfiguration<pgls_analyser::options::BanAlterDomainWithAddConstraint>>,
+    #[doc = "Updating an extension or removing an object from it may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_extension: Option<RuleConfiguration<pgls_analyser::options::BanAlterExtension>>,
     #[doc = "Changing the identity of a column may break inserts from existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_identity: Option<RuleConfiguration<pgls_analyser::options::BanAlterIdentity>>,
@@ -970,6 +979,10 @@ impl Rules {
                 .ban_alter_domain_with_add_constraint
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterExtension" => self
+                .ban_alter_extension
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banAlterIdentity" => self
                 .ban_alter_identity
                 .as_ref()
@@ -1260,6 +1273,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banAlterDomainWithAddConstraint" => self
                 .ban_alter_domain_with_add_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterExtension" => self
+                .ban_alter_extension
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banAlterIdentity" => self

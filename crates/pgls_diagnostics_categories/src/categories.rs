@@ -28,6 +28,7 @@ define_categories! {
     "lint/avoidEnableDisableTrigger": "https://pg-language-server.com/latest/reference/rules/avoid-enable-disable-trigger/",
     "lint/avoidWideLockWindow": "https://pg-language-server.com/latest/reference/rules/avoid-wide-lock-window/",
     "lint/banAlterDomainWithAddConstraint": "https://pg-language-server.com/latest/reference/rules/ban-alter-domain-with-add-constraint/",
+    "lint/banAlterExtension": "https://pg-language-server.com/latest/reference/rules/ban-alter-extension/",
     "lint/banAlterIdentity": "https://pg-language-server.com/latest/reference/rules/ban-alter-identity/",
     "lint/banCharField": "https://pg-language-server.com/latest/reference/rules/ban-char-field/",
     "lint/banConcurrentIndexCreationInTransaction": "https://pg-language-server.com/latest/reference/rules/ban-concurrent-index-creation-in-transaction/",

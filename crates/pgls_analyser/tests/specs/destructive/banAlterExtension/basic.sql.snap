@@ -1,0 +1,19 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterExtension
+alter extension postgis update to '3.4.0';
+
+```
+
+# Diagnostics
+lint/banAlterExtension ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Updating extension postgis may break existing clients.
+  
+  i The upgrade scripts of the extension may remove functions, change their signatures, or change their results.
+  
+  i Read the upgrade notes of the extension and update clients before updating it.
