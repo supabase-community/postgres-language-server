@@ -1,8 +1,8 @@
+use pgls_query::QualifiedName;
 use pgls_query::{
     NodeEnum,
     protobuf::{AlterTableCmd, AlterTableStmt, AlterTableType, DefElem, DropBehavior, ObjectType},
 };
-use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, Key, key, overlay::column_info};
 use crate::lookup::{ColumnInfo, Origin, RelationInfo, RelationKind};

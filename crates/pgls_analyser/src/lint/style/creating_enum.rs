@@ -2,7 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query_ext::utils::QualifiedName;
+use pgls_query::QualifiedName;
 
 declare_lint_rule! {
     /// Creating enum types is not recommended for new applications.

@@ -109,7 +109,8 @@ The project uses a modular Rust workspace with crates prefixed with `pgls_`:
 - `pgls_configuration` - Configuration management
 
 **Parser and Language Processing:**
-- `pgls_query` - Postgres query parsing (wraps libpg_query)
+- `pgls_query` - Postgres query parsing (wraps libpg_query), methods on the AST's types, and names (`Identifier`, `QualifiedName`)
+- `pgls_query_ext` - The statements in the body of a function, and the parser's syntax diagnostics
 - `pgls_lexer` - SQL tokenizer with whitespace handling
 - `pgls_statement_splitter` - Splits source into individual statements
 - `pgls_treesitter` - Tree-sitter integration for additional parsing

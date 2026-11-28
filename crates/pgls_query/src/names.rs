@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use pgls_query::protobuf::{Node, RangeVar, TypeName};
+use crate::protobuf::{Node, RangeVar, TypeName};
 
 /// The most parts a name has: `catalog.schema.table.column`.
 const NAME_PARTS_MAX: usize = 4;
@@ -119,12 +119,11 @@ impl fmt::Display for QualifiedName<'_> {
 
 #[cfg(test)]
 mod tests {
-    use pgls_query::NodeEnum;
+    use super::{NameParts, QualifiedName};
+    use crate::NodeEnum;
 
-    use crate::utils::{NameParts, QualifiedName};
-
-    fn create_function(sql: &str) -> pgls_query::protobuf::CreateFunctionStmt {
-        match pgls_query::parse(sql).unwrap().into_root().unwrap() {
+    fn create_function(sql: &str) -> crate::protobuf::CreateFunctionStmt {
+        match crate::parse(sql).unwrap().into_root().unwrap() {
             NodeEnum::CreateFunctionStmt(stmt) => *stmt,
             _ => panic!("Expected CreateFunctionStmt"),
         }
@@ -184,7 +183,7 @@ mod tests {
         assert_eq!(QualifiedName::of(&[]), None);
 
         // `t.*` is not a name.
-        let NodeEnum::SelectStmt(select) = pgls_query::parse("select t.* from t")
+        let NodeEnum::SelectStmt(select) = crate::parse("select t.* from t")
             .unwrap()
             .into_root()
             .unwrap()
@@ -202,7 +201,7 @@ mod tests {
 
     #[test]
     fn range_var_names() {
-        let NodeEnum::SelectStmt(select) = pgls_query::parse("select from t, s.t, db.s.t")
+        let NodeEnum::SelectStmt(select) = crate::parse("select from t, s.t, db.s.t")
             .unwrap()
             .into_root()
             .unwrap()

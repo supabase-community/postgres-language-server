@@ -5,8 +5,8 @@ use pgls_catalog::{
 };
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::QualifiedName;
 use pgls_query::protobuf::{ColumnDef, RangeVar};
-use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Changing a column type may require a table rewrite and break existing clients.

@@ -1,4 +1,4 @@
-use pgls_query_ext::utils::NameParts;
+use pgls_query::NameParts;
 
 use crate::{
     resolver::Resolver,

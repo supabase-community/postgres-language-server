@@ -1,5 +1,5 @@
+use pgls_query::{NameParts, QualifiedName};
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::{NameParts, QualifiedName};
 
 use super::infer_expr;
 use crate::{

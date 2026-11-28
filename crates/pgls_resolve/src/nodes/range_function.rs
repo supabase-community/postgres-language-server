@@ -1,8 +1,8 @@
+use pgls_query::{NameParts, QualifiedName};
 use pgls_query::{
     Node, NodeEnum,
     protobuf::{FuncCall, RangeFunction},
 };
-use pgls_query_ext::utils::{NameParts, QualifiedName};
 
 use super::{
     Resolver, alias::apply_alias, func_call::resolve_func_call, record_unresolved_node,

@@ -3,11 +3,9 @@ mod diagnostics;
 use std::borrow::Cow;
 
 pub use diagnostics::PlPgSqlCheckDiagnostic;
+use pgls_query::QualifiedName;
 use pgls_query::protobuf::{CreateFunctionStmt, FunctionParameterMode, Token, TypeName};
-use pgls_query_ext::{
-    function_body::{Language, OffsetMap, function_body_location},
-    utils::QualifiedName,
-};
+use pgls_query_ext::function_body::{Language, OffsetMap, function_body_location};
 use pgls_text_size::TextRange;
 use pgls_tokenizer::NamePosition;
 use serde::Deserialize;
