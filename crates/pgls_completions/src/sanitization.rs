@@ -390,6 +390,8 @@ mod tests {
         CompletionParams {
             position,
             schema: leaked_cache,
+            catalog: None,
+            search_path: &[],
             text: input.into(),
             tree: leaked_tree,
         }

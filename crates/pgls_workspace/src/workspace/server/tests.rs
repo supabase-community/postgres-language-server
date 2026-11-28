@@ -3060,6 +3060,13 @@ async fn completions_see_the_ddl_before_the_statement(test_db: PgPool) {
          select tok| from auth.sessions;",
     );
     assert!(columns.contains(&"token".to_string()), "{columns:?}");
+
+    // The columns of a CTE over a table that the file creates.
+    let cte_columns = labels(
+        "create table auth.sessions (id int, token text);\n\
+         with s as (select token as session_token from auth.sessions) select s.| from s;",
+    );
+    assert_eq!(cte_columns, ["session_token"]);
 }
 
 /// Whether the diagnostic comes from a rule of the `typecheck` group or from the database.

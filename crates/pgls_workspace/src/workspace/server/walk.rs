@@ -270,35 +270,51 @@ impl WorkspaceServer {
     /// The database snapshot as `stmt` sees it: with the objects that the statements before it
     /// create, change, or drop. The statements of a function body also see the function.
     ///
-    /// Cost: a lookup if it was the last one built for the document. Otherwise a walk to the
-    /// statement, see [`Self::walk`], and building the snapshot, which is linear in the objects
-    /// that the file changed.
+    /// Cost: see [`Self::catalog_before`].
     pub(super) fn snapshot_before(
         &self,
         request: &EditorRequest,
         doc: &Document,
         stmt: &DocumentStatement,
     ) -> Arc<Snapshot> {
+        self.catalog_before(request, doc, stmt).0
+    }
+
+    /// The database snapshot as `stmt` sees it, see [`Self::snapshot_before`], and the catalog
+    /// it is built from. No catalog if the request is outdated or cancelled; its result is
+    /// discarded.
+    ///
+    /// Cost: a lookup if it was the last one built for the document. Otherwise a walk to the
+    /// statement, see [`Self::walk`], and building the snapshot, which is linear in the objects
+    /// that the file changed.
+    pub(super) fn catalog_before(
+        &self,
+        request: &EditorRequest,
+        doc: &Document,
+        stmt: &DocumentStatement,
+    ) -> (Arc<Snapshot>, Option<Arc<Catalog>>) {
         let ranges = doc.statement_ranges();
         let top = ranges
             .get(ranges.partition_point(|range| range.end() <= stmt.range().start()))
             .map_or(stmt.range().start(), |range| range.start());
         let in_body = stmt.is_embedded();
-        if let Some(snapshot) = request.with_walk(doc, |walk| walk.snapshot(top, in_body)) {
-            return snapshot;
+        if let Some((snapshot, catalog)) =
+            request.with_walk(doc, |walk| walk.snapshot(top, in_body))
+        {
+            return (snapshot, Some(catalog));
         }
-        // An outdated or cancelled request gets the database snapshot. Its result is discarded.
         let Some((catalog, _)) = self.walk(request, doc, top, stmt.range().start(), |_, _| {})
         else {
-            return Arc::clone(&request.snapshot);
+            return (Arc::clone(&request.snapshot), None);
         };
         let snapshot = catalog
             .snapshot()
             .unwrap_or_else(|| Arc::clone(&request.snapshot));
+        let catalog = Arc::new(catalog);
         request.with_walk(doc, |walk| {
-            walk.record_snapshot(top, in_body, Arc::clone(&snapshot))
+            walk.record_snapshot(top, in_body, Arc::clone(&snapshot), Arc::clone(&catalog))
         });
-        snapshot
+        (snapshot, Some(catalog))
     }
 
     /// For hover on `stmt`: the references whose span contains `position`, and the database

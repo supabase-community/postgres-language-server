@@ -2374,6 +2374,7 @@ dependencies = [
  "pgls_migrations",
  "pgls_postgres_regress",
  "pgls_query",
+ "pgls_resolve",
  "pgls_test_utils",
  "pgls_text_size",
  "pgls_tokenizer",

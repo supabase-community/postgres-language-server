@@ -3,7 +3,7 @@ source: crates/pgls_completions/tests/harness.rs
 expression: harness.summary.report()
 ---
 requests: 3167
-items: 14424
+items: 14428
 failures: 6
 
 not a viable prefix: Keyword: 6

@@ -42,7 +42,7 @@ use std::{
     sync::Arc,
 };
 
-use pgls_catalog::{CatalogBase, Snapshot};
+use pgls_catalog::{Catalog, CatalogBase, Snapshot};
 use pgls_completions::{CompletionItem, CompletionParams, complete};
 use pgls_postgres_regress::{File, Verdict, Version};
 use pgls_text_size::{TextRange, TextSize};
@@ -182,6 +182,7 @@ impl Harness {
                             token_start: token.start,
                         },
                         &snapshot,
+                        (file_context.catalog(), &search_path),
                         viable,
                     );
                 }
@@ -222,7 +223,13 @@ impl Harness {
     /// Requests completions at the end of `cut.text` and checks them. `viable` is whether the
     /// statement up to the end of the token is a viable prefix; only then must the items keep it
     /// one.
-    fn request(&mut self, cut: &Cut, snapshot: &Snapshot, viable: Viability) {
+    fn request(
+        &mut self,
+        cut: &Cut,
+        snapshot: &Snapshot,
+        (catalog, search_path): (&Catalog, &[String]),
+        viable: Viability,
+    ) {
         self.summary.requests += 1;
         let Some(tree) = self.parser.parse(cut.text, None) else {
             return;
@@ -231,6 +238,8 @@ impl Harness {
             complete(CompletionParams {
                 position: TextSize::new(u32::try_from(cut.text.len()).unwrap_or(u32::MAX)),
                 schema: snapshot,
+                catalog: Some(catalog),
+                search_path,
                 text: cut.text.to_owned(),
                 tree: &tree,
             })

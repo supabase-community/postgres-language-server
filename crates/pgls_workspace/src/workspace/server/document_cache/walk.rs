@@ -1,6 +1,6 @@
 //! What the walk over a document leaves for the next requests: states to resume it from, the
-//! references of the statements it resolved, and the database snapshot as one statement sees
-//! it.
+//! references of the statements it resolved, and the database snapshot and the catalog as one
+//! statement sees them.
 //!
 //! All of it depends on the text before its top-level statement, and the resolved references
 //! also on the statement itself. An edit keeps what comes before it, see [`ContentChange`]. It
@@ -9,7 +9,7 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use pgls_catalog::Snapshot;
+use pgls_catalog::{Catalog, Snapshot};
 use pgls_resolve::Reference;
 use pgls_text_size::{TextRange, TextSize};
 use pgls_walk::{AnalysableStatement, Direction, Unit, WalkState};
@@ -121,7 +121,8 @@ pub(crate) struct WalkCache {
     /// top-level statement and those of its function body. Empty for a statement that doesn't
     /// parse, or that has identifier parameters.
     resolved: BTreeMap<TextSize, Arc<[ResolvedStatement]>>,
-    /// The database snapshot as the statements of one top-level statement see it.
+    /// The database snapshot and the catalog as the statements of one top-level statement see
+    /// them.
     snapshot: Option<SnapshotBefore>,
     /// The context of the document that the entries were computed in.
     context: MigrationContext,
@@ -134,6 +135,8 @@ struct SnapshotBefore {
     /// function itself.
     in_body: bool,
     snapshot: Arc<Snapshot>,
+    /// The catalog that `snapshot` is built from.
+    catalog: Arc<Catalog>,
 }
 
 impl WalkCache {
@@ -175,20 +178,31 @@ impl WalkCache {
         self.resolved.insert(at, statements);
     }
 
-    /// The snapshot as the statements of the top-level statement at `at` see it, or the
-    /// statements of its function body if `in_body`.
-    pub(crate) fn snapshot(&self, at: TextSize, in_body: bool) -> Option<Arc<Snapshot>> {
+    /// The snapshot and the catalog as the statements of the top-level statement at `at` see
+    /// them, or the statements of its function body if `in_body`.
+    pub(crate) fn snapshot(
+        &self,
+        at: TextSize,
+        in_body: bool,
+    ) -> Option<(Arc<Snapshot>, Arc<Catalog>)> {
         self.snapshot
             .as_ref()
             .filter(|cached| cached.at == at && cached.in_body == in_body)
-            .map(|cached| Arc::clone(&cached.snapshot))
+            .map(|cached| (Arc::clone(&cached.snapshot), Arc::clone(&cached.catalog)))
     }
 
-    pub(crate) fn record_snapshot(&mut self, at: TextSize, in_body: bool, snapshot: Arc<Snapshot>) {
+    pub(crate) fn record_snapshot(
+        &mut self,
+        at: TextSize,
+        in_body: bool,
+        snapshot: Arc<Snapshot>,
+        catalog: Arc<Catalog>,
+    ) {
         self.snapshot = Some(SnapshotBefore {
             at,
             in_body,
             snapshot,
+            catalog,
         });
     }
 

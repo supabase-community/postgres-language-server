@@ -1779,11 +1779,16 @@ impl Workspace for WorkspaceServer {
                 let position = stmt.statement_offset(params.position);
                 let request =
                     self.editor_request(params.project_key, &params.path, settings, snapshot, doc);
-                let snapshot = self.snapshot_before(&request, doc, &stmt);
+                let (snapshot, catalog) = self.catalog_before(&request, doc, &stmt);
+                let search_path = settings
+                    .map(|settings| settings.typecheck.search_path.as_slice())
+                    .unwrap_or_default();
 
                 let items = pgls_completions::complete(pgls_completions::CompletionParams {
                     position,
                     schema: snapshot.as_ref(),
+                    catalog: catalog.as_deref(),
+                    search_path,
                     tree: &cst,
                     text: doc.sql(&stmt).to_string(),
                 });

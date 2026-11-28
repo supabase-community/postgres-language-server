@@ -1,3 +1,4 @@
+mod derived_relations;
 mod insert_columns;
 mod object_references;
 mod parameters;
@@ -9,6 +10,7 @@ mod where_columns;
 
 use std::slice::Iter;
 
+pub use derived_relations::*;
 pub use insert_columns::*;
 pub use object_references::*;
 pub use parameters::*;
@@ -20,6 +22,7 @@ pub use where_columns::*;
 
 #[derive(Debug)]
 pub enum QueryResult<'a> {
+    DerivedRelation(DerivedRelationMatch<'a>),
     Relation(RelationMatch<'a>),
     Parameter(ParameterMatch<'a>),
     TableAliases(TableAliasMatch<'a>),
@@ -32,6 +35,12 @@ pub enum QueryResult<'a> {
 impl QueryResult<'_> {
     pub fn within_range(&self, range: &tree_sitter::Range) -> bool {
         match self {
+            QueryResult::DerivedRelation(m) => {
+                let node_range = m.item.range();
+
+                node_range.start_point >= range.start_point
+                    && node_range.end_point <= range.end_point
+            }
             QueryResult::Relation(rm) => {
                 let start = match rm.schema {
                     Some(s) => s.start_position(),

@@ -1,5 +1,5 @@
 use insta::assert_snapshot;
-use pgls_catalog::{Schema, Snapshot};
+use pgls_catalog::{Catalog, Schema, Snapshot};
 use pgls_test_utils::QueryWithCursorPosition;
 use pgls_text_size::TextRange;
 use regex::Regex;
@@ -70,6 +70,8 @@ pub(crate) fn get_test_params<'a>(
     CompletionParams {
         position: (position as u32).into(),
         schema: snapshot,
+        catalog: None,
+        search_path: &[],
         tree,
         text,
     }
@@ -169,7 +171,12 @@ pub(crate) async fn assert_complete_results(
     pool: &PgPool,
 ) {
     let (tree, cache) = get_test_deps(setup, query.into(), pool).await;
-    let params = get_test_params(&tree, &cache, query.into());
+    let catalog = Catalog::from_snapshot(cache.clone());
+    let params = CompletionParams {
+        catalog: Some(&catalog),
+        search_path: &["public".to_owned()],
+        ..get_test_params(&tree, &cache, query.into())
+    };
     let items = complete(params);
 
     let (not_existing, existing): (Vec<CompletionAssertion>, Vec<CompletionAssertion>) =
@@ -205,7 +212,12 @@ pub(crate) async fn assert_complete_results(
 
 pub(crate) async fn assert_no_complete_results(query: &str, setup: Option<&str>, pool: &PgPool) {
     let (tree, cache) = get_test_deps(setup, query.into(), pool).await;
-    let params = get_test_params(&tree, &cache, query.into());
+    let catalog = Catalog::from_snapshot(cache.clone());
+    let params = CompletionParams {
+        catalog: Some(&catalog),
+        search_path: &["public".to_owned()],
+        ..get_test_params(&tree, &cache, query.into())
+    };
     let items = complete(params);
 
     assert_eq!(items.len(), 0)
@@ -518,10 +530,13 @@ impl TestCompletionsCase {
 
         let tree = parser.parse(&sql, None).expect("Invalid TS Tree!");
 
+        let catalog = Catalog::from_snapshot(schema.clone());
         let params = CompletionParams {
             text: sql.clone(),
             position: (pos as u32).into(),
             schema,
+            catalog: Some(&catalog),
+            search_path: &["public".to_owned()],
             tree: &tree,
         };
 
