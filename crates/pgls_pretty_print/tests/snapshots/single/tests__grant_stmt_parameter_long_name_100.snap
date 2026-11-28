@@ -1,0 +1,7 @@
+---
+source: crates/pgls_pretty_print/tests/tests.rs
+input_file: crates/pgls_pretty_print/tests/data/single/grant_stmt_parameter_long_name.sql
+---
+grant set, etlrollbackm
+  on parameter work_mem, plpgsrejjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjativeql.extra_warnings
+  to my_i;

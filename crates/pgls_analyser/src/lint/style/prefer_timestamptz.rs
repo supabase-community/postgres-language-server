@@ -3,7 +3,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext, RuleFix};
 use pgls_analyse::{FixKind, RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
-use pgls_query_ext::utils::QualifiedName;
+use pgls_query::QualifiedName;
 use pgls_text_size::TextRange;
 
 declare_lint_rule! {

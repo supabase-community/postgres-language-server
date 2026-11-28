@@ -4,8 +4,8 @@
 //! [`contain_volatile_functions`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/optimizer/util/clauses.c#L552
 
 use pgls_catalog::Catalog;
+use pgls_query::QualifiedName;
 use pgls_query::{NodeEnum, protobuf};
-use pgls_query_ext::utils::QualifiedName;
 
 use super::{expr::infer_expr, resolver::Resolver};
 use pgls_catalog::Behavior;

@@ -1,5 +1,5 @@
+use pgls_query::QualifiedName;
 use pgls_query::protobuf::{CreateRangeStmt, DefElem};
-use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, overlay::function_info};
 use crate::lookup::FunctionKind;

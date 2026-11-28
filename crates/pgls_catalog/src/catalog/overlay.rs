@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use crate::{FunctionSignature, Generated, Identity};
+use pgls_query::QualifiedName;
 use pgls_query::{Node, NodeEnum, protobuf};
-use pgls_query_ext::utils::QualifiedName;
 use rustc_hash::FxHashSet;
 
 use super::{Catalog, Entry, Key, explicit_schemas, key};

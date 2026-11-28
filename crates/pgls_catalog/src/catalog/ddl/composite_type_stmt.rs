@@ -1,5 +1,5 @@
+use pgls_query::QualifiedName;
 use pgls_query::{NodeEnum, protobuf::CompositeTypeStmt};
-use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::{Catalog, Entry, overlay::column_info};
 

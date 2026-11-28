@@ -1,5 +1,5 @@
+use pgls_query::NameParts;
 use pgls_query::protobuf::ColumnRef;
-use pgls_query_ext::utils::NameParts;
 
 use super::Resolver;
 use crate::{
