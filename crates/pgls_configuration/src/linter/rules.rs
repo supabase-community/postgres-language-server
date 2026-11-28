@@ -115,6 +115,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
         severity: Severity::Warning,
     },
     LinterRuleMetadata {
+        group: "destructive",
+        name: "banAlterRoleOptions",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
         group: "style",
         name: "banCharField",
         recommended: false,
@@ -645,6 +651,10 @@ pub struct Rules {
     #[doc = "Changing the identity of a column may break inserts from existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_identity: Option<RuleConfiguration<pgls_analyser::options::BanAlterIdentity>>,
+    #[doc = "Changing the options or settings of a role may change access or behaviour for existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_role_options:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterRoleOptions>>,
     #[doc = "Using CHAR(n) or CHARACTER(n) types is discouraged."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_char_field: Option<RuleConfiguration<pgls_analyser::options::BanCharField>>,
@@ -974,6 +984,10 @@ impl Rules {
                 .ban_alter_identity
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterRoleOptions" => self
+                .ban_alter_role_options
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banCharField" => self.ban_char_field.as_ref().map(RuleConfiguration::level),
             "banConcurrentIndexCreationInTransaction" => self
                 .ban_concurrent_index_creation_in_transaction
@@ -1264,6 +1278,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banAlterIdentity" => self
                 .ban_alter_identity
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterRoleOptions" => self
+                .ban_alter_role_options
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banCharField" => self

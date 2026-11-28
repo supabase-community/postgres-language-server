@@ -534,6 +534,10 @@ export interface LinterRules {
    */
   banAlterIdentity?: RuleConfiguration_for_Null;
   /**
+   * Changing the options or settings of a role may change access or behaviour for existing clients.
+   */
+  banAlterRoleOptions?: RuleConfiguration_for_Null;
+  /**
    * Using CHAR(n) or CHARACTER(n) types is discouraged.
    */
   banCharField?: RuleConfiguration_for_Null;

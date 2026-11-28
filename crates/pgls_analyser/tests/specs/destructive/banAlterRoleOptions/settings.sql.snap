@@ -1,0 +1,31 @@
+---
+source: crates/pgls_analyser/tests/rules_tests.rs
+expression: snapshot
+---
+# Input
+```
+-- expect_lint/banAlterRoleOptions
+alter role r set search_path to public;
+-- expect_lint/banAlterRoleOptions
+alter role r reset search_path;
+
+```
+
+# Diagnostics
+lint/banAlterRoleOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the settings of a role may change behaviour for existing clients.
+  
+  i The settings apply to every new session of the role, e.g. which schemas its queries find.
+  
+  i Check that the clients that use the role work with the change before making it.
+  
+
+
+lint/banAlterRoleOptions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Changing the settings of a role may change behaviour for existing clients.
+  
+  i The settings apply to every new session of the role, e.g. which schemas its queries find.
+  
+  i Check that the clients that use the role work with the change before making it.

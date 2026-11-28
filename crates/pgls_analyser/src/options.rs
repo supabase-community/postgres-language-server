@@ -25,6 +25,8 @@ pub type AvoidWideLockWindow =
 pub type BanAlterDomainWithAddConstraint = < lint :: safety :: ban_alter_domain_with_add_constraint :: BanAlterDomainWithAddConstraint as crate :: LinterRule > :: Options ;
 pub type BanAlterIdentity =
     <lint::destructive::ban_alter_identity::BanAlterIdentity as crate::LinterRule>::Options;
+pub type BanAlterRoleOptions =
+    <lint::destructive::ban_alter_role_options::BanAlterRoleOptions as crate::LinterRule>::Options;
 pub type BanCharField = <lint::style::ban_char_field::BanCharField as crate::LinterRule>::Options;
 pub type BanConcurrentIndexCreationInTransaction = < lint :: correctness :: ban_concurrent_index_creation_in_transaction :: BanConcurrentIndexCreationInTransaction as crate :: LinterRule > :: Options ;
 pub type BanCreateDomainWithConstraint = < lint :: safety :: ban_create_domain_with_constraint :: BanCreateDomainWithConstraint as crate :: LinterRule > :: Options ;

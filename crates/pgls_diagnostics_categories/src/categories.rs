@@ -29,6 +29,7 @@ define_categories! {
     "lint/avoidWideLockWindow": "https://pg-language-server.com/latest/reference/rules/avoid-wide-lock-window/",
     "lint/banAlterDomainWithAddConstraint": "https://pg-language-server.com/latest/reference/rules/ban-alter-domain-with-add-constraint/",
     "lint/banAlterIdentity": "https://pg-language-server.com/latest/reference/rules/ban-alter-identity/",
+    "lint/banAlterRoleOptions": "https://pg-language-server.com/latest/reference/rules/ban-alter-role-options/",
     "lint/banCharField": "https://pg-language-server.com/latest/reference/rules/ban-char-field/",
     "lint/banConcurrentIndexCreationInTransaction": "https://pg-language-server.com/latest/reference/rules/ban-concurrent-index-creation-in-transaction/",
     "lint/banCreateDomainWithConstraint": "https://pg-language-server.com/latest/reference/rules/ban-create-domain-with-constraint/",
