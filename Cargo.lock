@@ -2681,6 +2681,7 @@ dependencies = [
  "camino",
  "dir-test",
  "insta",
+ "pgls_lexer",
  "pgls_postgres_regress",
  "pgls_pretty_print_codegen",
  "pgls_query",

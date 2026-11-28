@@ -12,6 +12,7 @@ version              = "0.0.0"
 
 
 [dependencies]
+pgls_lexer                          = { workspace = true, optional = true }
 pgls_pretty_print_codegen.workspace = true
 pgls_query.workspace                = true
 pgls_tokenizer.workspace            = true
@@ -27,8 +28,9 @@ rayon.workspace                   = true
 regex.workspace                   = true
 
 [features]
-# `FormatResult::formats_to_itself`, for tests that check that formatting is idempotent.
-testing = []
+# `FormatResult::formats_to_itself`, for tests that check that formatting is idempotent, and
+# `NormalizedStatements`.
+testing = ["dep:pgls_lexer"]
 
 [lints]
 workspace = true
