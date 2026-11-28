@@ -38,6 +38,7 @@ define_categories! {
     "lint/banAlterViewOptions": "https://pg-language-server.com/latest/reference/rules/ban-alter-view-options/",
     "lint/banAlterRoleOptions": "https://pg-language-server.com/latest/reference/rules/ban-alter-role-options/",
     "lint/banAlterSystemOptions": "https://pg-language-server.com/latest/reference/rules/ban-alter-system-options/",
+    "lint/banAlterRowLevelSecurity": "https://pg-language-server.com/latest/reference/rules/ban-alter-row-level-security/",
     "lint/banCharField": "https://pg-language-server.com/latest/reference/rules/ban-char-field/",
     "lint/banConcurrentIndexCreationInTransaction": "https://pg-language-server.com/latest/reference/rules/ban-concurrent-index-creation-in-transaction/",
     "lint/banCreateDomainWithConstraint": "https://pg-language-server.com/latest/reference/rules/ban-create-domain-with-constraint/",
