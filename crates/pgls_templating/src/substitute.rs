@@ -25,7 +25,8 @@ impl Preprocessed {
     /// that aren't typechecked, like in `from %s.%s`. A [`Value::Known`] outside of identifiers
     /// and strings, like Go's `%%` in `a %% b`, becomes its text, padded with spaces. Expansions
     /// in string literals and comments stay as written, and those outside comments are
-    /// [`Preprocessed::unknown_values`].
+    /// [`Preprocessed::unknown_values`]. One with a line break in a comment is filled in, so
+    /// that the comment ends where the host's does.
     ///
     /// Cost: one lex of the text, and one pass over the tokens and the expansions.
     pub fn substitute(text: &str, expansions: &[Expansion]) -> Preprocessed {
@@ -235,6 +236,13 @@ impl Substitution<'_> {
     /// An expansion outside of identifiers.
     fn outside(&mut self, range: TextRange, place: Place) {
         match place {
+            // A line break ends a line comment, but the host replaces it with the value, like
+            // that of Rust's `{\n}`: the comment goes on as filled in.
+            Place::AsWritten if self.text[range].contains(['\n', '\r']) => {
+                self.copy_to(range.start());
+                self.substituted.push_str(&self.filled[range]);
+                self.end = range.end();
+            }
             Place::AsWritten => {}
             Place::Value => self.unknown_values.push(range),
             Place::Written => {

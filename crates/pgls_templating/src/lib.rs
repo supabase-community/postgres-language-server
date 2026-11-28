@@ -423,4 +423,18 @@ mod tests {
             Some("select %s, $a____;".to_string())
         );
     }
+
+    /// Rust's `{\n}` replaces the line break that would end a line comment, so the comment goes
+    /// on, also in the analysed text, and a statement with it can't be put back as written.
+    /// Found by the `formatter_roundtrip` fuzz target.
+    #[test]
+    fn a_line_break_of_a_directive_in_a_line_comment_continues_it() {
+        let text = "select 1 -- {\n}, 2\nfrom t;";
+        assert_eq!(
+            Read::of(Template::RustFmt, text).map(|read| read.text),
+            Some("select 1 -- xxx, 2\nfrom t;".to_string())
+        );
+        let whole = TextRange::up_to(pgls_text_size::TextSize::of(text));
+        assert_eq!(Template::RustFmt.read(text).unwrap().tag(text, whole), None);
+    }
 }

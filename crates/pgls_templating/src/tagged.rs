@@ -187,8 +187,16 @@ impl Preprocessed {
             ))?;
             if Tagged::is_kept(kind) {
                 // A string or a comment keeps all of its placeholders as written. A string gets
-                // a tag of its own, a comment, which isn't in the tree, stays.
+                // a tag of its own, a comment, which isn't in the tree, stays. A comment that
+                // the text doesn't hold as written, see [`Preprocessed::substitute`], can't be
+                // put back.
                 in_token.for_each(drop);
+                if source.get(std::ops::Range::<usize>::from(
+                    token.checked_add(range.start())?,
+                )) != Some(text)
+                {
+                    return None;
+                }
                 if Tagged::is_string(kind) {
                     tagged
                         .text
