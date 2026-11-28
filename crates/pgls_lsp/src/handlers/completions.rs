@@ -105,6 +105,7 @@ fn to_lsp_types_completion_item_kind(
         pgls_completions::CompletionItemKind::Function => ls_types::CompletionItemKind::FUNCTION,
         pgls_completions::CompletionItemKind::Table => ls_types::CompletionItemKind::CLASS,
         pgls_completions::CompletionItemKind::Column => ls_types::CompletionItemKind::FIELD,
+        pgls_completions::CompletionItemKind::Parameter => ls_types::CompletionItemKind::VARIABLE,
         pgls_completions::CompletionItemKind::Schema => ls_types::CompletionItemKind::CLASS,
         pgls_completions::CompletionItemKind::Policy => ls_types::CompletionItemKind::CONSTANT,
         pgls_completions::CompletionItemKind::Role => ls_types::CompletionItemKind::CONSTANT,

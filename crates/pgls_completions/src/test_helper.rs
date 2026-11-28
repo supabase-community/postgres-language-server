@@ -72,6 +72,7 @@ pub(crate) fn get_test_params<'a>(
         schema: snapshot,
         tree,
         text,
+        function: None,
     }
 }
 
@@ -523,6 +524,7 @@ impl TestCompletionsCase {
             position: (pos as u32).into(),
             schema,
             tree: &tree,
+            function: None,
         };
 
         let items = complete(params);

@@ -10,6 +10,8 @@ pub enum CompletionItemKind {
     Table,
     Function,
     Column,
+    /// A parameter of the SQL function whose body is completed.
+    Parameter,
     Schema,
     Policy,
     Role,
@@ -22,6 +24,7 @@ impl Display for CompletionItemKind {
             CompletionItemKind::Table => "Table",
             CompletionItemKind::Function => "Function",
             CompletionItemKind::Column => "Column",
+            CompletionItemKind::Parameter => "Parameter",
             CompletionItemKind::Schema => "Schema",
             CompletionItemKind::Policy => "Policy",
             CompletionItemKind::Role => "Role",

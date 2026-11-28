@@ -392,6 +392,7 @@ mod tests {
             schema: leaked_cache,
             text: input.into(),
             tree: leaked_tree,
+            function: None,
         }
     }
 
