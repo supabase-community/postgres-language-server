@@ -1,8 +1,8 @@
+use pgls_query::{NameParts, QualifiedName};
 use pgls_query::{
     NodeEnum,
     protobuf::{CoercionForm, FuncCall},
 };
-use pgls_query_ext::utils::{NameParts, QualifiedName};
 
 use super::{Resolver, resolve_list, resolve_node, resolve_opt};
 use crate::{

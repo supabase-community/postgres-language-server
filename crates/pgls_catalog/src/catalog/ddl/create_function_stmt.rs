@@ -1,8 +1,8 @@
+use pgls_query::QualifiedName;
 use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameterMode as Mode},
 };
-use pgls_query_ext::utils::QualifiedName;
 
 use super::alter_function_stmt::volatility_option;
 use crate::Behavior;

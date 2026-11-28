@@ -2,7 +2,7 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::declare_lint_rule;
 use pgls_catalog::typing::format_type;
 use pgls_diagnostics::Severity;
-use pgls_query_ext::utils::QualifiedName;
+use pgls_query::QualifiedName;
 use pgls_resolve::{FindingKind, MatchFailure};
 
 declare_lint_rule! {

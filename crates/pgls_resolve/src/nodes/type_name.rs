@@ -1,5 +1,5 @@
+use pgls_query::QualifiedName;
 use pgls_query::{NodeEnum, NodeRef, protobuf::TypeName};
-use pgls_query_ext::utils::QualifiedName;
 
 use super::Resolver;
 use crate::{FindingKind, Reference, lookups::record_type};

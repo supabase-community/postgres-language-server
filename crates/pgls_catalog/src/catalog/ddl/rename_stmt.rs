@@ -1,8 +1,8 @@
+use pgls_query::QualifiedName;
 use pgls_query::{
     NodeEnum,
     protobuf::{ObjectType, RangeVar, RenameStmt},
 };
-use pgls_query_ext::utils::QualifiedName;
 
 use crate::catalog::Catalog;
 use crate::lookup::ColumnInfo;

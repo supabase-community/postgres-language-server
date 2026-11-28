@@ -3,11 +3,12 @@
 //!
 //! [`check_sql_fn_retval`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/executor/functions.c#L2116
 
+use pgls_query::QualifiedName;
 use pgls_query::{
     NodeEnum,
     protobuf::{CreateFunctionStmt, FunctionParameter, FunctionParameterMode as Mode, TypeName},
 };
-use pgls_query_ext::{function_body::Language, utils::QualifiedName};
+use pgls_query_ext::function_body::Language;
 
 use super::{Resolver, resolve_node_enum};
 use crate::{FindingKind, FunctionContext, FunctionParam, ReturnMismatch};

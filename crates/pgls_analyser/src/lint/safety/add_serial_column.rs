@@ -2,8 +2,8 @@ use crate::{LinterDiagnostic, LinterRule, LinterRuleContext};
 use pgls_analyse::{RuleSource, declare_lint_rule};
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
+use pgls_query::QualifiedName;
 use pgls_query::protobuf::Constraint;
-use pgls_query_ext::utils::QualifiedName;
 
 declare_lint_rule! {
     /// Adding a column with a SERIAL type or GENERATED ALWAYS AS ... STORED causes a full table rewrite.
