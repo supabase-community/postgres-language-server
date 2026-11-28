@@ -1409,7 +1409,7 @@
 <p>As you type SQL, the language server suggests relevant database objects based on your current context:</p>
 <ul>
 <li><strong>Tables</strong>: Available tables from your database schema</li>
-<li><strong>Columns</strong>: Columns from tables referenced in your query</li>
+<li><strong>Columns</strong>: Columns from tables referenced in your query, and the columns of CTEs and of subqueries in <code>FROM</code> with their inferred types (<code>with c as (select id from users) select c.|</code>)</li>
 <li><strong>Parameters</strong>: In the body of a <code>LANGUAGE sql</code> function, its named parameters, as <code>user_id</code> or <code>fn.user_id</code>, where a value goes</li>
 <li><strong>Functions</strong>: Database functions and procedures</li>
 <li><strong>Schemas</strong>: Available schemas in your database</li>
