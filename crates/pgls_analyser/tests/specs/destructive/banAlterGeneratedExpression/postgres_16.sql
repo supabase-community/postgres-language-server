@@ -1,0 +1,5 @@
+-- Postgres 16 has no SET EXPRESSION, so the statement fails without changing anything.
+-- catalog: builtin
+-- server_version_num: 160000
+-- expect_no_diagnostics
+alter table t alter column c set expression as (id + 2);

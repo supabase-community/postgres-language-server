@@ -530,6 +530,10 @@ export interface LinterRules {
    */
   banAlterDomainWithAddConstraint?: RuleConfiguration_for_Null;
   /**
+   * Adding a generated column or changing its expression may break existing clients.
+   */
+  banAlterGeneratedExpression?: RuleConfiguration_for_Null;
+  /**
    * Changing the identity of a column may break inserts from existing clients.
    */
   banAlterIdentity?: RuleConfiguration_for_Null;

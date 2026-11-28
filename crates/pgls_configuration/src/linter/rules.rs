@@ -110,6 +110,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banAlterGeneratedExpression",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banAlterIdentity",
         recommended: false,
         severity: Severity::Warning,
@@ -642,6 +648,10 @@ pub struct Rules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_domain_with_add_constraint:
         Option<RuleConfiguration<pgls_analyser::options::BanAlterDomainWithAddConstraint>>,
+    #[doc = "Adding a generated column or changing its expression may break existing clients."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_alter_generated_expression:
+        Option<RuleConfiguration<pgls_analyser::options::BanAlterGeneratedExpression>>,
     #[doc = "Changing the identity of a column may break inserts from existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_alter_identity: Option<RuleConfiguration<pgls_analyser::options::BanAlterIdentity>>,
@@ -970,6 +980,10 @@ impl Rules {
                 .ban_alter_domain_with_add_constraint
                 .as_ref()
                 .map(RuleConfiguration::level),
+            "banAlterGeneratedExpression" => self
+                .ban_alter_generated_expression
+                .as_ref()
+                .map(RuleConfiguration::level),
             "banAlterIdentity" => self
                 .ban_alter_identity
                 .as_ref()
@@ -1260,6 +1274,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banAlterDomainWithAddConstraint" => self
                 .ban_alter_domain_with_add_constraint
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banAlterGeneratedExpression" => self
+                .ban_alter_generated_expression
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banAlterIdentity" => self
