@@ -419,9 +419,28 @@ fn restore_named_parameters(
 
     // Postgres may also read the statement as written, with an `@name` as the prefix operator
     // `@` applied to `name`: `@a::int` is `@(a::int)`, so `cast(@a as int)` would mean something
-    // else. The restored statement has to parse the same under that reading as well.
-    if let Some(mut written_ast) = pgls_query::parse(original).ok().and_then(|p| p.into_root()) {
-        let mut restored_ast = pgls_query::parse(&restored).ok()?.into_root()?;
+    // else. The restored statement has to parse the same under that reading as well. The tags of
+    // a host are plain names there, since `$pgls_t0` doesn't parse as written.
+    let readable = |text: &str| match tagged {
+        Some(_) => pgls_templating::Tagged::readable(text),
+        None => text.to_string(),
+    };
+    if let Some(mut written_ast) = pgls_query::parse(&readable(original))
+        .ok()
+        .and_then(|p| p.into_root())
+    {
+        let mut restored_ast = pgls_query::parse(&readable(&restored)).ok()?.into_root()?;
+        // The formatted body of a SQL function, which `original_ast` has, see
+        // `sql_function::set_formatted_sql_fn_body`.
+        if let (
+            pgls_query::NodeEnum::CreateFunctionStmt(written),
+            pgls_query::NodeEnum::CreateFunctionStmt(formatted),
+        ) = (&mut written_ast, original_ast)
+            && let (Some(body), Some(formatted_body)) =
+                (written.option_value_mut("as"), formatted.option_value("as"))
+        {
+            *body = formatted_body.to_string();
+        }
         pgls_pretty_print::normalize_ast(&mut written_ast);
         pgls_pretty_print::normalize_ast(&mut restored_ast);
         if restored_ast != written_ast {
