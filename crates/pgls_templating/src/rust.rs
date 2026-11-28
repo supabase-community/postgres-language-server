@@ -2,15 +2,24 @@
 //! https://doc.rust-lang.org/std/fmt/index.html#syntax
 //!
 //! ```text
-//! format   := '{' [ argument ] [ ':' format_spec ] [ ws ] * '}'
-//! argument := integer | identifier
+//! format      := '{' [ argument ] [ ':' format_spec ] [ ws ] * '}'
+//! argument    := integer | identifier
+//! format_spec := [[fill]align][sign]['#']['0'][width]['.' precision]type
+//! fill        := character
+//! align       := '<' | '^' | '>'
+//! sign        := '+' | '-'
+//! width       := count
+//! precision   := count | '*'
+//! type        := '' | '?' | 'x?' | 'X?' | identifier
+//! count       := parameter | integer
+//! parameter   := argument '$'
 //! ```
 //!
 //! `{}` takes the next positional argument, `{0}` the argument at that position, and `{name}`
 //! the argument of that name. A precision `.*` takes the next positional argument before the
-//! value. `{{` and `}}` write `{` and `}`. The format spec isn't checked, it ends at the first
-//! `}`. A `{` that doesn't start a directive, like in `'{"a": 1}'`, doesn't compile in Rust, so
-//! it is SQL written without its escape: it stays as written.
+//! value. `{{` and `}}` write `{` and `}`. A `{` that doesn't start a directive, like in
+//! `'{"a": 1}'` or `{: a b }`, doesn't compile in Rust, so it is SQL written without its escape:
+//! it stays as written.
 
 use pgls_text_size::{TextRange, TextSize};
 
@@ -26,10 +35,6 @@ pub(crate) struct Directives<'a> {
 }
 
 impl<'a> Directives<'a> {
-    /// The longest format spec of a directive. A `{` with a longer one stays as written, so that
-    /// reading a text with many `{` and no `}` takes linear time.
-    const SPEC_LEN_MAX: usize = 256;
-
     pub(crate) fn new(text: &'a str) -> Self {
         Self {
             text,
@@ -54,17 +59,13 @@ impl<'a> Directives<'a> {
         let mut next = self.next;
         let mut after = rest.get(argument_len..)?;
         if let Some(spec) = after.strip_prefix(':') {
-            let spec_len = spec
-                .bytes()
-                .take(Self::SPEC_LEN_MAX)
-                .position(|b| b == b'{' || b == b'}')?;
-            if spec.get(..spec_len)?.contains(".*") {
+            let (rest, star) = Self::format_spec(spec)?;
+            if star {
                 next = next.saturating_add(1);
             }
-            after = spec.get(spec_len..)?;
-        } else {
-            after = after.trim_start();
+            after = rest;
         }
+        after = after.trim_start();
         if !after.starts_with('}') {
             return None;
         }
@@ -77,6 +78,65 @@ impl<'a> Directives<'a> {
             Argument::Named(argument)
         };
         Some((self.text.len() - after.len() + 1, argument, next))
+    }
+}
+
+impl Directives<'_> {
+    /// The text after the `format_spec` at the start of `spec`, and whether its precision is
+    /// `*`, or `None` if it isn't one.
+    fn format_spec(spec: &str) -> Option<(&str, bool)> {
+        let mut rest = spec;
+        // `[[fill]align]`: a fill is any character, followed by an align.
+        let mut chars = rest.chars();
+        let (first, second) = (chars.next(), chars.next());
+        if second.is_some_and(|c| "<^>".contains(c)) {
+            rest = rest.get(first?.len_utf8() + 1..)?;
+        } else if first.is_some_and(|c| "<^>".contains(c)) {
+            rest = rest.get(1..)?;
+        }
+        // `[sign]['#']['0']`.
+        rest = rest.strip_prefix(['+', '-']).unwrap_or(rest);
+        rest = rest.strip_prefix('#').unwrap_or(rest);
+        rest = rest.strip_prefix('0').unwrap_or(rest);
+        rest = Self::count(rest).unwrap_or(rest);
+        let mut star = false;
+        if let Some(precision) = rest.strip_prefix('.') {
+            if let Some(after) = precision.strip_prefix('*') {
+                star = true;
+                rest = after;
+            } else {
+                rest = Self::count(precision)?;
+            }
+        }
+        // `type`: an identifier, like `x` or `e`, and `?`.
+        rest =
+            Self::identifier(rest).map_or(Some(rest), |identifier| rest.get(identifier.len()..))?;
+        rest = rest.strip_prefix('?').unwrap_or(rest);
+        Some((rest, star))
+    }
+
+    /// The text after the `count` at the start of `text`: an integer, or an argument and `$`.
+    fn count(text: &str) -> Option<&str> {
+        let digits = text
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(text.len());
+        if digits > 0 {
+            let rest = text.get(digits..)?;
+            return Some(rest.strip_prefix('$').unwrap_or(rest));
+        }
+        let identifier = Self::identifier(text)?;
+        text.get(identifier.len()..)?.strip_prefix('$')
+    }
+
+    /// The identifier at the start of `text`.
+    fn identifier(text: &str) -> Option<&str> {
+        if !text.starts_with(|c: char| c.is_alphabetic() || c == '_') {
+            return None;
+        }
+        let len = text
+            .find(|c: char| !c.is_alphanumeric() && c != '_')
+            .unwrap_or(text.len());
+        text.get(..len)
     }
 }
 

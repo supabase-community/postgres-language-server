@@ -1,0 +1,16 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- format specs of Rust
+  2 | select {:>8}, {0:+#010.3e}, {name:.*}, {:x?}, {:<1$} from t;
+    | select $a___, $a__________, $b_______, $c___, $d____ from t;
+  3 | -- found by the fuzzer: `$$` is no format spec, so `{:$$}` starts no directive. Read as one, it ran
+  4 | -- over the `$$` that ends the string
+  5 | sElect($${:$$})select('');$$)
+
+placeholders:
+     31..36 `{:>8}` -> `$a___` value
+     38..50 `{0:+#010.3e}` -> `$a__________` value
+     52..61 `{name:.*}` -> `$b_______` value
+     63..68 `{:x?}` -> `$c___` value
+     70..76 `{:<1$}` -> `$d____` value
