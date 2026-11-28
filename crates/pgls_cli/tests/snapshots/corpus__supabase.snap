@@ -13,6 +13,7 @@ check:
   lint/banDropColumn: 8
   lint/banDropConstraint: 2
   lint/banDropFunction: 7
+  lint/banDropPolicy: 1
   lint/banDropTable: 2
   lint/constraintMissingNotValid: 3
   lint/creatingEnum: 13
