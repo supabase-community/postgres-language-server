@@ -251,6 +251,31 @@ Things to keep in mind:
 - When a configuration file is passed explicitly with `--config-path`, it applies to all files and nested configuration files are not looked up.
 - `dblint` uses the configuration of the working directory.
 
+## SQL templates of Go and Rust programs
+
+Some SQL files are format strings of a program, like the queries a Go program fills in with `fmt.Sprintf`, or a Rust program with `format!`. Set `templating.syntax` to read them as such: `"go-printf"` for Go's `fmt.Sprintf`, `"rust-fmt"` for Rust's `format!`, or `"none"`, the default. `templating.include` and `templating.ignore` select the files with globs, like `files.include` and `files.ignore`. Without `include`, every file of the configuration is a template.
+
+```json
+{
+  "templating": {
+    "syntax": "go-printf",
+    "include": ["internal/queries/**/*.sql"]
+  }
+}
+```
+
+Check, lint and the editor features then read the SQL around the directives:
+
+- A directive (`%s`, `%d`, `%[1]v`, `%5.2f` of [Go](https://pkg.go.dev/fmt#hdr-Printing), `{}`, `{0}`, `{name}`, `{name:>8}` of [Rust](https://doc.rust-lang.org/std/fmt/index.html#syntax)) is analysed like a psql variable, as goose's `ENVSUB` expansions are (see [Checking migrations](guides/checking_migrations.md)): as an identifier after keywords like `TABLE`, `FROM` or `REFERENCES` and before a `.`, and as a value elsewhere. So `select * from %s.%s where id = %d` reads two identifiers and a value. A statement whose directives are all values, like `select * from users where id = %d`, is typechecked; one with a directive in an identifier isn't. An identifier with a directive, like `app_%s`, `tenant_{schema}` or `"%s"`, is one identifier. Directives that take different arguments are different values, like the two `%s` of `where a = %s and b = %s`, and the same argument twice, like `%[1]s` or `{name}`, is one value. A statement with more than 53 distinct arguments may not get a placeholder of its own for each of them, and then isn't typechecked.
+- A directive directly after a name, a value, a `)`, a `]` or another directive, like `select a %s from t` or `from t {alias}`, is reported: it would be an alias without `AS` or a part of a clause, and a placeholder can only stand for a name or a value. Write `as %s` for an alias. Directives that are part of a name, like `app_%s`, are fine.
+- Directives in string literals and comments stay as written. A statement with a directive in a string literal isn't typechecked, since its value is unknown.
+- `%%` writes `%` in Go, `{{` and `}}` write `{` and `}` in Rust. In string literals they stay as written. Elsewhere, Go's `%%` is read as the `%` operator, so `id %% 2` is the modulo `id % 2`.
+- A `%` or `{` that doesn't start a directive, like the `%` of `7 % 2` or the `{` of `'{1,2}'`, is read as SQL. Go and Rust would reject or mangle it, so write `%%` and `{{` in the template.
+- Fixes that would edit a directive are left out, and statements with a directive can't be executed from the editor.
+- The formatter formats the statements around the directives and keeps each directive as written. Go and Rust take the arguments of `%s` and `{}` by position, so it checks that the formatted statement has its directives, also those in strings and comments, in the same order and at the same places. A statement where it can't, like one with a `%` that is no directive, is left as written, with a diagnostic.
+
+The setting applies per configuration file, so Go and Rust templates in different folders of one project each get a [nested configuration](#nested-configurations-monorepos), or one configuration selects them with `include`. `--template-syntax=go-printf|rust-fmt|none` of `check`, `format` and `parse` replaces `templating.syntax` for one run, in every configuration file; `none` switches it off. `parse` uses the configuration file of the folder of `--file`, or `--config-path`. A file that is also a goose migration with `ENVSUB` is read as a template: where the file has template directives, their placeholders take the place of the `ENVSUB` expansions, which stay as written.
+
 ## Specifying files to process
 
 You can control the files/folders to process using different strategies, either CLI, configuration and VCS.

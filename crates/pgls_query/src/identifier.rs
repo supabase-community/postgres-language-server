@@ -1,9 +1,14 @@
 //! Identifiers in SQL text and the names Postgres' scanner reads from them.
 
+use crate::protobuf::Token;
+
 /// An identifier as written in SQL text, quoted or not.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Identifier<'a> {
     text: &'a str,
+    /// The escape character of a `U&"..."` identifier, `None` if Postgres rejects the one its
+    /// `UESCAPE` clause names.
+    escape: Option<char>,
 }
 
 impl<'a> Identifier<'a> {
@@ -13,16 +18,51 @@ impl<'a> Identifier<'a> {
     /// See <https://github.com/postgres/postgres/blob/REL_18_6/src/include/pg_config_manual.h#L29>.
     pub const NAME_BYTES_MAX: usize = 63;
 
+    /// The identifier `text`. A `U&"..."` identifier has the escape character `\`, see
+    /// [`Self::from_tokens`] for one with a `UESCAPE` clause.
     pub fn new(text: &'a str) -> Self {
-        Self { text }
+        Self {
+            text,
+            escape: Some('\\'),
+        }
+    }
+
+    /// The identifier of the first of `tokens`, given as the kind and text of each token. A
+    /// `U&"..."` identifier has the escape character of the `UESCAPE` clause after it, see
+    /// [`Self::unicode_escape`]. Comments are skipped.
+    pub fn from_tokens(tokens: impl IntoIterator<Item = (Token, &'a str)>) -> Option<Self> {
+        let mut tokens = tokens.into_iter();
+        let (kind, text) = tokens.next()?;
+        let escape = match kind {
+            Token::Uident => Self::unicode_escape(tokens),
+            _ => Some('\\'),
+        };
+        Some(Self { text, escape })
+    }
+
+    /// The escape character of the `U&"..."` identifier or `U&'...'` string constant that
+    /// `tokens` follow: the character of the `UESCAPE` clause they start with, or `\`. `None` if
+    /// Postgres rejects the character. Comments are skipped, like Postgres' parser, which reads
+    /// the clause through lookahead in [`base_yylex`].
+    ///
+    /// [`base_yylex`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parser.c#L111
+    pub fn unicode_escape(tokens: impl IntoIterator<Item = (Token, &'a str)>) -> Option<char> {
+        let mut tokens = tokens
+            .into_iter()
+            .filter(|(kind, _)| !matches!(kind, Token::SqlComment | Token::CComment));
+        match tokens.next() {
+            Some((Token::Uescape, _)) => match tokens.next()? {
+                (Token::Sconst, literal) => Self::uescape_char(literal),
+                _ => None,
+            },
+            _ => Some('\\'),
+        }
     }
 
     /// The name the identifier stands for, like Postgres' scanner reads it:
     ///
     /// - a quoted identifier without its quotes and with `""` unescaped,
     /// - a `U&"..."` identifier with its Unicode escapes replaced, see [`Self::unicode_name`].
-    ///   A `UESCAPE` clause after the identifier isn't part of the text, so the escape character
-    ///   is `\`.
     /// - an unquoted identifier downcased. Like [`downcase_identifier`] in a multibyte encoding
     ///   such as UTF8, only ASCII letters are downcased.
     ///
@@ -46,7 +86,7 @@ impl<'a> Identifier<'a> {
         if text
             .get(..2)
             .is_some_and(|prefix| prefix.eq_ignore_ascii_case("u&"))
-            && let Some(name) = self.unicode_value('\\')
+            && let Some(name) = self.unicode_name()
         {
             return name;
         }
@@ -59,15 +99,10 @@ impl<'a> Identifier<'a> {
         }
     }
 
-    /// The name a `U&"..."` identifier stands for, given the string literal of its `UESCAPE`
-    /// clause if it has one, or `None` if Postgres rejects the escape character or the escapes.
-    /// The name is not truncated.
-    pub fn unicode_name(self, uescape: Option<&str>) -> Option<String> {
-        let escape = match uescape {
-            Some(literal) => Self::uescape_char(literal)?,
-            None => '\\',
-        };
-        self.unicode_value(escape)
+    /// The name a `U&"..."` identifier stands for, or `None` if Postgres rejects its escape
+    /// character or its escapes. The name is not truncated.
+    pub fn unicode_name(self) -> Option<String> {
+        self.unicode_value(self.escape?)
     }
 
     /// The longest prefix of whole characters of `name` that fits in 63 bytes, which is the name
@@ -196,18 +231,36 @@ mod tests {
         assert_eq!(Identifier::uescape_char("'a'"), None);
         assert_eq!(Identifier::uescape_char("'!!'"), None);
         assert_eq!(
-            Identifier::new(r#"u&"a!!b!0063""#)
-                .unicode_name(Some("'!'"))
-                .as_deref(),
-            Some("a!bc")
-        );
-        assert_eq!(
-            Identifier::new(r#"U&"d\0061ta""#)
-                .unicode_name(None)
-                .as_deref(),
+            Identifier::new(r#"U&"d\0061ta""#).unicode_name().as_deref(),
             Some("data")
         );
-        assert_eq!(Identifier::new(r#"U&"a""#).unicode_name(Some("'a'")), None);
+    }
+
+    #[test]
+    fn unicode_identifiers_take_the_escape_of_their_uescape_clause() {
+        let name = |sql: &str| {
+            let scan = crate::scan(sql).ok()?;
+            let identifier = scan
+                .tokens
+                .iter()
+                .position(|token| token.token() == Token::Uident)?;
+            let identifier = Identifier::from_tokens(
+                scan.tokens[identifier..]
+                    .iter()
+                    .map_while(|token| Some((token.token(), token.text(sql)?))),
+            )?;
+            Some((identifier.name(), identifier.unicode_name()))
+        };
+        let data = || Some(("data".to_owned(), Some("data".to_owned())));
+        assert_eq!(name(r#"select U&"d!0061ta" UESCAPE '!'"#), data());
+        assert_eq!(name(r#"select U&"d!0061ta" /* c */ uescape '!'"#), data());
+        assert_eq!(name("select U&\"d!0061ta\" -- c\n UESCAPE '!'"), data());
+        assert_eq!(name(r#"select U&"d\0061ta" as x"#), data());
+        // Postgres rejects the escape character, so the text is read as unquoted.
+        assert_eq!(
+            name(r#"select U&"a" UESCAPE 'a'"#),
+            Some((r#"u&"a""#.to_owned(), None))
+        );
     }
 
     #[test]

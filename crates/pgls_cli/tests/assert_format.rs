@@ -37,6 +37,26 @@ fn format_values_rows_from_cli_options() {
     .stdout("values\n  (1, 'one')\n  , (2, 'two');");
 }
 
+#[test]
+fn format_reads_templates_with_the_template_syntax_argument() {
+    let mut cmd = cargo_bin_cmd!("postgres-language-server");
+    cmd.args([
+        "format",
+        "--config-path",
+        CONFIG_PATH,
+        "--log-level",
+        "none",
+        "--stdin-file-path",
+        "virtual.sql",
+        "--template-syntax",
+        "go-printf",
+    ])
+    .write_stdin("select   *  from %s.users where id = %d and n %% 2 = 0;")
+    .assert()
+    .success()
+    .stdout("select * from %s.users where id = %d and n %% 2 = 0;");
+}
+
 fn format_stdin_with_option(option: &str, value: &str) -> assert_cmd::assert::Assert {
     let mut cmd = cargo_bin_cmd!("postgres-language-server");
     cmd.args([

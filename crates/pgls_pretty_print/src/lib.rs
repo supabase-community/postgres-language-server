@@ -111,6 +111,41 @@ impl FormatResult {
     }
 }
 
+/// The statements of a text as the round trip of the formatter compares them: normalized, see
+/// [`normalize_ast`], and with the body of a function that parses as SQL in its deparsed form,
+/// since the formatter reformats SQL function bodies. Two texts with the same statements are the
+/// same program to Postgres, which tests of a file's formatting check.
+#[cfg(feature = "testing")]
+#[derive(Debug, Clone, PartialEq)]
+pub struct NormalizedStatements(Vec<NodeEnum>);
+
+#[cfg(feature = "testing")]
+impl NormalizedStatements {
+    /// The statements of `sql`, if it parses.
+    pub fn of(sql: &str) -> Option<Self> {
+        let parsed = pgls_query::parse(sql).ok()?;
+        Some(Self(
+            parsed
+                .stmts()
+                .into_iter()
+                .map(|statement| {
+                    let mut statement = statement.clone();
+                    if let NodeEnum::CreateFunctionStmt(function) = &mut statement
+                        && let Some(body) = function.option_value_mut("as")
+                        && let Some(deparsed) = pgls_query::parse(body)
+                            .ok()
+                            .and_then(|parsed| parsed.deparse().ok())
+                    {
+                        *body = deparsed;
+                    }
+                    normalize_ast(&mut statement);
+                    statement
+                })
+                .collect(),
+        ))
+    }
+}
+
 /// Format a single SQL statement from its AST.
 ///
 /// This function takes an already-parsed AST, formats it according to the

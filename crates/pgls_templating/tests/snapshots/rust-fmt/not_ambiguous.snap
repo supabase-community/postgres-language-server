@@ -1,0 +1,12 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select * from {schema}.{table} as {alias} where tenant_{schema}.id = {};
+    | select * from $a______.$b_____ as $c_____ where $tenant_a______.id = $d;
+
+placeholders:
+     14..22 `{schema}` -> `$a______` identifier
+     23..30 `{table}` -> `$b_____` identifier
+     34..41 `{alias}` -> `$c_____` identifier
+     48..63 `tenant_{schema}` -> `$tenant_a______` identifier
+     69..71 `{}` -> `$d` value

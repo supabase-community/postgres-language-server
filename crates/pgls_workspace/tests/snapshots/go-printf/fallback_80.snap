@@ -1,0 +1,10 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- `8 % 3` starts no directive: Go would mangle it, and the formatter keeps the statement
+select 7 %% 2,  8 % 3, %d;
+select %s from t;
+
+---
+diagnostics:
+  `select 7 %% 2,  8 % 3, %d;`: Format error: Placeholders could not be restored after formatting, the statement was left untouched

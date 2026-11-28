@@ -1,0 +1,15 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select * from {schema}.{table} where id = {} and name = {name};
+    | select * from $a______.$b_____ where id = $c and name = $d____;
+  2 | insert into {table} (a) values ({0});
+    | insert into $b_____ (a) values ($c_);
+
+placeholders:
+     14..22 `{schema}` -> `$a______` identifier
+     23..30 `{table}` -> `$b_____` identifier
+     42..44 `{}` -> `$c` value
+     56..62 `{name}` -> `$d____` value
+     76..83 `{table}` -> `$b_____` identifier
+     96..99 `{0}` -> `$c_` value

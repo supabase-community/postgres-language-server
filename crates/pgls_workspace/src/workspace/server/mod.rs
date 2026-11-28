@@ -49,6 +49,7 @@ use pgls_fs::{ConfigName, PgLSPath};
 use pgls_migrations::MigrationTool;
 #[cfg(not(feature = "db"))]
 use pgls_suppressions::PendingDiagnostic;
+use pgls_templating::Template;
 use pgls_text_size::{TextRange, TextSize};
 #[cfg(feature = "db")]
 use pgls_typecheck::TypecheckParams;
@@ -368,20 +369,23 @@ impl WorkspaceServer {
             || is_ignored_by_migration_settings(&settings, path)
     }
 
-    /// The migration tool and `files.maxSize` of the settings that apply to the file, and the
-    /// version of the settings they are from.
+    /// The migration tool, the template syntax and `files.maxSize` of the settings that apply to
+    /// the file, and the version of the settings they are from.
     fn file_settings(
         &self,
         project_key: ProjectKey,
         path: &Path,
-    ) -> (u64, MigrationTool, NonZeroU64) {
+    ) -> (u64, MigrationTool, Template, NonZeroU64) {
         // Read before the settings, so that settings that change in between make the version
         // older than the tool, and the document gets the tool again on the next request.
         let settings_version = self.settings_version.load(Ordering::Acquire);
         let workspaces = self.workspaces();
-        let settings = workspaces
-            .settings_for(project_key, path)
-            .map(|settings| settings.settings());
+        let path_settings = workspaces.settings_for(project_key, path);
+        // The `include` and `ignore` globs match the path that the settings resolved.
+        let template = path_settings.as_ref().map_or(Template::None, |settings| {
+            settings.templating.template_of(settings.path())
+        });
+        let settings = path_settings.map(|settings| settings.settings());
         let tool = settings
             .and_then(|settings| settings.migrations.as_ref())
             .map(|migrations| migrations.tool)
@@ -390,7 +394,7 @@ impl WorkspaceServer {
             pgls_configuration::files::DEFAULT_FILE_SIZE_LIMIT,
             |settings| settings.files.max_size,
         );
-        (settings_version, tool, max_size)
+        (settings_version, tool, template, max_size)
     }
 
     /// Gives the open document at `path` the migration tool and size limit of the current settings
@@ -409,12 +413,19 @@ impl WorkspaceServer {
             return;
         }
         // Neither the documents nor the settings are locked while taking the other lock.
-        let (settings_version, migration_tool, max_size) = self.file_settings(project_key, path);
+        let (settings_version, migration_tool, template, max_size) =
+            self.file_settings(project_key, path);
         let mut documents = self.documents.write();
         // A request that still works with the previous tool keeps its copy, and stops since it
         // is outdated.
         let stale = documents.get_mut(path).map(|doc| {
-            Arc::make_mut(doc).set_settings(project_key, settings_version, migration_tool, max_size)
+            Arc::make_mut(doc).set_settings(
+                project_key,
+                settings_version,
+                migration_tool,
+                template,
+                max_size,
+            )
         });
         drop(documents);
         if let Some(stale) = stale {
@@ -897,7 +908,7 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     #[tracing::instrument(level = "info", skip_all, fields(path = params.path.as_path().as_os_str().to_str()), err)]
     fn open_file(&self, params: OpenFileParams) -> Result<(), WorkspaceError> {
-        let (settings_version, migration_tool, max_size) =
+        let (settings_version, migration_tool, template, max_size) =
             self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
         // A client that opens the file again without closing it sends its current text, which
@@ -908,6 +919,7 @@ impl Workspace for WorkspaceServer {
                 params.project_key,
                 settings_version,
                 migration_tool,
+                template,
                 max_size,
                 params.content,
                 params.version,
@@ -938,7 +950,7 @@ impl Workspace for WorkspaceServer {
     #[ignored_path(project=params.project_key, path=&params.path)]
     fn change_file(&self, params: super::ChangeFileParams) -> Result<(), WorkspaceError> {
         // Read before locking the documents, see `refresh_migration_tool`.
-        let (settings_version, migration_tool, max_size) =
+        let (settings_version, migration_tool, template, max_size) =
             self.file_settings(params.project_key, &params.path);
         let mut documents = self.documents.write();
 
@@ -953,6 +965,7 @@ impl Workspace for WorkspaceServer {
                             params.project_key,
                             settings_version,
                             migration_tool,
+                            template,
                             max_size,
                         )
                     });
@@ -966,6 +979,7 @@ impl Workspace for WorkspaceServer {
                     params.project_key,
                     settings_version,
                     migration_tool,
+                    template,
                     max_size,
                     params.content,
                     params.version,

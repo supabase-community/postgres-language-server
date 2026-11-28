@@ -1,0 +1,6 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+-- +goose Up
+-- +goose ENVSUB ON
+insert into audit_log (message) values ('${MESSAGE}' /* ${NOTE} */ );

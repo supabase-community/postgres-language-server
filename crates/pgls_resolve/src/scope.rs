@@ -3,7 +3,11 @@
 
 use std::rc::Rc;
 
-use super::{ColumnSource, resolver::Resolver};
+use super::{
+    ColumnSource,
+    resolver::Resolver,
+    star::{StarEntry, StarOrder},
+};
 use pgls_catalog::ColumnInfo;
 use pgls_catalog::typing::{Type, TypedColumn};
 
@@ -271,27 +275,6 @@ pub(super) struct Level {
     pub qualified_only: Vec<Item>,
 }
 
-/// The order of the columns that `*` expands to.
-#[derive(Debug, Clone, Default)]
-pub(super) enum StarOrder {
-    /// The columns of each item, one item after the other, as without joins that merge columns.
-    #[default]
-    Items,
-    /// The order of a level with a join that merges columns.
-    Columns(Vec<StarEntry>),
-    /// Not known, because a join's columns can't be merged with certainty.
-    Unknown,
-}
-
-/// A column that `*` expands to.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum StarEntry {
-    /// A column that `JOIN ... USING` or a `NATURAL` join merges, by its name.
-    Merged(String),
-    /// The column at `column` in the columns of the item at `item` of the level.
-    Item { item: usize, column: usize },
-}
-
 impl Level {
     pub(crate) fn with_item(item: Item) -> Self {
         Self {
@@ -301,62 +284,11 @@ impl Level {
     }
 
     pub(crate) fn extend(&mut self, other: Level) {
-        self.star_order = match (&self.star_order, &other.star_order) {
-            (StarOrder::Items, StarOrder::Items) => StarOrder::Items,
-            _ => match (self.star(), other.star()) {
-                (Some(mut columns), Some(other_columns)) => {
-                    let offset = self.items.len();
-                    columns.extend(other_columns.into_iter().map(|column| match column {
-                        StarEntry::Item { item, column } => StarEntry::Item {
-                            item: item + offset,
-                            column,
-                        },
-                        merged => merged,
-                    }));
-                    StarOrder::Columns(columns)
-                }
-                _ => StarOrder::Unknown,
-            },
-        };
+        self.star_order = self.star_order_with(&other);
         self.items.extend(other.items);
         self.merged_columns.extend(other.merged_columns);
         self.has_natural_join |= other.has_natural_join;
         self.has_opaque_items |= other.has_opaque_items;
-    }
-
-    /// The columns that `*` expands to, in order, like [`ExpandAllTables`]. A join expands to the
-    /// columns it merges, then the other columns of its left side, then those of its right side
-    /// ([`transformFromClauseItem`]). `None` if they are not known.
-    ///
-    /// [`ExpandAllTables`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_target.c#L1296
-    /// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
-    pub(crate) fn star(&self) -> Option<Vec<StarEntry>> {
-        match &self.star_order {
-            StarOrder::Items => {
-                let mut columns = Vec::new();
-                for (item, entry) in self.items.iter().enumerate() {
-                    let count = entry.columns.as_ref()?.len();
-                    columns.extend((0..count).map(|column| StarEntry::Item { item, column }));
-                }
-                Some(columns)
-            }
-            StarOrder::Columns(columns) => Some(columns.clone()),
-            StarOrder::Unknown => None,
-        }
-    }
-
-    /// The name of a column of `*`.
-    pub(crate) fn star_column_name<'a>(&'a self, column: &'a StarEntry) -> Option<&'a str> {
-        match column {
-            StarEntry::Merged(name) => Some(name),
-            StarEntry::Item { item, column } => self
-                .items
-                .get(*item)?
-                .columns
-                .as_ref()?
-                .get(*column)
-                .map(|column| column.name.as_str()),
-        }
     }
 
     /// The columns that an unqualified reference to `column` can mean, if the level has a join
@@ -387,63 +319,6 @@ impl Level {
             .filter(|item| item.has_column(column) == Some(true))
             .map(|item| item.name.clone().unwrap_or_default())
             .collect()
-    }
-
-    /// The columns of `SELECT *`, including merged columns, and whether their types are known
-    /// as a whole: if they are known for every item. The columns of an item whose types are not
-    /// known as a whole have no types. The type of a merged column is unknown if nested joins
-    /// merge the same name again. `None` if the columns are not known.
-    pub(crate) fn star_columns(&self) -> Option<(Vec<TypedColumn>, bool)> {
-        if self.items.is_empty() {
-            return None;
-        }
-        let mut types_known = true;
-        let columns = self
-            .star()?
-            .iter()
-            .map(|column| match column {
-                StarEntry::Merged(name) => Some(TypedColumn {
-                    name: name.clone(),
-                    ty: self.merged_column_type(name),
-                }),
-                StarEntry::Item { item, column } => {
-                    let item = self.items.get(*item)?;
-                    types_known &= item.types_known;
-                    let column = item.columns.as_ref()?.get(*column)?;
-                    Some(TypedColumn {
-                        name: column.name.clone(),
-                        ty: column.ty.clone().filter(|_| item.types_known),
-                    })
-                }
-            })
-            .collect::<Option<Vec<_>>>()?;
-        Some((columns, types_known))
-    }
-
-    /// The type of a column that the joins of the level merge, unknown if nested joins merge
-    /// the same name again.
-    fn merged_column_type(&self, name: &str) -> Option<Type> {
-        let mut merged = self
-            .merged_columns
-            .iter()
-            .filter(|merged| merged.name == name);
-        match (merged.next(), merged.next()) {
-            (Some(merged), None) => merged.ty.clone(),
-            _ => None,
-        }
-    }
-
-    /// The type of a column of `*`, as [`Level::star_columns`] gives it, without building the
-    /// others. `None` if it is not known.
-    fn star_column_type(&self, column: &StarEntry) -> Option<Type> {
-        match column {
-            StarEntry::Merged(name) => self.merged_column_type(name),
-            StarEntry::Item { item, column } => {
-                let item = self.items.get(*item)?;
-                let column = item.columns.as_ref()?.get(*column)?;
-                column.ty.clone().filter(|_| item.types_known)
-            }
-        }
     }
 
     pub(crate) fn item(&self, name: &str) -> Option<&Item> {

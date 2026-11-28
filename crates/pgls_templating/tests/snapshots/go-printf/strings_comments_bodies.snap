@@ -1,0 +1,14 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select '%s', E'%d', $$ select %v $$; -- %q
+  2 | /* %x */
+  3 | create function f() returns int language sql as $body$ select %d $body$;
+
+placeholders:
+      8..10 `%s` -> `%s` unknown value
+     15..17 `%d` -> `%d` unknown value
+     30..32 `%v` -> `%v` unknown value
+     40..42 `%q` -> `%q` in a comment
+     46..48 `%x` -> `%x` in a comment
+   114..116 `%d` -> `%d` unknown value

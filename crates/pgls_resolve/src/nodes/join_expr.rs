@@ -2,7 +2,8 @@ use pgls_query::{Node, protobuf::JoinExpr};
 
 use super::{Resolver, alias::apply_alias, from_clause::resolve_from_item};
 use crate::{
-    scope::{Item, Level, StarEntry, StarOrder},
+    scope::{Item, Level},
+    star::StarOrder,
     utils::resolve_expr,
 };
 use pgls_catalog::typing::{Selection, TypedColumn, select_common_type};
@@ -32,7 +33,7 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
 
     let using_columns = Node::string_values(&n.using_clause).unwrap_or_default();
     let merge = (n.is_natural || !using_columns.is_empty())
-        .then(|| merge_columns(&left, &right, n.is_natural, &using_columns));
+        .then(|| Level::merge_join_columns(&left, &right, n.is_natural, &using_columns));
     // `NATURAL` merges the columns that both sides have, like `USING` with them. They are only
     // known if all columns of both sides are known.
     let merged_columns = if n.is_natural {
@@ -110,67 +111,4 @@ pub(super) fn resolve_join_expr(r: &mut Resolver, n: &JoinExpr, preceding: &Leve
         ));
     }
     joined
-}
-
-/// The columns a join merges, and the columns of `*` over it: the merged columns, then the other
-/// columns of the left side, then those of the right side. `NATURAL` merges the columns of the
-/// left side that the right side has too. Postgres rejects a merged column that either side
-/// doesn't have exactly once, so they are unknown then, as they are when the columns of a side
-/// are. Port of the column lists of the `JoinExpr` case of [`transformFromClauseItem`].
-///
-/// [`transformFromClauseItem`]: https://github.com/postgres/postgres/blob/REL_18_6/src/backend/parser/parse_clause.c#L1054
-fn merge_columns(
-    left: &Level,
-    right: &Level,
-    natural: bool,
-    using: &[String],
-) -> Option<(Vec<String>, Vec<StarEntry>)> {
-    let (left_columns, right_columns) = (left.star()?, right.star()?);
-    let names = |level: &Level, columns: &[StarEntry]| {
-        columns
-            .iter()
-            .map(|column| level.star_column_name(column).map(str::to_owned))
-            .collect::<Option<Vec<_>>>()
-    };
-    let (left_names, right_names) = (names(left, &left_columns)?, names(right, &right_columns)?);
-    let merged = if natural {
-        left_names
-            .iter()
-            .filter(|name| right_names.contains(name))
-            .cloned()
-            .collect()
-    } else {
-        using.to_vec()
-    };
-    let once = |names: &[String], name: &String| names.iter().filter(|n| *n == name).count() == 1;
-    if !merged
-        .iter()
-        .all(|name| once(&left_names, name) && once(&right_names, name) && once(&merged, name))
-    {
-        return None;
-    }
-
-    let offset = left.items.len();
-    let mut columns: Vec<StarEntry> = merged.iter().cloned().map(StarEntry::Merged).collect();
-    columns.extend(
-        left_columns
-            .into_iter()
-            .zip(&left_names)
-            .filter(|(_, name)| !merged.contains(name))
-            .map(|(column, _)| column),
-    );
-    columns.extend(
-        right_columns
-            .into_iter()
-            .zip(&right_names)
-            .filter(|(_, name)| !merged.contains(name))
-            .map(|(column, _)| match column {
-                StarEntry::Item { item, column } => StarEntry::Item {
-                    item: item + offset,
-                    column,
-                },
-                merged => merged,
-            }),
-    );
-    Some((merged, columns))
 }

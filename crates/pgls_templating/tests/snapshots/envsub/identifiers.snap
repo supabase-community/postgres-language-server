@@ -1,0 +1,15 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | -- +goose Up
+  2 | -- +goose ENVSUB ON
+  3 | create table ${PREFIX}_events (id bigint);
+    | create table $PREFIX_events__ (id bigint);
+  4 | select * from "${SCHEMA}".events, app_$PREFIX.${A}${B};
+    | select * from $SCHEMA____.events, $app_PREFIX.$AB_____;
+
+placeholders:
+     46..62 `${PREFIX}_events` -> `$PREFIX_events__` identifier
+    90..101 `"${SCHEMA}"` -> `$SCHEMA____` identifier
+   110..121 `app_$PREFIX` -> `$app_PREFIX` identifier
+   122..130 `${A}${B}` -> `$AB_____` identifier

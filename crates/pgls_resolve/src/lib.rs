@@ -31,6 +31,7 @@ mod roles_and_schemas;
 mod scope;
 mod span;
 pub use span::Tokens;
+mod star;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

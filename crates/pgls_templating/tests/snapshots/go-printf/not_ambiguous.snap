@@ -1,0 +1,32 @@
+---
+source: crates/pgls_templating/tests/readers.rs
+---
+  1 | select a as %s, %s.%s, app_%s from t where id = %d and x in (%s);
+    | select a as $a, $b.$c, $app_d from t where id = $e and x in ($f);
+  2 | select * from %s join %s on %s.id = %d limit %d offset %d;
+    | select * from $g join $h on $i.id = $j limit $k offset $l;
+  3 | select 7 %% %d, a::%s, '%s' as x, "%s" from t; -- a %s
+    | select 7 %  $m, a::$n, '%s' as x, $p__ from t; -- a %s
+  4 | select a "100%%" from t;
+    | select a $e100__ from t;
+
+placeholders:
+     12..14 `%s` -> `$a` identifier
+     16..18 `%s` -> `$b` identifier
+     19..21 `%s` -> `$c` identifier
+     23..29 `app_%s` -> `$app_d` value
+     48..50 `%d` -> `$e` value
+     61..63 `%s` -> `$f` value
+     80..82 `%s` -> `$g` identifier
+     88..90 `%s` -> `$h` identifier
+     94..96 `%s` -> `$i` identifier
+   102..104 `%d` -> `$j` value
+   111..113 `%d` -> `$k` value
+   121..123 `%d` -> `$l` value
+   134..136 `%%` -> `% ` written as `%`
+   137..139 `%d` -> `$m` value
+   144..146 `%s` -> `$n` value
+   149..151 `%s` -> `%s` unknown value
+   159..163 `"%s"` -> `$p__` value
+   177..179 `%s` -> `%s` in a comment
+   189..196 `"100%%"` -> `$e100__` value

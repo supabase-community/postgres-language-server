@@ -1,0 +1,5 @@
+---
+source: crates/pgls_workspace/tests/template_formatting.rs
+---
+select * from t, %s where a = %d;
+select * from (select * from a, %s) as s, %s.u;
