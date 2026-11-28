@@ -3585,7 +3585,13 @@ async fn execute_statement_can_be_cancelled(test_db: PgPool) {
     let start = Instant::now();
     let result = std::thread::scope(|scope| {
         let execution = scope.spawn(|| workspace.execute_statement(params.clone()));
-        std::thread::sleep(Duration::from_millis(500));
+        // Cancel as soon as the execution is registered, likely before the statement reached
+        // the backend, which ignores a cancel until then.
+        let registered = Instant::now();
+        while workspace.running_statements.is_empty() {
+            assert!(registered.elapsed() < Duration::from_secs(10));
+            std::thread::sleep(Duration::from_millis(1));
+        }
         workspace
             .cancel_statement_execution(params.clone())
             .unwrap();

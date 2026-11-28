@@ -20,6 +20,13 @@ use crate::workspace::server::DatabasePools;
 /// holds.
 const CURSOR: &str = "pgls_statement";
 
+/// How long a cancelled statement may keep running before it is cancelled again.
+const CANCEL_RETRY_PERIOD: Duration = Duration::from_millis(100);
+
+/// The most cancels sent for one execution. Each takes a connection of the pool, and a
+/// statement that ignores this many doesn't react to cancels.
+const CANCEL_ATTEMPTS_MAX: usize = 50;
+
 /// How to execute a statement.
 pub(crate) struct ExecuteOptions {
     /// Whether the statement is a query that a cursor can run: a `select` or `values` without
@@ -127,16 +134,30 @@ async fn execute_on_own_connection(
     // check of `WorkspaceRuntime::run` can't infer otherwise.
     let result = match future::select(run(conn, sql, options.is_query).boxed(), cancel).await {
         future::Either::Left((result, _)) => result,
-        future::Either::Right((cancelled, run)) => {
+        future::Either::Right((cancelled, mut run)) => 'cancelled: {
             if cancelled.is_ok() {
-                // A connection can't cancel its own statement while it waits for the result.
-                if let Err(err) = sqlx::query("select pg_cancel_backend($1)")
-                    .bind(backend_pid)
-                    .execute(&pools.pool)
-                    .await
-                {
-                    tracing::warn!("Could not cancel the executed statement: {err}");
+                // Postgres ignores a cancel that reaches the backend before it read the
+                // statement, e.g. when the statement was cancelled while it waited for a
+                // connection, so repeat the cancel until the statement ends.
+                for _ in 0..CANCEL_ATTEMPTS_MAX {
+                    // A connection can't cancel its own statement while it waits for the result.
+                    if let Err(err) = sqlx::query("select pg_cancel_backend($1)")
+                        .bind(backend_pid)
+                        .execute(&pools.pool)
+                        .await
+                    {
+                        tracing::warn!("Could not cancel the executed statement: {err}");
+                        break 'cancelled run.await;
+                    }
+                    let retry = Box::pin(tokio::time::sleep(CANCEL_RETRY_PERIOD));
+                    match future::select(run, retry).await {
+                        future::Either::Left((result, _)) => break 'cancelled result,
+                        future::Either::Right((_, pending)) => run = pending,
+                    }
                 }
+                tracing::warn!(
+                    "The executed statement still runs after {CANCEL_ATTEMPTS_MAX} cancels, waiting for it to end."
+                );
             }
             run.await
         }
