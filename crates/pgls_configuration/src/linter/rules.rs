@@ -242,6 +242,12 @@ pub const LINTER_RULES: &[LinterRuleMetadata] = &[
     },
     LinterRuleMetadata {
         group: "destructive",
+        name: "banReplicaIdentity",
+        recommended: false,
+        severity: Severity::Warning,
+    },
+    LinterRuleMetadata {
+        group: "destructive",
         name: "banSetSchema",
         recommended: false,
         severity: Severity::Warning,
@@ -715,6 +721,9 @@ pub struct Rules {
     pub ban_non_transactional_statement_in_transaction: Option<
         RuleConfiguration<pgls_analyser::options::BanNonTransactionalStatementInTransaction>,
     >,
+    #[doc = "Changing the replica identity of a table or a publication may break logical replication consumers."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ban_replica_identity: Option<RuleConfiguration<pgls_analyser::options::BanReplicaIdentity>>,
     #[doc = "Moving an object to another schema may break existing clients."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ban_set_schema: Option<RuleConfiguration<pgls_analyser::options::BanSetSchema>>,
@@ -1029,6 +1038,10 @@ impl Rules {
                 .map(RuleConfiguration::level),
             "banNonTransactionalStatementInTransaction" => self
                 .ban_non_transactional_statement_in_transaction
+                .as_ref()
+                .map(RuleConfiguration::level),
+            "banReplicaIdentity" => self
+                .ban_replica_identity
                 .as_ref()
                 .map(RuleConfiguration::level),
             "banSetSchema" => self.ban_set_schema.as_ref().map(RuleConfiguration::level),
@@ -1348,6 +1361,10 @@ impl Rules {
                 .and_then(RuleConfiguration::get_options),
             "banNonTransactionalStatementInTransaction" => self
                 .ban_non_transactional_statement_in_transaction
+                .as_ref()
+                .and_then(RuleConfiguration::get_options),
+            "banReplicaIdentity" => self
+                .ban_replica_identity
                 .as_ref()
                 .and_then(RuleConfiguration::get_options),
             "banSetSchema" => self

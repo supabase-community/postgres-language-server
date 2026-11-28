@@ -108,6 +108,7 @@ export type Category =
   | "lint/banDropView"
   | "lint/banDuplicateColumnAssignments"
   | "lint/banNonTransactionalStatementInTransaction"
+  | "lint/banReplicaIdentity"
   | "lint/banSetSchema"
   | "lint/banTruncate"
   | "lint/banTruncateCascade"
@@ -1236,6 +1237,10 @@ export interface LinterRules {
    * Statements that Postgres can't run inside a transaction block.
    */
   banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Changing the replica identity of a table or a publication may break logical replication consumers.
+   */
+  banReplicaIdentity?: RuleConfiguration_for_Null;
   /**
    * Moving an object to another schema may break existing clients.
    */

@@ -618,6 +618,10 @@ export interface LinterRules {
    */
   banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
   /**
+   * Changing the replica identity of a table or a publication may break logical replication consumers.
+   */
+  banReplicaIdentity?: RuleConfiguration_for_Null;
+  /**
    * Moving an object to another schema may break existing clients.
    */
   banSetSchema?: RuleConfiguration_for_Null;

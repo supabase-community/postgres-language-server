@@ -68,6 +68,7 @@ Many rules are inspired by or directly ported from other tools. This page lists 
 | [ban-drop-type](https://squawkhq.com/docs/ban-drop-type) |[banDropType](./rules/ban-drop-type.md) |
 | [ban-drop-view](https://squawkhq.com/docs/ban-drop-view) |[banDropView](./rules/ban-drop-view.md) |
 | [ban-duplicate-column-assignments](https://squawkhq.com/docs/ban-duplicate-column-assignments) |[banDuplicateColumnAssignments](./rules/ban-duplicate-column-assignments.md) |
+| [ban-replica-identity](https://squawkhq.com/docs/ban-replica-identity) |[banReplicaIdentity](./rules/ban-replica-identity.md) |
 | [ban-set-schema](https://squawkhq.com/docs/ban-set-schema) |[banSetSchema](./rules/ban-set-schema.md) |
 | [ban-truncate-cascade](https://squawkhq.com/docs/ban-truncate-cascade) |[banTruncateCascade](./rules/ban-truncate-cascade.md) |
 | [ban-uncommitted-transaction](https://squawkhq.com/docs/ban-uncommitted-transaction) |[banUncommittedTransaction](./rules/ban-uncommitted-transaction.md) |
