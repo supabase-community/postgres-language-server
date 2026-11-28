@@ -457,17 +457,19 @@ pub fn resolve(params: ResolveParams<'_>) -> Resolution {
 
 /// The output columns of `query`, like the query of a view, `CREATE TABLE AS` or `SELECT INTO`,
 /// as the relation it creates has them: unknown literals become `text`. `None` if they are not
-/// known with certainty.
+/// known with certainty. `function` is the SQL function whose body the query is in, whose
+/// parameters are in scope.
 pub fn query_columns(
     query: &protobuf::Node,
     catalog: &Catalog,
     search_path: &[String],
+    function: Option<&FunctionContext>,
 ) -> Option<Vec<TypedColumn>> {
     let resolution = resolve(ResolveParams {
         stmt: query.node.as_ref()?,
         catalog,
         search_path,
-        function: None,
+        function,
         sql: None,
         collect_references: false,
         collect_lookups: false,

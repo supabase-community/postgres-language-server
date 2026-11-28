@@ -18,7 +18,7 @@ Without a database connection, they are not available. The language server cache
 As you type SQL, the language server suggests relevant database objects based on your current context:
 
 - **Tables**: Available tables from your database schema
-- **Columns**: Columns from tables referenced in your query
+- **Columns**: Columns from tables referenced in your query, and the columns of CTEs and of subqueries in `FROM` with their inferred types (`with c as (select id from users) select c.|`)
 - **Parameters**: In the body of a `LANGUAGE sql` function, its named parameters, as `user_id` or `fn.user_id`, where a value goes
 - **Functions**: Database functions and procedures
 - **Schemas**: Available schemas in your database

@@ -17,7 +17,7 @@ fn output_types(catalog: &mut Catalog, setup_sql: &str, query: &str) -> Vec<Opti
     let root = pgls_query::protobuf::Node {
         node: parsed.stmts().first().map(|node| (**node).clone()),
     };
-    super::query_columns(&root, catalog, &search_path)
+    super::query_columns(&root, catalog, &search_path, None)
         .unwrap_or_else(|| panic!("unknown query shape: {query}"))
         .into_iter()
         .map(|column| column.ty.as_ref().and_then(|ty| format_type(catalog, ty)))
@@ -293,7 +293,7 @@ async fn unknown_output_types_stay_unknown(test_db: PgPool) {
         let root = pgls_query::protobuf::Node {
             node: parsed.stmts().first().map(|node| (**node).clone()),
         };
-        if let Some(columns) = super::query_columns(&root, &catalog, &search_path) {
+        if let Some(columns) = super::query_columns(&root, &catalog, &search_path, None) {
             assert!(
                 columns.iter().all(|column| column.ty.is_none()),
                 "{query}: {columns:?}"

@@ -655,7 +655,7 @@ fn analyse(catalog: &Catalog, sql: &str) -> (Vec<FindingKind>, Option<Vec<Option
         collect_lookups: false,
     });
     let node = protobuf::Node { node: Some(root) };
-    let types = query_columns(&node, catalog, &search_path)
+    let types = query_columns(&node, catalog, &search_path, None)
         .map(|columns| columns.into_iter().map(|column| column.ty).collect());
     let findings = resolution.findings.into_iter().map(|f| f.kind).collect();
     (findings, types)

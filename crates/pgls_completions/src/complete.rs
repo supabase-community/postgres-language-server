@@ -6,18 +6,22 @@ use crate::{
     builder::CompletionBuilder,
     item::CompletionItem,
     providers::{
-        complete_columns, complete_functions, complete_keywords, complete_parameters,
-        complete_policies, complete_roles, complete_schemas, complete_tables,
+        DerivedColumns, complete_columns, complete_functions, complete_keywords,
+        complete_parameters, complete_policies, complete_roles, complete_schemas, complete_tables,
     },
     sanitization::SanitizedCompletionParams,
 };
 
 pub const LIMIT: usize = 50;
 
-#[derive(Debug)]
 pub struct CompletionParams<'a> {
     pub position: TextSize,
     pub schema: &'a pgls_catalog::Snapshot,
+    /// The catalog as the statement sees it, to find the columns of its CTEs and subqueries.
+    /// Without it, only the columns of `schema` are offered.
+    pub catalog: Option<&'a pgls_catalog::Catalog>,
+    /// The explicit search path of the session.
+    pub search_path: &'a [String],
     pub text: String,
     pub tree: &'a tree_sitter::Tree,
     /// The SQL function whose body the statement is in. Its parameters are completed.
@@ -36,7 +40,7 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
         .filter(|word| word.chars().all(|c| c.is_alphabetic()))
         .any(|t| t == t.to_ascii_uppercase());
 
-    let function = params.function;
+    let (catalog, search_path, function) = (params.catalog, params.search_path, params.function);
     let sanitized_params = SanitizedCompletionParams::from(params);
 
     let ctx = TreesitterContext::new(TreeSitterContextParams {
@@ -46,11 +50,17 @@ pub fn complete(params: CompletionParams) -> Vec<CompletionItem> {
         server_version_num: sanitized_params.schema.version.version_num,
     });
 
+    let derived_columns = DerivedColumns::new(&ctx, catalog, search_path, function);
     let mut builder = CompletionBuilder::new(&ctx);
 
     complete_tables(&ctx, sanitized_params.schema, &mut builder);
     complete_functions(&ctx, sanitized_params.schema, &mut builder);
-    complete_columns(&ctx, sanitized_params.schema, &mut builder);
+    complete_columns(
+        &ctx,
+        sanitized_params.schema,
+        &derived_columns,
+        &mut builder,
+    );
     complete_parameters(&ctx, function, &mut builder);
     complete_schemas(&ctx, sanitized_params.schema, &mut builder);
     complete_policies(&ctx, sanitized_params.schema, &mut builder);
