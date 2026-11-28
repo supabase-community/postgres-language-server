@@ -4,7 +4,6 @@ use pgls_catalog::Lookup;
 use pgls_console::markup;
 use pgls_diagnostics::Severity;
 use pgls_query::protobuf::DefElem;
-use pgls_query_ext::options::is_reindex_concurrent;
 
 declare_lint_rule! {
     /// `REINDEX` without `CONCURRENTLY` acquires an `ACCESS EXCLUSIVE` lock on the table.
@@ -50,7 +49,7 @@ impl LinterRule for RequireConcurrentReindex {
         let mut diagnostics = vec![];
 
         if let pgls_query::NodeEnum::ReindexStmt(stmt) = &ctx.stmt()
-            && !is_reindex_concurrent(stmt)
+            && !stmt.is_concurrent()
         {
             diagnostics.push(
                     LinterDiagnostic::new(

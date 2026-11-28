@@ -7,7 +7,6 @@ use pgls_query::{
     NodeEnum,
     protobuf::{self, VariableSetKind},
 };
-use pgls_query_ext::options::{is_reindex_concurrent, is_vacuum_full};
 
 use super::lock_level::{LockMode, TableLock, relation_locks};
 use crate::Catalog;
@@ -81,8 +80,8 @@ impl Locks {
                     | protobuf::ObjectType::ObjectMatview
             ),
             NodeEnum::TruncateStmt(_) => true,
-            NodeEnum::VacuumStmt(s) => is_vacuum_full(s),
-            NodeEnum::ReindexStmt(s) => !is_reindex_concurrent(s),
+            NodeEnum::VacuumStmt(s) => s.is_full(),
+            NodeEnum::ReindexStmt(s) => !s.is_concurrent(),
             NodeEnum::RenameStmt(s) => s.relation.is_some(),
             NodeEnum::RefreshMatViewStmt(s) => !s.concurrent,
             _ => false,
