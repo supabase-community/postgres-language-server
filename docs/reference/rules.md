@@ -48,6 +48,7 @@ Code that loses data or breaks existing clients.
 | [banDropTable](./rules/ban-drop-table.md) ✅ 🛠 | Dropping a table may break existing clients. |
 | [banDropType](./rules/ban-drop-type.md) 🛠 | Dropping a type, cast, operator, operator class, or operator family may break existing clients. |
 | [banDropView](./rules/ban-drop-view.md) 🛠 | Dropping a view or materialized view may break existing clients. |
+| [banReplaceViewFunction](./rules/ban-replace-view-function.md) 🛠 | Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients. |
 | [banSetSchema](./rules/ban-set-schema.md) 🛠 | Moving an object to another schema may break existing clients. |
 | [banTruncate](./rules/ban-truncate.md) ✅ 🛠 | Truncating a table removes all rows and can cause data loss in production. |
 | [banTruncateCascade](./rules/ban-truncate-cascade.md) 🛠 | Using `TRUNCATE`'s `CASCADE` option will truncate any tables that are also foreign-keyed to the specified tables. |

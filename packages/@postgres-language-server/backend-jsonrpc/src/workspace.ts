@@ -109,6 +109,7 @@ export type Category =
   | "lint/banDropView"
   | "lint/banDuplicateColumnAssignments"
   | "lint/banNonTransactionalStatementInTransaction"
+  | "lint/banReplaceViewFunction"
   | "lint/banSetSchema"
   | "lint/banTruncate"
   | "lint/banTruncateCascade"
@@ -1241,6 +1242,10 @@ export interface LinterRules {
    * Statements that Postgres can't run inside a transaction block.
    */
   banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
+  /**
+   * Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients.
+   */
+  banReplaceViewFunction?: RuleConfiguration_for_Null;
   /**
    * Moving an object to another schema may break existing clients.
    */

@@ -1337,6 +1337,17 @@
             }
           ]
         },
+        "banReplaceViewFunction": {
+          "description": "Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RuleConfiguration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "banSetSchema": {
           "description": "Moving an object to another schema may break existing clients.",
           "anyOf": [

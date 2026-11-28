@@ -622,6 +622,10 @@ export interface LinterRules {
    */
   banNonTransactionalStatementInTransaction?: RuleConfiguration_for_Null;
   /**
+   * Replacing a view, function, procedure, trigger, rule or aggregate may change behaviour for existing clients.
+   */
+  banReplaceViewFunction?: RuleConfiguration_for_Null;
+  /**
    * Moving an object to another schema may break existing clients.
    */
   banSetSchema?: RuleConfiguration_for_Null;
