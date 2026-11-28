@@ -27,16 +27,13 @@ desktop.ini
 node_modules/
 
 **/dist/
-.claude-session-id
 
+# Linters to port rules from (see .agents/skills/port-lint-rule)
 squawk/
 eugene/
+pgfence/
 
 # Auto generated treesitter files
-crates/pgt_treesitter_grammar/src/grammar.json
-crates/pgt_treesitter_grammar/src/node-types.json
-crates/pgt_treesitter_grammar/src/parser.c
-crates/pgt_treesitter_grammar/src/parser.c.codex-session-id
 crates/pgls_treesitter_grammar/src/grammar.json
 crates/pgls_treesitter_grammar/src/node-types.json
 crates/pgls_treesitter_grammar/src/parser.c
@@ -49,11 +46,15 @@ packages/@postgres-language-server/wasm/wasm/pgls.wasm
 # Playwright
 playwright-report/
 test-results/
-.codex-session-id
 
 site/
 
 .review/
 pglinter_repo/
-.review/
+
+# Coding agents: personal settings and instructions, session files
+.claude/settings.local.json
+CLAUDE.local.md
+.claude-session-id
+.codex-session-id
 .opencode-session-id
