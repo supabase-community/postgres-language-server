@@ -36,6 +36,8 @@ pub struct Lexer<'a> {
     words: usize,
     paren_depth: usize,
     copy: CopyFromStdin,
+    /// Whether the first word of a statement was `COPY`.
+    has_copy: bool,
     /// Whether COPY data starts after the next line break.
     copy_data_next: bool,
     /// Whether no line after the current offset is `\.`, so no COPY data follows any more.
@@ -57,6 +59,7 @@ impl<'a> Lexer<'a> {
             words: 0,
             paren_depth: 0,
             copy: CopyFromStdin::No,
+            has_copy: false,
             copy_data_next: false,
             copy_end_missing: false,
             copy_data: Vec::new(),
@@ -89,6 +92,7 @@ impl<'a> Lexer<'a> {
             error: self.error,
             line_ending_counts: self.line_ending_counts,
             has_blank_line: self.has_blank_line,
+            has_copy: self.has_copy,
             copy_data: self.copy_data,
         }
     }
@@ -137,7 +141,10 @@ impl<'a> Lexer<'a> {
             TokenKind::Ident if self.paren_depth == 0 && self.words < COPY_WORDS_MAX => {
                 let is = |word: &str| text.eq_ignore_ascii_case(word);
                 self.copy = match self.copy {
-                    _ if self.words == 0 && is("copy") => CopyFromStdin::Copy,
+                    _ if self.words == 0 && is("copy") => {
+                        self.has_copy = true;
+                        CopyFromStdin::Copy
+                    }
                     _ if self.words == 0 => CopyFromStdin::No,
                     // The word after `FROM` has to be among the first words too.
                     CopyFromStdin::Copy if is("from") && self.words < COPY_WORDS_MAX - 1 => {

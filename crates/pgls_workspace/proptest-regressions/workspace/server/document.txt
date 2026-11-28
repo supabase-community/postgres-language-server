@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 6e2aebf8b4eaad77b6e48aef43c6c62fdf1d26d749204929101e21ca616acccb # shrinks to (tool, template, max_size) = (Plain, None, 18446744073709551615), content = "select 1;\nselect 1;\nupdate t set x = 1\n\nselect 2;\nselect 1;\nselect 1;\n", events = [Changes([ClientChange { start: WideLineCol { line: 4, col: 0 }, end: WideLineCol { line: 4, col: 0 }, text: "(" }]), Changes([ClientChange { start: WideLineCol { line: 0, col: 0 }, end: WideLineCol { line: 0, col: 0 }, text: "" }]), Changes([ClientChange { start: WideLineCol { line: 4, col: 10 }, end: WideLineCol { line: 4, col: 10 }, text: "%copy t from stdin;\n1\n\\.\n" }]), Changes([ClientChange { start: WideLineCol { line: 2, col: 0 }, end: WideLineCol { line: 4, col: 1 }, text: "" }])]

@@ -31,6 +31,7 @@ pub struct Lexed<'a> {
     pub(crate) error: Vec<LexError>,
     pub(crate) line_ending_counts: Vec<usize>,
     pub(crate) has_blank_line: bool,
+    pub(crate) has_copy: bool,
     /// The indices of the `COPY_DATA` tokens.
     pub(crate) copy_data: Vec<u32>,
 }
@@ -66,6 +67,13 @@ impl Lexed<'_> {
     /// Returns whether the source contains at least one blank line.
     pub fn has_blank_line(&self) -> bool {
         self.has_blank_line
+    }
+
+    /// Returns whether the first word of a statement is `COPY`, or `\copy` a meta-command, as
+    /// psql reads them to tell `COPY … FROM STDIN`. Its data, if any, depends on the rest of the
+    /// statement and the lines after it.
+    pub fn has_copy(&self) -> bool {
+        self.has_copy
     }
 
     /// Returns the text ranges of the COPY data blocks.
